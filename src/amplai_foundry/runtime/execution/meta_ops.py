@@ -408,6 +408,38 @@ class LocalMetaOps:
         )
         return self.local.meta.rollback(self.operator, proposal_id, baseline, candidate, approval)
 
+    def report(self, proposal_id: str) -> dict[str, Any]:
+        """Per arm: solved, verified-but-hidden-fail, test edits, tokens, time and API-equivalent
+        cost per solved task (D-094). Descriptive; the verdict is the pre-registered one."""
+        from ...meta_harness.trial_metrics import TrialMetrics
+
+        head = self._head(proposal_id)
+        report_ref = head["data"].get("report_ref")
+        if not report_ref:
+            raise Hold("META_STATE", "The candidate has no experiment report yet")
+        report = self.store.get(self.scope, "eval-report", report_ref)
+        metrics = TrialMetrics(self.dep.service)
+        rows = [
+            metrics.trial(self.store.get(self.scope, "eval-trial", ref))
+            for ref in report["run_refs"]
+        ]
+        flagged = [
+            {k: r[k] for k in ("task_id", "arm")} | {"why": why}
+            for r in rows
+            for why in (["verified_hidden_fail"] if r["verified_hidden_fail"] else [])
+            + (["tests_changed"] if r.get("diff") and r["diff"]["tests_changed"] else [])
+        ]
+        return {
+            "proposal_id": proposal_id,
+            "report_id": report_ref["id"],
+            "arms": TrialMetrics.summarize(rows),
+            "flagged_trials": flagged,
+            "note": (
+                "Descriptive only. API-equivalent cost is an estimate at published API prices, "
+                "not a subscription bill; upper_bound means no cache breakdown was recorded."
+            ),
+        }
+
     # -- read ----------------------------------------------------------------------------------
     def status(self, proposal_id: str) -> dict[str, Any]:
         head = self._head(proposal_id)

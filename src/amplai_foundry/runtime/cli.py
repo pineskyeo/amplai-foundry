@@ -749,6 +749,47 @@ def local_driver(
 LAUNCHD_LABEL = "ai.amplai.local-serve"
 
 
+@ops.command("prices")
+def prices(
+    config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
+) -> None:
+    """The price tables (D-094): which is in effect, and which configured models have a price.
+
+    A table is never edited. A new price is a new file in deployment/prices/ with a later
+    effective_from, checked against the source URLs it lists; this command only reports.
+    """
+    from datetime import date
+
+    from ..evaluation import pricing
+
+    def show() -> dict[str, Any]:
+        tables = pricing.load_tables()
+        current = pricing.table_for(tables, date.today().isoformat())
+        from .local_deployment import LocalConfig
+
+        models: set[str] = set()
+        path = config.expanduser()
+        if path.is_file():
+            cfg = LocalConfig.model_validate_json(path.read_bytes())
+            if cfg.codex is not None:
+                models.add(cfg.codex.model)
+            if cfg.claude is not None:
+                models.add(cfg.claude.model)
+        return {
+            "tables": [{"id": t.table_id, "effective_from": t.effective_from} for t in tables],
+            "in_effect": current.table_id if current else None,
+            "models": {
+                m: ("priced" if current and m in current.models else "no_price")
+                for m in sorted(models)
+            },
+            "sources": sorted(
+                {u for row in (current.models.values() if current else []) for u in row["sources"]}
+            ),
+        }
+
+    guarded(show)
+
+
 @ops.command("local-update")
 def local_update(
     root: Annotated[Path | None, typer.Option("--root", help="the installed checkout")] = None,

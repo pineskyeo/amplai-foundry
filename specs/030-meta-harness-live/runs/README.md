@@ -46,3 +46,23 @@ covered so far only by the lifecycle rehearsal with a stand-in agent
 
 The active release of the smoke deployment stayed `local-baseline-0df61fa84b06` throughout.
 
+## D-094 usage detail check (2026-09-30)
+
+One Codex trial (`s01-semver-parse`, baseline) after the usage-detail change: verified, hidden tests
+passed. The stored breakdown: input 72,047 of which cached 64,128 (89 percent), cache write 0, output
+1,138 of which reasoning 186. At the 2026-09-30 table the API-equivalent cost is $0.080; without the
+cache breakdown it would have been priced as an upper bound of about $0.31.
+
+The metrics of the two S7 experiments, recomputed from their stored records (no new runs), priced
+as upper bounds because they were recorded before the breakdown was kept:
+
+| Experiment | Arm | Solved | Verified but hidden fail | Tests added / changed | Tokens per solved | Seconds per solved |
+|---|---|---|---|---|---|---|
+| `shorter` | baseline | 20/20 | 0 | 6 / 0 | 99,436 | 52.4 |
+| `shorter` | candidate | 20/20 | 0 | 4 / 0 | 101,717 | 52.5 |
+| `negcontrol` | baseline | 20/20 | 0 | 4 / 0 | 100,523 | 51.0 |
+| `negcontrol` | candidate | 0/20 | 0 | 0 / 0 | n/a | n/a (median 9.1 s) |
+
+Every test file the agent touched was a new file; no existing test was edited or deleted. The
+corpus check with `--repeats 3` gave the same verdict for all 20 tasks (no flaky grading).
+

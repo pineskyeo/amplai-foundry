@@ -447,3 +447,37 @@
 - Open: 성공률 개선을 실제로 보이려면 baseline 통과율이 60~80% 인 어려운 과제가 필요하다. 그 corpus 는 만들지
   않았다(스펙을 완전하게 유지하면서 어렵게 만들기 어렵다).
 
+## D-094 — Usage Detail, Dated Price Tables And API-Equivalent Cost; Descriptive Trial Metrics
+
+- Status: accepted (운영자 선택 2026-09-30: 진행)
+- Date: 2026-09-30
+- Decision:
+  - driver 가 받은 사용량 세부(Codex: input, cached input, cache write, output, reasoning output / Claude: input,
+    cache read, cache write 5m·1h, output)를 버리지 않는다. 3.0.0 `usage` 는 닫힌 형식이라(`common.schema.json`
+    `usage`, `additionalProperties: false`) 세부는 `usage-detail` 기록으로 저장하고 `usage.source_ref` 가 가리킨다.
+    schema 는 바꾸지 않는다. Claude CLI 비용 증거는 그 기록의 `cost_source_ref` 로 옮긴다.
+  - 단가표는 `deployment/prices/<id>.json` 에 둔다. 모델별 입력·캐시 읽기·캐시 쓰기·출력 단가(백만 token 당
+    microunit), 출처 URL, 받은 날짜, 적용 시작일을 가진다. 한 번 넣은 표는 고치지 않고, 단가가 바뀌면 적용
+    시작일이 뒤인 새 표를 추가한다. run 은 그 날 적용되던 표로 계산하고 결과에 표 id 를 남긴다. 첫 표는
+    2026-09-30 공식 페이지 값이다(gpt-5.6-sol 4/0.4/20, 캐시 쓰기 5, 프로모션 가격으로 최소 2026-11-21 까지;
+    claude-sonnet-5 2/0.2/10, 캐시 쓰기 2.5·4).
+  - token 은 공급자별로 서로 겹치지 않는 묶음으로 나눈 뒤 계산한다. OpenAI 는 `input_tokens` 가 캐시를 포함하므로
+    `input − cached − cache_write` 가 캐시 아닌 입력이다. Anthropic 은 포함하지 않으므로 캐시 묶음을 더한다. 추론
+    token 은 출력에 포함돼 있어 더하지 않는다.
+  - API 환산 비용은 run 의 `usage.cost_microunits` 와 분리한다. 구독 run 의 청구액이 아니며(D-085 유지) 판정 기준이
+    아니다(D-093 유지). 단가가 없는 모델은 `no_price` 로 보고하고 다른 단가로 대체하지 않는다. 캐시 세부가 없는
+    옛 run 은 모든 입력을 캐시 아닌 단가로 계산하고 `upper_bound` 로 표시한다.
+  - 실험 시도의 참고 지표(`amplai meta report`): 검증은 통과했지만 숨긴 시험은 실패한 수, 새 시험 추가와 기존 시험
+    수정·삭제의 구분, 성공 1건당 token·시간·API 환산 비용, 변경 크기. corpus 검사는 `--repeats N` 으로 같은 판정이
+    반복되는지 본다(채점 흔들림). 추가 agent 실행 없이 이미 저장된 기록에서 계산한다.
+- Not done: pass^k(과제 반복 실행)와 판정 기준 변경은 하지 않았다. model-profile 의 `price_snapshot_ref` 는 쓰지
+  않았다. 채우면 composition digest 가 바뀌어 대기 중 plan 이 `COMPOSITION_CHANGED` 가 되고 baseline release 가
+  다시 잡힌다.
+- Reason: 사용자는 구독이라도 API 가격으로 비용을 환산하고 계속 관리되기를 원했다. 조사한 도구(LiteLLM 가격표,
+  ccusage, Langfuse)는 모두 token × 공개 단가로 계산하고 날짜별 단가를 보관한다. 캐시를 두 번 세는 실수가 실제로
+  있었다(openusage issue #360). 캐시를 버리면 비용이 크게 부풀려진다: 실제 Codex 1회(2026-09-30)는 입력 72,047 중
+  캐시 64,128(89%)이었고 환산 $0.080 인데, 캐시를 모르면 약 $0.31 로 계산된다
+  (`specs/030-meta-harness-live/runs/README.md`).
+- Evidence: `tests/v3/test_rc13_usage_pricing.py`, `tests/e2e/test_rc13_usage_detail.py`,
+  `tests/v3/test_rc12_meta_cli.py`(prices, report). corpus 20개 `--repeats 3` 모두 같은 판정.
+

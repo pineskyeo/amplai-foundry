@@ -98,6 +98,9 @@ class EventNormalizer:
             "status": "unknown",
             "source_ref": None,
         }
+        # D-094: the provider's own usage breakdown (cache and reasoning tokens) as it reported
+        # it, with how its input count treats cache; the run record's usage stays the 3.0.0 shape
+        self.usage_detail: dict[str, Any] | None = None
 
     def accept(self, event: dict[str, Any]) -> dict[str, Any]:
         kind = event.get("type")
@@ -157,6 +160,7 @@ class EventNormalizer:
                 "output_tokens": usage["output_tokens"],
                 "status": "measured",
             }
+            self.usage_detail = usage_detail(self.provider, usage)
         total_cost_usd = event.get("total_cost_usd")
         if (
             self.provider == "claude"
@@ -202,6 +206,47 @@ class EventNormalizer:
             "usage": self.usage.copy(),
             "call_mappings": self.calls.copy(),
         }
+
+
+# D-094: the breakdown fields each provider reports, and whether its input count includes cache.
+# Codex (OpenAI): cached_input_tokens is a subset of input_tokens; turn.completed is the thread's
+# cumulative total, so the last value is the turn's total, never a sum. Anthropic: input_tokens
+# excludes cache reads and cache writes.
+USAGE_DETAIL_FIELDS = {
+    "codex": (
+        "input_tokens",
+        "cached_input_tokens",
+        "cache_write_input_tokens",
+        "output_tokens",
+        "reasoning_output_tokens",
+    ),
+    "claude": (
+        "input_tokens",
+        "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+        "output_tokens",
+    ),
+}
+INPUT_INCLUDES_CACHE = {"codex": True, "claude": False}
+
+
+def usage_detail(provider: str, usage: dict[str, Any]) -> dict[str, Any]:
+    """The reported breakdown: nonnegative integer fields only, absent ones left out."""
+    fields = {
+        k: usage[k]
+        for k in USAGE_DETAIL_FIELDS[provider]
+        if type(usage.get(k)) is int and usage[k] >= 0
+    }
+    creation = usage.get("cache_creation")
+    if provider == "claude" and isinstance(creation, dict):
+        for k in ("ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens"):
+            if type(creation.get(k)) is int and creation[k] >= 0:
+                fields[k] = creation[k]
+    return {
+        "provider": provider,
+        "input_includes_cache": INPUT_INCLUDES_CACHE[provider],
+        "fields": fields,
+    }
 
 
 class SessionJournal:

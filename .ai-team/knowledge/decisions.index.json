@@ -481,6 +481,19 @@
       "scope": [
         "specs/030-meta-harness-live/spec.md"
       ]
+    },
+    {
+      "id": "D-094",
+      "status": "active",
+      "title": "Usage detail, dated price tables and API-equivalent cost; descriptive trial metrics",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers/protocol.py",
+        "src/amplai_foundry/runtime/execution/worker.py",
+        "src/amplai_foundry/evaluation/pricing.py",
+        "src/amplai_foundry/meta_harness/trial_metrics.py",
+        "deployment/prices"
+      ]
     }
   ]
 }

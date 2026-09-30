@@ -169,21 +169,36 @@ def judge(task: CorpusTask, workspace: Path, *, timeout: int = 120) -> Outcome:
     )
 
 
-def _validate_task(task: CorpusTask, base: Path, scratch: Path) -> dict[str, Any]:
+def _validate_task(task: CorpusTask, base: Path, scratch: Path, repeats: int) -> dict[str, Any]:
+    """Judge base and reference ``repeats`` times each; a verdict that changes is flaky (D-094).
+
+    A flaky grader makes a trial's success depend on luck, not on the agent: SWE-bench audits
+    found tasks whose gold patch sometimes failed its own tests.
+    """
     row: dict[str, Any] = {}
+    flaky = False
     for label, files in (("base", {}), ("reference", task.reference)):
-        work = scratch / task.task_id / label
-        shutil.copytree(base, work, dirs_exist_ok=True)
-        write_files(work, files)
-        outcome = judge(task, work)
+        seen = set()
+        outcome = None
+        for i in range(repeats):
+            work = scratch / task.task_id / f"{label}-{i}"
+            shutil.copytree(base, work, dirs_exist_ok=True)
+            write_files(work, files)
+            outcome = judge(task, work)
+            seen.add((outcome.hidden_passed, outcome.visible_passed))
+        assert outcome is not None
+        flaky = flaky or len(seen) > 1
         row[label] = {
             "hidden_passed": outcome.hidden_passed,
             "visible_passed": outcome.visible_passed,
         }
         if label == "reference":
             row["detail"] = outcome.detail
+    row["repeats"] = repeats
+    row["flaky"] = flaky
     row["fair"] = (
-        not row["base"]["hidden_passed"]
+        not flaky
+        and not row["base"]["hidden_passed"]
         and row["base"]["visible_passed"]
         and row["reference"]["hidden_passed"]
         and row["reference"]["visible_passed"]
@@ -191,11 +206,18 @@ def _validate_task(task: CorpusTask, base: Path, scratch: Path) -> dict[str, Any
     return row
 
 
-def validate(corpus: Corpus, scratch: Path, *, workers: int = 4) -> dict[str, dict[str, Any]]:
+def validate(
+    corpus: Corpus, scratch: Path, *, workers: int = 4, repeats: int = 1
+) -> dict[str, dict[str, Any]]:
     """Per task: the hidden tests fail on base and pass on the reference; visible tests pass.
+    With ``repeats`` > 1, the same verdict every time (no flaky grading).
 
     Tasks are independent scratch copies, so they run in parallel (each is a pytest subprocess).
     """
+    if repeats < 1:
+        raise CorpusError("REPEATS", "repeats must be at least 1")
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        rows = list(pool.map(lambda t: _validate_task(t, corpus.base, scratch), corpus.tasks))
+        rows = list(
+            pool.map(lambda t: _validate_task(t, corpus.base, scratch, repeats), corpus.tasks)
+        )
     return {task.task_id: row for task, row in zip(corpus.tasks, rows, strict=True)}
