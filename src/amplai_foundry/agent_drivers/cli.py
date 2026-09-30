@@ -323,7 +323,12 @@ class CliDriver:
             normalized = normalizer.accept(event)
             seq += 1
             self.journal.append(did, f"provider-{seq}", normalized)
-            self.journal.update(did, session_handle=normalizer.session, usage=normalizer.usage)
+            self.journal.update(
+                did,
+                session_handle=normalizer.session,
+                usage=normalizer.usage,
+                usage_detail=normalizer.usage_detail,
+            )
 
         try:
             while chunk := stdout.read1(16384):
@@ -351,6 +356,7 @@ class CliDriver:
                 exit_code=code,
                 session_handle=normalizer.session,
                 usage=normalizer.usage,
+                usage_detail=normalizer.usage_detail,
                 process_stopped=stopped,
                 failure=None if complete and stopped else "provider_completion_not_established",
             )
@@ -487,6 +493,7 @@ class CliDriver:
             "goal_verified": False,
             "session_handle": record["session_handle"],
             "usage": record.get("usage"),
+            "usage_detail": record.get("usage_detail"),
             "process_stopped": True,
             "event_count": record.get("cursor", 0),
         }

@@ -1,0 +1,40 @@
+{
+  "schema_version": "price-table-1",
+  "price_table_id": "2026-09-30",
+  "effective_from": "2026-09-30",
+  "retrieved_at": "2026-09-30",
+  "currency": "USD",
+  "unit": "microunits per 1,000,000 tokens",
+  "purpose": "API-equivalent estimate only. Subscription runs are not billed per token; this never replaces a run's usage.cost_microunits (D-094, D-085).",
+  "models": {
+    "gpt-5.6-sol": {
+      "provider": "openai",
+      "input": 4000000,
+      "cache_read": 400000,
+      "cache_write": 5000000,
+      "output": 20000000,
+      "sources": [
+        "https://developers.openai.com/api/docs/pricing",
+        "https://developers.openai.com/api/docs/guides/prompt-caching"
+      ],
+      "notes": [
+        "Standard tier. The pricing page calls this promotional pricing, available at least through 2026-11-21.",
+        "Cache writes cost 1.25x the uncached input rate for GPT-5.6 and later (prompt-caching guide), so 5.00 per 1M.",
+        "Input tokens are billed at exactly one of uncached, cached-input or cache-write rates (prompt-caching guide)."
+      ]
+    },
+    "claude-sonnet-5": {
+      "provider": "anthropic",
+      "input": 2000000,
+      "cache_read": 200000,
+      "cache_write_5m": 2500000,
+      "cache_write_1h": 4000000,
+      "output": 10000000,
+      "sources": ["https://platform.claude.com/docs/en/about-claude/pricing"],
+      "notes": [
+        "The introductory 2/10 price became the standard price; the increase planned for 2026-09-01 will not occur (pricing page footnote 3).",
+        "Cache hits are 0.1x base input; 5-minute writes 1.25x; 1-hour writes 2x."
+      ]
+    }
+  }
+}

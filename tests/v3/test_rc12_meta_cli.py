@@ -172,3 +172,17 @@ def test_reject_needs_a_reason(home: dict[str, Any]) -> None:
     assert result.exit_code != 0  # --reason is required by the command itself
     code, out = meta(home, "reject", pid, "--reason", "  ")
     assert code == 2 and out["code"] == "REJECT_REASON"
+
+
+def test_prices_reports_the_table_in_effect_and_the_priced_models(home: dict[str, Any]) -> None:
+    result = CliRunner().invoke(cli.app, ["ops", "prices", "--config", home["config"]])
+    assert result.exit_code == 0, result.output
+    out = json.loads(result.output[result.output.index("{") :])
+    assert out["in_effect"] and out["models"] == {"gpt-5.6-sol": "priced"}
+    assert all(url.startswith("https://") for url in out["sources"])
+
+
+def test_report_needs_an_experiment(home: dict[str, Any]) -> None:
+    pid = propose(home)
+    code, out = meta(home, "report", pid)
+    assert code == 3 and out["code"] == "META_STATE"

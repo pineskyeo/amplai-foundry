@@ -205,6 +205,16 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
         """Stop an approved experiment or canary; the active release does not change."""
         run(config, driver, corpus, lambda ops: ops.abort(proposal_id, reason))
 
+    @meta.command("report")
+    def report(
+        proposal_id: str,
+        config: ConfigOption = DEFAULT_CONFIG,
+        driver: DriverOption = "codex-cli",
+        corpus: CorpusOption = DEFAULT_CORPUS,
+    ) -> None:
+        """Metrics of the candidate's experiment beyond the verdict (descriptive, D-094)."""
+        run(config, driver, corpus, lambda ops: ops.report(proposal_id))
+
     @meta.command("status")
     def status(
         proposal_id: str,

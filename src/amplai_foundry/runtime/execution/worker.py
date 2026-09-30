@@ -19,6 +19,8 @@ from ..contracts.identity import digest
 from ..errors import Conflict, Hold, RuntimeFault
 from .envelope import assert_execution_live, execution_envelope
 
+USAGE_DETAIL_KIND = "usage-detail"
+
 
 class Workspaces(Protocol):
     """What the coordinator needs from a workspace manager (content snapshots or git)."""
@@ -261,7 +263,7 @@ class WorkCoordinator:
             outputs = self.workspaces.collect(
                 scope, workspace, output_paths, dispatch["node"], process_stopped=True
             )
-            usage = receipt.get("usage") or UNKNOWN_USAGE.copy()
+            usage = self._usage(scope, dispatch["run_id"], receipt)
             self.runtime.contracts.validate(
                 "run-record",
                 {
@@ -456,6 +458,29 @@ class WorkCoordinator:
             "No exact native session receipt; reconcile before another attempt",
         )
 
+    def _usage(self, scope: Any, run_id: str, receipt: dict[str, Any]) -> dict[str, Any]:
+        """The run record's usage (3.0.0 shape); the provider's breakdown is stored beside it.
+
+        D-094: cache and reasoning tokens do not fit the closed usage object, so the breakdown is
+        a ``usage-detail`` record and ``usage.source_ref`` points at it. An earlier source (the
+        Claude CLI cost event) is kept inside the record as ``cost_source_ref``.
+        """
+        usage = dict(receipt.get("usage") or UNKNOWN_USAGE.copy())
+        detail = receipt.get("usage_detail")
+        if not isinstance(detail, dict):
+            return usage
+        record_id = "usage-detail-" + digest({"run_id": run_id, "detail": detail})[7:39]
+        value = {
+            "usage_detail_id": record_id,
+            "run_id": run_id,
+            **detail,
+            "cost_source_ref": usage.get("source_ref"),
+        }
+        with self.store.tx() as db:  # the same detail for the same run is the same object
+            ref = self.store.put(db, scope, USAGE_DETAIL_KIND, record_id, 1, value)
+        usage["source_ref"] = {k: ref[k] for k in ("id", "revision", "digest")}
+        return usage
+
     def continue_resumed(self, worker: Actor, run_id: str) -> dict[str, Any]:
         """Collect a resumed turn only after the controller commits the new lease."""
         from copy import deepcopy
@@ -534,7 +559,7 @@ class WorkCoordinator:
                 dispatch["lease"]["lease_id"],
                 dispatch["lease"]["fencing_token"],
                 outputs,
-                usage=receipt.get("usage") or UNKNOWN_USAGE.copy(),
+                usage=self._usage(worker.scope, run_id, receipt),
                 process_stopped=True,
             )
             self._update(worker, did, "verifying", dispatch=dispatch, result=result)
