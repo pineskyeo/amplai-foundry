@@ -1,0 +1,28 @@
+{
+  "task_id": "work030-s01-semver-parse",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/s01-semver-parse",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/semver.py` with a function `parse_version(text: str) -> tuple[int, int, int]` that turns a `MAJOR.MINOR.PATCH` string into a tuple of three ints. A single leading `v` is allowed (`v1.2.3`). Surrounding whitespace is ignored.",
+  "acceptance": [
+    "parse_version('1.2.3') returns (1, 2, 3) and parse_version('v10.0.7') returns (10, 0, 7)",
+    "parse_version('  2.0.1 ') returns (2, 0, 1)",
+    "Text with fewer or more than three dot-separated parts, an empty string, or a non-numeric part raises ValueError",
+    "A negative number or a part with a sign (for example '1.-2.3' or '+1.2.3') raises ValueError"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

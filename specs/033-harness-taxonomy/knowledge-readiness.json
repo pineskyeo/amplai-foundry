@@ -1,0 +1,95 @@
+{
+  "blocking_unknowns": [],
+  "checks": {
+    "acceptance": {
+      "evidence": [
+        "specs/033-harness-taxonomy/spec.md"
+      ],
+      "notes": "AC-01..AC-12 with evidence.",
+      "status": "ready"
+    },
+    "contradictions": {
+      "evidence": [
+        "design-reference/design/16_META_HARNESS.md:18-25",
+        "src/amplai_foundry/meta_harness/composition.py:12-23"
+      ],
+      "notes": "Design 16 section 3 puts context retrieval, routing thresholds and repair heuristics in class B; the code classifies router_policy_ref and context_policy_ref as class A by field. Resolved in the design by D-096: component-level classes following design 16 (normative).",
+      "status": "ready"
+    },
+    "current_behavior": {
+      "evidence": [
+        "src/amplai_foundry/runtime/execution/meta_ops.py:61-139,152-262",
+        "src/amplai_foundry/runtime/execution/loop.py:522-616",
+        "src/amplai_foundry/runtime/execution/product.py:394-396,443-494",
+        "src/amplai_foundry/meta_harness/composition.py:12-23,57-80",
+        "src/amplai_foundry/meta_harness/local_executor.py:35-73,140-150",
+        "src/amplai_foundry/evaluation/analysis.py:28-268",
+        "src/amplai_foundry/runtime/execution/codex.py:316",
+        "src/amplai_foundry/agent_drivers/cli.py:119-151"
+      ],
+      "notes": "Only the IMPLEMENTER prompt bundle is variable; context/verification/budget refs share an unread policy record; effort never passed; analysis is non-inferiority only; trials use a planner stand-in.",
+      "status": "ready"
+    },
+    "invariants": {
+      "evidence": [
+        "design-reference/design/16_META_HARNESS.md:18-27",
+        "docs/workstreams/v3-real-execution/DECISIONS.md",
+        "src/amplai_foundry/evaluation/analysis.py:28-101"
+      ],
+      "notes": "3.0.0 schemas unchanged; class C not a candidate surface; evaluator changes qualified alone; proposer cannot approve; safety failure fails; missing data inconclusive; no adaptive peeking.",
+      "status": "ready"
+    },
+    "source_of_truth": {
+      "evidence": [
+        "design-reference/design/16_META_HARNESS.md",
+        "docs/workstreams/v3-real-execution/DECISIONS.md",
+        "contracts/state-machines.json"
+      ],
+      "notes": "Design 16 is normative; DECISIONS.md D-088..D-095 are active; the evolution state machine is contracts/state-machines.json.",
+      "status": "ready"
+    },
+    "system_boundary": {
+      "evidence": [
+        "design-reference/design/16_META_HARNESS.md",
+        "src/amplai_foundry/meta_harness/service.py:101-109",
+        "src/amplai_foundry/evaluation/corpus.py:125-212"
+      ],
+      "notes": "Meta-harness gates, evaluation service, corpus ACL and release pointer stay the boundary; drivers run in containers (D-073, D-091).",
+      "status": "ready"
+    },
+    "terminology": {
+      "evidence": [
+        "specs/033-harness-taxonomy/spec.md",
+        "design-reference/contracts/schemas/model-profile.schema.json",
+        "design-reference/contracts/schemas/harness-composition.schema.json"
+      ],
+      "notes": "Cell = model-profile (provider_model_id, reasoning_profile); component, manifest, stage, informative task defined in spec.md Terms.",
+      "status": "ready"
+    },
+    "verifier": {
+      "evidence": [
+        ".ai-team/verifiers/registry.json",
+        "scripts/corpus_check.py",
+        "tests/v3",
+        "tests/e2e"
+      ],
+      "notes": "Verifier profile v2, targeted pytest per slice, corpus fairness check, CI.",
+      "status": "ready"
+    }
+  },
+  "contradictions": [],
+  "generated_from": {
+    "commit": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
+    "contract": "specs/033-harness-taxonomy/work-contract.json"
+  },
+  "risk": "high",
+  "schema_version": "1.0",
+  "unknowns": [
+    "OpenCode per-prompt effort control (docs describe config variants only): measured in S3",
+    "Supported effort levels per model (gpt-5.6-sol, claude-sonnet-5, claude-opus-5-5): measured at qualification",
+    "Subscription quota per window: observed during S10 under the approved budget"
+  ],
+  "verdict": "READY",
+  "work_id": "033-meta-harness-system",
+  "work_type": "architecture"
+}

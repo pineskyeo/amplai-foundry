@@ -29,11 +29,12 @@ from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
 from ..contracts.identity import canonical, new_id, now
 from ..errors import Hold, RuntimeFault
-from . import prompts
+from . import context_assembly, policies, prompts
 from .product import PORT, LocalExecutionService
 from .steering import SteeringService
 
-FEEDBACK_TAIL = 3000
+# the v1 feedback form's tail; the form of a goal comes from its composition (D-096)
+FEEDBACK_TAIL = policies.V1["feedback_form"]["tail_chars"]
 
 
 def _utc(value: str) -> float:
@@ -362,6 +363,12 @@ class ExecutionLoop:
         plan = svc.plan_record(goal_id)
         if plan["status"] != "approved":
             raise Hold("PLAN_NOT_APPROVED", "Only an approved goal runs")
+        try:  # read once, before any claim: a composition the loop cannot honour never runs
+            context, budget = self._policies(plan)
+        except (Hold, RuntimeFault) as exc:
+            reason = f"harness components: {exc.code}: {exc.message}"[:600]
+            return self._stop_goal(goal_id, "held", reason, [])
+        attempt_policy = budget.attempt_policy  # M1: repair base and feedback (D-096)
         contract = self.store.get(self.scope, "goal-contract", plan["contract_ref"])
         graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
         deadline = _utc(plan["approved_at"]) + contract["budget"]["max_wall_seconds"]
@@ -391,10 +398,15 @@ class ExecutionLoop:
             started = self.clock()
             node = dispatch["node"]
             app = _node_app(plan, node)
-            prompt = self.prompt(
-                contract, plan, feedback.get(node["node_id"]), node=node,
-                upstream=self._upstream(graph, node),
-            )  # fmt: skip
+            try:  # after the claim: a fault here must end the goal, which frees its claims
+                prompt = self.prompt(
+                    contract, plan, feedback.get(node["node_id"]), node=node,
+                    upstream=self._upstream(graph, node), context=context,
+                )  # fmt: skip
+            except Exception as exc:
+                self._discard(dispatch["run_id"])
+                reason = f"prompt: {getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]
+                return self._stop_goal(goal_id, "held", reason, attempts)
             self.coordinator.max_seconds = max(1, int(remaining))
             try:
                 steered = self._execute(
@@ -465,8 +477,13 @@ class ExecutionLoop:
                 return self._stop_goal(
                     goal_id, "failed", "acceptance failed within the attempt budget", attempts
                 )
-            feedback[node["node_id"]] = observations
-            repair[node["node_id"]] = self._repair_base(bases[app], change)
+            # the next attempt of this node (finish_work allowed it within the node's
+            # max_attempts, which the attempt policy set at compile time)
+            if attempt_policy["feedback"]:
+                feedback[node["node_id"]] = observations
+            if attempt_policy["repair_base"] == "previous_patch":
+                repair[node["node_id"]] = self._repair_base(bases[app], change)
+            # fresh_base: the next attempt starts from the node's base again
         try:
             result = self.service.verification.finish_goal(verifier, goal_id)
         except Hold as exc:
@@ -527,7 +544,11 @@ class ExecutionLoop:
         *,
         node: dict[str, Any] | None = None,
         upstream: list[tuple[str, str]] | None = None,
+        context: policies.ContextPolicy | None = None,
     ) -> str:
+        """The execution prompt. ``context`` is the goal composition's context policy (read from
+        the plan's composition when not given); the v1 policy renders today's text (G1)."""
+        context = context or self._context_policy(plan)
         app = self.service.apps[_node_app(plan, node) if node else plan["app"]].config
         commands = {v.id: " ".join(v.argv) for v in app.verifiers}
         if plan.get("mode") == "design":
@@ -584,20 +605,91 @@ class ExecutionLoop:
                 "it is applied in its own repository, not in this directory):",
                 "```diff\n" + patch[-UPSTREAM_PATCH:] + "\n```",
             ]
+        # context sections after acceptance/upstream, before feedback, only when enabled
+        lines += context_assembly.sections(context, plan=plan, app=app, commands=commands)
         if feedback:
-            lines += ["", "The previous attempt did not pass. The directory already contains "
-                      "that attempt's changes. Fix what failed:"]  # fmt: skip
-            for o in feedback:
-                if o["outcome"] == "pass":
-                    continue
-                tail = o["details"].get("stdout_tail", "") + o["details"].get("stderr_tail", "")
-                lines.append(f"- {o['acceptance_id']} {o['outcome']}: {o['reason']}")
-                for key in ("outside", "missing_sections", "unresolved_sources"):
-                    if o["details"].get(key):  # the design check says exactly what to fix
-                        lines.append(f"  {key}: " + ", ".join(map(str, o["details"][key][:20])))
-                if tail:
-                    lines.append("```\n" + tail[-FEEDBACK_TAIL:] + "\n```")
+            lines += context_assembly.feedback(context.feedback_form, feedback)
         return "\n".join(lines)
+
+    def _composition(self, plan: dict[str, Any]) -> dict[str, Any] | None:
+        ref = (plan.get("composition") or {}).get("ref")
+        if not ref:
+            return None  # planned before composition selection existed (Work 018)
+        value: dict[str, Any] = self.store.get(self.scope, "harness-composition", ref)
+        return value
+
+    def _context_policy(self, plan: dict[str, Any]) -> policies.ContextPolicy:
+        composition = self._composition(plan)
+        if composition is None:
+            return policies.v1_context()
+        return policies.context_policy(self.store, self.scope, composition)
+
+    def _policies(
+        self, plan: dict[str, Any]
+    ) -> tuple[policies.ContextPolicy, policies.BudgetPolicy]:
+        """The goal composition's context and budget policies, checked for the §2.3 combination
+        rules and for parts this loop honours (S3: env bootstrap, memory notes, the tail
+        feedback form, the attempt policy, limits; a router equal to the one selection used).
+        A part that switches on a mechanism of a later slice is refused, never ignored."""
+        ceiling = self.service.budget.wire()
+        composition = self._composition(plan)
+        if composition is None:
+            return policies.v1_context(), policies.v1_budget(ceiling)
+        context = policies.context_policy(self.store, self.scope, composition)
+        budget = policies.budget_policy(self.store, self.scope, composition, ceiling=ceiling)
+        policies.check_combination(context.feedback_form, budget.attempt_policy, budget.limits)
+        context_assembly.check_supported(context)
+        unsupported = [
+            name
+            for name, on in (
+                ("execution_strategy (S9)",
+                 budget.execution_strategy != policies.V1["execution_strategy"]),
+                ("driver_options (S4)", budget.driver_options is not None),
+                ("fast_checks (S9)", bool(budget.fast_checks and budget.fast_checks["enabled"])),
+                ("deciders L5-L8 (S10)", any(budget.deciders.values())),
+            )
+            if on
+        ]  # fmt: skip
+        unsupported += self._router_unsupported(plan, composition)
+        if unsupported:
+            raise RuntimeFault(
+                "COMPONENT_CONTENT", "The execution loop does not honour these components yet",
+                details=unsupported,
+            )  # fmt: skip
+        return context, budget
+
+    def _router_unsupported(self, plan: dict[str, Any], composition: dict[str, Any]) -> list[str]:
+        """Router-carrier parts of the goal composition that S3 does not honour (D-096, §2.3).
+
+        S3 plans with the v1 interpretation and selects with the installed router, which the plan
+        records as ``composition.policy_ref`` (``product.py`` select_composition); reading the
+        router from the composition, roles and interpretation are S4 (§4.1 rows
+        ``product.py:443-494``, ``planner_codex.py:195-408``), deciders L1-L3 are S10. A legacy
+        task_class_baseline router reads as route_policy v1 (``policies.router_policy``).
+        """
+        router = policies.router_policy(self.store, self.scope, composition["router_policy_ref"])
+        return [
+            name
+            for name, on in (
+                ("interpretation (S4)", router.interpretation != policies.V1["interpretation"]),
+                ("route_policy order of the composition (S4)",
+                 self._own_route_order(plan, composition, router)),
+                ("route_policy roles (S4)", bool(router.roles)),
+                ("deciders L1-L3 (S10)", any(router.deciders.values())),
+            )
+            if on
+        ]  # fmt: skip
+
+    def _own_route_order(
+        self, plan: dict[str, Any], composition: dict[str, Any], router: policies.RouterPolicy
+    ) -> bool:
+        """True when the composition's route order is not the order selection used."""
+        selected = (plan.get("composition") or {}).get("policy_ref")
+        if selected == composition["router_policy_ref"]:
+            return False
+        if selected is None:  # nothing to compare with: the order cannot have been honoured
+            return True
+        return router.order != policies.router_policy(self.store, self.scope, selected).order
 
     def _implementer_role(self, plan: dict[str, Any]) -> list[str]:
         """The IMPLEMENTER role lines from the goal's fixed composition (D-089 S1).

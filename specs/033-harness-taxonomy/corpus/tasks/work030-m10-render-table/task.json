@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-m10-render-table",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/m10-render-table",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/table.py` with a function `render_table(headers: list[str], rows: list[list[str]]) -> str` that renders a plain-text table. Cells are single-line strings; a cell's width is `len(cell)`. The width of a column is the largest width among its header and all its row cells. Every column is left-aligned: each cell is padded on the right with spaces to its column width. Output lines, in order: the header line, a separator line, then one line per row in the given order. The header line and each row line are the padded cells joined with ` | ` (space, pipe, space). The separator line is `-` repeated column-width times for each column, joined with `-+-`. After a line is built, all trailing space characters are removed from its end, so no line ends with a space (this also applies when the last cells are empty). The lines are joined with `\\n` and the output has no trailing newline. With no rows, the output is just the header line and the separator line. A row whose number of cells differs from the number of headers (shorter or longer) raises `ValueError`. Callers always pass at least one header.",
+  "acceptance": [
+    "render_table(['name', 'v'], [['a', '1'], ['bbb', '22']]) returns 'name | v\\n-----+---\\na    | 1\\nbbb  | 22'",
+    "The column width grows to fit a cell that is wider than its header, and a header that is wider than every cell",
+    "render_table(['x'], []) returns 'x\\n-' (header line plus separator, single column, no ' | ' or '-+-')",
+    "No line has trailing spaces, including a last column that is padded (for example a short last-column cell under a wider one) or empty",
+    "The output does not end with a newline and lines are separated by a single '\\n'",
+    "A row with fewer or more cells than headers raises ValueError, including when there are other valid rows"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -505,6 +505,126 @@
         "src/amplai_foundry/agent_drivers/opencode_port.py",
         "src/amplai_foundry/runtime/local_deployment.py"
       ]
+    },
+    {
+      "id": "D-096",
+      "status": "active",
+      "title": "harness components and layers (L1-L9) as versioned records behind the existing composition refs",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-097",
+      "status": "active",
+      "title": "cells (driver, model, effort) per role; effort reaches the drivers",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-098",
+      "status": "active",
+      "title": "corpus v2: ~120 tasks, public benchmark subsets and own tasks, splits, measured difficulty, leak gate",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-099",
+      "status": "active",
+      "title": "evaluator: superiority endpoint, decision classes, pass^k, best-of-n baseline, always-valid accumulation",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-100",
+      "status": "active",
+      "title": "proposer: sanitized trial traces, predictions per edit, leak gate",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-101",
+      "status": "active",
+      "title": "legacy removal: V1, V2 and unused V3 after an approved inventory",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-102",
+      "status": "active",
+      "title": "ten execution strategies; per-layer deciders whose method is itself a component; partial pooling",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-103",
+      "status": "active",
+      "title": "judge model as a selectable component; Jev connector built, activated later",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-104",
+      "status": "active",
+      "title": "nightly experiment loop, baseline reuse, parallel trials, budget from measured quota",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
+    },
+    {
+      "id": "D-105",
+      "status": "active",
+      "title": "evaluation-quality track: metrics, versioned evaluator changes, operator approval",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/",
+        "src/amplai_foundry/evaluation/",
+        "src/amplai_foundry/runtime/execution/",
+        "specs/033-harness-taxonomy/"
+      ]
     }
   ]
 }

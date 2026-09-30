@@ -212,7 +212,12 @@ def test_pause_stops_the_server_and_resume_relaunches_on_the_same_home(tmp_path:
     p = port(tmp_path, launcher)
     ws = workspace(tmp_path, "a")
     p.start(p.prepare({"dispatch_id": "dispatch-a"}, "task", ws))
-    assert p.pause("dispatch-a")["state"] == "paused"
+    # pause is repeated until the stop is confirmed: the first call may still read "cancelling"
+    # while the event thread applies the abort (driver contract, agent_drivers/http.py:526-544)
+    deadline = time.monotonic() + 10
+    while (state := p.pause("dispatch-a")["state"]) != "paused" and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert state == "paused"
     assert not launcher.servers["dispatch-a"].running
     checkpoint = p.checkpoint("dispatch-a")  # journal only; the server is gone
     assert checkpoint["native_home"] == str(tmp_path / "native" / "dispatch-a")

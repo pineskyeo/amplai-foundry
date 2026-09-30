@@ -1,0 +1,189 @@
+{
+  "schema_version": "2.0",
+  "id": "033-meta-harness-system",
+  "title": "AMPLAI V3 meta-harness system: composable harness components, measured corpus, experiment protocol, per-cell search and dashboard",
+  "goal": "The operator runs the V3 meta-harness end to end on real executions: harness components switch on/off/version per (model, reasoning effort) cell, experiments follow screening -> paired focused comparison -> ablation -> held-out -> canary with a budget-matched baseline and an explicit decision rule, a proposer drafts component edits from raw traces with predictions, and a read-only HTML dashboard shows per-cell performance, the best composition per cell, ablation contributions, lineage and pending approvals.",
+  "source": [
+    "spec.md",
+    "plan.md"
+  ],
+  "work_type": "architecture",
+  "risk": "high",
+  "scope": {
+    "include": [
+      "src/amplai_foundry/meta_harness/",
+      "src/amplai_foundry/evaluation/analysis.py",
+      "src/amplai_foundry/evaluation/service.py",
+      "src/amplai_foundry/runtime/execution/meta_local.py",
+      "src/amplai_foundry/runtime/execution/meta_ops.py",
+      "src/amplai_foundry/runtime/execution/releases.py",
+      "src/amplai_foundry/runtime/execution/loop.py",
+      "src/amplai_foundry/runtime/execution/prompts.py",
+      "src/amplai_foundry/runtime/execution/product.py",
+      "src/amplai_foundry/runtime/execution/codex.py",
+      "src/amplai_foundry/runtime/local_deployment.py",
+      "src/amplai_foundry/runtime/meta_cli.py",
+      "src/amplai_foundry/runtime/cli.py",
+      "src/amplai_foundry/agent_drivers/cli.py",
+      "scripts/corpus_check.py",
+      "scripts/meta_smoke.py",
+      "specs/033-harness-taxonomy/",
+      "tests/v3/",
+      "tests/e2e/",
+      "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "docs/workstreams/v3-real-execution/DECISIONS.md"
+    ],
+    "exclude": [
+      "3.0.0 wire schemas and design-reference/",
+      "Protected control (design 16 section 3 class C): authority, verifier core, budget enforcement, signing, holdout",
+      "The V1/V2 development loop (.ai-team, tools/amplai-loop-kit) unless the operator widens the legacy scope"
+    ]
+  },
+  "non_goals": [
+    "Judge-graded domains (UI quality, visual fidelity, documents) and judge qualification",
+    "Computer use, open web search and simulated-user domains",
+    "Online bandit or reinforcement-learning routing",
+    "Switching the running server's image or profile",
+    "Changing 3.0.0 wire schemas or design-reference"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-01",
+      "statement": "Components are versioned records with a class; a manifest maps onto the existing composition refs; the baseline manifest renders today's execution prompt byte for byte",
+      "evidence": [
+        "unit tests",
+        "golden prompt test"
+      ]
+    },
+    {
+      "id": "AC-02",
+      "statement": "Environment bootstrap, memory notes, feedback form and attempt policy change the execution prompt and loop as declared and switch on and off",
+      "evidence": [
+        "tests per component"
+      ]
+    },
+    {
+      "id": "AC-03",
+      "statement": "Cells: the operator registers a cell; Codex and Claude receive the effort; an unsupported effort is refused; qualification binding per D-097",
+      "evidence": [
+        "argv-capture tests",
+        "one qualified real cell per driver"
+      ]
+    },
+    {
+      "id": "AC-04",
+      "statement": "Corpus v2 has at least 40 fair tasks over at least 5 domains, three frozen splits and an active leak gate",
+      "evidence": [
+        "scripts/corpus_check.py",
+        "tests"
+      ]
+    },
+    {
+      "id": "AC-05",
+      "statement": "Calibration measures per-cell pass rates with repeats and marks informative, saturated and flaky tasks",
+      "evidence": [
+        "calibration records"
+      ]
+    },
+    {
+      "id": "AC-06",
+      "statement": "The evaluator change is qualified: stored experiments keep their verdicts; new endpoints have tests including negative controls",
+      "evidence": [
+        "tests"
+      ]
+    },
+    {
+      "id": "AC-07",
+      "statement": "The proposer drafts component edits with predictions from development data only; the leak gate refuses a planted leak; prediction precision is recorded",
+      "evidence": [
+        "tests",
+        "real proposal"
+      ]
+    },
+    {
+      "id": "AC-08",
+      "statement": "amplai meta search runs the stages for one cell under a declared budget and stops at every human gate",
+      "evidence": [
+        "tests",
+        "real run"
+      ]
+    },
+    {
+      "id": "AC-09",
+      "statement": "The dashboard is static HTML with no script and a CSP, showing the matrix, best composition per cell, ablation, lineage and pending approvals",
+      "evidence": [
+        "tests",
+        "real dashboard"
+      ]
+    },
+    {
+      "id": "AC-10",
+      "statement": "Legacy in the approved scope is removed with no remaining reference; migrated tests pass",
+      "evidence": [
+        "reference sweep",
+        "tests"
+      ]
+    },
+    {
+      "id": "AC-11",
+      "statement": "A real round within the approved budget calibrates the approved cells and takes at least one proposer candidate through screening, focused and holdout, then canary and promote or a correct reject; the dashboard shows it",
+      "evidence": [
+        "run records",
+        "dashboard"
+      ]
+    },
+    {
+      "id": "AC-12",
+      "statement": "Verifier v2 PASS, docs RESOLVED, decisions recorded, final HTML report",
+      "evidence": [
+        "logs",
+        "report"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "required",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": []
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [
+    "requirement_decision",
+    "architecture_change",
+    "public_contract",
+    "destructive_change",
+    "git_publish"
+  ],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-096",
+    "D-097",
+    "D-098",
+    "D-099",
+    "D-100",
+    "D-101",
+    "D-102",
+    "D-103",
+    "D-104",
+    "D-105"
+  ],
+  "blocked_by": [],
+  "status": "ready"
+}

@@ -506,3 +506,113 @@
   qualification 의 raw HTTP resume 으로만 확인했고 `OpenCodeDriver.resume` 경로로는 측정하지 않았다(R3).
   운영 서버의 image 전환은 Codex·Claude 재자격이 함께 필요해 하지 않았다.
 
+## D-096 — Harness Components And Layers
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: harness 를 레이어(L1 과제 해석, L2 작업 구조, L3 역할별 칸, L4 문맥, L5 agent 옵션, L6 루프 제어,
+  L7 중간 확인, L8 상한 값, L9 실행 환경)의 부품으로 나눈다. 부품은 id·kind·version·surface class·content digest 를
+  가진 store 기록이고, composition 의 기존 ref(`prompt_bundle_ref`, `context_policy_ref`, `budget_policy_ref`, router
+  policy)가 가리키는 기록에 manifest 로 담긴다. 3.0.0 schema 는 바꾸지 않는다. 후보의 등급은 바뀐 부품 중 가장 높은
+  등급이다(design 16 §3 기준: prompt 발췌·승인된 메모는 A, 문맥 검색·수리 방식·라우팅·driver 배정은 B). 기본
+  manifest 는 오늘의 실행 prompt 를 byte 단위로 재현한다. L9 는 부품만 정의하고 이번 라운드 실험에서 제외한다.
+- Reason: 지금은 IMPLEMENTER prompt 하나만 바꿀 수 있다(`runtime/execution/meta_ops.py:61-139`). 연구상 효과가 큰
+  부품(기억 +5.6pp, 도구 +3.3pp, loop 제어 +2.2pp)은 고정이었다(`specs/033-harness-taxonomy/research-meta-harness.md`).
+  field 단위 등급(`meta_harness/composition.py:12-23`)은 design 16 §3 과 어긋났다.
+
+## D-097 — Cells: Model And Reasoning Effort Per Role
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 칸(cell)은 model-profile 하나다: driver, provider model, `reasoning_profile`(추론 강도). 추론 강도는
+  driver 에 전달된다(Codex `-c model_reasoning_effort=<e>`, Claude Code `--effort <e>`). 모델이 지원하지 않는 강도는
+  거절하고 다른 값으로 바꾸지 않는다. qualification 은 image·driver version·model 에 묶이고, 같은 모델의 강도 변형은
+  그 report 를 공유한다. 역할(계획자·실행자·검토자·제안자)마다 칸을 따로 배정할 수 있다(L3). 첫 라운드 칸은 Codex
+  gpt-5.6-sol {medium, high}, Claude {claude-sonnet-5, claude-opus-5-5} high 이고 각각 먼저 자격을 받는다.
+- Reason: `reasoning_profile: "provider-default"` 는 읽는 곳이 없었다(`runtime/execution/codex.py:316`). Claude Code
+  2.1.278 은 `--effort` 를, Codex 0.155.1 은 `-c` 로 `model_reasoning_effort` 를 받는다(worker image 확인,
+  https://code.claude.com/docs/en/cli-reference, https://learn.chatgpt.com/docs/config-file/config-reference).
+
+## D-098 — Corpus v2: Public Benchmark Subsets Plus Own Tasks
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 과제 창고는 약 120개다. 공개 벤치 일부(Terminal-Bench 2.0 부터, 라이선스를 먼저 확인)를 adapter 로
+  들여와 넓이와 외부 비교에 쓰고, 자체 과제는 holdout 과 모호한 지시(A1) 영역에 쓴다. Work 030 과제 20개는 퇴행
+  확인 묶음이다. 개발·검증·holdout split 은 `CorpusService` 로 고정한다. 난이도는 선언하지 않고 칸별 calibration 으로
+  잰다. 모든 칸이 늘 통과하는 과제는 퇴행 묶음으로 옮긴다. 누출 차단: 부품 내용에 검증·holdout 과제 id, 숨긴 시험
+  이름, 정답에만 있는 식별자가 들어가면 거절한다.
+- Reason: Codex baseline 이 기존 20개를 모두 통과했다(D-093). 과제 20개의 표준오차는 약 11pp 다.
+
+## D-099 — Evaluator: Superiority, Decision Classes, Accumulating Evidence
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 분석에 성공률 우월성 endpoint 와 판정 등급(개선·효율·동등·퇴행·맞바꿈·판정 불가)을 더한다. 같은 예산의
+  best-of-n baseline 과 비교한다. 과제별 통과율과 pass^k 를 보고한다. 여러 밤에 걸쳐 결과를 쌓을 때는 오류율이
+  부풀지 않는 검정(e-process 또는 always-valid)을 쓰고, 잡음 범위보다 작은 차이는 미결정으로 둔다. 평가기 변경이므로
+  후보 실험과 섞지 않고 먼저 따로 검증한다: 저장된 실험은 기존 판정을 그대로 받는다.
+- Reason: 지금 판정은 비열등성뿐이다(`evaluation/analysis.py:203-215`). 같은 예산이면 단순 병렬 시도가 harness
+  진화보다 나았다는 결과가 있다(https://arxiv.org/html/2607.12227).
+
+## D-100 — Proposer Reads Sanitized Traces And States Predictions
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: meta-harness 연습 과제 실험의 실행 기록만 저장한다: 보이는 메시지·도구 호출·잘린 도구 출력, 추론 항목은
+  제외, 비밀값 검사 후 저장, 제안자 역할만 읽고 내보내지 않는다. 사용자 목표의 기록은 저장하지 않는다. 제안자는
+  개발 split 의 기록과 점수로 부품 변경안을 만들고, 좋아질 과제와 나빠질 과제를 예측한다. 평가 뒤 예측 정확도를
+  기록한다. 누출 차단이 출력을 검사한다.
+- Reason: 기록을 주면 median 50.0%, 점수만 주면 34.6% 였다(https://arxiv.org/html/2603.28052). 지금 driver 는
+  digest·id·usage 만 남긴다(`agent_drivers/codex_app_server.py:299`).
+
+## D-101 — Remove V1, V2 And Unused V3
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: V1·V2 를 제거하고 V3 에서 쓰지 않는 것도 정리한다. V3 방식 개발에 꼭 필요한 것만 옮기고, 옛 기능을
+  유지하려는 이전은 하지 않는다. 순서: 근거를 붙인 목록 → 운영자 승인 → 필수만 이전 → 삭제 → CI 통과. 이 Work 의
+  마지막 단계다.
+- Reason: 운영자는 앞으로 V3 방식으로만 개발한다(2026-09-30).
+
+## D-102 — Execution Strategies And Per-Layer Deciders
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 실행 방식 10가지(싱글, 수리 루프, 워크그래프, 계획→실행, Best-of-N, 생성자+검토자, 단계적 상향,
+  오케스트레이터, 병렬 읽기, 투표)를 모두 구현한다. 레이어마다 판단자가 정보가 생기는 시점(접수, 계획 후, 실행 직전,
+  실패 시, 최종 검증 전)에 판단한다. 판단 방식도 부품이다(입력 정보, 추정 방식, 선택 규칙, 대체 규칙). 기본 규칙:
+  최고보다 확실히 나쁘지 않은 선택지 중 성공 1건당 비용이 가장 낮은 것, 표본이 부족하면 오늘의 동작. 묶음은 근거가
+  있는 만큼만 잘게 나눈다(partial pooling). 실제 사용자 목표에서는 탐색하지 않고, dispatch 뒤 조합은 바꾸지 않는다.
+  쓰기 동시 실행은 저장소당 1개, 읽기 전용 단계는 최대 4개다(design 07 §4).
+- Reason: 운영자 결정(2026-09-30). 연구상 부품 효과는 서로 더해지지 않고 모델에 따라 반대로 나온다
+  (https://arxiv.org/html/2604.25850, https://arxiv.org/abs/2609.20804).
+
+## D-103 — The Judge Is A Selectable Component
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 판정 모델은 부품이다(없음, Jev, LLM 칸). (판정 모델, 질문 종류) 짝마다 알려진 결과로 정확도·보정·반복
+  안정성·비용·시간을 재서 자격을 준다. 자격이 있는 것 중 가장 정확한 것보다 확실히 덜 정확하지 않은 것 가운데 가장
+  싸고 빠른 것을 쓴다. 외부로 목표 문장을 보내는 판정 모델은 데이터 등급으로 제한한다(기본: 연습 과제). 연결부는
+  하나다. Jev 연결부는 지금 만들고 실제 연결은 시스템 완성 뒤 접근이 확인되면 한다.
+- Reason: 운영자 결정(2026-09-30). Jev 는 형식이 정해진 답과 확률을 준다(https://www.langchain.com/blog/jev-agent-evals-langsmith).
+
+## D-104 — Experiment Operations: The Nightly Loop
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 하룻밤 예산 안에서 변화 감지(약 10%), 중요 레이어 찾기(초기), 탐색(약 60%: 예측 모델과 제안자가 고른
+  후보를 과제 일부로 거름), 확인(약 30%)을 돌린다. 이미 잰 (설정, 과제, 모델 snapshot, corpus 버전)은 다시 돌리지
+  않는다. 실험 시험은 과제마다 container 가 분리되므로 병렬로 돌린다. 예산은 3밤 동안 약 150회 시범으로 구독 사용량을
+  잰 뒤, 측정된 여유의 비율로 정한다(기본: 구독 한도의 절반 이상을 운영자 몫으로 남긴다).
+- Reason: 조합 공간은 수백 가지 이상이다. 중요한 설정은 일부뿐이었다(HARBOR, https://arxiv.org/html/2604.20938).
+
+## D-105 — The Evaluation Is Measured And Versioned
+
+- Status: accepted (운영자 결정 2026-09-30, Work 033 설계)
+- Date: 2026-09-30
+- Decision: 평가 자체를 잰다: 구별력(좋은·나쁜 대조군이 갈리는가), 포화, 채점 흔들림, 오염, 개발·holdout 차이,
+  실제 결과(canary 목표, merge 된 PR, D-078)와의 일치, 영역 비중, 결론당 비용. 평가 변경(과제 퇴출·추가·가중치,
+  반복, 단계)은 별도 버전 트랙이다: 따로 검증하고 운영자가 승인하며 후보 실험 안에서 바꾸지 않는다.
+- Reason: 평가를 후보와 함께 바꾸면 효과를 구분할 수 없다(`design-reference/design/16_META_HARNESS.md:27`).

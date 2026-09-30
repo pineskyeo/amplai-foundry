@@ -1,0 +1,387 @@
+{
+  "active_decisions": [
+    {
+      "evidence": [],
+      "id": "D-046",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Move workflow ordering from the human procedure to the /work controller",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-051",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Install AMPLAI Loop Kit 2.1.0 as a removable layer, not a replacement",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-052",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "The Project Store owns the supervisor's code and its right to run",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-053",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "amplai-foundry owns the kit source and distributes it to the other apps",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-054",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Relax cortex's .ai-team top-level guard to allow the kit's three, not delete it",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-055",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make Claude Code and Codex first-class hosts without forking the loop",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-057",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Make stranded limit an output cap so filtered reads report truncation",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-065",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Close V3 execution only through a real qualified driver",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-067",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Codex CLI is the first production driver",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-074",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Local execution metrics from the audit trail",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-076",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Task class for local execution; active ledger as a catalog document",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-077",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Task class recorded beside the graph, not in the 3.0.0 workgraph schema",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-078",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Draft PR outcomes are recorded",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-079",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "The system selects the composition; Claude CLI is the qualified fallback",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-080",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Design mode produces a verified design document",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-081",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "One goal across several apps",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-082",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Steering and replanning on the real path",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-083",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "A steered turn accepts steering and replanning again",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-085",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Codex CLI run cost stays unknown on a ChatGPT account",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-086",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "A plan starts from the remote base branch fetched now",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-088",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "An experiment may declare that cost is not compared",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-089",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "The meta-harness runs on real runs",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-091",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Driver provider credentials are readable by the agent's tools; the risk is accepted and recorded",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-092",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "A canary may declare that cost is not compared",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-094",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "Usage detail, dated price tables and API-equivalent cost; descriptive trial metrics",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "D-095",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "reason": "OpenCode is the third driver: a server per dispatch, password on, env guard",
+      "source_sha256": "7554a140a84b908a8c7ffa7fbe418d95b4a103ba4ba827b678487caba77d1309",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "MGC-012",
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "reason": "Messenger governance closure — Slack interaction authority and proposal cards",
+      "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "amplai-constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "AMPLAI foundry constitution",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    }
+  ],
+  "code_scope": [
+    "src/amplai_foundry/meta_harness/",
+    "src/amplai_foundry/evaluation/analysis.py",
+    "src/amplai_foundry/evaluation/service.py",
+    "src/amplai_foundry/runtime/execution/meta_local.py",
+    "src/amplai_foundry/runtime/execution/meta_ops.py",
+    "src/amplai_foundry/runtime/execution/releases.py",
+    "src/amplai_foundry/runtime/execution/loop.py",
+    "src/amplai_foundry/runtime/execution/prompts.py",
+    "src/amplai_foundry/runtime/execution/product.py",
+    "src/amplai_foundry/runtime/execution/codex.py",
+    "src/amplai_foundry/runtime/local_deployment.py",
+    "src/amplai_foundry/runtime/meta_cli.py",
+    "src/amplai_foundry/runtime/cli.py",
+    "src/amplai_foundry/agent_drivers/cli.py",
+    "scripts/corpus_check.py",
+    "scripts/meta_smoke.py",
+    "specs/033-harness-taxonomy/",
+    "tests/v3/",
+    "tests/e2e/",
+    "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+    "docs/v3/USING_AMPLAI_WORK.ko.md",
+    "docs/workstreams/v3-real-execution/DECISIONS.md"
+  ],
+  "content_hash": "dea6287d4e50f9fbef35a6acca2dba80961f1c3a6ebcf063a8e5b6df948e056b",
+  "generated_from": {
+    "claims_sha256": "8dca0671686b1b88a40ad4e5307cf5fe6ff2728e09d4042bc8d3a5299455f9c2",
+    "commit": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
+    "contract_sha256": "6cfdff51c78c797fd55749570777b5c1517464c369e461be1afd1e032d7d54fe",
+    "decisions_sha256": "71a9c64a046edaf3079bf5b1de9d0718495e04f086919f7bc1cf55705848a58e",
+    "discovery_sha256": "199c60217350e34c9cbb25ec8dae19fb9cb47db32059793cd2fe1ad2db3a4b91",
+    "document_selection_sha256": "19b61f66425fa71f300de0ead951eeb839ca23b8ba180cd67a194645dd18450a",
+    "generated_at": "2026-09-30T10:05:27Z",
+    "knowledge_map_sha256": "32c54054154f4513a1ded352b587d8ef1a0aa10dc0084855bfb6324726219eb4",
+    "readiness_sha256": "e1650b6363e04df20f67c231afac1c255aac7e2f4da8cd8468ad5040ca8a792f",
+    "worktree_dirty": true,
+    "worktree_state": "WORKTREE"
+  },
+  "goal": "The operator runs the V3 meta-harness end to end on real executions: harness components switch on/off/version per (model, reasoning effort) cell, experiments follow screening -> paired focused comparison -> ablation -> held-out -> canary with a budget-matched baseline and an explicit decision rule, a proposer drafts component edits from raw traces with predictions, and a read-only HTML dashboard shows per-cell performance, the best composition per cell, ablation contributions, lineage and pending approvals.",
+  "knowledge_verdict": "READY",
+  "ontology_refs": [],
+  "required_knowledge": [
+    {
+      "evidence": [],
+      "id": "loop-runtime-workflow",
+      "path": ".ai-team/runtime/WORKFLOW.md",
+      "reason": "keyword:on,off,and,an,runtime",
+      "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-policy",
+      "path": ".ai-team/runtime/policy.json",
+      "reason": "keyword:on,per,runtime",
+      "source_sha256": "de4d8eac14b786a9ef2be3347600312ff7a6be9622f8b603339c08ccbd7ed727",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "loop-runtime-readme",
+      "path": ".ai-team/README.md",
+      "reason": "keyword:on,an,runtime",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-claude-contract",
+      "path": "CLAUDE.md",
+      "reason": "keyword:on,and,an",
+      "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "root-agent-contract",
+      "path": "AGENTS.md",
+      "reason": "keyword:on,rule",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "reason": "keyword:on,an",
+      "source_sha256": "d20cfafcdd1ec488107c67987e7697ef6d63052a29895ef099bf60af0284db19",
+      "status": "active"
+    },
+    {
+      "evidence": [],
+      "id": "verifier-registry",
+      "path": ".ai-team/verifiers/registry.json",
+      "reason": "keyword:on",
+      "source_sha256": "28fd7b916a0affe70ef8967bf33e7ef1d3e9ed9888fccea1a1cc3acc29720f2a",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "What Was Not Ported",
+          "path": "AGENTS.md",
+          "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+          "type": "doc"
+        },
+        {
+          "locator": "D-046",
+          "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "source_sha256": "afd8b57e36fd122f120346cf5d4b05a6b0d5030d7b04dac9e8c73cd76458b825",
+          "type": "decision"
+        }
+      ],
+      "id": "claim-semantic-runtime-not-ported",
+      "path": "AGENTS.md",
+      "reason": "active claim",
+      "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3",
+      "status": "active"
+    },
+    {
+      "evidence": [
+        {
+          "locator": "Work Memory",
+          "path": ".ai-team/README.md",
+          "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+          "type": "doc"
+        },
+        {
+          "path": ".ai-team/contracts/work-contract.schema.json",
+          "source_sha256": "7c748fa2f3b7308646aba30c76e378dce9ea292cf24ee3808ddfcfd492db2896",
+          "type": "artifact"
+        }
+      ],
+      "id": "claim-work-artifact-isolation",
+      "path": ".ai-team/README.md",
+      "reason": "active claim",
+      "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da",
+      "status": "active"
+    }
+  ],
+  "schema_version": "1.0",
+  "test_scope": [
+    "tests/fixtures/codex-workflow/01-new-concept.md",
+    "tests/fixtures/codex-workflow/02-concept-update.md",
+    "tests/fixtures/codex-workflow/03-decision-conflict.md",
+    "tests/fixtures/codex-workflow/04-duplicate.md",
+    "tests/fixtures/codex-workflow/05-open-question.md",
+    "tests/fixtures/codex-workflow/06-mixed-long-response.md",
+    "tests/fixtures/codex-workflow/README.md",
+    "tests/fixtures/invalid-lifecycle/30-decisions/decision.md",
+    "tests/test_decisions.py",
+    "tests/v3/test_dev03_meta_harness.py",
+    "tests/v3/test_rc06_local_product.py",
+    "tests/v3/test_rc09_meta_local.py",
+    "tests/v3/test_rc12_meta_cli.py"
+  ],
+  "unknowns": [],
+  "verifier_profile": "v2",
+  "work_id": "033-meta-harness-system"
+}

@@ -1,0 +1,31 @@
+{
+  "task_id": "work030-s04-human-bytes",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/s04-human-bytes",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a new module `demo_app/formatting.py` with a function `human_bytes(n: int) -> str` that formats a byte count for people using 1024-based units named `B`, `KiB`, `MiB`, `GiB`, `TiB` (1 KiB = 1024 B, 1 MiB = 1024 KiB, and so on). Pick the largest unit whose size is less than or equal to `n` (`B` when `n` is below 1024; `TiB` for anything from 1024**4 upwards, however large, so there is no unit above `TiB`). For `B` the output is the integer followed by a space and `B`, with no decimals (`512 B`). For every other unit the output is `n` divided by the unit size, formatted with exactly one digit after the decimal point (Python's `f\"{value:.1f}\"`), then a space and the unit name (`1.5 KiB`). The unit is chosen from `n` before rounding, so a value that rounds up to 1024.0 stays in its unit. A negative `n` raises ValueError.",
+  "acceptance": [
+    "human_bytes(0) returns '0 B', human_bytes(1) returns '1 B' and human_bytes(1023) returns '1023 B'",
+    "human_bytes(1024) returns '1.0 KiB', human_bytes(1536) returns '1.5 KiB' and human_bytes(1100) returns '1.1 KiB'",
+    "human_bytes(1048576) returns '1.0 MiB', human_bytes(10 * 1024**2 + 512 * 1024) returns '10.5 MiB'",
+    "human_bytes(1024**3) returns '1.0 GiB' and human_bytes(3 * 1024**3) returns '3.0 GiB'",
+    "human_bytes(1024**4) returns '1.0 TiB' and human_bytes(1024**5) returns '1024.0 TiB' (TiB is the largest unit)",
+    "The unit is chosen before rounding: human_bytes(1048575) returns '1024.0 KiB', not '1.0 MiB'",
+    "human_bytes(-1) and human_bytes(-1024) raise ValueError"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

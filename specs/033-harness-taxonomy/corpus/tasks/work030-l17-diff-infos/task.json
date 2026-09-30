@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-l17-diff-infos",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/l17-diff-infos",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/diffing.py` that compares two version-info dicts and formats the result. It defines two public functions.\n\n`diff_infos(old: dict, new: dict) -> list[dict]` compares two flat dicts whose keys and values are strings. It returns a new list of change dicts, one per key whose state differs, sorted by key with Python's default `str` ordering. Every change dict has exactly the four keys `key`, `kind`, `old`, `new`:\n- key present only in `new`: `{\"key\": k, \"kind\": \"added\", \"old\": None, \"new\": <new value>}`\n- key present only in `old`: `{\"key\": k, \"kind\": \"removed\", \"old\": <old value>, \"new\": None}`\n- key present in both with different values: `{\"key\": k, \"kind\": \"changed\", \"old\": <old value>, \"new\": <new value>}`\n- key present in both with equal values: no entry.\nPresence is decided by the key alone: the empty string is a real value (a key mapped to `\"\"` is present). If any value in `old` or in `new` is not a `str` (including `None`, numbers, booleans, lists), `diff_infos` raises `TypeError`, even when that key is equal in both dicts or would produce no change. The input dicts are never modified.\n\n`format_diff(changes: list[dict]) -> str` renders a list of change dicts (as produced by `diff_infos`) with one line per change, in the given order: `+ <key>: <new>` for `added`, `- <key>: <old>` for `removed`, and `~ <key>: <old> -> <new>` for `changed`. Values are inserted as they are, with no quoting or escaping (an empty value leaves the text after the colon-and-space empty). Lines are joined with a single `\\n`, with no trailing newline; an empty list gives the empty string `\"\"`.\n\nThe existing `demo_app/version_report.py` and its test stay as they are.",
+  "acceptance": [
+    "diff_infos({'a': '1'}, {'a': '1', 'b': '2'}) returns [{'key': 'b', 'kind': 'added', 'old': None, 'new': '2'}]",
+    "removed keys give old=value and new=None; changed keys give both values; equal keys give nothing; identical dicts and two empty dicts give []",
+    "The result is sorted by key with default str ordering (for example 'B' before 'a', 'a10' before 'a9')",
+    "A key mapped to the empty string counts as present: {'a': ''} to {} is removed with old '', and {} to {'a': ''} is added with new ''",
+    "Any non-str value in either dict (None, int, bool, list) raises TypeError, even for a key that is equal in both dicts; inputs are not modified",
+    "format_diff renders '+ key: new', '- key: old', '~ key: old -> new' joined by '\\n' with no trailing newline, and '' for an empty list"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}

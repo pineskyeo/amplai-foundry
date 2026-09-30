@@ -1,0 +1,119 @@
+You are the IMPLEMENTER for AMPLAI. The current directory is a copy of the amplai-demo-app repository at commit 9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b (no .git, network limited).
+Make the change below. Do not commit. When you are done, run the acceptance commands yourself; the result is judged by running them on a clean copy with exactly your file changes applied.
+
+Objective: Add a module `demo_app/semver.py` with a function `parse_version(text: str) -> tuple[int, int, int]` that turns a `MAJOR.MINOR.PATCH` string into a tuple of three ints. A single leading `v` is allowed (`v1.2.3`). Surrounding whitespace is ignored.
+In scope: demo_app/; tests/
+Do not: no change outside the stated behaviour
+Constraints: keep the existing public behaviour and tests passing
+Acceptance (each must pass):
+- AC-1: parse_version('1.2.3') returns (1, 2, 3) and parse_version('v10.0.7') returns (10, 0, 7)  command: `python -m pytest -q`
+- AC-2: parse_version('  2.0.1 ') returns (2, 0, 1)  command: `python -m pytest -q`
+- AC-3: Text with fewer or more than three dot-separated parts, an empty string, or a non-numeric part raises ValueError  command: `python -m pytest -q`
+- AC-4: A negative number or a part with a sign (for example '1.-2.3' or '+1.2.3') raises ValueError  command: `python -m pytest -q`
+- AC-5: the linter passes  command: `ruff check .`
+
+The previous attempt did not pass. The directory already contains that attempt's changes. Fix what failed:
+- AC-1 fail: AC-1 fail reason
+```
+iling run
+line 00067 of the failing run
+line 00068 of the failing run
+line 00069 of the failing run
+line 00070 of the failing run
+line 00071 of the failing run
+line 00072 of the failing run
+line 00073 of the failing run
+line 00074 of the failing run
+line 00075 of the failing run
+line 00076 of the failing run
+line 00077 of the failing run
+line 00078 of the failing run
+line 00079 of the failing run
+line 00080 of the failing run
+line 00081 of the failing run
+line 00082 of the failing run
+line 00083 of the failing run
+line 00084 of the failing run
+line 00085 of the failing run
+line 00086 of the failing run
+line 00087 of the failing run
+line 00088 of the failing run
+line 00089 of the failing run
+line 00090 of the failing run
+line 00091 of the failing run
+line 00092 of the failing run
+line 00093 of the failing run
+line 00094 of the failing run
+line 00095 of the failing run
+line 00096 of the failing run
+line 00097 of the failing run
+line 00098 of the failing run
+line 00099 of the failing run
+line 00100 of the failing run
+line 00101 of the failing run
+line 00102 of the failing run
+line 00103 of the failing run
+line 00104 of the failing run
+line 00105 of the failing run
+line 00106 of the failing run
+line 00107 of the failing run
+line 00108 of the failing run
+line 00109 of the failing run
+line 00110 of the failing run
+line 00111 of the failing run
+line 00112 of the failing run
+line 00113 of the failing run
+line 00114 of the failing run
+line 00115 of the failing run
+line 00116 of the failing run
+line 00117 of the failing run
+line 00118 of the failing run
+line 00119 of the failing run
+line 00120 of the failing run
+line 00121 of the failing run
+line 00122 of the failing run
+line 00123 of the failing run
+line 00124 of the failing run
+line 00125 of the failing run
+line 00126 of the failing run
+line 00127 of the failing run
+line 00128 of the failing run
+line 00129 of the failing run
+line 00130 of the failing run
+line 00131 of the failing run
+line 00132 of the failing run
+line 00133 of the failing run
+line 00134 of the failing run
+line 00135 of the failing run
+line 00136 of the failing run
+line 00137 of the failing run
+line 00138 of the failing run
+line 00139 of the failing run
+line 00140 of the failing run
+line 00141 of the failing run
+line 00142 of the failing run
+line 00143 of the failing run
+line 00144 of the failing run
+line 00145 of the failing run
+line 00146 of the failing run
+line 00147 of the failing run
+line 00148 of the failing run
+line 00149 of the failing run
+line 00150 of the failing run
+line 00151 of the failing run
+line 00152 of the failing run
+line 00153 of the failing run
+line 00154 of the failing run
+line 00155 of the failing run
+line 00156 of the failing run
+line 00157 of the failing run
+line 00158 of the failing run
+line 00159 of the failing run
+line 00160 of the failing run
+line 00161 of the failing run
+line 00162 of the failing run
+line 00163 of the failing run
+line 00164 of the failing run
+line 00165 of the failing run
+line 00166 of the fa
+```

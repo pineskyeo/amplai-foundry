@@ -1,0 +1,1803 @@
+{
+  "blocking_questions": [],
+  "contradictions": [],
+  "evidence_candidates": [
+    {
+      "locators": [
+        "line:11:Use the existing work entry point in the app repository: Claude Code /work or Codex",
+        "line:12:$work. The controller reads the assigned Work, contract, source evidence and repository",
+        "line:16:Governing inputs are the explicitly configured repository instructions and applicable",
+        "line:18:the rules needed to perform that review. The generic baseline requires AGENTS.md, its",
+        "line:20:Decision-ledger paths through the documentation policy's governing_inputs list.",
+        "line:22:is not selected wholesale; only active indexed Decisions and their typed evidence"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/PORTABLE-DEVELOPMENT.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:5:`amplai_hosts.py` is the only place that knows how Claude Code, Codex, or a generic command builds argv, redacts prompts, extracts continuation IDs, and shapes ",
+        "line:12:Both enter the same Work/Question/Evidence/Decision protocol.",
+        "line:30:`promotion_envelope()` carries origin store/project/object reference, local content hash, deterministic idempotency key, and payload.  A Platform outage does no",
+        "line:34:The added `federation` member is optional in the JSON schemas.  Existing 2.3.1 Project Store Decision/Evidence files therefore remain readable and do not requir"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:Status: implementation candidate.  This release adds the service/control-plane boundary without rewriting the existing Governance Store or the Loop Kit Project ",
+        "line:7:- Platform owns canonical Source/Knowledge/Decision references, project-scoped authentication, durable service jobs, event/outbox delivery, and replayable proje",
+        "line:9:- Claude Code and Codex are host adapters of the Kit, never Platform domain dependencies.",
+        "line:35:Tokens are project-scoped and only their SHA-256 digest is persisted.",
+        "line:39:Context work uses `pending → running → done/dead` with lease token, expiry, heartbeat/retry semantics.  Event creation and outbox insertion occur in the same SQ",
+        "line:43:Connector configuration identifies a destination and optional secret reference.  Raw secret material is resolved at send time by a `SecretResolver` and is not s"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:362:- authenticated API와 Project/Tenant authorization"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/reviews/2026-08-29-platform-kit-audit.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:271:│ Run · Eval · Failure Pattern → Hypothesis → Experiment → Proposal             │",
+        "line:1169:- Improvement hypothesis generator"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:186:│ Pattern Detection → Hypothesis → Experiment → Proposal → Review → Promotion  │",
+        "line:904:- Improvement hypothesis generator"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:Checked 2026-09-16. Primary documentation below informed protocol handling; the approved V3 design files are unchanged. Documentation availability is not deploy",
+        "line:5:- OpenCode Server: https://opencode.ai/docs/server/ — authentication, `/global/health`, explicit sessions, asynchronous prompt receipt, status/messages, abort. ",
+        "line:6:- Claude Code programmatic use: https://code.claude.com/docs/en/headless — print/JSONL output, explicit model and session resumption. Actual supported flags/bin"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:3:Checked 2026-09-16. These notes explain implementation choices; the approved V3 design is unchanged. They are not additional normative acceptance claims.",
+        "line:9:| SQLite transactions — https://www.sqlite.org/lang_transaction.html | BEGIN IMMEDIATE reservation before executing callbacks; writes serialize around allocatio",
+        "line:11:Cost benefit uses a deterministic predeclared paired task-mean percentile bootstrap implemented locally, with explicit compute bounds and approximate status. Un"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:117:| 1 | `amplai meta propose --suffix S --prompt-file F --hypothesis … --benefit … --observation … --risk …` | 후보 prompt(파일의 각 줄)를 제안한다. `{app_id}`, `{base_commit"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:88:\"The Local Supervisor is intentionally not the V3 distributed execution fabric. It does not",
+        "line:132:helpers. They must not prevent Claude Code from starting or ending when the Project Store is",
+        "line:225:> CR/Work/Decision/Evidence in the Project Store are authoritative; **rendered handoff text is"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:237:| `tests/ai/test_amplai_kit_installer.py` | **skip 된다.** docstring 이 \"skipped when the kit source is not vendored\" 로 그렇게 설계했다고 명시한다 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:17:| `APR-011` | MGC-012 Package 1 Slack raw authentication gate | PASS | `ef35201`, 649 tests, all seven verify stages, three subagent reviews with zero blockers "
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/APPROVALS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:14:- Authenticator → durable ingress → worker AuthorityContext integration PASS"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-1-gate-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:44:| retry → hold | `test_transient_decision_failure_keeps_the_retry_budget` |",
+        "line:47:| replay 순서 되돌리기 | `test_committed_decision_replays_after_the_actor_loses_permission` |",
+        "line:48:| `_replay_ingress_result` guard 3종 각각 제거 | `test_a_foreign_result_under_the_same_key_is_a_conflict` |",
+        "line:50:| `stranded()` leased clause 제거 | `test_an_expired_lease_on_the_last_attempt_is_stranded` |",
+        "line:51:| `stranded()` live lease 과다 보고 | `test_a_live_lease_on_the_last_attempt_is_not_stranded` |",
+        "line:58:| `committed_decision` None-guard 제거 | `test_committed_decision_is_none_when_the_command_row_is_gone` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:30:| T1 | retry 경로 증거 0 | `test_transient_decision_failure_keeps_the_retry_budget` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:44:| R4 | `stranded()`의 `dead_letter` 분기에 test 증거 0 | `test_retry_exhausted_command_is_stranded_before_the_sweep` |",
+        "line:54:| `stranded()`에서 dead_letter/retry_wait 제외 | `test_retry_exhausted_command_is_stranded_before_the_sweep` |",
+        "line:56:| replay 순서 되돌리기 | `test_committed_decision_replays_after_the_actor_loses_permission` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:76:- synthetic hold gate test 는 production 이 못 만드는 상태를 못박는다. 그 gate 가 유일한"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:12:| 1 | regression | P1 | `send()` 가 marker 를 통째로 빼먹어도 106개 test 가 전부 통과한다. mutation 으로 확인했다 (`marker={}` → 106 passed) | `test_send_passes_the_configured_channel",
+        "line:13:| 2 | contract / regression | Blocking-P2 / P1 | `test_destination_satisfies_the_projection_destination_protocol` 이 거짓을 주장하며 항상 통과한다. `reconcile` 이 없어 Protocol ",
+        "line:89:- `test_without_the_exhaustion_rule_the_cause_is_lost` 는 C-3.1 을 지워도 실패하지 않는다. 대조군이라 의도한 것이고 C-3.1 의 coverage 로 세면 안 된다 (regression A4)",
+        "line:117:- 성공 경로 test 의 marker 단언이 양변에 같은 함수를 써서 marker **내용**은 안 잡힌다 (mutation 으로 확인 — `payload_digest` 를 빼도 통과). 내용을 고정하는 것은 `test_marker_carries_the_four_identity_fie"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:contract lens 의 첫 full-suite 실행에서 `test_the_hold_gate_alone_...` 이 한 번 실패했고",
+        "line:65:sequence gate 가 늘 같이 막기 때문이다. synthetic test 로 teeth 를 줬다",
+        "line:140:| `events.py:2634` `operator_hold = 0` → `IN (0, 1)` | `test_the_hold_gate_alone_...` (유일) |",
+        "line:142:| post-send guard 무력화 | `test_the_last_attempt_holds_...` (유일) |",
+        "line:184:- **synthetic hold gate test 는 production 이 못 만드는 상태를 못박는다.**"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:31:HTTP 200 {\"error\": \"authentication required\"}          → terminal → 영구 hold"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:`MUST produce the unavailable safe outcome` 을 어긴다. **spec 을 고칠지, 코드를 고칠지**가"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:43:신규 synthetic hold provenance와 exact deletion은 additive v29의",
+        "line:44:`scope_version=2`로만 생성한다. v1 synthetic hold는 삭제하지 않고 exact migration",
+        "line:52:`changes_requested` Proposal만 허용한다. applied/dependent root와 unresolved synthetic",
+        "line:60:- Decision: activation 후 definition correction은 authenticated recovery plan과 exact",
+        "line:76:## D-011 — Slack Authentication Boundary",
+        "line:1148:\"Review the clarified spec\" 으로 고쳤다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:309:- Evidence: `tests/v3/test_rc02_runtime.py::test_estimated_usage_settles_tokens_and_records_the_cost_estimate`."
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:180:나머지는 terminal 이다. 대표적으로 `channel_not_found`, `invalid_auth`, `not_authed`,"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/research.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:85:then: retryable 로 분류한다",
+        "line:89:then: terminal 로 분류하고 OutboxReconcileError 로 대응시킨다",
+        "line:94:then: 형식과 무관하게 terminal 로 분류한다. 형식 때문에 값을 버리지 않는다",
+        "line:98:then: status code 와 무관하게 retryable 로 분류한다",
+        "line:102:then: stdlib, amplai_foundry, pydantic 밖의 module 을 import 하지 않는다.",
+        "line:107:then: 정규화 후 판정한다. 빈 값과 str 아닌 값은 code 없음으로 보고 retryable 이다."
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:117:then: OutboxReconcileError(\"OUTBOX_DESTINATION_MISMATCH\") 로 실패하고 transport 를",
+        "line:122:then: OutboxReconcileError(\"OUTBOX_PAYLOAD_INTEGRITY_FAILURE\") 로 실패하고",
+        "line:127:then: slack:{channel}:{ts} 형식의 receipt 를 반환한다",
+        "line:131:then: marker 에 event_id, destination_ref, destination_sequence, payload_digest 가",
+        "line:137:then: 두 값이 같다",
+        "line:141:then: destination 이 그것을 잡아 재감싼 뒤 분류한다. 분류를 건너뛰지 않는다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:114:then: slack:{channel}:{ts} receipt 를 반환하고 send 로 가지 않는다",
+        "line:119:then: None 을 반환한다",
+        "line:124:then: OutboxReconcileError 를 던진다. code 로 상한 도달이 원인임을 알 수 있다",
+        "line:129:then: 그 message 를 이 event 의 marker 로 인정하지 않는다",
+        "line:133:then: page 수가 max_history_pages 를 넘지 않고 limit 은 999 로 나간다.",
+        "line:139:then: 문자열이 같다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: Ordered delivery and supersession through the real dispatcher",
+        "line:74:then: 1 이 delivered 되기 전에 2 를 transport 로 보내지 않는다",
+        "line:78:then: 한쪽만 전송하고 다른 쪽은 lease 를 얻지 못한다",
+        "line:82:then: superseded event 는 transport 로 나가지 않고 새 event 만 전달된다",
+        "line:86:then: 마지막으로 전달한 destination_sequence 와 같다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:103:then: reconcile 이 marker 를 찾아 delivered 로 확정하고 Slack message 는 하나뿐이다",
+        "line:113:then: dead_letter 와 outbox_destination scope 의 operator hold 가 생기고 재전송하지",
+        "line:118:then: 그 event 를 claim 하지 않는다",
+        "line:122:then: event 가 retry_wait 로 가고 attempts 가 오른다",
+        "line:126:then: attempts 소진을 기다리지 않고 dead_letter 와 hold 가 생긴다",
+        "line:130:then: event 가 retry_wait 로 간다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:58:title: Ordered delivery and supersession through the real dispatcher",
+        "line:415:것에 synthetic test 로 teeth 부여, AC-01 순서 test 가 앞 sequence gate 를 지워도",
+        "line:439:여유 0 으로 착지하던 resume helper (cap + 1 로), synthetic test 주석이"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:<!-- DO NOT EDIT BY HAND. Source of truth is task-manifests/index.yaml + the per-task YAML manifests. -->",
+        "line:19:- MGC-012-T004 (done) Ordered delivery and supersession through the real dispatcher"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/001-mgc-012-slack-reference-adapter/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:7:**Note**: This checklist evaluates the written requirements. It does not validate implementation behavior.",
+        "line:12:- [x] CHK002 Are cleanup-attempt obligations defined for both successful and failed readback without weakening the different startup decisions? [Completeness, S",
+        "line:13:- [x] CHK003 Does the spec define the required disposition for every durable lifecycle state, including unknown, corrupt, or unsupported state values? [Gap, Spe",
+        "line:14:- [x] CHK004 Is the ownership and permitted mechanism for resolving a permanently blocked probe explicitly defined or explicitly deferred with a follow-up requi",
+        "line:15:- [x] CHK005 Are the requirements for production pre-claim gating, diagnostic emission, and worker activation each assigned to exactly one delivery boundary? [C",
+        "line:19:- [x] CHK006 Are `READY`, `DEGRADED_CLEANUP`, typed hard failure, and `HARD_BLOCKED_NO_POST` defined with mutually exclusive entry conditions and deterministic "
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/checklists/probe-cleanup.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:77:\"The most recent messages in the time range are returned first\" 다.",
+        "line:98:P5 가 범위를 좁힌다 — \"Any internal customer-built apps will maintain their existing rate",
+        "line:99:limits and will not be subject to the new posted limits.\" **자기 workspace 에만 설치하고",
+        "line:196:data as `Content-type: application/json`\" 이고, 그때 token 은 \"as a bearer token in the",
+        "line:198:- 복잡한 인자를 가진 method 에 대해서는 \"these methods can be difficult to properly"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/research.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:160:### User Story 3 - Other Providers Stay Untouched (Priority: P2)"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/spec.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: Real Slack HTTP transport over the standard library",
+        "line:88:then: SlackSendResult 를 돌려주고 요청 body 에 marker 가 metadata 로 실린다",
+        "line:92:then: SlackTransportError 가 그 error code 를 error_code 에 싣고 올라온다",
+        "line:96:then: SlackTransportError 가 error_code 없이 올라온다. classify_slack_failure 가",
+        "line:101:then: 지정한 timeout 안에 SlackTransportError 로 돌아온다",
+        "line:105:then: include_all_metadata 가 true 로 실려 있다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T006.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:75:then: 두 값이 SecretStr 로 반환되고 원문이 repr 에 안 나온다",
+        "line:79:then: 부재와 빈 문자열이 같은 결과다 — 둘 다 \"구성 안 됨\"이다",
+        "line:83:then: 원문 secret 이 포함되지 않는다",
+        "line:87:then: token 이나 signing secret 이 포함되지 않는다",
+        "line:91:then: entrypoint 한 곳뿐이고 core 경로에는 없다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T007.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:113:then: 통과하고 기동을 허용한다",
+        "line:117:then: 기동을 거부하고 원인을 보고한다",
+        "line:121:then: 기동을 거부한다",
+        "line:128:then: 기동을 거부한다",
+        "line:132:then: 기동을 거부한다. 첫 재시도까지 기다리지 않는다",
+        "line:137:then: >-"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T008.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: E2E harness skips loudly and stays out of the default suite",
+        "line:83:then: skip 으로 보고되고 그 이유가 출력된다. pass 로 집계되지 않는다",
+        "line:87:then: E2E 가 아예 선택되지 않고 전체가 통과한다",
+        "line:91:then: 7 stage 가 모두 통과한다",
+        "line:95:then: E2E marker 가 등록돼 있어 unknown marker 경고가 나지 않는다",
+        "line:102:then: SlackSettings 하나로 모이고 secret 둘은 SecretStr 이다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T009.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:90:then: 채널에 Card 가 뜨고 receipt 가 slack:{channel}:{ts} 형식으로 돌아온다",
+        "line:94:then: AC-01 과 **같은 receipt 문자열**을 돌려준다",
+        "line:98:then: app_id 가 우리 app 이고 event_payload 네 필드가 모두 복원된다",
+        "line:102:then: 최신 message 가 먼저 온다 (research R-011 실측 확인)",
+        "line:106:then: 미전송으로 판정한다 (D-023 항목 3)",
+        "line:110:then: skip 으로 보고되고 pass 로 집계되지 않는다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T010.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:title: The real transport leaves other providers untouched",
+        "line:70:then: Telegram destination row 전체와 event state 가 그대로다",
+        "line:74:then: hold 의 scope_ref 가 Slack destination 이고 Telegram 은 계속 claim 가능하다",
+        "line:78:then: 자기 event 를 정상적으로 가져간다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T011.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:80:then: 7 stage 가 모두 통과한다",
+        "line:84:then: 7 stage 가 모두 통과한다",
+        "line:88:then: 회귀 없이 통과한다. 숫자를 고정하지 않는다",
+        "line:92:then: P0·P1·Blocking-P2 가 0건이다",
+        "line:96:then: history-ordering 과 history-oauth-scope 는 닫혔고 transport-readback 은"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T012.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:161:then: claim 성공과 post_message 호출은 각각 최대 1건이고 loser는 HARD_BLOCKED_NO_POST다",
+        "line:167:then: 원인 state가 보존되고 추가 post_message와 worker activation은 각각 0건이다",
+        "line:171:then: >-",
+        "line:177:then: >-",
+        "line:183:then: DEGRADED_CLEANUP으로 worker를 활성화하고 lifecycle은 unresolved 상태를 유지한다",
+        "line:187:then: worker activation은 0건이고 원래 readback cause가 primary로 보존된다"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/MGC-012-T013.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:37:title: Real Slack HTTP transport over the standard library",
+        "line:67:title: E2E harness skips loudly and stays out of the default suite",
+        "line:87:title: The real transport leaves other providers untouched",
+        "line:552:그렇다. 공식 문서가 \"The most recent messages in the time range are returned",
+        "line:858:speckit specify/plan/taskify remediation adds RESPONSE_CHANNEL_MISMATCH as the seventh",
+        "line:861:against the provider-confirmed channel + ts for the new code. Implementation evidence and"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/task-manifests/index.yaml",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:4:<!-- DO NOT EDIT BY HAND. Source of truth is task-manifests/index.yaml + the per-task YAML manifests. -->",
+        "line:33:- MGC-012-T006 (done) Real Slack HTTP transport over the standard library",
+        "line:36:- MGC-012-T009 (done) E2E harness skips loudly and stays out of the default suite",
+        "line:37:- MGC-012-T011 (done) The real transport leaves other providers untouched"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/002-mgc-012-package-4-slack-reference-e2e/tasks.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:5:`BoundedIngressAck` keeps the existing response contract.",
+        "line:7:- Authenticated durable acceptance returns HTTP success within 3 seconds.",
+        "line:9:- The response does not claim the Proposal decision completed.",
+        "line:10:- Rejected authentication or durable acceptance returns the existing fail-closed response.",
+        "line:14:A first successful decision produces no safe outcome. Its user-visible result is the separate",
+        "line:15:Result Card, which the Delivery section below owns. The worker returns nothing here so that one"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/contracts/interaction-feedback.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:17:- active human Actor binding for the Slack external actor",
+        "line:18:- `PROPOSAL_DECIDE` permission in the Proposal project",
+        "line:19:- request channel equal to the reviewer-bound Slack channel",
+        "line:23:The first accepted command designates the reviewer and Slack destination for that immutable snapshot;",
+        "line:24:a later request cannot create another command by changing reviewer or channel.",
+        "line:28:`SlackProjectionDestination` performs these steps:"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/contracts/review-card-lifecycle.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:54:- Fallback: Proposal ID + review requested + reviewer + the same exact expiration",
+        "line:65:The confirm body states that the action applies to the shown Proposal snapshot and names its content",
+        "line:81:Renderer counts Unicode code points. Truncation never touches the stored Proposal definition.",
+        "line:101:- raw credential outside button value in the in-memory request"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/contracts/slack-card-payloads.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:53:| `provider_installation_ref` | TEXT | bound provider installation; restores the authority request |",
+        "line:61:`state_revision` + `decision_epoch` has one command. The first command designates the reviewer and",
+        "line:63:second Review Card for the same snapshot.",
+        "line:65:Replay rule: Same `idempotency_key` and fingerprint returns the existing command/event. Same key with",
+        "line:66:another fingerprint raises `IDEMPOTENCY_CONFLICT`.",
+        "line:92:Slack authorization scope is the `workspace_id` + `channel_id` pair. A request-side `message_id`, when"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/data-model.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:419:\"line:18:The background worker maps every other internal result to a closed public vocabulary.\"",
+        "line:429:\"line:13:| Reviews | wave 4 (`MGC-012-P5-T004`…`T007`) on top of the round 10 implementation |\",",
+        "line:631:\"line:47:| M40 | 감사 대조에서 actor 성분 제거 | **killed** (round 11 SURVIVED) | `test_reconcile_rejects_a_review_card_audit_bound_to_another_actor` |\",",
+        "line:831:\"line:81:| `test_connect_still_normalizes_the_failure_round_14_asked_for` | `GovernanceFilesystemError` 정규화는 유지된다 |\",",
+        "line:1005:\"line:48:- Round 11 reviews the convergence wave `MGC-012-P5-T004` … `T007` on top of the round 10\","
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/domain-discovery.json",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:13:{\"data\": {\"blockers_closed\": 5, \"next\": \"round 19 freeze then review\", \"tasks\": [\"MGC-012-P5-T038\", \"MGC-012-P5-T039\", \"MGC-012-P5-T040\"]}, \"event\": \"wave_12_do"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence-trace.jsonl",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:13:| Reviews | wave 4 (`MGC-012-P5-T004`…`T007`) on top of the round 10 implementation |",
+        "line:139:계약이 침묵의 근거로 쓴 문장은 \"the next attempt decides\" 다. 소진된 command 에는 다음 attempt"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-11.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:55:계약이 승격을 안전하다고 선언한 근거는 \"the outcome is known\" 이다. 그 전제가 이 경우 거짓이다.",
+        "line:102:`use … rather than bypassing them` 으로 바꿨다. 삭제된 절이 바로 `T010` 의 재분류가 위반했을 절이다."
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-12.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:97:**FR-026 이 `MUST produce the unavailable safe outcome` 이라고 요구하는데 `D-039` 가 그것을",
+        "line:111:`Two endings are possible and they are not the same.` 그리고 \"worker 가 관측한 마지막 attempt"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-13.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:114:`test_no_transport_entry_point_leaks_the_bot_token_in_its_traceback` 의 형제 셋은",
+        "line:124:*\"`stranded()` lists all three endings. It is the operator's entry point for any of them.\"*",
+        "line:156:102:- Background processing of a reviewer action runs out of retries: the reviewer is",
+        "line:157:told the action is unavailable, and the command remains listed for operator recovery.",
+        "line:188:observing the outcome\")인데 FR-026 과 계약이 좁혔다. `D-041` 은 committed-decision 종점"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-14.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:59:test)과 신규 `..._leaves_the_send_frame` 둘이 죽는다. masking 이 무엇을 가렸는지의 직접 증거다."
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-15.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:115:| `R16-6` | `tests/test_cli.py:327-336` | `test_the_reads_reject_a_json_flag` 가 `exit_code != 0` 만 보고 `decision` 은 안 본다 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-16.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:101:| `A18-R3` | `test_slack_ack_boundary.py:2783` | `..._does_not_roll_back_another_rows_recovery` 만 `monkeypatch` 대신 class attribute 직접 대입을 쓴다. 형제 test 와 다르다 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-18.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:21:| `F18-R1` | B-P2 | **닫힘** | mutation M12 가 KILLED, `..._a_sweep_failure_alone_still_closes_the_claim` 1건. `M11` 과 다른 test 다 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-19.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:18:| `R19-1` | B-P2 | M15 → `..._escapes_the_unreadable_scan` 1건 사망 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-20.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:29:| `R20-1` | B-P2 | **닫힘** | M20(sweep 둘째 UPDATE 에 `COALESCE(last_error_code, …)`) → `..._leaves_the_prior_error_code_alone[None]` **1건 사망**. round 20 에서는 SURVIV",
+        "line:40:| `R21-1` | regression · contract | B-P2 | `cli.py:765`, 표 칸은 `evidence/MGC-012-P5-T044.md:34` (AC-07 #3) | **`>` 둘을 `>=` 로 바꿔도 1409개가 전부 통과한다** (SURVIVED, 전 su",
+        "line:41:| `R21-2` | regression | B-P2 | `cli.py:767`, 표 칸은 `evidence/MGC-012-P5-T044.md:37` (AC-07 #6) | **`unreadable = unreadable[:limit]` 을 통째로 지워도 1409개가 전부 통과한다** "
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review-round-21.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:143:\"Process interruption during render or post … preserve the interruption class\" 를 어긴다.",
+        "line:350:| `A-2` | `contracts/review-card-lifecycle.md:13-20` | \"request channel equal to the reviewer-bound Slack channel\" 전제에 대응하는 durable binding 이 없다. 실질 보호는 one-cha"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/3lens-review.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:12:unrelated projection preservation passed automated checks. Long valid project identities retain the",
+        "line:13:project ID and both revision fields. Renderer output remains recursively immutable until the HTTP",
+        "line:15:Non-Slack provider destination identities remain distinct and retain their pre-Card derivation."
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T001.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:17:`pytest --showlocals` subprocess canaries. Schema 32 prevents another reviewer or channel from",
+        "line:18:creating a second Card for the same immutable snapshot. Provider response-channel mismatch revokes",
+        "line:19:the action set and enters a hold without synthesizing a receipt or replacement.",
+        "line:23:budgets before an event is claimed. Maximum-length reviewer identities cannot displace the exact",
+        "line:24:expiration timestamp from the Review Card fallback text.",
+        "line:25:Review and Result Cards for one Slack channel now share the provider/workspace/channel destination"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T002.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:19:one Slack Result Card event. Expired, consumed, denied, stale, and revoked actions produced only the",
+        "line:20:closed safe feedback outcome. Feedback failure preserved the final governed and ingress state.",
+        "line:21:Revoked actions report stale rather than falsely claiming that a decision completed.",
+        "line:24:Review Cards were posted to the configured test workspace and converged through their remote metadata"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T003.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:45:| M4 | `raise_sanitized_interruption` 의 `generator_exit` 분기 제거 | **killed** | http `test_process_interruptions_propagate_from_the_http_transport[raised2-Generat",
+        "line:55:- `test_a_plain_exception_from_a_non_review_send_stays_inside_the_dispatcher` — 예외가 안",
+        "line:58:- `test_the_interruption_classifier_has_exactly_one_definition` — 이름이 아니라 **함수 객체",
+        "line:62:- `test_raise_sanitized_interruption_preserves_the_kind` (3 param)",
+        "line:67:- `test_process_interruptions_propagate_from_the_http_transport` (3 param)"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T009.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:67:| (없음) | `..._still_dead_letters_once_the_budget_is_spent` — **소진되면 여전히 dead letter + hold** |",
+        "line:68:| (없음) | `..._corrupt_store_dead_letters_on_the_first_attempt` — 손상은 여전히 즉시 terminal |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T010.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:15:계약이 침묵의 근거로 쓴 문장은 \"the next attempt decides\" 였다. 소진된 command 에는 다음",
+        "line:63:`test_retry_exhausted_command_is_stranded_before_the_sweep` 이 정확히 결함 동작을 고정하고",
+        "line:68:| `..._is_stranded_before_the_sweep` | `test_a_worker_observed_exhaustion_ends_as_a_recovery_hold_with_feedback` — `stranded()` 확인을 유지하고 상태와 통지를 추가 |",
+        "line:70:| (없음) | `test_a_lease_expired_exhaustion_stays_silent_and_visible_to_the_operator` — 침묵과 `stranded()` 둘 다 |",
+        "line:78:| P3 | `RETRY` 가 아닌 outcome 도 승격 (과잉 승격) | **killed** | 기존 `test_an_expired_lease_on_the_last_attempt_is_stranded`, `test_a_live_lease_on_the_last_attempt_is_no"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T011.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:1:# MGC-012-P5-T012 — Make the safe outcome set contract true",
+        "line:24:**크기를 센다.** `test_the_contract_enumerates_exactly_the_outcomes_the_code_produces` 가 계약",
+        "line:54:| Q1 | `unavailable` producer 제거 | **killed** (4건) | `..._has_a_real_producer`, `..._enumerates_exactly_the_outcomes...`, `test_a_recovery_hold_without_a_known_"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T012.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:1:# MGC-012-P5-T013 — Pin the integrity components and the outbox cardinality guard",
+        "line:47:| M40 | 감사 대조에서 actor 성분 제거 | **killed** (round 11 SURVIVED) | `test_reconcile_rejects_a_review_card_audit_bound_to_another_actor` |",
+        "line:48:| M41 | outbox 개수 검사 약화 (`!= 1` → `< 1`) | **killed** | `test_request_refuses_when_the_append_produces_more_than_one_outbox_event` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T013.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:1:# MGC-012-P5-T014 — Pin the migration history and store identity guards",
+        "line:38:| M-a | 연속성 검사를 무력화 (`if False:`) | **killed** | `test_a_gap_in_the_migration_history_is_rejected` |",
+        "line:45:- `test_a_gap_in_the_migration_history_is_rejected` — 온전한 store 가 통과하는 것을 전제로"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T014.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:145:| `except Exception` | `..._when_the_connection_is_refused` |",
+        "line:146:| `except BaseException` | `..._keeps_no_bot_token_in_the_frames_below_the_transport` |",
+        "line:157:`test_every_public_entry_point_reaches_the_transport_through_the_sanitizing_exit` 가"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T015.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:27:`tests/test_slack_ack_boundary.py::test_an_unreadable_decision_ledger_settles_the_command_instead_of_escaping`"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T016.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:76:- `test_reconcile_rejects_a_review_card_audit_pointing_at_another_proposal` — `proposal_ref`",
+        "line:102:| L1256 | `proposal_ref` | `...pointing_at_another_proposal` |",
+        "line:103:| L1257 | `actor_id` | `...bound_to_another_actor` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T018.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:121:| 589 | `request = None` | 5 | `..._leaks_the_bot_token_in_its_traceback[delete_message]`, `[post_ephemeral]`, **`[post_message]`**, `[read_history]`, `test_pos",
+        "line:122:| 590 | `body = None` | 2 | `test_http_interruption_traceback_contains_no_button_or_bot_credential`, `..._leaves_the_send_frame` |",
+        "line:123:| 410 | `payload = {}` | 5 | `..._locals_contain_no_button_or_bot_credential`, `..._pytest_showlocals_contains_no_button_credential`, `..._interruption_tracebac",
+        "line:124:| 411 | `marker = {}` | 2 | `..._clears_the_card_from_its_own_frame`, `..._leaves_the_send_frame` |",
+        "line:125:| 429 | `text = \"\"` | 1 | `..._clears_the_message_text_from_its_own_frame` |",
+        "line:153:| `test_post_message_failure_clears_the_card_from_its_own_frame` | `SlackTransportError` 경로에서 `payload == {}`, `marker == {}` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T021.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:37:| `slack_http.py:641` | KILLED | `..._leaks_the_bot_token_when_the_connection_is_refused[post_message]` |",
+        "line:89:- `..._leaks_the_bot_token_when_the_connection_is_refused[post_message]` ✓"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T022.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:104:| `test_the_audit_helper_rejects_every_field_it_is_given` (9 param) | helper 가 주어진 **모든** key 를 본다 |",
+        "line:105:| `test_the_audit_helper_compares_occurred_at_in_its_stored_form` | 유일한 변환 |",
+        "line:106:| `test_the_audit_helper_ignores_fields_the_call_site_did_not_name` | 비대칭이 의도임을 고정 |",
+        "line:107:| `test_every_audit_comparison_uses_the_shared_helper` (AST) | or-chain 으로 되돌아가면 실패 |",
+        "line:116:| `DECISION_AUDIT_MISMATCH` | `..._with_the_code_of_its_own_call_site[proposal.approved-*]` 2건 | **없었다** |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T023.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:74:| `test_connect_normalizes_an_os_error_from_creating_the_parent_directory` | 지점 2 |",
+        "line:77:| `test_connect_does_not_normalize_what_the_caller_raises` | `yield` 밖이라 호출자 예외가 그대로 나간다 |",
+        "line:84:| `test_a_filesystem_failure_in_the_finalize_transition_does_not_escape` | `:343` → `FINALIZE_FAILED` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T024.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:1:# MGC-012-P5-T025 — Give Each Rule One Home And Make The Other Mentions Point At It",
+        "line:44:> When the retry budget is exhausted **without any worker observing the outcome** (repeated worker",
+        "line:45:> death), what does the reviewer receive? → A: Nothing.",
+        "line:49:> When the outcome is unknown **because no attempt completed**, ...",
+        "line:53:> When the worker **did not observe the outcome of the final attempt**, the outcome is unknown — a",
+        "line:54:> decision may have committed before the worker stopped — and the system MUST NOT announce any"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T025.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:18:`contracts/interaction-feedback.md` 는 \"`stranded()` lists all three endings. It is the",
+        "line:19:operator's entry point for any of them.\" 이라고 쓴다. **그 진입점이 실재하지 않았다.**",
+        "line:41:### `_ReadOnlyAuthenticator`",
+        "line:43:`IngressService` 는 `ProviderAuthenticator` 를 요구하는데 두 읽기는 그것을 부르지 않는다.",
+        "line:44:`None` 을 넣는 대신 부르면 `IngressError(\"CLI_IS_READ_ONLY\")` 를 내는 authenticator 를 넣었다.",
+        "line:57:| AC-01 | `test_the_governance_subapp_exposes_exactly_the_two_reads` — 두 command 만 있고 `release`/`resume`/`retry`/`apply`/`approve`/`delete` 가 없다 |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T026.md",
+      "score": 1.0
+    },
+    {
+      "locators": [
+        "line:128:| `test_an_unreadable_command_row_does_not_block_the_ones_behind_it` | **P0 본체.** 뒤 command 가 같은 호출에서 처리된다 |",
+        "line:129:| `test_an_unreadable_row_is_visible_to_the_operator` | `unreadable()` 이 낸다 |",
+        "line:130:| `test_one_unreadable_row_does_not_hide_the_other_stranded_commands` | `F-2`. 목록 전체가 안 사라진다 |",
+        "line:131:| `test_a_programming_error_inside_the_view_still_escapes` | `AttributeError` 는 시끄럽게 |",
+        "line:138:| dead-letter 전환 제거 | KILLED (3) | `..._does_not_escape_process_next`, `..._does_not_block_the_ones_behind_it` |",
+        "line:139:| `_UNREADABLE_ROW` 를 `Exception` 으로 | KILLED (1) | `..._programming_error_inside_the_view_still_escapes` |"
+      ],
+      "matches": [
+        "the"
+      ],
+      "path": "specs/003-slack-proposal-card/evidence/MGC-012-P5-T027.md",
+      "score": 1.0
+    }
+  ],
+  "generated_from": {
+    "commit": "9bd611dc458abb0ccf800827e6561e445d89ca8e",
+    "contract": "specs/033-harness-taxonomy/work-contract.json",
+    "working_diff": ""
+  },
+  "invariants": [],
+  "known_facts": [
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:11:Use the existing work entry point in the app repository: Claude Code /work or Codex",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:12:$work. The controller reads the assigned Work, contract, source evidence and repository",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:16:Governing inputs are the explicitly configured repository instructions and applicable",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:18:the rules needed to perform that review. The generic baseline requires AGENTS.md, its",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:20:Decision-ledger paths through the documentation policy's governing_inputs list.",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:22:is not selected wholesale; only active indexed Decisions and their typed evidence",
+          "source": "docs/PORTABLE-DEVELOPMENT.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/PORTABLE-DEVELOPMENT.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:5:`amplai_hosts.py` is the only place that knows how Claude Code, Codex, or a generic command builds argv, redacts prompts, extracts continuation IDs, and shapes ",
+          "source": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:12:Both enter the same Work/Question/Evidence/Decision protocol.",
+          "source": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:30:`promotion_envelope()` carries origin store/project/object reference, local content hash, deterministic idempotency key, and payload.  A Platform outage does no",
+          "source": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:34:The added `federation` member is optional in the JSON schemas.  Existing 2.3.1 Project Store Decision/Evidence files therefore remain readable and do not requir",
+          "source": "docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/platform/LOOP_KIT_2_4_FEDERATION.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:Status: implementation candidate.  This release adds the service/control-plane boundary without rewriting the existing Governance Store or the Loop Kit Project ",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:7:- Platform owns canonical Source/Knowledge/Decision references, project-scoped authentication, durable service jobs, event/outbox delivery, and replayable proje",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:9:- Claude Code and Codex are host adapters of the Kit, never Platform domain dependencies.",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:35:Tokens are project-scoped and only their SHA-256 digest is persisted.",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:39:Context work uses `pending → running → done/dead` with lease token, expiry, heartbeat/retry semantics.  Event creation and outbox insertion occur in the same SQ",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:43:Connector configuration identifies a destination and optional secret reference.  Raw secret material is resolved at send time by a `SecretResolver` and is not s",
+          "source": "docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/platform/PLATFORM_0_4_CONTROL_PLANE.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:362:- authenticated API와 Project/Tenant authorization",
+          "source": "docs/reviews/2026-08-29-platform-kit-audit.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/reviews/2026-08-29-platform-kit-audit.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:271:│ Run · Eval · Failure Pattern → Hypothesis → Experiment → Proposal             │",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1169:- Improvement hypothesis generator",
+          "source": "docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/roadmaps/AMPLAI_MASTER_ROADMAP_PROPOSAL_v2.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:186:│ Pattern Detection → Hypothesis → Experiment → Proposal → Review → Promotion  │",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:904:- Improvement hypothesis generator",
+          "source": "docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/roadmaps/history/AMPLAI_MASTER_ROADMAP_PROPOSAL_v1.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:Checked 2026-09-16. Primary documentation below informed protocol handling; the approved V3 design files are unchanged. Documentation availability is not deploy",
+          "source": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:5:- OpenCode Server: https://opencode.ai/docs/server/ — authentication, `/global/health`, explicit sessions, asynchronous prompt receipt, status/messages, abort. ",
+          "source": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:6:- Claude Code programmatic use: https://code.claude.com/docs/en/headless — print/JSONL output, explicit model and session resumption. Actual supported flags/bin",
+          "source": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/v3/DEV02_TRANSPORT_SOURCES.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:3:Checked 2026-09-16. These notes explain implementation choices; the approved V3 design is unchanged. They are not additional normative acceptance claims.",
+          "source": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:9:| SQLite transactions — https://www.sqlite.org/lang_transaction.html | BEGIN IMMEDIATE reservation before executing callbacks; writes serialize around allocatio",
+          "source": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:11:Cost benefit uses a deterministic predeclared paired task-mean percentile bootstrap implemented locally, with explicit compute bounds and approximate status. Un",
+          "source": "docs/v3/DEV03_RESEARCH_SOURCES.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/v3/DEV03_RESEARCH_SOURCES.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:117:| 1 | `amplai meta propose --suffix S --prompt-file F --hypothesis … --benefit … --observation … --risk …` | 후보 prompt(파일의 각 줄)를 제안한다. `{app_id}`, `{base_commit",
+          "source": "docs/v3/USING_AMPLAI_WORK.ko.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/v3/USING_AMPLAI_WORK.ko.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:88:\"The Local Supervisor is intentionally not the V3 distributed execution fabric. It does not",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:132:helpers. They must not prevent Claude Code from starting or ending when the Project Store is",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:225:> CR/Work/Decision/Evidence in the Project Store are authoritative; **rendered handoff text is",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/KIT-2.1.0-EVALUATION.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:237:| `tests/ai/test_amplai_kit_installer.py` | **skip 된다.** docstring 이 \"skipped when the kit source is not vendored\" 로 그렇게 설계했다고 명시한다 |",
+          "source": "docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/amplai-loop-runtime-adoption/KIT-DISTRIBUTION.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:17:| `APR-011` | MGC-012 Package 1 Slack raw authentication gate | PASS | `ef35201`, 649 tests, all seven verify stages, three subagent reviews with zero blockers ",
+          "source": "docs/workstreams/messenger-governance-closure-v3/APPROVALS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/APPROVALS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:14:- Authenticator → durable ingress → worker AuthorityContext integration PASS",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-1-gate-2026-07-31.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-1-gate-2026-07-31.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:44:| retry → hold | `test_transient_decision_failure_keeps_the_retry_budget` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:47:| replay 순서 되돌리기 | `test_committed_decision_replays_after_the_actor_loses_permission` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:48:| `_replay_ingress_result` guard 3종 각각 제거 | `test_a_foreign_result_under_the_same_key_is_a_conflict` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:50:| `stranded()` leased clause 제거 | `test_an_expired_lease_on_the_last_attempt_is_stranded` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:51:| `stranded()` live lease 과다 보고 | `test_a_live_lease_on_the_last_attempt_is_not_stranded` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:58:| `committed_decision` None-guard 제거 | `test_committed_decision_is_none_when_the_command_row_is_gone` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-gate-2026-08-02.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:30:| T1 | retry 경로 증거 0 | `test_transient_decision_failure_keeps_the_retry_budget` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-2026-07-31.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:44:| R4 | `stranded()`의 `dead_letter` 분기에 test 증거 0 | `test_retry_exhausted_command_is_stranded_before_the_sweep` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:54:| `stranded()`에서 dead_letter/retry_wait 제외 | `test_retry_exhausted_command_is_stranded_before_the_sweep` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:56:| replay 순서 되돌리기 | `test_committed_decision_replays_after_the_actor_loses_permission` |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-2-review-round-2-2026-07-31.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:76:- synthetic hold gate test 는 production 이 못 만드는 상태를 못박는다. 그 gate 가 유일한",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-gate-2026-08-07.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:12:| 1 | regression | P1 | `send()` 가 marker 를 통째로 빼먹어도 106개 test 가 전부 통과한다. mutation 으로 확인했다 (`marker={}` → 106 passed) | `test_send_passes_the_configured_channel",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:13:| 2 | contract / regression | Blocking-P2 / P1 | `test_destination_satisfies_the_projection_destination_protocol` 이 거짓을 주장하며 항상 통과한다. `reconcile` 이 없어 Protocol ",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:89:- `test_without_the_exhaustion_rule_the_cause_is_lost` 는 C-3.1 을 지워도 실패하지 않는다. 대조군이라 의도한 것이고 C-3.1 의 coverage 로 세면 안 된다 (regression A4)",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:117:- 성공 경로 test 의 marker 단언이 양변에 같은 함수를 써서 marker **내용**은 안 잡힌다 (mutation 으로 확인 — `payload_digest` 를 빼도 통과). 내용을 고정하는 것은 `test_marker_carries_the_four_identity_fie",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-2-review-2026-08-05.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:19:contract lens 의 첫 full-suite 실행에서 `test_the_hold_gate_alone_...` 이 한 번 실패했고",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:65:sequence gate 가 늘 같이 막기 때문이다. synthetic test 로 teeth 를 줬다",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:140:| `events.py:2634` `operator_hold = 0` → `IN (0, 1)` | `test_the_hold_gate_alone_...` (유일) |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:142:| post-send guard 무력화 | `test_the_last_attempt_holds_...` (유일) |",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:184:- **synthetic hold gate test 는 production 이 못 만드는 상태를 못박는다.**",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-3-wave-4-review-2026-08-07.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:31:HTTP 200 {\"error\": \"authentication required\"}          → terminal → 영구 hold",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CHECKPOINTS/MGC-012-package-4-wave-5-review-2026-08-08.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:21:`MUST produce the unavailable safe outcome` 을 어긴다. **spec 을 고칠지, 코드를 고칠지**가",
+          "source": "docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/CONTEXT_PACK.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:43:신규 synthetic hold provenance와 exact deletion은 additive v29의",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:44:`scope_version=2`로만 생성한다. v1 synthetic hold는 삭제하지 않고 exact migration",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:52:`changes_requested` Proposal만 허용한다. applied/dependent root와 unresolved synthetic",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:60:- Decision: activation 후 definition correction은 authenticated recovery plan과 exact",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:76:## D-011 — Slack Authentication Boundary",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        },
+        {
+          "locator": "line:1148:\"Review the clarified spec\" 으로 고쳤다",
+          "source": "docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/messenger-governance-closure-v3/DECISIONS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:309:- Evidence: `tests/v3/test_rc02_runtime.py::test_estimated_usage_settles_tokens_and_records_the_cost_estimate`.",
+          "source": "docs/workstreams/v3-real-execution/DECISIONS.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: docs/workstreams/v3-real-execution/DECISIONS.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:180:나머지는 terminal 이다. 대표적으로 `channel_not_found`, `invalid_auth`, `not_authed`,",
+          "source": "specs/001-mgc-012-slack-reference-adapter/research.md",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/research.md",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:85:then: retryable 로 분류한다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:89:then: terminal 로 분류하고 OutboxReconcileError 로 대응시킨다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:94:then: 형식과 무관하게 terminal 로 분류한다. 형식 때문에 값을 버리지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:98:then: status code 와 무관하게 retryable 로 분류한다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:102:then: stdlib, amplai_foundry, pydantic 밖의 module 을 import 하지 않는다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:107:then: 정규화 후 판정한다. 빈 값과 str 아닌 값은 code 없음으로 보고 retryable 이다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T001.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:117:then: OutboxReconcileError(\"OUTBOX_DESTINATION_MISMATCH\") 로 실패하고 transport 를",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:122:then: OutboxReconcileError(\"OUTBOX_PAYLOAD_INTEGRITY_FAILURE\") 로 실패하고",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:127:then: slack:{channel}:{ts} 형식의 receipt 를 반환한다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:131:then: marker 에 event_id, destination_ref, destination_sequence, payload_digest 가",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:137:then: 두 값이 같다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:141:then: destination 이 그것을 잡아 재감싼 뒤 분류한다. 분류를 건너뛰지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T002.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:114:then: slack:{channel}:{ts} receipt 를 반환하고 send 로 가지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:119:then: None 을 반환한다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:124:then: OutboxReconcileError 를 던진다. code 로 상한 도달이 원인임을 알 수 있다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:129:then: 그 message 를 이 event 의 marker 로 인정하지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:133:then: page 수가 max_history_pages 를 넘지 않고 limit 은 999 로 나간다.",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:139:then: 문자열이 같다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T003.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:4:title: Ordered delivery and supersession through the real dispatcher",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:74:then: 1 이 delivered 되기 전에 2 를 transport 로 보내지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:78:then: 한쪽만 전송하고 다른 쪽은 lease 를 얻지 못한다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:82:then: superseded event 는 transport 로 나가지 않고 새 event 만 전달된다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:86:then: 마지막으로 전달한 destination_sequence 와 같다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T004.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:103:then: reconcile 이 marker 를 찾아 delivered 로 확정하고 Slack message 는 하나뿐이다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:113:then: dead_letter 와 outbox_destination scope 의 operator hold 가 생기고 재전송하지",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:118:then: 그 event 를 claim 하지 않는다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:122:then: event 가 retry_wait 로 가고 attempts 가 오른다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:126:then: attempts 소진을 기다리지 않고 dead_letter 와 hold 가 생긴다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:130:then: event 가 retry_wait 로 간다",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/MGC-012-T005.yaml",
+      "status": "candidate"
+    },
+    {
+      "confidence": "medium",
+      "evidence": [
+        {
+          "locator": "line:58:title: Ordered delivery and supersession through the real dispatcher",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:415:것에 synthetic test 로 teeth 부여, AC-01 순서 test 가 앞 sequence gate 를 지워도",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        },
+        {
+          "locator": "line:439:여유 0 으로 착지하던 resume helper (cap + 1 로), synthetic test 주석이",
+          "source": "specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+          "type": "repository"
+        }
+      ],
+      "statement": "repository evidence candidate: specs/001-mgc-012-slack-reference-adapter/task-manifests/index.yaml",
+      "status": "candidate"
+    }
+  ],
+  "schema_version": "1.0",
+  "terms": [
+    "the",
+    "operator",
+    "runs",
+    "v3",
+    "meta-harness",
+    "end",
+    "to",
+    "on",
+    "real",
+    "executions",
+    "harness",
+    "components",
+    "switch",
+    "off",
+    "version",
+    "per",
+    "model",
+    "reasoning",
+    "effort",
+    "cell",
+    "experiments",
+    "follow",
+    "screening",
+    "paired",
+    "focused",
+    "comparison",
+    "ablation",
+    "held-out",
+    "canary",
+    "with",
+    "budget-matched",
+    "baseline",
+    "and",
+    "an",
+    "explicit",
+    "decision",
+    "rule",
+    "proposer",
+    "drafts",
+    "component",
+    "edits",
+    "from",
+    "raw",
+    "traces",
+    "predictions",
+    "read-only",
+    "html",
+    "dashboard",
+    "shows",
+    "per-cell",
+    "performance",
+    "best",
+    "composition",
+    "contributions",
+    "lineage",
+    "pending",
+    "approvals.",
+    "amplai",
+    "system",
+    "composable",
+    "measured",
+    "corpus",
+    "experiment",
+    "protocol",
+    "search",
+    "src",
+    "amplai_foundry",
+    "meta_harness",
+    "runtime",
+    "execution",
+    "meta_local.py",
+    "meta_ops.py",
+    "releases.py",
+    "meta_cli.py",
+    "specs",
+    "033",
+    "harness-taxonomy",
+    "placeholder",
+    "until",
+    "spec.md",
+    "acceptance",
+    "is",
+    "final"
+  ],
+  "unknowns": [
+    "candidate evidence를 검토해 ownership/source-of-truth를 확정해야 함",
+    "acceptance와 verifier가 실제 current behavior를 판정하는지 확인해야 함"
+  ],
+  "work_id": "033-meta-harness-system"
+}

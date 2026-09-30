@@ -1,0 +1,30 @@
+{
+  "task_id": "work030-l19-render-html",
+  "version": 2,
+  "domain": "regression",
+  "subdomain": null,
+  "set": "regression",
+  "split": null,
+  "source": {
+    "kind": "work030",
+    "ref": "demo-app-implementer-v1/l19-render-html",
+    "author": "Work 030 S4 (af92975)",
+    "created": "2026-09-30"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "demo",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a module `demo_app/html_report.py` with two public functions that render version infos as an HTML page.\n\n`escape_html(text: str) -> str` replaces exactly these five characters and nothing else: `&` with `&amp;`, `<` with `&lt;`, `>` with `&gt;`, `\"` (double quote) with `&quot;`, and `'` (single quote) with `&#x27;`. Each character of the input is replaced once (so `&lt;` becomes `&amp;lt;`, never double-escaped). All other characters, including non-ASCII characters, newlines and spaces, are left unchanged.\n\n`render_html(infos: list[dict]) -> str` returns a complete HTML5 page as one string. `infos` is a list of dicts as printed by `amplai ops version`; only the keys `package_version` and `stage` are used, other keys are ignored. The page is exactly the following, with the lines separated by a single newline character (`\\n`), the whole text ending with a newline after `</html>`, and no other whitespace anywhere:\n\n<!doctype html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><title>AMPLAI versions</title></head>\n<body>\n<table>\n<thead><tr><th>version</th><th>stage</th></tr></thead>\n<tbody>\n[one row line per info, see below]\n</tbody>\n</table>\n</body>\n</html>\n\nThe row lines replace the `[one row line per info]` placeholder line: for each info, in input order, the line `<tr><td>V</td><td>S</td></tr>` followed by a newline, where `V` is `escape_html(info[\"package_version\"])` and `S` is `escape_html(info[\"stage\"])`. An empty `infos` list gives the page with no row lines at all (`<tbody>\\n` is directly followed by `</tbody>\\n`). A missing `stage` key gives an empty cell (`<td></td>`); an empty string in either field also gives an empty cell. A `package_version` that is missing or is not a `str` raises `ValueError`; a `stage` that is present but not a `str` (including `None`) also raises `ValueError`. Invalid input raises before any page is returned, wherever in the list the bad entry is. The input list and its dicts are not modified.",
+  "acceptance": [
+    "escape_html replaces & < > \" ' with &amp; &lt; &gt; &quot; &#x27; in one pass (no double escaping of the produced entities) and leaves every other character unchanged",
+    "render_html([]) returns exactly '<!doctype html>\\n<html lang=\"en\">\\n<head><meta charset=\"utf-8\"><title>AMPLAI versions</title></head>\\n<body>\\n<table>\\n<thead><tr><th>version</th><th>stage</th></tr></thead>\\n<tbody>\\n</tbody>\\n</table>\\n</body>\\n</html>\\n'",
+    "Each info becomes one line '<tr><td>V</td><td>S</td></tr>\\n' between '<tbody>\\n' and '</tbody>\\n', in input order, with V and S HTML-escaped",
+    "A missing or empty stage renders '<td></td>'; extra keys in an info are ignored",
+    "A missing or non-str package_version, or a present non-str stage (None, int), raises ValueError even when the bad entry is not the first one",
+    "The input list and dicts are not modified; the output ends with a single newline after '</html>'"
+  ],
+  "hidden_map": {},
+  "ambiguity": null,
+  "difficulty_declared": null
+}
