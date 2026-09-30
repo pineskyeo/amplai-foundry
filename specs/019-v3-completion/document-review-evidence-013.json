@@ -330,10 +330,8 @@
     "tools/amplai-loop-kit/tests/document-browser.mjs"
   ],
   "semantic_changes": [
-    "Canary cost_basis (compared default, not_compared): unknown cost and estimated usage accepted, tokens and receipt binding still required (D-092, D-089 S5)",
-    "Canary adapter for the offline trial executor; an unknown trial is not counted",
-    "amplai meta: one operator command per meta-harness gate (D-089 S6)",
-    "The first real evolution claims non-inferiority only, no improvement (D-093)"
+    "amplai meta: approve-canary only approves; run-canary starts the canary and runs its trials in one process (a canary is owned by the process that starts it)",
+    "First real evolution run recorded: the shorter prompt passed, the negative control failed"
   ],
   "measurements": {
     "tests": "test_rc11_canary_cost_basis.py (10), test_rc11_canary_adapter.py (6), test_rc12_meta_rehearsal.py (3), test_rc12_meta_cli.py (5); verifier v2 PASS 3420 passed",

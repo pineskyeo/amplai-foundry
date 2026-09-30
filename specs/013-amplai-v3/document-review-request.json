@@ -1,11 +1,11 @@
 {
-  "snapshot": "8707fc8da82c0d7cb1cffd9960419248308628eeb914d0b036afb2e07e3bfafd",
+  "snapshot": "8eb617627b0d8e84c9d4b360dbb61e480f6a75d83001b1d9cbc3710b120520fa",
   "reviews": [
     {
       "document": ".ai-team/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -15,7 +15,7 @@
       "document": ".ai-team/contracts/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -25,7 +25,7 @@
       "document": ".ai-team/evidence/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -35,7 +35,7 @@
       "document": ".ai-team/knowledge/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -45,7 +45,7 @@
       "document": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -55,7 +55,7 @@
       "document": ".ai-team/runtime/INSTALLATION.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -65,7 +65,7 @@
       "document": ".ai-team/runtime/WORKFLOW.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -75,7 +75,7 @@
       "document": ".ai-team/runtime/escalation.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -85,7 +85,7 @@
       "document": ".ai-team/verifiers/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -95,7 +95,7 @@
       "document": "AGENTS.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -105,7 +105,7 @@
       "document": "CLAUDE.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -115,7 +115,7 @@
       "document": "README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -125,7 +125,7 @@
       "document": "deployment/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -135,7 +135,7 @@
       "document": "docs/KNOWLEDGE-RULES.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -145,7 +145,7 @@
       "document": "docs/LIFECYCLE.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -155,7 +155,7 @@
       "document": "docs/MEMORY-DOMAIN-MODEL.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -165,7 +165,7 @@
       "document": "docs/PORTABLE-DEVELOPMENT.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -175,7 +175,7 @@
       "document": "docs/PROJECT-PACK.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -185,7 +185,7 @@
       "document": "docs/PROPOSALS.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -195,7 +195,7 @@
       "document": "docs/RELATIONSHIPS.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -205,7 +205,7 @@
       "document": "docs/ROADMAP.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -215,7 +215,7 @@
       "document": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -225,7 +225,7 @@
       "document": "docs/VERSIONING.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -235,7 +235,7 @@
       "document": "docs/VISION.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -245,7 +245,7 @@
       "document": "docs/v3/DEV02_EXECUTION.ko.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -255,7 +255,7 @@
       "document": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -264,8 +264,8 @@
     {
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "outcome": "updated",
-      "reason": "The local wiring subsection now describes the canary cost basis, the canary adapter, the amplai meta commands and the non-inferiority claim; no earlier statement changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reason": "The amplai meta description now says that approve-canary does not start the canary and run-canary starts and runs it in one process; no other statement changed.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -275,7 +275,7 @@
       "document": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -284,8 +284,8 @@
     {
       "document": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "outcome": "updated",
-      "reason": "A new section explains the amplai meta commands, their order, that they open the deployment in-process, the measured Codex usage per trial, and what the experiment does and does not claim; no earlier statement changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reason": "The table rows for approve-canary and run-canary and one note describe the split (a canary is owned by the process that starts it); no other statement changed.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -293,9 +293,9 @@
     },
     {
       "document": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "outcome": "updated",
-      "reason": "D-092 (canary cost basis) and D-093 (the first evolution claims no improvement) appended; no earlier entry changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "outcome": "reviewed_unchanged",
+      "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -305,7 +305,7 @@
       "document": "integrations/hermes/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -315,7 +315,7 @@
       "document": "migration/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -325,7 +325,7 @@
       "document": "packs/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -335,7 +335,7 @@
       "document": "release/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -345,7 +345,7 @@
       "document": "tests/e2e/artifacts/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -355,7 +355,7 @@
       "document": "tools/amplai-loop-kit/CHANGELOG.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -365,7 +365,7 @@
       "document": "tools/amplai-loop-kit/README.md",
       "outcome": "reviewed_unchanged",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -379,7 +379,7 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -391,7 +391,7 @@
       "line": 46,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -403,7 +403,7 @@
       "line": 54,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -415,7 +415,7 @@
       "line": 55,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -427,7 +427,7 @@
       "line": 57,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -439,7 +439,7 @@
       "line": 58,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -451,7 +451,7 @@
       "line": 59,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -463,7 +463,7 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -475,7 +475,7 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -487,7 +487,7 @@
       "line": 167,
       "disposition": "external",
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -499,7 +499,7 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -511,7 +511,7 @@
       "line": 196,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -523,7 +523,7 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -535,7 +535,7 @@
       "line": 9,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -547,7 +547,7 @@
       "line": 19,
       "disposition": "example",
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -559,7 +559,7 @@
       "line": 36,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -571,7 +571,7 @@
       "line": 57,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -583,7 +583,7 @@
       "line": 96,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -595,7 +595,7 @@
       "line": 107,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -607,7 +607,7 @@
       "line": 116,
       "disposition": "historical",
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -619,7 +619,7 @@
       "line": 7,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -631,7 +631,7 @@
       "line": 3,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -643,7 +643,7 @@
       "line": 140,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -655,7 +655,7 @@
       "line": 140,
       "disposition": "external",
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -667,7 +667,7 @@
       "line": 86,
       "disposition": "historical",
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -679,7 +679,7 @@
       "line": 144,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
@@ -691,7 +691,7 @@
       "line": 145,
       "disposition": "example",
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "evidence": [
         "specs/019-v3-completion/document-review-evidence-013.json"
