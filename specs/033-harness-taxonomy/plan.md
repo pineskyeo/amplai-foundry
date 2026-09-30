@@ -362,3 +362,18 @@ point in the goal where that layer's inputs exist:
   goal outcome before promotion.
 - A decision made after dispatch never changes the running composition (design 16 §2); on-failure
   decisions start a new attempt.
+
+### 10.1 How Specific A Harness Gets
+
+Different tasks, situations and plans favour different harnesses (planning effects flip by model, 2609.20804;
+per-task routing between branches, 2609.37834). A harness chosen per individual task cannot be validated
+per task (one task = one sample), so specialisation follows the evidence:
+
+- **Partial pooling**: every decider starts from the global choice for its cell and specialises to a finer
+  bucket (domain → task class → planned size → app) only when that bucket's own evidence shows a credible
+  difference; otherwise it shrinks back to the coarser choice.
+- **Live signals** (the plan's files and acceptance items, a verification failure) still make each goal's
+  final combination different, through the per-layer deciders.
+- **Per-app parts** (memory notes, environment facts) are specific by construction; they are measured on
+  that app's tasks.
+- The dashboard shows, for each bucket, whether its choice is specialised or pooled and on how many samples.
