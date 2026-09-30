@@ -1,0 +1,61 @@
+{
+  "task_id": "ambiguity-restock-urgency",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-restock-urgency",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add a restock queue. `Inventory.restock_queue(items: Iterable[Item]) -> list[Item]` returns the items that `low_stock` would return for them, most urgent first; items that are equally urgent come in plain SKU order. `stock` gets a flag `--urgent`: it prints the same `LOW <sku> <name>: <available>/<reorder_level>` lines as it does without the flag but in the order of the queue, and the `warning:` line, the `stock ok` line and the exit code stay as they are.",
+  "acceptance": [
+    "`restock_queue` returns exactly the items `low_stock` returns (available stock below the reorder level, reserved units not counted as available), nothing else, and `[]` for no items",
+    "Items that are equally urgent are ordered by plain SKU order, whatever order they were given in",
+    "An item with nothing available comes before an item with stock close to its reorder level, and items whose available stock is closer and closer to the level follow in that order (reorder level 10 with 0, 4, 6 and 9 available gives that order)",
+    "`stock --urgent` prints the same three `LOW` lines for the sample data as `stock` does, with the same warning on stderr and exit code 0",
+    "`stock --urgent` prints `stock ok` and nothing on stderr when no item is low",
+    "Among items that are low the more urgent comes first, in `restock_queue` and in the lines of `stock --urgent`"
+  ],
+  "hidden_map": {
+    "test_the_queue_holds_exactly_the_low_stock_items": 0,
+    "test_equally_urgent_items_are_ordered_by_sku_whatever_the_input_order": 1,
+    "test_an_item_with_nothing_available_comes_before_one_that_is_almost_fine": 2,
+    "test_stock_urgent_prints_the_same_low_items_and_the_same_warning": 3,
+    "test_stock_urgent_says_stock_ok_when_nothing_is_low": 4,
+    "test_the_item_furthest_below_its_level_in_units_comes_first": 5,
+    "test_the_queue_holds_exactly_the_low_stock_items_alt": 0,
+    "test_equally_urgent_items_are_ordered_by_sku_whatever_the_input_order_alt": 1,
+    "test_an_item_with_nothing_available_comes_before_one_that_is_almost_fine_alt": 2,
+    "test_stock_urgent_prints_the_same_low_items_and_the_same_warning_alt": 3,
+    "test_stock_urgent_says_stock_ok_when_nothing_is_low_alt": 4,
+    "test_the_item_with_the_smallest_share_of_its_level_left_comes_first": 5
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "shortfall",
+      "ratio",
+      "relative",
+      "absolute",
+      "percent",
+      "proportion",
+      "fraction",
+      "percentage of",
+      "units below",
+      "how far below"
+    ],
+    "interpretations": [
+      "Urgency is the shortfall in units: reorder level minus available stock, the largest shortfall first",
+      "Urgency is the relative shortfall: available stock as a share of the reorder level, the smallest share first"
+    ]
+  },
+  "difficulty_declared": null
+}

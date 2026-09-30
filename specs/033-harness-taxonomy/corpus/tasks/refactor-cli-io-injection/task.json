@@ -1,0 +1,40 @@
+{
+  "task_id": "refactor-cli-io-injection",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "dependency-injection",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-cli-io-injection",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The command functions in `stockroom/cli.py` print straight to the process's standard output and error and `main` reads the settings from `os.environ`, so a caller that wants to run a command in-process has to redirect global state. Make the input and output of `main` injectable: give `main` the optional keyword-only parameters `stdout`, `stderr` and `environ`, and thread the streams through the command functions. With none of them given, behaviour is exactly as before. This is a refactor of the plumbing, not of the commands: the text they print, their error messages and their exit codes stay byte for byte the same, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`main` has the signature `main(argv=None, *, stdout=None, stderr=None, environ=None)`; the three new parameters are keyword-only and default to `None`",
+    "When `stdout` is given, everything a command prints to standard output goes to it; when `stderr` is given, everything a command prints to standard error goes to it (the `warning: N item(s) below reorder level` line and `stockroom: error: <message>`); with both given nothing reaches the real streams, and when both are the same object the lines appear in the order they were printed",
+    "An omitted stream stands for the process's `sys.stdout` or `sys.stderr` as they are when `main` runs, not as they were when the module was imported, so output redirected or captured around the call is honoured",
+    "When `environ` is given, the `STOCKROOM_*` settings are read from that mapping (any `Mapping`) and the process environment is ignored; when it is omitted the process environment at the time of the call is used",
+    "The output of argparse itself (`--help`, `--version`, usage errors and their `SystemExit` codes) is unchanged and still goes to the real streams whatever is injected",
+    "For `items`, `stock`, `sales` and `price`, including their data errors, settings from the environment and from `--config`, the exit code, stdout and stderr are identical to what they were before the change, both with injected streams and without",
+    "In `stockroom/cli.py` every `print` call names its target stream with `file=`, and each of `sys.stdout`, `sys.stderr` and `os.environ` is referred to at most once"
+  ],
+  "hidden_map": {
+    "test_main_takes_three_optional_keyword_only_parameters": 0,
+    "test_injected_streams_receive_all_output": 1,
+    "test_one_stream_can_be_injected_without_the_other": 1,
+    "test_streams_are_looked_up_when_main_runs_not_when_it_is_defined": 2,
+    "test_the_given_environment_replaces_the_process_environment": 3,
+    "test_argparse_keeps_writing_to_the_real_streams": 4,
+    "test_without_injection_the_current_streams_and_environment_are_used": 5,
+    "test_the_command_module_looks_up_the_process_streams_and_environment_once": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

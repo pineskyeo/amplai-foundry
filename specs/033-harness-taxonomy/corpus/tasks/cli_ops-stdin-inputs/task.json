@@ -1,0 +1,39 @@
+{
+  "task_id": "cli_ops-stdin-inputs",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/stdin-inputs",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Let the `stockroom` command read its input files from standard input, so that it can sit at the end of a shell pipeline.\n\nWherever a command option names an input file (`items --file`, `stock --items`, `stock --stock`, `sales --orders`, `price --items`), the value `-`, exactly that one character, means standard input. The whole of standard input, decoded as UTF-8 text with line ends normalised the way reading a file in text mode does, is used as the text of that file, and the command behaves exactly as if a file with that content had been named. Any other value stays a path: `./-` names a file called `-` in the current directory. The global option `--config` does not take standard input: `--config -` names a settings file called `-` in the current directory and fails as any missing settings file does when there is none.\n\nStandard input can be read only once. When `-` is given for more than one input option of a single command (for example `stock --items - --stock -`), the command ends with exit code 1 and stderr holds the one line `stockroom: error: <reason>` where the reason contains the words `standard input`; nothing is written to stdout. Empty standard input is an empty file: `items --file -` with no input fails the same way `items --file` of an empty file does. Everything else about the command line, the output and the exit codes is unchanged.",
+  "acceptance": [
+    "With '-' as the file, items, stock (either of --items and --stock, with the other one a normal file), sales (also with --from) and price read the text from standard input and print exactly what they print for a file with the same content",
+    "Standard input is decoded as UTF-8 and handled like a text-mode file: non-ASCII names come through and a CRLF input gives the same output as the same content in a file",
+    "'-' given for both --items and --stock of stock ends with exit code 1, empty stdout and one 'stockroom: error: ' line on stderr that contains 'standard input', whatever standard input holds",
+    "Empty standard input gives the same exit code, stdout and stderr as an empty file does, for items and for sales",
+    "Only the exact value '-' means standard input: './-' reads the file called '-' in the current directory",
+    "'--config -' reads the settings file called '-' in the current directory (and is an error when there is none); it never reads standard input",
+    "Paths that are not '-' still work, and the exit codes and messages of runs that do not use '-' are unchanged"
+  ],
+  "hidden_map": {
+    "test_each_command_reads_its_input_from_standard_input": 0,
+    "test_standard_input_is_decoded_as_utf8_text_mode": 1,
+    "test_standard_input_twice_is_refused_before_any_output": 2,
+    "test_empty_standard_input_is_an_empty_file": 3,
+    "test_dot_slash_dash_is_an_ordinary_path": 4,
+    "test_config_dash_is_a_file_not_standard_input": 5,
+    "test_ordinary_paths_still_work": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

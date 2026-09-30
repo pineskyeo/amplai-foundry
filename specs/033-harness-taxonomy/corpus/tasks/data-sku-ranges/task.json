@@ -1,0 +1,35 @@
+{
+  "task_id": "data-sku-ranges",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Buyers and warehouse staff write SKU lists such as `MUG-001..MUG-003, TEA-010`. Add a module `stockroom/skuspec.py` with `expand_skus(spec: str) -> list[str]` and `compress_skus(skus) -> str`. A SKU here is 2 to 4 capital letters, `-`, and 3 to 5 ASCII digits; its prefix is the text before the digits and its width is the number of digits (so `MUG-099` and `MUG-0099` have the same prefix but different widths and are different SKUs). `expand_skus` reads a comma-separated list; whitespace around each item is ignored; every item is a SKU or a range `FIRST..LAST` (no spaces inside the item, exactly one `..`), where `LAST` is a SKU with the same prefix and width as `FIRST`, or only its digits with the same number of digits (`MUG-001..003`), and its number is not below `FIRST`'s; the range holds every number from `FIRST` to `LAST`, zero-padded to that width. The result has no repeats and is sorted by prefix (plain string order of the text before the digits), then width, then number, so `MUG-999` comes before `MUG-0999`. An empty or whitespace-only spec gives `[]`; an empty item (`a,,b`, a trailing or leading comma), a malformed SKU, a bad range (descending, other prefix, other width, a missing side, `...`, spaces around `..`, two ranges in one item) or any other text raises `stockroom.errors.ParseError`. `compress_skus` takes an iterable of SKUs (repeats and any order are fine; a malformed SKU raises `ParseError`) and returns the shortest list in the same notation: in the sorted order above, every maximal run of three or more consecutive numbers of one prefix and width is written `FIRST..LAST` (both as full SKUs), every other SKU is written alone, and the pieces are joined with `', '`; numbers of different widths never join a run (`MUG-999` and `MUG-1000` do not), and no SKUs gives `''`. Then extend `python -m stockroom items` with `--skus SPEC`, which keeps only the catalogue items whose SKU is in `expand_skus(SPEC)`, in file order (SKUs of the list that are not in the catalogue are ignored; an empty spec keeps nothing; it combines with `--tag`), and add `python -m stockroom skus --file ITEMS_CSV`, which prints `compress_skus` of the catalogue's SKUs on one line and prints nothing for an empty catalogue. A bad spec exits with code 1, `stockroom: error: ...` on stderr and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`expand_skus` gives `['MUG-001', 'MUG-002', 'MUG-003']` for `MUG-001..MUG-003` and for `MUG-001..003`, one SKU for `MUG-005..MUG-005`, sorted and de-duplicated results for mixed and repeated items (`TEA-010, MUG-001..MUG-002, TEA-010`), ignores whitespace around items, keeps the width (`MUG-0998..MUG-1001` gives `MUG-0998` to `MUG-1001`, `MUG-098..100` gives `MUG-098`, `MUG-099`, `MUG-100`), sorts by prefix, width, number (`MUG-999,MUG-1000,MUG-0999` gives `MUG-999`, `MUG-0999`, `MUG-1000`; `AB-100,ABC-100,AB-200` gives `AB-100`, `AB-200`, `ABC-100`), handles five-digit SKUs and a range of 1000, and returns `[]` for `''` and whitespace",
+    "`expand_skus` raises `ParseError` for `MUG-003..MUG-001`, `MUG-001..TEA-003`, `MUG-001..MUG-0003`, `MUG-001..5`, `MUG-001..0003`, `mug-001`, `MUG-01`, `MUG-123456`, `MUGGY-001`, `M-001`, `MUG001`, `MUG-001..`, `..MUG-003`, `MUG-001...MUG-003`, `MUG-001 .. MUG-003`, `MUG-001.. MUG-003`, `MUG-001,,TEA-010`, `MUG-001,`, `,MUG-001`, `, `, `MUG-001;TEA-010`, `MUG-001..MUG-003..MUG-005`, `MUG-001..M`, `MUG-001..abc`, `MUG-001 MUG-002` and `MUG-001-MUG-003`",
+    "`compress_skus` gives `''` for none, `MUG-001, MUG-002` for two consecutive SKUs (no range below three), `MUG-001..MUG-003` for three, `MUG-001, MUG-002, MUG-004`, `MUG-001..MUG-005, MUG-007, MUG-009..MUG-011`, `MUG-998, MUG-999, MUG-1000` (widths 3 and 4 do not join), `MUG-0998..MUG-1001`, `AB-100..AB-102, ABC-100`, `MUG-001, TEA-010..TEA-012` for unsorted input with a repeat, the same for a generator, `MUG-099..MUG-101`, `MUG-000..MUG-002`, `MUG-099, MUG-0100, MUG-0101`, `MUG-99997..MUG-99999`, and raises `ParseError` when any SKU is malformed (including the empty string and a range)",
+    "For 1,500 seeded random SKU lists (several prefixes, widths 3 to 5, numbers clustered near 0, 98 to 100, 998 to 1000 and the width's upper limit, shuffled, with repeats): `expand_skus(compress_skus(skus))` is the sorted de-duplicated list, `compress_skus` of its own expansion is unchanged, the result does not depend on order or repeats, every range piece expands to at least three SKUs and equals the maximal-run rule computed independently, and a run of one or two consecutive numbers is never written as a range",
+    "`python -m stockroom items --file F --skus SPEC` lists the matching catalogue items in file order (`MUG-001..MUG-002, TEA-011..012`, `TEA-012,MUG-002`, `MUG-001..003, XYZ-999, PEN-100` with an unknown SKU ignored, `MUG-0100` and `MUG-100` as different SKUs, `MUG-0099..0101`, an empty spec listing nothing, and `--skus` together with `--tag kitchen`), `python -m stockroom skus --file F` prints `MUG-001, MUG-002, MUG-0100, PEN-100, TEA-010..TEA-012` for that catalogue and nothing for an empty one, and a bad spec (`MUG-003..MUG-001`, `MUG-001,,MUG-002`, `mug-001`, `MUG-001..`) exits with code 1, empty stdout and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_expand_examples": 0,
+    "test_expand_refusals": 1,
+    "test_compress_examples": 2,
+    "test_generated_lists_round_trip_and_are_shortest": 3,
+    "test_command_line_with_sku_specs": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

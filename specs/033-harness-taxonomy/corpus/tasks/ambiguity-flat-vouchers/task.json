@@ -1,0 +1,48 @@
+{
+  "task_id": "ambiguity-flat-vouchers",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-flat-vouchers",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add flat vouchers to pricing. `stockroom/vouchers.py` gets the table `VOUCHERS` mapping a code to `(cents off, minimum spend in cents)` with `FIVER` (500 off, minimum 2000), `TENNER` (1000 off, minimum 5000) and `LASTCALL` (300 off, minimum 0) in that order, a frozen dataclass `Redemption(lines: tuple[tuple[str, int], ...], total: int)` and `redeem(subtotal_cents: int, codes: Sequence[str]) -> Redemption`. Rules: a negative subtotal raises `ValueError`, and this is checked before the codes. Codes are matched case-insensitively and reported in upper case; a code given more than once counts once; an unknown code raises `ParseError` with the message `unknown voucher 'X'` (the code as given, the first unknown one in the given order) before anything is applied. A voucher whose minimum spend is higher than `subtotal_cents` (the amount passed in, not the running amount) is skipped and does not appear in the result. `FIVER` is dropped when `TENNER` is also applied (that is, when both were given and both meet their minimum); if `TENNER` does not meet its minimum, `FIVER` is applied as usual. The remaining vouchers are applied one after the other in table order (not in the order the codes were given), each to what is left, and each takes its amount or what is left if that is less; every applied voucher is listed in `lines` as `(code, cents taken)` in that order, even when it took 0, and `total` is what is left. `price` gets a repeatable option `--voucher CODE`: the subtotal is computed as before (`--discount` included) and printed on the first line as before; then one line `voucher <CODE>: -<amount>` per line of the redemption (the minus sign, then the amount formatted like the other amounts, so `-$0.00` for a voucher that took nothing); then the `tax:` line, where tax is computed on the total after the vouchers, and the `total:` line, which is that total plus tax. The redemption uses the subtotal after `--discount` and before the vouchers. An unknown voucher is a data error (`stockroom: error: unknown voucher 'X'`, exit code 1) and nothing is printed on stdout. Without `--voucher` the output is unchanged.",
+  "acceptance": [
+    "On 6000 cents `FIVER` takes 500, `TENNER` 1000 and `LASTCALL` 300, codes are case-insensitive and reported in upper case, and an empty list takes nothing (`Redemption((), 6000)`)",
+    "A voucher is skipped when the passed subtotal is below its minimum (1999 cents with `FIVER` stays 1999, 2000 applies; 4999 with `TENNER` stays 4999, 5000 applies), and when `TENNER` is not applicable `FIVER` still applies",
+    "Vouchers apply in table order whatever the order given, a repeated code counts once, and `FIVER` is dropped when `TENNER` also applies (6000 with `FIVER`, `TENNER`, `LASTCALL` gives `TENNER` 1000 and `LASTCALL` 300, total 4700)",
+    "A voucher takes at most what is left (200 cents with `LASTCALL` takes 200), an applied voucher that takes nothing is still listed (`(\"LASTCALL\", 0)` for a subtotal of 0) and a minimum spend of 0 is always met",
+    "A negative subtotal raises `ValueError` before the codes are looked at, and an unknown code raises `ParseError('unknown voucher ...')` with the first unknown code as given, also when the other codes are valid",
+    "`price --voucher` prints the subtotal line, one `voucher CODE: -amount` line per applied voucher, `tax:` on the total after the vouchers and `total:`; without `--voucher`, or when no voucher is applicable, the lines are those of `price`",
+    "With `--discount` the minimum spend is checked against the amount after the discount (8 x 12.50 at 60 % off is 4000 cents, so `TENNER` is skipped while `FIVER` applies), and a voucher that took nothing prints `-$0.00`",
+    "`price` with an unknown voucher prints nothing on stdout, `stockroom: error: unknown voucher 'X'` on stderr and exits with 1"
+  ],
+  "hidden_map": {
+    "test_each_voucher_takes_its_fixed_amount_and_codes_ignore_case": 0,
+    "test_a_voucher_needs_its_minimum_spend_and_is_otherwise_skipped": 1,
+    "test_vouchers_apply_in_table_order_and_fiver_gives_way_to_tenner": 2,
+    "test_a_voucher_never_takes_more_than_is_left": 3,
+    "test_a_negative_subtotal_and_unknown_codes_are_refused": 4,
+    "test_price_prints_one_line_per_applied_voucher_and_taxes_what_is_left": 5,
+    "test_the_minimum_spend_is_checked_against_the_amount_after_the_discount": 6,
+    "test_price_refuses_an_unknown_voucher_before_printing_anything": 7
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Vouchers apply in table order, each to what is left, with the minimum spend checked on the passed subtotal (as stated)",
+      "Vouchers apply in the order the codes were given, with the minimum spend checked on the running amount (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

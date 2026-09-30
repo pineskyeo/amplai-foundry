@@ -1,0 +1,41 @@
+{
+  "task_id": "bug-env-boolean",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D13",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Yes/no settings given as environment variables are read wrongly: `STOCKROOM_LOW_STOCK_WARNING=false` still turns the low-stock warning on, because any non-empty text counts as true (while the same setting in the INI settings file is read correctly). An environment variable for a yes/no setting must be read exactly as the settings file reads it: `true`, `false`, `yes`, `no`, `on`, `off`, `1` and `0` in any letter case, with surrounding whitespace ignored; any other text, including empty text, is refused with a `ConfigError`. Environment variables still override the settings file, and other settings are unaffected.",
+  "acceptance": [
+    "The environment values `false`, `False`, `FALSE`, `no`, `No`, `NO`, `off`, `Off`, `OFF` and `0` set `low_stock_warning` to `False`",
+    "The environment values `true`, `True`, `TRUE`, `yes`, `Yes`, `YES`, `on`, `On`, `ON` and `1` set `low_stock_warning` to `True`",
+    "The environment overrides the settings file in both directions: a file value `yes` with environment `false` gives `False`; a file value `no` with environment `true` gives `True`; without an environment value the file value is used",
+    "The environment values `maybe`, `2`, `y`, `t`, `n`, `f`, the empty string, whitespace only, `enabled`, `nope`, `-1`, `truee` and `yes please` are refused with a `ConfigError`",
+    "Surrounding whitespace is ignored: ` false `, a tab plus `no` plus a newline, ` Yes` and `1 ` are read as `False`, `False`, `True` and `True`",
+    "For every word above, the environment variable gives the same value as the settings file gives for the same word, or both raise a `ConfigError`",
+    "Other settings read from the environment (`tax_bp`, `currency_symbol`) are unaffected, unknown variables such as `STOCKROOM_LOW_STOCK` are ignored, and an invalid `STOCKROOM_TAX_BP` is still a `ConfigError`",
+    "`stockroom stock` on the sample data prints no warning on stderr when the variable is `false` or `OFF`, prints `warning: 3 item(s) below reorder level` when it is `yes`, and with `sometimes` returns exit code 1, writes `stockroom: error: ...` to stderr and nothing to stdout"
+  ],
+  "hidden_map": {
+    "test_environment_words_for_false_turn_the_setting_off": 0,
+    "test_environment_words_for_true_keep_the_setting_on": 1,
+    "test_the_environment_overrides_the_settings_file_in_both_directions": 2,
+    "test_words_that_are_not_booleans_are_refused": 3,
+    "test_surrounding_whitespace_is_ignored": 4,
+    "test_the_environment_accepts_exactly_the_words_the_settings_file_accepts": 5,
+    "test_other_settings_and_unrelated_variables_are_unaffected": 6,
+    "test_the_stock_command_follows_the_environment": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

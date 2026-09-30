@@ -4,6 +4,7 @@
   "split_seed": null,
   "bases": {
     "bench": {
+      "app_id": "amplai-bench-app",
       "dir": "bases/bench",
       "commit_file": "bases/bench.commit"
     },

@@ -1,0 +1,37 @@
+{
+  "task_id": "data-safe-export",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "A catalogue or order file opened in a spreadsheet program can run a cell that starts with `=`, `+`, `-` or `@` as a formula. In `stockroom/csvio.py` add `csv_safe(cell: str) -> str`, which puts one `'` in front of a cell that starts with `=`, `+`, `-`, `@`, a tab, a carriage return or `'` itself (the last so that the guard can be undone without ambiguity) and returns every other cell unchanged, including the empty cell and cells whose first character is a space; and `csv_unsafe(cell: str) -> str`, which removes exactly one leading `'` if there is one. For every string `csv_unsafe(csv_safe(s)) == s`, and `csv_safe(s)` never starts with a formula character. Add a keyword-only `safe=False` to `write_items`, `read_items`, `write_orders` and `read_orders`. With `safe=True` the writers pass through `csv_safe` exactly these cells, each as the complete text of the cell before CSV quoting: for items the name cell and the tags cell (the whole `;`-joined text, not each tag), for orders the order id and the customer cells; the SKU, price, quantity, date, status and reorder level cells are never changed. With `safe=True` the readers apply `csv_unsafe` to exactly the same cells as they are found in the file, before any trimming or other parsing (a cell that starts with a space is therefore left alone). Without `safe` the four functions behave exactly as today. Reading back what the `safe` writer wrote with the `safe` reader returns the original items and orders (names, tags, order ids and customers in that round trip have no leading or trailing whitespace, and item names and tags contain no comma, quote or line break); reading it without `safe` returns the guarded text. Then add `python -m stockroom export --items ITEMS_CSV --out OUT`, which reads a catalogue as usual, writes `write_items(items, safe=True)` to `OUT` and prints `exported N items` (`exported 1 item` for one), and the flag `--safe` of `python -m stockroom items`, which reads the file with `read_items(..., safe=True)` (the other options, including `--tag`, then apply to the decoded items). An unreadable catalogue makes `export` exit with code 1, `stockroom: error: ...` on stderr, empty stdout and no output file. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`csv_safe` puts a `'` in front of cells starting with `=`, `+`, `-`, `@`, a tab, a carriage return or `'` (`=SUM(A1)`, `+1`, `-1`, `@home`, `'quoted`, `=`, `-`, `'`, `''`, `=+-@`, `'=x`) and leaves `''`, `plain`, `a=b`, `a-b`, ` =x`, ` -1`, `x'y`, `1+1`, `é=`, `日本` and `a'` unchanged; `csv_unsafe` removes one leading `'` (`'=SUM(A1)` gives `=SUM(A1)`, `''quoted` gives `'quoted`, `'` gives the empty string) and leaves `plain`, the empty string, `a'b`, `=x` and ` 'x` unchanged; for 3,000 seeded random cells `csv_unsafe(csv_safe(cell))` is the cell and `csv_safe(cell)` never starts with a formula character",
+    "`write_items(items, safe=True)` writes the six example items as `MUG-001,'=SUM(A1),12.50,'-x;a,5`, `TEA-010,'@home,8.95,,0`, `PEN-100,'+1 mug,3.00,a;=b,0` (only the first character of the tags cell counts), `NB-200,''quoted,6.25,''t,0`, `LMP-030,'-,49.99,'=x,2` and `CND-007,plain,9.80,a;b,1`; without `safe` the output is unchanged; `read_items(text, safe=True)` returns the original items and `read_items(text)` returns the guarded names and tags, with SKUs and prices unchanged",
+    "`write_orders(orders, safe=True)` guards the order id and customer cells only (`'=1,'-Bob,...`, `A-2,'@Ann,...` on both lines of an order, `'+3,\"''Cy, Jr\",...` with CSV quoting applied after the guard, `A-4,Dee,...`); without `safe` the output is unchanged; `read_orders(text, safe=True)` returns the original orders and `read_orders(text)` returns the guarded ids and customers",
+    "For 400 seeded random catalogues and order lists (names and customers starting with any of `=`, `+`, `-`, `@`, `'`, ordinary letters, digits, accented and CJK letters, spaces, hyphens; customers also containing commas and quotes; tags of the same characters without `;`), the `safe` writer and reader round-trip exactly, no name, tags, order id or customer cell of a written file starts with `=`, `+`, `-`, `@`, a tab or a carriage return, no other cell does either, and every name cell equals the name with one `'` in front exactly when the name starts with `'` or a formula character",
+    "`safe` reading changes nothing else: a file without guards reads the same as without `safe`, a name cell ` 'Blue Mug ` (leading space) and a tags cell ` kitchen` keep the quote and are trimmed as before, an order file reads the same, and the name cell `''` reads as `'`",
+    "`python -m stockroom export --items F --out G` prints `exported 4 items` (`exported 1 item` for one) and writes the guarded file (`MUG-001,'=SUM,12.50,'-x;a,5`, `TEA-010,'@home,8.95,,0`, `PEN-100,''quoted,3.00,''t,0`, `NB-200,plain,6.25,'=b,0`); `items --file G --safe` lists the decoded names (`=SUM`, `@home`, `'quoted`, `plain`), without `--safe` it lists the guarded names, `--safe` works with `--tag=-x` and `--tag 't`, and an unreadable catalogue exits with code 1, empty stdout, `stockroom: error:` on stderr and no output file"
+  ],
+  "hidden_map": {
+    "test_cell_guard_and_its_inverse": 0,
+    "test_items_writer_guards_name_and_tags_only": 1,
+    "test_orders_writer_guards_order_id_and_customer": 2,
+    "test_generated_files_round_trip_and_never_start_with_a_formula": 3,
+    "test_safe_reading_changes_nothing_else": 4,
+    "test_export_command_and_safe_listing": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

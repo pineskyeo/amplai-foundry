@@ -1,0 +1,41 @@
+{
+  "task_id": "refactor-order-model-logic",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "move",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-order-model-logic",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Knowledge about what an order is worth and whether it counts is spread over three modules: `pricing.py` multiplies quantities and prices, while `orders.py` and `report.py` each compare the status with the text `cancelled` on their own and import `pricing` only to add up subtotals. Move that knowledge onto the records in `stockroom/models.py` and make the other modules ask the records. Add the read-only properties `OrderLine.total_cents`, `Order.subtotal_cents` and `Order.is_active` and use them as listed in the acceptance statements. This is a pure refactor: reports and prices come out exactly as before, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`OrderLine.total_cents` is quantity times unit price in cents; `Order.subtotal_cents` is the sum of the `total_cents` of its lines (0 for an order without lines); `Order.is_active` is False for the status `cancelled` and True for `open`, `paid` and `shipped`",
+    "The three new members are properties, not dataclass fields: the field names of `OrderLine` and `Order` stay as they are, and equality and `repr` of the records are unchanged",
+    "`pricing.line_total(line)` returns `line.total_cents` and `pricing.order_subtotal(order)` returns `order.subtotal_cents`, asking the object so that a subclass overriding the property is honoured; `pricing.order_total` builds on them with the same results as before",
+    "`OrderBook.revenue_by_month`, `report.customer_totals` and `report.sales_summary` decide which orders count by asking `order.is_active` (the `N cancelled` figure of the summary is the number of orders that are not active, whatever their status text)",
+    "The same three functions take an order's amount from `order.subtotal_cents`, so an order type that overrides the property is honoured",
+    "Outside `stockroom/models.py`, no module of the `stockroom` package contains the string literal `\"cancelled\"` as a value of its own",
+    "`stockroom/orders.py` and `stockroom/report.py` no longer import anything from the pricing module",
+    "Output is unchanged: for the same orders, `revenue_by_month`, `customer_totals`, `sales_summary` (byte for byte), `order_total` (with and without discount and tax) and `Order.quantity` return exactly what they returned before the change"
+  ],
+  "hidden_map": {
+    "test_models_carry_the_order_arithmetic_and_the_status_rule": 0,
+    "test_the_new_members_are_properties_not_fields": 1,
+    "test_pricing_reads_the_model": 2,
+    "test_book_and_report_ask_the_order_whether_it_is_active": 3,
+    "test_book_and_report_ask_the_order_for_its_subtotal": 4,
+    "test_only_the_models_module_knows_the_cancelled_status": 5,
+    "test_orders_and_report_no_longer_import_pricing": 6,
+    "test_reports_are_unchanged": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

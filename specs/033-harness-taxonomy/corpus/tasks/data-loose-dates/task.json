@@ -1,0 +1,37 @@
+{
+  "task_id": "data-loose-dates",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Dates arrive in many written forms, but `parse_date` reads only ISO dates. In `stockroom/dates.py` add `parse_loose_date(text: str) -> datetime.date` and `format_date_style(value: date, style: str) -> str`, and a constant `DATE_STYLES`. After stripping whitespace around the whole text, `parse_loose_date` accepts exactly these forms, with ASCII digits only and a four-digit year (year 0000 and impossible dates such as `30 Feb 2024`, `31 Apr 2024` or `2023-02-29` are refused): ISO `YYYY-MM-DD` (two-digit month and day); `YYYY/M/D` with one or two digits for month and day; day-first dotted `D.M.YYYY` with one or two digits for day and month; compact `YYYYMMDD`; `D Month YYYY` and `Mon` forms, that is a day of one or two digits, optionally followed directly by an ordinal suffix `st`, `nd`, `rd` or `th`, one or more spaces (U+0020), a month name, one or more spaces and the year; and `Month D, YYYY`, that is a month name, one or more spaces, a day of one or two digits with an optional ordinal suffix, a comma, one or more spaces and the year. A month name is an English month name in full or its first three letters (`Mar`, `March`; not `Sept`, not `Mar.`), in any letter case. An ordinal suffix must be the right one for the day, compared without regard to letter case: `st` after 1, 21 and 31, `nd` after 2 and 22, `rd` after 3 and 23, `th` after every other day including 11, 12 and 13 (`1th`, `2st`, `11st`, `21th` are refused); the suffix exists only in the two month-name forms. Every other text, including `03/04/2024` (day and month order is not guessable), `9.3.24`, `9 March, 2024`, `March 9 2024`, `9-Mar-2024` and text after or before the date, raises `stockroom.errors.ParseError`. `DATE_STYLES` is the tuple `('iso', 'slash', 'dotted', 'compact', 'short', 'long', 'us', 'ordinal')` and `format_date_style` writes a date in a style, with the year padded to four digits and English month names: for 2024-03-09 they are `2024-03-09`, `2024/3/9`, `9.3.2024`, `20240309`, `9 Mar 2024`, `9 March 2024`, `March 9, 2024` and `9th March 2024` (the ordinal style uses the suffix rules above); any other style name (the names are case-sensitive) raises `ValueError`. Finally `python -m stockroom sales` takes its `--from` and `--to` dates in any form that `parse_date` or `parse_loose_date` accepts; any other text exits with code 1 and `stockroom: error: ...` on stderr. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`parse_loose_date` reads the numeric forms `2024-03-09`, `2024/3/9`, `2024/03/09`, `2024/3/09`, `9.3.2024`, `09.03.2024`, `9.03.2024` and `20240309` as 9 March 2024 (also with whitespace around the text), and also `2024/12/31`, `31.12.2023`, `0001-01-01`, `1.2.0999`, `99991231` and `2023-02-28`",
+    "`parse_loose_date` reads day-first and month-first written forms in any letter case with one or more spaces (`9 Mar 2024`, `09 march 2024`, `9 MARCH  2024`, `March 9, 2024`, `mar 9,  2024`, `MARCH 09, 2024`, `9th March 2024`, `9TH mar 2024`, `09th Mar 2024`, `Mar 9th, 2024`), every correct ordinal suffix (`1st`, `2nd`, `3rd`, `4th`, `11th`, `12th`, `13th`, `21st`, `22nd`, `23rd`, `30th`, `31st`, also after the month name as in `Mar 1st, 2024` and `December 25th, 2023`), and all twelve month names in full and in three-letter form in both layouts",
+    "`parse_loose_date` raises `ParseError` for 70 texts including the empty and blank text, `03/04/2024`, `3/4/2024`, `2024-3-9`, `2024-03-9`, `24-03-09`, `9.3.24`, `2024.03.09`, `9 Mar 24`, `9 Sept 2024`, `9 Marc 2024`, `Mar 9 2024`, `March 9,2024`, `9th, March 2024`, wrong suffixes (`1th`, `2st`, `3th`, `4rd`, `11st`, `12nd`, `13rd`, `21th`, `22st`, `23th`), `9 March, 2024`, impossible dates (`31 Apr 2024`, `30 Feb 2024`, `31 Jun 2024`, `2023-02-29`, `29.2.2023`, day 0 and 32, months 0 and 13, year 0000), `9-Mar-2024`, times after the date, `March 9th 2024`, `mar. 9, 2024`, `9 Mar. 2024`, extra words, full-width digits, digit counts that do not fit (`2024031`, `202403099`, `9 Mar 02024`), a tab instead of spaces, and partial dates (`March`, `9 March`, `March 2024`, `2024`, `2024/3`)",
+    "`format_date_style(date(2024, 3, 9), style)` gives the eight texts listed for the styles in order; years are padded to four digits (`0001-02-03`, `0001/2/3`, `31.12.0999`, `31 December 0999`); the ordinal style gives `1st`, `2nd`, `3rd`, `11th`, `12th`, `13th`, `21st`, `22nd`, `23rd`, `31st` with the right months; `short` and `us` use the three-letter and full names as shown; an unknown style name, `german` or `ISO`, raises `ValueError`",
+    "For 3,000 seeded random dates from year 1 to 9999 other than a February 29, every style's text parses back to the date (also with surrounding whitespace); the same holds for every day of 2023 and for each day 1 to 31 of December 2024 in the ordinal style",
+    "`python -m stockroom sales --orders data/orders.csv --from START --to END` prints the same summary for START in `February 1, 2024`, `1 Feb 2024`, `1st February 2024`, `1.2.2024`, `2024/2/1`, `20240201` and `2024-02-01`, and END in `31.12.2030`, `December 31st, 2030`, `31 dec 2030`, `2030/12/31`, `20301231` and `2030-12-31`; `--from 14 Feb 2024` alone equals `--from 2024-02-14`; and `03/04/2024`, `9 Sept 2024`, `2024-3-9` and `yesterday` given to `--from` or to `--to` exit with code 1, empty stdout and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_numeric_forms": 0,
+    "test_written_month_forms": 1,
+    "test_other_texts_are_refused": 2,
+    "test_format_date_style": 3,
+    "test_every_style_round_trips": 4,
+    "test_sales_dates_on_the_command_line": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

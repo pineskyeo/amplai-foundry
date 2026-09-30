@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-csv-quoted-fields",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D5",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "A catalogue file written by the program cannot always be read back. Item names that contain a comma, a double quote or a line break, and every item priced 1,000.00 or more (the price is written as `1,250.00` inside quotes), make reading the file fail with a field-count error or return wrong data. Reading a catalogue file must return exactly the items the writer was given. The catalogue uses standard CSV quoting: a field with a comma, a double quote or a line break is wrapped in double quotes, a double quote inside such a field is doubled, and a quoted field may span several lines (even contain an empty line). Lines may end in `\\n` or `\\r\\n`. Existing behaviour stays: blank lines between rows are ignored, header cells are trimmed, and a file with a wrong header, a wrong number of fields in a row, an invalid SKU, an invalid price or reorder level, or no content at all is refused with a `ParseError`.",
+  "acceptance": [
+    "Items whose names contain commas and double quotes (`Mug, large`, `The \"Big\" Mug`, `Tea, \"green\", 100g`, a single `\"`, a single `,`, `a,b,c,d`) are read back equal to the items that were written",
+    "Items whose names contain line breaks (`Two\\nLines`, `Para one\\n\\nPara two`, `Ends\\nhere, too`, `Quote \"and\"\\nbreak`) are read back equal to the items that were written",
+    "Items priced 100000, 123456789, 99999, 100001 and 100050 cents are read back equal; prices of 1,000.00 or more are written as quoted text such as `\"1,000.00\"`",
+    "For any catalogue written by the writer, whose names have no leading or trailing whitespace and are built from letters, digits, spaces, commas, double quotes, line breaks, semicolons, hyphens and non-ASCII letters, the items read back are equal to the items written (seeded check over 300 generated items)",
+    "A hand-written file with CRLF line ends, quoted names such as `\"Blue, Mug\"`, a quoted price `\"1,250.00\"` and a doubled quote inside a quoted name (`\"He said \"\"hi\"\"\"`) is read into the expected items",
+    "Blank lines before, between and after the rows are ignored and header cells are trimmed; an unquoted comma in a name (six fields), a missing or extra field, a non-numeric price, a non-numeric reorder level, a lower-case SKU, a header with missing columns, an empty file and a whitespace-only file each raise a `ParseError`",
+    "`stockroom items --file F` on a catalogue written by the writer lists an item named `Mug, large` with price `$1,250.00` and an item named `The \"Big\" Mug` with price `$13.00`, and `--tag kitchen` keeps only the first"
+  ],
+  "hidden_map": {
+    "test_names_with_commas_and_quotes_round_trip": 0,
+    "test_names_with_line_breaks_round_trip": 1,
+    "test_prices_of_one_thousand_or_more_round_trip": 2,
+    "test_generated_catalogues_round_trip": 3,
+    "test_hand_written_quoted_fields_and_crlf_line_ends": 4,
+    "test_blank_lines_are_ignored_and_bad_rows_are_refused": 5,
+    "test_cli_lists_items_whose_names_contain_commas": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,43 @@
+{
+  "task_id": "feature-stock-valuation",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/stock-valuation",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a stock valuation report to stockroom: what the on-hand stock is worth, grouped per SKU or per tag, with each group's share of the total, and a `valuation` command.\n\nCreate the module `stockroom/valuation.py` with:\n\n- `ValuationRow`, a frozen dataclass with the fields `key` (str), `units` (int), `value_cents` (int) and `share_bp` (int), in that order.\n- `stock_valuation(items: Iterable[Item], inventory: Inventory, *, by: str = \"tag\") -> tuple[list[ValuationRow], ValuationRow]` returning `(rows, total)`.\n\nFor every item, `units` is `inventory.on_hand(item.sku)` (on-hand stock, reserved units included; 0 for a SKU the inventory does not know) and its value is `units * item.price_cents`. SKUs that are in the inventory but not in `items` are ignored. The SKUs of `items` are assumed to be distinct.\n\nWith `by=\"sku\"` there is one row per item, with the item's SKU as `key`, including items with 0 units. With `by=\"tag\"` there is one row per distinct tag that occurs on at least one item: the row's `units` and `value_cents` are the sums over all items that carry the tag (an item with several tags is counted in full in each of its tags' rows, and a tag repeated on one item counts once for it); items without any tag are collected in one row with the key `(untagged)`. Any other value of `by` raises `ValueError`.\n\n`rows` is sorted by `value_cents` descending and, for equal values, by `key` ascending in Python's default `str` order. `total` is a `ValuationRow` with the key `TOTAL` whose `units` and `value_cents` count every item exactly once (so in tag mode it is not the sum of the rows). `share_bp` of a row is its `value_cents` as a share of `total.value_cents` in basis points (1 basis point = 0.01 %), computed exactly and rounded half up to a whole number (exactly one half rounds up); the `share_bp` of `total` is 10000, except that when the total value is 0 every `share_bp`, the total's included, is 0. The arguments are not modified; `items` may be any iterable. With no items `rows` is `[]` and the total is all zeros.\n\nAdd a command `python -m stockroom valuation --items ITEMS.csv --stock STOCK.csv [--by sku|tag]` (default `tag`). It reads both files like the `stock` command does and prints one line per row of `stock_valuation`, followed by the total row, each as `<key>  <units>  <value>  <share>` with two spaces between the fields and no padding. `<value>` is formatted with the `currency_symbol` setting as `money.format_money` does, and `<share>` is `share_bp` as a percentage with exactly two decimals and a `%` sign written from integers (`3176` gives `31.76%`, `5` gives `0.05%`, `10000` gives `100.00%`, `0` gives `0.00%`). An unknown `--by` value is a usage error (exit code 2).",
+  "acceptance": [
+    "ValuationRow is a frozen dataclass (key, units, value_cents, share_bp); units are on-hand stock (unknown SKU 0) and value is units times catalogue price; inventory SKUs that are not in the catalogue are ignored",
+    "by='sku' gives one row per item (zero-unit items included); any other value than 'sku' or 'tag' raises ValueError",
+    "by='tag' gives one row per distinct tag with the full units and value of every item carrying it (multi-tag items count in each tag, a repeated tag once) and an '(untagged)' row for items without tags",
+    "Rows are sorted by value descending then key ascending; the TOTAL row counts every item once (not the sum of tag rows)",
+    "share_bp is value/total in basis points rounded half up, 10000 for TOTAL and 0 for everything when the total value is 0; arguments are not modified, items may be any iterable, no items gives [] and an all-zero total",
+    "The valuation command prints '<key>  <units>  <value>  <share>' per row then the total row, honours --by (default tag) and the currency_symbol setting, and treats an unknown --by as a usage error (exit 2)"
+  ],
+  "hidden_map": {
+    "test_row_dataclass_and_units": 0,
+    "test_by_sku": 1,
+    "test_invalid_grouping": 1,
+    "test_by_tag_counts_items_in_each_tag": 2,
+    "test_repeated_tag_and_untagged": 2,
+    "test_sorting_and_total_counts_items_once": 3,
+    "test_share_rounding_half_up": 4,
+    "test_zero_total_and_no_items": 4,
+    "test_arguments_not_modified": 4,
+    "test_cli_by_tag_default": 5,
+    "test_cli_by_sku_and_symbol": 5,
+    "test_cli_bad_grouping": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

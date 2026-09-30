@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-leap-year-months",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D4",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Leap years are ignored by the date arithmetic: adding one month to 2024-01-31 gives 2024-02-28 instead of 2024-02-29, and February of a leap year is reported as having 28 days. Leap years follow the Gregorian calendar: a year is a leap year when it is divisible by 4, except century years, which are leap years only when divisible by 400 (2000 and 2400 are leap years; 1900, 2100 and 2200 are not). Adding a number of months (negative numbers go back in time) keeps the day of the month and clamps it to the last day of the resulting month.",
+  "acceptance": [
+    "February has 29 days in 1600, 2000, 2004, 2020, 2024, 2028 and 2400 and 28 days in 1700, 1800, 1900, 2021, 2023, 2025, 2100, 2200 and 2300",
+    "The other months are unchanged (31 days in January, March, May, July, August, October, December; 30 in April, June, September, November) and a month outside 1 to 12 (0, 13, -1) is refused with a `ValueError`",
+    "For every month of every year from 1800 to 2199 the number of days equals the length of that month in the Gregorian calendar",
+    "Month-end dates land on the leap day: 2024-01-31, 2024-01-30 and 2024-01-29 plus one month give 2024-02-29; 2000-01-31 plus one month gives 2000-02-29; 2024-03-31 minus one month gives 2024-02-29; 2024-12-31 minus 10 months gives 2024-02-29; 2023-12-31 plus 2 months gives 2024-02-29; 2024-02-29 plus 48 months gives 2028-02-29, plus 1 month gives 2024-03-29, minus 1 month gives 2024-01-29",
+    "Common years and century years clamp to the 28th: 2023-01-29, 1900-01-31 and 2100-01-30 plus one month give the 28th of February; 2024-02-29 plus 12 months gives 2025-02-28, minus 12 months gives 2023-02-28, plus 24 months gives 2026-02-28; 2024-03-31 minus 13 months gives 2023-02-28; 2000-02-29 plus 1200 months gives 2100-02-28 and plus 1188 months gives 2099-02-28; 2100-03-31 minus one month gives 2100-02-28",
+    "For any date and any number of months from -30 to 30 (and for larger shifts of 1200 months), the result is the same day of the month in the target month, or that month's last day when the target month is shorter",
+    "The month keys from one date's month to another date's month (both included) are correct around February of a leap year and of a century year, for example 2024-01-31 to 2024-03-01 gives 2024-01, 2024-02, 2024-03"
+  ],
+  "hidden_map": {
+    "test_february_follows_the_gregorian_leap_rule": 0,
+    "test_other_months_and_invalid_months": 1,
+    "test_days_in_month_matches_the_calendar_for_every_month_of_four_centuries": 2,
+    "test_month_end_dates_land_on_the_leap_day": 3,
+    "test_common_years_and_century_years_clamp_to_the_28th": 4,
+    "test_add_months_matches_an_independent_calendar_model": 5,
+    "test_month_keys_between_dates_around_a_leap_february": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

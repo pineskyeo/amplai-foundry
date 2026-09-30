@@ -1,0 +1,43 @@
+{
+  "task_id": "feature-reorder-suggestions",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/reorder-suggestions",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add reorder suggestions to stockroom: a function that computes how much of each low item to buy, a new setting for the target level, and a `reorder` command.\n\nCreate the module `stockroom/reorder.py` with `suggest_orders(items: Iterable[Item], inventory: Inventory, *, multiplier: int = 2, pack_sizes: Mapping[str, int] | None = None, incoming: Mapping[str, int] | None = None) -> list[tuple[str, int]]`.\n\nIt returns `(sku, quantity)` pairs in the order of `items`, for the items that need restocking, and nothing for the others:\n\n- An item whose `reorder_level` is 0 is never suggested.\n- The position of an item is `inventory.available(sku)` plus `incoming.get(sku, 0)` (units already on order). An item is suggested only when its position is strictly below its `reorder_level`.\n- The target of an item is `reorder_level * multiplier`. The needed quantity is the target minus the position. It is rounded up to a whole multiple of the item's pack size `pack_sizes.get(sku, 1)`; that rounded quantity is what is suggested.\n- `multiplier` below 1 raises `ValueError`; so does any pack size below 1 and any negative incoming value, in either mapping (also for SKUs that are not among the items). The validation happens before anything is computed. The arguments are not modified.\n\nAdd the setting `reorder_multiplier` to `stockroom/config.py`: default `2`, an integer, read from the INI file key `reorder_multiplier` and from the environment variable `STOCKROOM_REORDER_MULTIPLIER` like the other settings (environment overrides file). It must be a whole number of at least 1; anything else (not a number, negative, or 0) raises `ConfigError`, for the file value and for the environment value alike.\n\nAdd a command `python -m stockroom reorder --items ITEMS.csv --stock STOCK.csv [--incoming SKU=N]... [--pack SKU=N]...`. `--incoming` and `--pack` may be repeated. It reads the catalogue and the stock file like the `stock` command does, calls `suggest_orders` with `multiplier` taken from the `reorder_multiplier` setting, and prints one line per suggestion in the form `SKU QUANTITY` (single space); when there is no suggestion it prints the single line `nothing to reorder`. Exit code 0. A value of `--incoming` is `SKU=N` where SKU is a valid SKU (`models.check_sku`) and N is written with the ASCII digits 0-9 only (0 allowed); a value of `--pack` is the same but N must be at least 1. A malformed value, an invalid SKU, or a SKU given twice within the same option is an error: exit code 1 and `stockroom: error: ...` on stderr, with nothing on stdout. SKUs in these options that are not in the catalogue are accepted and ignored. SKUs of the catalogue that are missing from the stock file have an available stock of 0.",
+  "acceptance": [
+    "suggest_orders returns (sku, quantity) pairs in item order; items with reorder_level 0 and items whose position (available plus incoming) is not strictly below the reorder level are omitted",
+    "The quantity is reorder_level * multiplier minus the position, rounded up to a multiple of the item's pack size (default 1)",
+    "suggest_orders raises ValueError for multiplier < 1, any pack size < 1 or any negative incoming value (also for SKUs not among the items) and does not modify its arguments",
+    "The reorder_multiplier setting defaults to 2, is read from the INI file and STOCKROOM_REORDER_MULTIPLIER (environment wins), and raises ConfigError for non-numbers, negatives and 0 from either source",
+    "The reorder command prints 'SKU QUANTITY' lines or 'nothing to reorder', uses the setting as multiplier, honours repeated --incoming and --pack, ignores SKUs not in the catalogue and treats SKUs missing from the stock file as 0 available",
+    "Malformed --incoming/--pack values, invalid SKUs, SKUs repeated within one option and a pack of 0 exit with code 1 and 'stockroom: error: ...' on stderr and empty stdout"
+  ],
+  "hidden_map": {
+    "test_selection_and_order": 0,
+    "test_incoming_counts_towards_position": 0,
+    "test_quantity_to_target": 1,
+    "test_pack_rounding": 1,
+    "test_validation_errors": 2,
+    "test_arguments_not_modified": 2,
+    "test_config_default_and_sources": 3,
+    "test_config_rejects_bad_values": 3,
+    "test_cli_defaults": 4,
+    "test_cli_options_and_setting": 4,
+    "test_cli_missing_stock_rows_and_unknown_skus": 4,
+    "test_cli_bad_values": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

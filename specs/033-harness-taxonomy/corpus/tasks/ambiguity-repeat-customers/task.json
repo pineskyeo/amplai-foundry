@@ -1,0 +1,52 @@
+{
+  "task_id": "ambiguity-repeat-customers",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-repeat-customers",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Report repeat customers. `stockroom/report.py` gets `repeat_customers(book: OrderBook) -> list[str]`: the names of the customers who have ordered more than once, each name once, sorted in plain string order. Customers are told apart by the exact `customer` text of their orders. A new command `python -m stockroom repeat-customers --orders FILE` reads an order file, prints the names one per line in that order, or the single line `no repeat customers` when there are none, and exits with code 0.",
+  "acceptance": [
+    "`repeat_customers` lists a customer with several ordinary orders once, leaves out customers with a single order, sorts in plain string order (`Ada`, `Zed`, `adam`) and is `[]` for an empty book",
+    "Names that differ in capitalization or in a trailing space are different customers",
+    "A customer who has other orders besides a cancelled one is still listed when those other orders alone are several (`Ivo` with a paid, a cancelled and an open order)",
+    "For the sample orders the list contains `Hana Kim` and `Omar Diaz` and is sorted",
+    "`repeat-customers` prints the names one per line in the same order, or `no repeat customers`, exits with 0 and writes nothing to stderr",
+    "A customer whose orders include cancelled ones is listed or left out by the rule that the customer ordered more than once"
+  ],
+  "hidden_map": {
+    "test_customers_with_several_orders_are_listed_once_and_sorted": 0,
+    "test_customers_are_told_apart_by_their_exact_name": 1,
+    "test_cancelled_orders_do_not_hide_a_customer_with_enough_other_orders": 2,
+    "test_the_sample_orders_list_hana_kim_and_omar_diaz": 3,
+    "test_the_command_prints_one_name_per_line_or_says_there_are_none": 4,
+    "test_every_order_counts_even_a_cancelled_one": 5,
+    "test_customers_with_several_orders_are_listed_once_and_sorted_alt": 0,
+    "test_customers_are_told_apart_by_their_exact_name_alt": 1,
+    "test_cancelled_orders_do_not_hide_a_customer_with_enough_other_orders_alt": 2,
+    "test_the_sample_orders_list_hana_kim_and_omar_diaz_alt": 3,
+    "test_the_command_prints_one_name_per_line_or_says_there_are_none_alt": 4,
+    "test_only_orders_that_are_not_cancelled_count": 5
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "cancel"
+    ],
+    "interpretations": [
+      "Every order the customer placed counts, cancelled ones included: a paid order plus a cancelled order make a repeat customer",
+      "Only orders that are not cancelled count, as in the revenue figures: a paid order plus a cancelled order is a single order"
+    ]
+  },
+  "difficulty_declared": null
+}

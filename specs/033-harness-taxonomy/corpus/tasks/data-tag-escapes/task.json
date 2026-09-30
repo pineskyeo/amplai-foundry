@@ -1,0 +1,41 @@
+{
+  "task_id": "data-tag-escapes",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/new",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The `tags` column of a catalogue file holds `;`-separated tags, so a tag can neither contain a `;` nor be written back faithfully. Give the cell an escape syntax in `stockroom/csvio.py`. `parse_tags(cell)` keeps its rules (split at `;`, trim whitespace around each tag, lower-case, drop empty tags) but a backslash now escapes: `\\;` stands for a `;` and `\\\\` for one backslash, inside a tag, and an escaped `;` does not separate tags. The escaped characters are never trimmed as whitespace and whitespace inside a tag is kept. A backslash followed by anything else, or at the very end of the cell, raises `ParseError`, wherever in the cell it is and even inside a tag that would be dropped. Add `format_tags(tags)`, which writes the cell for an iterable of tags: each tag with every backslash written as `\\\\` and every `;` as `\\;`, joined by `;` (nothing else is changed or checked: case is kept and an empty tag gives an empty segment). `write_items` must use it for the tags column, so that for tags that are non-empty, have no leading or trailing whitespace and are lower-case, `read_items(write_items(items))` returns them unchanged whatever `;` and backslashes they contain (catalogue names and tags in that round trip contain no comma, quote or line break). `python -m stockroom items --tag T` compares `T`, lower-cased, with the decoded tags as it does today. Add `python -m stockroom tags --file ITEMS_CSV`, which counts for every tag the items that carry it (an item counts a tag once however often it repeats there) and prints one line `COUNT TAG` per tag, `TAG` written as `format_tags([tag])`, ordered by count, largest first, then by tag in plain string order; it prints nothing when no item has a tag. A file with a bad escape exits with code 1 and `stockroom: error: ...` on stderr for every command that reads it. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`parse_tags` keeps its existing results: `Kitchen; gift` gives `('kitchen', 'gift')`, the empty cell and whitespace-only cell give `()`, `a;;b;` gives `('a', 'b')`, ` Gift ; ;Tea ` gives `('gift', 'tea')`, repeated tags are kept, tabs around a tag are trimmed, inner spaces are kept",
+    "`parse_tags` decodes the escapes: `gift\\;  wrap;Home` gives `('gift;  wrap', 'home')`, `a\\\\b` gives one tag `a\\b`, `a\\\\;b` gives the two tags `a\\` and `b`, `\\;` gives `(';',)`, `\\\\\\;` gives one tag of a backslash and a semicolon, `a \\; b` gives `('a ; b',)`, ` \\; ` gives `(';',)`, `\\;X` gives `(';x',)`, `x\\; ;y` gives `('x;', 'y')`, `\\; ;\\;` gives two tags `;`, four backslashes give a tag of two backslashes, and `Gift\\\\Shop;a` gives `('gift\\shop', 'a')`",
+    "`parse_tags` raises `ParseError` for a backslash followed by another character (letter, space, tab, newline) or ending the cell, including `a\\b`, `a\\`, a single backslash, `\\x;fine`, `fine;\\`, `a;\\q`, three backslashes, and `a\\ b`",
+    "`format_tags` gives `''` for no tags, `gift;home`, `gift\\; wrap;home` for `('gift; wrap', 'home')`, `a\\\\b` for `a\\b`, `a\\\\;b` for the tags `a\\` and `b`, `\\;` for `;`, three backslashes and a semicolon for the tag backslash-semicolon, `Home;GIFT` for `('Home', 'GIFT')` (no case change), accepts any iterable, and `a;;b` for `['a', '', 'b']`",
+    "For 2,000 seeded random tuples of up to five valid tags (non-empty, no leading or trailing whitespace, lower-case, made of letters, digits, spaces, `-`, `_`, `.`, `;` and backslashes), `parse_tags(format_tags(tags))` returns the tuple, and the written cell contains exactly `len(tags) - 1` unescaped `;`",
+    "For 4,000 seeded random cells over `a`, `B`, space, tab, `c`, `;`, backslash, `-` and `é` that `parse_tags` accepts, no decoded tag is empty or has surrounding whitespace, and `parse_tags(format_tags(tags))` returns the same tags",
+    "`write_items` writes the tags column through `format_tags` (`MUG-001,Blue Mug,12.50,gift\\; wrap;a\\\\b,5` for the tags `gift; wrap` and `a\\b`; `NB-200,Notebook,6.25,\\;;\\\\;x\\\\\\;;plain,0` for the tags `;`, a backslash, `x\\;` and `plain`), and `read_items(write_items(items))` returns the items unchanged, for these and for 200 seeded random catalogues; a cell with a bad escape makes `read_items` raise `ParseError`",
+    "`python -m stockroom items --tag` matches decoded tags (`gift; wrap`, `A\\B`, `;`), `python -m stockroom tags --file F` prints `2 gift\\; wrap`, `2 home`, `2 tea`, `1 \\;`, `1 a\\\\b` for four items that share and repeat tags (each item counted once per tag), prints nothing for a catalogue without tags, and both commands exit with code 1, `stockroom: error:` on stderr and empty stdout for a file with a bad escape"
+  ],
+  "hidden_map": {
+    "test_existing_behaviour_of_parse_tags": 0,
+    "test_escaped_separators_and_backslashes": 1,
+    "test_other_backslashes_are_refused": 2,
+    "test_format_tags": 3,
+    "test_generated_tags_round_trip": 4,
+    "test_generated_cells_are_stable": 5,
+    "test_catalogue_files_round_trip_tags": 6,
+    "test_command_line_with_escaped_tags": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

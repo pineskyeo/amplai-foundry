@@ -1,0 +1,41 @@
+{
+  "task_id": "data-slugify-fold-unique",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/slugify-accents",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Product names are turned into URL slugs with `slugify` in `stockroom/textutil.py`, but it drops every accented letter (`Café` becomes `caf`) and two items with the same name would get the same slug. Extend it. `slugify(text, *, max_length=None)` first folds the text: it is decomposed with Unicode NFKD, every combining mark (category `Mn`) is removed, the result is lower-cased with `str.lower()`, and these letters, which Unicode does not decompose, are replaced: `ß`→`ss`, `æ`→`ae`, `œ`→`oe`, `ø`→`o`, `đ`→`d`, `ł`→`l`, `þ`→`th`, `ð`→`d`. Then every `&` becomes the word `and` (as a word of its own: `R&D` gives `r-and-d`). Then an apostrophe (`'` or U+2019) whose two neighbours in that folded text are both `a-z` or `0-9` is deleted, so `Bob's` gives `bobs`; any other apostrophe is an ordinary separator. Finally, as today, every run of characters outside `a-z0-9` becomes one `-` and leading and trailing `-` are removed (a name with no letter or digit still gives an empty string). With `max_length`, a slug longer than that is cut to the longest prefix made of whole `-`-separated words that fits; if even the first word is longer, the first word is cut to `max_length` characters. `max_length` below 1 raises `ValueError`. Add `unique_slugs(names, *, max_length=None)`, which returns one slug per name, in order, all different: a name whose slug is empty is treated as `n-a`; the first name with a slug keeps it, and each later name whose candidate slug is already taken gets the suffix `-2`, then `-3`, and so on, taking the first candidate not yet used, where slugs handed out earlier (including ones that already end in a number) count as used. With `max_length`, the suffix counts toward the length: the base slug is cut by the same whole-word rule to `max_length` minus the suffix length before the suffix is added; if that leaves no room for at least one character of the base, `ValueError` is raised. `max_length` below 1 raises `ValueError` whatever the names. Finally add the command `python -m stockroom slugs --file ITEMS_CSV [--max-length N]`, which prints one line `SKU SLUG` per item of the catalogue file, in file order, using `unique_slugs` over the item names; an invalid or too small `--max-length` exits with code 1 and `stockroom: error: ...` on stderr, printing nothing on stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "Accents and special letters are folded: `Café Au Lait` gives `cafe-au-lait`, `Crème Brûlée` gives `creme-brulee`, `STRAẞE` gives `strasse`, `Ærø Ølsen` gives `aero-olsen`, `Łódź Œuvre` gives `lodz-oeuvre`, `Þór Ðe` gives `thor-de`, `Đà Nẵng` gives `da-nang`, full-width `Ｈｅｌｌｏ １２` gives `hello-12`, the ligature `ﬁne` gives `fine`, `Ⅻ` gives `xii`, `x²` gives `x2`, a standalone combining mark is dropped, text without a Latin letter or digit gives `''`, and the existing examples (`Blue Mug, Large`, `  --Desk   Lamp--  `) are unchanged",
+    "`&` is the word `and` (`Salt & Pepper` gives `salt-and-pepper`, `R&D` gives `r-and-d`, `a&&b` gives `a-and-and-b`, `&` gives `and`); an apostrophe between two letters or digits is deleted (`Bob's Mug`, `Bob’s Mug` give `bobs-mug`, `a'b'c` gives `abc`, `é'a` gives `ea`, `5'10\"` gives `510`, full-width `Ｏ＇Neil` gives `oneil`) and any other apostrophe separates (`rock 'n' roll` gives `rock-n-roll`, `'Tis` gives `tis`, `ab''cd` and `x'’y` give `ab-cd` and `x-y`, `a-'b` gives `a-b`)",
+    "`slugify(text, max_length=m)` of `Blue Mug, Large` (`blue-mug-large`, 14 characters) gives the whole slug for m of 14 or more, `blue-mug` for m from 8 to 13, `blue` for m from 4 to 7, `blu` for 3 and `b` for 1; `Extraordinarily Long` with 5 gives `extra`, `ab cd ef` gives `ab-cd` for 5 and `ab` for 4; `max_length` 0 or -1 raises `ValueError`",
+    "`unique_slugs` numbers repeats in order and never repeats a slug: `['Mug', 'mug', 'MUG!', 'Mug 2']` gives `['mug', 'mug-2', 'mug-3', 'mug-2-2']`, `['a', 'a', 'a-2']` gives `['a', 'a-2', 'a-2-2']`, `['a-2', 'a', 'a']` gives `['a-2', 'a', 'a-3']`, `['!!!', '???', 'é!']` gives `['n-a', 'n-a-2', 'e']`, `['Café', 'Cafe', 'CAFÉ']` gives `['cafe', 'cafe-2', 'cafe-3']`, an empty list gives `[]`, and any iterable of names is accepted",
+    "`unique_slugs(names, max_length=m)` counts the suffix toward the length: four `Blue Mug` with m of 6 give `['blue', 'blue-2', 'blue-3', 'blue-4']`, ten of them end with `blue-9` and `blu-10`, `['abcdef', 'abcdeg']` with 5 gives `['abcde', 'abc-2']`, `['ab', 'ab']` with 3 gives `['ab', 'a-2']`, `['!!!', '!!!']` with 3 gives `['n-a', 'n-2']`, `['!!!']` with 2 gives `['n']`, `['a', 'a']` with 2 raises `ValueError`, and `max_length` of 0 or less raises `ValueError` even for an empty list",
+    "For 1,500 seeded random texts over a fixed alphabet of ASCII, accented, special, full-width, ligature, CJK, combining, apostrophe and `&` characters, and random limits from 1 to 19: the slug is empty or matches `[a-z0-9]+(-[a-z0-9]+)*`, `slugify` of a slug returns it unchanged, the limited slug is at most the limit long and a prefix of the unlimited slug, it equals the unlimited slug when that fits, otherwise it is whole words (the next word would not have fitted) or, when the first word alone is longer than the limit, that word cut to the limit",
+    "For 400 seeded random name lists (repeated, accented, empty-slug and random names, with no limit or a limit of 6, 8, 12 or 20): `unique_slugs` returns one well-formed slug per name, all different, none longer than the limit, equal to the sequential rule above, and equal to the plain slugs (`n-a` for an empty one) when those are already all different and fit",
+    "`python -m stockroom slugs --file F` prints `SKU SLUG` lines in file order (`MUG-001 blue-mug`, `MUG-002 blue-mug-2`, `TEA-010 cafe-creme`, `TEA-011 bobs-tea` for the names `Blue Mug`, `Blue Mug!`, `Café Crème`, `Bob's Tea`), with `--max-length 6` the lines are `MUG-001 blue`, `MUG-002 blue-2`, `TEA-010 cafe`, `TEA-011 bobs`, and `--max-length` of 0, -4 or 2 (too small for the suffix) exits with code 1, empty stdout and `stockroom: error:` on stderr"
+  ],
+  "hidden_map": {
+    "test_accents_are_folded": 0,
+    "test_ampersands_and_apostrophes": 1,
+    "test_max_length_keeps_whole_words": 2,
+    "test_unique_slugs_numbering": 3,
+    "test_unique_slugs_with_a_length_limit": 4,
+    "test_slugs_are_well_formed_and_stable": 5,
+    "test_generated_name_lists_get_distinct_slugs": 6,
+    "test_slugs_command": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

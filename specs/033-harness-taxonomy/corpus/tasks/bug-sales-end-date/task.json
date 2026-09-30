@@ -1,0 +1,37 @@
+{
+  "task_id": "bug-sales-end-date",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D10",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The last day of a date range is left out. `stockroom sales --orders F --to 2024-02-14` does not count the orders placed on 2024-02-14, and asking an order book for the orders between two dates omits the orders placed on the end date. Both dates of a range are included (an order placed on the start date or on the end date belongs to it), orders come back oldest first with ties in insertion order, and a range that contains no dates (the end is before the start) contains no orders. In the command, `--from` alone means there is no upper limit and `--to` alone means there is no lower limit.",
+  "acceptance": [
+    "Orders between 2024-01-08 and 2024-01-19 of the sample file are A-1001 and A-1002; between 2024-01-09 and 2024-02-14 they are A-1002, A-1003 and A-1004; between 2024-03-21 and 2024-03-21 only A-1006; between 2024-03-02 and 2024-12-31 A-1005 and A-1006",
+    "A one-day range returns that day's orders in insertion order, and a longer range returns orders oldest first with orders of one day in insertion order",
+    "A range with no orders, a range ending before the first order, a range starting after the last order and a reversed range (end before start) return an empty list",
+    "`stockroom sales --to 2024-02-14` on the sample file prints `3 orders, 1 cancelled` and `Revenue: $122.35`; `--to 2024-02-13` prints `2 orders, 1 cancelled` and `Revenue: $67.95`; `--to 2024-03-21` prints `5 orders, 1 cancelled` and `Revenue: $149.65`",
+    "`stockroom sales --from D --to D` counts only the orders placed on day D: 2024-03-21 gives `1 order, 0 cancelled` and `Revenue: $12.50`, 2024-01-08 gives `1 order, 0 cancelled` and `Revenue: $33.95`",
+    "With only `--from`, every order on or after that day is counted, even one placed on 9999-12-31; with only `--to`, every order up to and including that day is counted, and a `--to` before the first order gives `0 orders, 0 cancelled` and `Revenue: $0.00`"
+  ],
+  "hidden_map": {
+    "test_between_includes_orders_placed_on_either_end_date": 0,
+    "test_a_one_day_range_returns_that_days_orders_in_insertion_order": 1,
+    "test_empty_and_reversed_ranges_find_nothing": 2,
+    "test_cli_to_date_is_the_last_day_included": 3,
+    "test_cli_single_day_range": 4,
+    "test_cli_without_to_has_no_upper_limit": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

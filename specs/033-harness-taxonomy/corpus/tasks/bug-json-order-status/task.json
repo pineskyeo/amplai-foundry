@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-json-order-status",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D6",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The status of an order is lost when orders are saved to JSON and loaded again: a paid, shipped or cancelled order comes back as `open`. A cancelled order then counts towards revenue again after the round trip. Loading JSON orders must give back the status the order was saved with. An order object without a status is an open order. The written format stays as it is (an order object has the keys `customer`, `lines`, `order_id`, `placed` and `status`).",
+  "acceptance": [
+    "Orders with each of the statuses `open`, `paid`, `shipped` and `cancelled` are equal to the originals after being dumped to JSON and loaded again",
+    "An order object with the key `status` set to `shipped`, `cancelled` or `open` is loaded with that status, and an order object without that key is loaded as `open`",
+    "A status that is not one of the four words (`teleported`, `Open`, the empty string, `null`, the number 5, a list, an object) is refused with a `ParseError`",
+    "The JSON written for an order has exactly the keys `customer`, `lines`, `order_id`, `placed` and `status`, and the `status` value is the order's status",
+    "The orders of the sample order file, dumped to JSON and loaded again, are equal to the originals, keep the statuses shipped, paid, cancelled, paid, open, open in that order, and give the revenue per month `2024-01`: 6795, `2024-02`: 5440, `2024-03`: 2730"
+  ],
+  "hidden_map": {
+    "test_every_status_survives_a_json_round_trip": 0,
+    "test_load_reads_the_status_key": 1,
+    "test_a_status_outside_the_four_allowed_words_is_refused": 2,
+    "test_the_written_json_keeps_its_status_key": 3,
+    "test_the_sample_orders_keep_their_revenue_through_json": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

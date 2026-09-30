@@ -1,0 +1,48 @@
+{
+  "task_id": "ambiguity-fiscal-weeks",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-fiscal-weeks",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add fiscal weeks to the sales report. Fiscal weeks run from Sunday to Saturday and belong to the year of their Saturday; week 01 of a year is the week of that year's first Saturday, and the weeks after it count up by one. A week is labelled `YYYY-Www` with a four-digit year and a two-digit week (for example 2023-12-31, a Sunday, lies in `2024-W01`, because the Saturday ending its week is 2024-01-06). `stockroom/dates.py` gets `fiscal_week(value: date) -> str`, the label of the week that contains `value`, and `week_bounds(label: str) -> tuple[date, date]`, the Sunday and the Saturday of the labelled week; `week_bounds` raises `ParseError` with the message `not a week: 'X'` (the text as given) for text that is not exactly a label (ASCII digits, upper-case `W`, no surrounding characters) and for a week number that the year does not have (00, or a number after the year's last week, which is the week of its last Saturday). `OrderBook.revenue_by_fiscal_week()` returns `{label: cents}` with the subtotals of the orders that are not cancelled, for every week from the first week with such an order to the last, in chronological order; a week in between without such an order has the amount 0, and a book without such orders gives `{}`. `python -m stockroom sales --orders FILE --weekly` prints the usual summary, one blank line, the line `Weekly revenue` and one line per entry of that dictionary: the label, two spaces and the amount formatted as in the summary (currency symbol from the settings). The breakdown covers the same orders as the rest of the summary. Without `--weekly` the output is unchanged.",
+  "acceptance": [
+    "`fiscal_week` gives 2024-W01 for 2024-01-01, 2023-12-31 and 2024-01-06, 2024-W02 for 2024-01-07, 2022-W01 for 2022-01-01, 2021-12-31 and 2021-12-26, 2021-W52 for 2021-12-25, 2024-W52 for 2024-12-28, 2025-W01 for 2024-12-29, 2022-W53 for 2022-12-31 and 2022-12-25 and 2023-W01 for 2023-01-01",
+    "For every day from 2000-01-01 to 2035-12-31 `fiscal_week` follows the rule (Sunday to Saturday, the year of the week's Saturday, week 01 is the week of the year's first Saturday)",
+    "`week_bounds` returns the Sunday and the Saturday of a labelled week (`2024-W01` is 2023-12-31 to 2024-01-06), and every day of those seven days has that label",
+    "`week_bounds` raises `ParseError('not a week: ...')` with the text as given for text that is not exactly `YYYY-Www`, for week 00 and for a week after the year's last week (`2022-W53` exists, `2023-W53` and `2024-W53` do not)",
+    "`revenue_by_fiscal_week` lists every week from the first to the last week with a non-cancelled order in chronological order, gives 0 for the weeks in between, crosses year boundaries (`2023-W52` is followed by `2024-W01`), and is `{}` without such orders",
+    "For the sample orders the breakdown has the weeks `2024-W02` to `2024-W12` with 3395, 3400, 0, 0, 0, 5440, 0, 1480, 0, 0 and 1250 cents",
+    "`sales --weekly` prints the unchanged summary, one blank line, `Weekly revenue` and one `label  amount` line per week, follows `--from` and the currency setting, and prints no weekly part without the flag"
+  ],
+  "hidden_map": {
+    "test_fiscal_week_labels_of_the_stated_examples": 0,
+    "test_fiscal_week_follows_the_rule_for_every_day_from_2000_to_2035": 1,
+    "test_week_bounds_gives_the_sunday_and_the_saturday_of_the_week": 2,
+    "test_week_bounds_refuses_text_that_is_not_a_week": 3,
+    "test_the_weekly_revenue_crosses_a_year_boundary_and_skips_cancelled_orders": 4,
+    "test_the_weekly_revenue_labels_follow_the_rule_for_random_orders": 4,
+    "test_the_weekly_revenue_lists_every_week_between_the_first_and_the_last_sale": 5,
+    "test_sales_weekly_prints_the_summary_then_one_line_per_week": 6,
+    "test_sales_weekly_follows_from_and_the_currency_setting": 6
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Weeks run Sunday to Saturday and belong to the year of their Saturday (as stated)",
+      "Weeks run Monday to Sunday (contradicts the stated rule)"
+    ]
+  },
+  "difficulty_declared": null
+}

@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-config-profiles",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/config-profiles",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add named profiles to the INI settings file, so one file can serve several deployments. Besides the section `[stockroom]`, the file may hold sections `[stockroom:NAME]`, one per profile. A profile is chosen with the new global option `--profile NAME` or with the environment variable `STOCKROOM_PROFILE`; the option wins over the variable. An empty name, from the option or from the variable, means that no profile is chosen, so `--profile \"\"` switches off a profile that the variable names. `STOCKROOM_PROFILE` is not a setting: it needs no setting key and is never an error.\n\nWithout a chosen profile everything works as before and the `[stockroom:NAME]` sections are ignored completely (their keys are not even validated). With a chosen profile:\n- The settings come from the defaults, then `[stockroom]` (which may be missing), then the profile section, then the `STOCKROOM_<KEY>` environment variables, each overriding the one before. A profile section overrides only the keys that are written in that profile section itself. As today, keys of a `[DEFAULT]` section count as keys of `[stockroom]` (when that section exists) and they are not copied into profile sections.\n- The section name is matched exactly and case-sensitively: `[stockroom:dev]` is the profile `dev`, while `[Stockroom:dev]`, `[stockroom: dev]`, `[stockroom-dev]` and `[stockroom:dev ]` are not profiles. A profile name may contain any characters that can appear in a section name, for example `prod-eu`, `a.b`, `x y` or `a:b`.\n- The keys and values of a profile section are validated like those of `[stockroom]`: an unknown key or a bad value (a `tax_bp` that is not a non-negative whole number, a boolean that is not a boolean) ends the command with exit code 1 and the one usual error line; for an unknown key the line contains the key and the header text `[stockroom:NAME]`.\n- A chosen profile that the file does not define, and a chosen profile when no `--config` file is given, end the command with exit code 1 and one `stockroom: error: ` line that contains the profile name. Stdout stays empty in every error case.\n\nNothing else changes: other commands, the settings file format without profiles and the error messages for problems outside profiles keep their behaviour.",
+  "acceptance": [
+    "--profile NAME applies the keys of [stockroom:NAME] on top of [stockroom]: a profile that sets currency_symbol and low_stock_warning changes price output and the warning of stock, keys it does not set keep the [stockroom] value, and the [stockroom] section may be absent",
+    "STOCKROOM_PROFILE chooses a profile when the option is absent, the option wins over the variable, an empty option value switches the variable's profile off, and an empty variable means no profile",
+    "STOCKROOM_<KEY> environment variables override the profile's values; STOCKROOM_PROFILE itself is never reported as an unknown setting",
+    "Without a chosen profile, or for profile sections that are not chosen, [stockroom:*] sections are not validated (a bad key or value there is no error)",
+    "Section names are matched exactly and case-sensitively ([Stockroom:dev], [stockroom: dev], [stockroom-dev], [stockroom:dev ] are not profiles); names with '-', '.', spaces and ':' work",
+    "Keys of [DEFAULT] apply to [stockroom] as before and are not copied into a profile section, so a profile without the key keeps the [stockroom] value",
+    "An unknown key or a bad value in the chosen profile, a profile that is not defined, and a profile without --config each give exit code 1, empty stdout and one 'stockroom: error: ' line (naming the key and '[stockroom:NAME]', or the profile name)",
+    "Runs without profiles behave exactly as before, and --profile without a value is a usage error (exit 2)"
+  ],
+  "hidden_map": {
+    "test_profile_overrides_the_base_section": 0,
+    "test_profile_from_the_environment_and_precedence": 1,
+    "test_environment_settings_beat_the_profile": 2,
+    "test_profiles_that_are_not_chosen_are_not_validated": 3,
+    "test_section_names_are_matched_exactly": 4,
+    "test_default_section_is_not_copied_into_profiles": 5,
+    "test_errors_in_the_chosen_profile": 6,
+    "test_nothing_changes_without_profiles": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

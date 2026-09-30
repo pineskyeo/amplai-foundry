@@ -1,0 +1,52 @@
+{
+  "task_id": "ambiguity-order-workflow",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-order-workflow",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add an order status workflow. `stockroom/workflow.py` gets `allowed_next(status: str) -> tuple[str, ...]` and `advance(order: Order, new_status: str, inventory: Inventory | None = None) -> Order`. The statuses can change only as follows: `open` to `paid` or `cancelled` (in that order in `allowed_next`), `paid` to `shipped` or `cancelled` (in that order), and `shipped` and `cancelled` never change. `allowed_next` of a text that is not a status raises `ParseError` with the message `unknown status 'X'`. `advance` returns the order with its status replaced, everything else equal, and leaves the given order object alone. Its checks, in this order: a `new_status` that is not one of the four statuses raises `ParseError` with the message `<order_id>: unknown status 'X'`; a change that the rules above do not allow (including to the same status) raises `StockroomError` with the message `<order_id>: cannot change status from <old> to <new>`. When an `inventory` is given, two changes also move stock, per SKU, using the total quantity of the SKU over all lines of the order (an order can list a SKU on several lines): `paid` to `shipped` first checks every SKU, in the order the SKUs first appear in the order's lines, and raises `StockError` with the message `<sku>: only <reserved> reserved` for the first SKU whose total quantity is above `inventory.reserved(sku)`, changing nothing at all; when every SKU is covered each SKU's total is shipped with `inventory.ship`. `paid` to `cancelled` releases, for each SKU, the smaller of its total quantity and the units currently reserved for it (nothing for a SKU with none reserved or one the inventory does not know) with `inventory.release`, and never fails for stock reasons. The other changes, and any change without an inventory, touch no stock. Nothing changes when a check fails. `OrderBook.advance(order_id: str, new_status: str, inventory: Inventory | None = None) -> Order` applies `advance` to the stored order, stores the result in the same position of the book, and returns it; an unknown id raises `StockroomError` (`no order X`, as `get` does) and a failed change leaves the book as it was.",
+  "acceptance": [
+    "`allowed_next` gives `('paid', 'cancelled')` for `open`, `('shipped', 'cancelled')` for `paid`, `()` for `shipped` and `cancelled`, and raises `ParseError('unknown status ...')` for other text",
+    "`advance` changes an order to each allowed status and to no other: every pair of the four statuses is either done (only `status` changes) or refused with `StockroomError('<id>: cannot change status from <old> to <new>')`, the same status included, and the given order is never modified",
+    "An unknown new status raises `ParseError('<id>: unknown status ...')` before the transition rule is looked at and before any stock is touched, whatever the old status",
+    "Shipping a paid order with an inventory ships the total quantity of each SKU over all its lines (two lines of one SKU count together) and leaves other SKUs alone",
+    "Shipping refuses with `StockError('<sku>: only <n> reserved')` when any SKU's total is above what is reserved, names the first such SKU in order of first appearance in the lines (also a SKU the inventory does not know, with 0), and changes no level at all, not even for covered SKUs",
+    "Cancelling a paid order releases, per SKU, at most the units reserved for it (up to the order's total quantity of that SKU), ignores SKUs the inventory does not know and does not fail for stock reasons; on-hand levels do not change",
+    "Changes from `open`, changes without an inventory, and orders with no lines touch no stock",
+    "A refused change (a transition the rules do not allow) leaves every stock level unchanged",
+    "`OrderBook.advance` stores the changed order in the same position and returns it, keeps the book unchanged when the change fails (stock shortage, refused transition), and raises `StockroomError('no order X')` for an unknown id",
+    "For seeded random orders, inventories and sequences of status changes, every result, error message and stock level equals the outcome computed from the rules"
+  ],
+  "hidden_map": {
+    "test_each_status_allows_only_its_next_statuses": 0,
+    "test_every_pair_of_statuses_is_either_done_or_refused_with_the_stated_message": 1,
+    "test_an_unknown_new_status_is_refused_before_anything_else": 2,
+    "test_shipping_a_paid_order_takes_the_units_of_each_sku_out_of_the_stock": 3,
+    "test_a_shortage_on_any_sku_refuses_the_shipment_and_changes_nothing": 4,
+    "test_cancelling_a_paid_order_releases_what_is_reserved_up_to_its_quantities": 5,
+    "test_open_orders_and_a_missing_inventory_do_not_touch_any_stock": 6,
+    "test_a_refused_change_leaves_the_stock_alone": 7,
+    "test_the_order_book_keeps_the_position_and_returns_the_changed_order": 8,
+    "test_random_workflows_match_a_model_of_the_rules": 9
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "A shipment is all or nothing over the per-SKU totals and a cancellation releases at most what is reserved (as stated)",
+      "A shipment ships the covered lines and skips the rest, and a cancellation raises when too little is reserved (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

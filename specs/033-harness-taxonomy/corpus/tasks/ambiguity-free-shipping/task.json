@@ -1,0 +1,59 @@
+{
+  "task_id": "ambiguity-free-shipping",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-free-shipping",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add shipping to order totals. `stockroom/shipping.py` gets the constants `SHIPPING_CENTS = 600` and `FREE_SHIPPING_CENTS = 5000` and `total_with_shipping(order: Order, *, discount_percent: float = 0, tax_bp: int = 0) -> int`, the amount the customer pays. Shipping is a flat $6.00, except that it is free for an order that reaches $50.00 (an order worth exactly $50.00 ships free). Shipping is never taxed and never discounted; everything else is as in `order_total`. The `price` command gets a flag `--shipping`: it prints a line `shipping: <amount>` (`$0.00` when it is free) between the `tax:` line and the `total:` line, and the total includes the shipping. Without the flag the output is unchanged.",
+  "acceptance": [
+    "An order with no discount and no tax pays its subtotal plus $6.00 when the subtotal is below $50.00 (4999 cents gives 5599), and only its subtotal from $50.00 on (5000 gives 5000); an order with no lines pays $6.00",
+    "Shipping is added after tax and discount: it is neither taxed nor reduced by the discount (a 4000 cent order with 10 % tax pays 4000 + 400 + 600)",
+    "A discount that leaves an order clearly above or clearly below the $50.00 line (8000 cents at 25 % off, 2000 cents at 50 % off) gives the total with or without shipping as the order's worth says",
+    "`price --shipping` prints the shipping line between `tax:` and `total:` with the shipping included in the total, the tax computed as before, and without the flag the output is unchanged",
+    "Whether an order that a discount moves across the $50.00 line pays shipping follows the order's worth, in `total_with_shipping` and in `price --shipping` alike"
+  ],
+  "hidden_map": {
+    "test_shipping_is_a_flat_fee_that_is_free_from_fifty_dollars": 0,
+    "test_shipping_is_neither_taxed_nor_discounted": 1,
+    "test_a_discount_that_keeps_the_order_clearly_above_or_below_the_line": 2,
+    "test_price_with_shipping_adds_a_line_and_keeps_the_rest": 3,
+    "test_the_order_is_worth_what_it_costs_before_its_discount": 4,
+    "test_shipping_is_a_flat_fee_that_is_free_from_fifty_dollars_alt": 0,
+    "test_shipping_is_neither_taxed_nor_discounted_alt": 1,
+    "test_a_discount_that_keeps_the_order_clearly_above_or_below_the_line_alt": 2,
+    "test_price_with_shipping_adds_a_line_and_keeps_the_rest_alt": 3,
+    "test_the_order_is_worth_what_it_costs_after_its_discount": 4
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "threshold",
+      "before the discount",
+      "after the discount",
+      "before discount",
+      "after discount",
+      "pre-discount",
+      "post-discount",
+      "discounted subtotal",
+      "discounted amount",
+      "discounted total",
+      "undiscounted"
+    ],
+    "interpretations": [
+      "The order's worth is its subtotal before any discount: a 6000 cent order at 20 % off ships free",
+      "The order's worth is what it costs after the discount: a 6000 cent order at 20 % off (4800) pays shipping"
+    ]
+  },
+  "difficulty_declared": null
+}

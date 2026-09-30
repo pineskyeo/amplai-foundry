@@ -1,0 +1,44 @@
+{
+  "task_id": "feature-bundles",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/bundles",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add bundles (kits) to stockroom: products that are sold as a set of other products and may contain other bundles. Provide a text format for bundle definitions, flattening of nested bundles, a buildable-count calculation against stock, and a `bundles` command.\n\nCreate the module `stockroom/bundles.py` with three functions.\n\n`parse_bundles(text: str) -> dict[str, dict[str, int]]` reads definitions, one per line, in the form `BUNDLE = COMPONENT + COMPONENT + ...`, for example `KIT-100 = MUG-001 x2 + TEA-010`. A component is a SKU, optionally followed by whitespace and `x` and a quantity written with the ASCII digits 0-9 (`x2`); the quantity is at least 1 and defaults to 1. Whitespace around `=` and `+` and at the ends of a line is optional and ignored; the SKU and the quantity of a component are separated by whitespace. Blank lines and lines whose first non-blank character is `#` are ignored. All SKUs (the bundle's and every component's) must be valid as `models.check_sku` defines them. The result maps each bundle SKU to a dict from component SKU to quantity, exactly as written (nested bundles are not expanded here). Errors are `ParseError` with a message starting `line N:` where N is the 1-based line number in the whole text (blank and comment lines counted). These are errors: a line without exactly one `=`; an invalid SKU; an empty component (for example a trailing `+`), a component with more than a SKU and one quantity word, or a quantity word that is not `x` followed by digits only (so `X2`, `x-1`, `x1.5`, `2` and `x` are errors) or that is 0; the same component listed twice in one bundle; a bundle SKU defined on two lines.\n\n`flatten(bundles: Mapping[str, Mapping[str, int]]) -> dict[str, dict[str, int]]` returns, for every bundle in the mapping, the quantities of its base SKUs. A component that is itself a key of `bundles` is a nested bundle and is replaced by its own components with the quantities multiplied by the nested quantity, recursively; quantities of a base SKU reached more than once (through several components or paths) are added up. A nested bundle may be defined later in the mapping than the bundle that uses it. The arguments are not modified. If bundles contain each other in a loop (a bundle that contains itself directly or through others), `flatten` raises `ParseError` whose message contains the word `cycle` (in lower case) and the SKUs of the bundles on the loop; this applies to every bundle in the mapping, including loops that no other bundle reaches.\n\n`max_buildable(bundles: Mapping[str, Mapping[str, int]], sku: str, inventory: Inventory) -> int` returns how many complete bundles `sku` could be assembled from the stock available right now: for the flattened bundle, the minimum over its base SKUs of `inventory.available(base) // quantity` (a base SKU unknown to the inventory has 0 available). A `sku` that is not a key of `bundles` raises `ParseError`; loops raise as in `flatten`. The inventory is not changed.\n\nAdd a command `python -m stockroom bundles --defs DEFS.txt --stock STOCK.csv`. It reads the stock file like the `stock` command does, parses the definitions file, and prints one line per bundle, sorted by bundle SKU: `<bundle>  <count>` (two spaces) where the count is `max_buildable`. When the definitions file holds no bundle it prints the single line `no bundles`. A `ParseError` ends the command with exit code 1 and the usual `stockroom: error: ...` message on stderr.",
+  "acceptance": [
+    "parse_bundles reads 'BUNDLE = COMPONENT + ...' lines with optional 'xN' quantities (default 1), ignores blank lines and '#' comment lines, tolerates whitespace around '=' and '+', and returns {bundle: {component: quantity}} unexpanded",
+    "parse_bundles raises ParseError 'line N: ...' (N counts every physical line) for: not exactly one '=', an invalid SKU, an empty component, extra words in a component, a quantity word that is not x plus ASCII digits or is 0, a component listed twice in one bundle, and a bundle defined twice",
+    "flatten expands nested bundles recursively with multiplied quantities, adds up base SKUs reached more than once, accepts nested bundles defined later, covers every bundle of the mapping and does not modify its argument",
+    "flatten raises ParseError containing 'cycle' and the SKUs on the loop for self-containing and mutually containing bundles, including loops no other bundle reaches",
+    "max_buildable is the minimum over the flattened base SKUs of available // quantity (unknown base SKU counts as 0 available), raises ParseError for an unknown bundle and does not change the inventory",
+    "The bundles command prints '<bundle>  <count>' per bundle sorted by SKU, 'no bundles' for an empty definitions file, and exits 1 with 'stockroom: error: ...' on a ParseError"
+  ],
+  "hidden_map": {
+    "test_parse_basic_and_spacing": 0,
+    "test_parse_comments_and_blank_lines": 0,
+    "test_parse_errors_with_line_numbers": 1,
+    "test_parse_quantity_words": 1,
+    "test_parse_duplicates": 1,
+    "test_flatten_nested_and_diamond": 2,
+    "test_flatten_forward_reference_and_no_mutation": 2,
+    "test_flatten_cycles": 3,
+    "test_flatten_unreachable_cycle": 3,
+    "test_max_buildable": 4,
+    "test_max_buildable_errors_and_no_change": 4,
+    "test_cli_counts": 5,
+    "test_cli_empty_and_errors": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

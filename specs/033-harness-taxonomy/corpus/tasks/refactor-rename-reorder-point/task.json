@@ -1,0 +1,41 @@
+{
+  "task_id": "refactor-rename-reorder-point",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "rename",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-rename-reorder-point",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The catalogue field that says at which stock level an item should be reordered is called `reorder_level` on `Item`, which reads like a current level rather than a threshold. Rename the field to `reorder_point` throughout the code (the record, the code that reads and writes it, the stock check and the sample data script). Only the name in the code changes: the CSV column is still called `reorder_level`, and the messages, help texts and output that mention it keep their wording, because files and scripts outside this repository depend on them. Code that only reads `item.reorder_level` must keep working through a read-only alias. The existing tests keep passing without being edited.",
+  "acceptance": [
+    "The fields of `Item` are `sku`, `name`, `price_cents`, `tags`, `reorder_point`, in this order; `reorder_point` defaults to 0, can be passed positionally or by keyword, and appears in `repr` and `dataclasses.asdict`; equality and hashing of items are unchanged",
+    "Validation messages are unchanged: a negative reorder point gives `ParseError` `<sku>: negative reorder level`, a negative price `<sku>: negative price`",
+    "`Item.reorder_level` is still readable and returns the reorder point; it is a read-only property, not a dataclass field",
+    "Outside the alias definition in `stockroom/models.py`, no code in the `stockroom` package or in `scripts/` uses the name `reorder_level` as an attribute, keyword argument, parameter or variable",
+    "The file format is unchanged: `ITEM_HEADER` still ends with the column `reorder_level`, `read_items` of a file with that header fills `reorder_point`, `write_items` writes the same text as before (so the round trip of a catalogue file is identical), a bad number gives `line N: reorder_level is not a whole number: ...`, and a header with the column `reorder_point` is refused with `item header must be sku,name,price,tags,reorder_level`",
+    "`Inventory.low_stock(items)` returns the items whose available stock is below their reorder point, in the given order",
+    "`stockroom stock` prints the same `LOW ...` lines and the same `warning: N item(s) below reorder level` line as before, and the help texts that mention the reorder level are unchanged",
+    "`scripts/make_sample_data.py` writes byte-identical files for the same seed and order count"
+  ],
+  "hidden_map": {
+    "test_the_item_field_is_called_reorder_point": 0,
+    "test_validation_messages_are_unchanged": 1,
+    "test_the_old_name_stays_readable_as_a_read_only_alias": 2,
+    "test_no_code_uses_the_old_name_except_the_alias": 3,
+    "test_the_file_format_and_its_messages_keep_the_old_wording": 4,
+    "test_low_stock_compares_with_the_reorder_point": 5,
+    "test_the_stock_command_output_is_unchanged": 6,
+    "test_the_sample_data_script_writes_the_same_files": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

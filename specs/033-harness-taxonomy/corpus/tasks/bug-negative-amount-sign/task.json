@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-negative-amount-sign",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D1",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Amount text with a minus sign loses the sign when the amount is smaller than one unit. The text `-0.50` is read as plus 50 cents, so a catalogue row priced -0.50 is accepted as an item costing 0.50, and an order line with unit price -0.25 is accepted as 0.25, although negative prices must be refused. Amount text with a leading minus sign must be read as a negative number of cents (or as zero when the amount is zero), whatever its size. Everything that is read correctly today (positive amounts, negative amounts of 1.00 or more, a leading `$`, thousands separators, surrounding whitespace) must keep its value.",
+  "acceptance": [
+    "Negative amounts between -1 and 0 keep their sign: `-0.50` is -50 cents, `-0.05` is -5, `-0.5` is -50, `-0.99` is -99, `-0.01` is -1, `-0.10` is -10, also with surrounding whitespace",
+    "Other negative amounts are unchanged: `-1.50` is -150, `-3.5` is -350, `-12` is -1200, `-1,234.05` is -123405, `-1000.99` is -100099, `-3.50` is -350",
+    "Zero and positive amounts are unchanged: `0.00`, `-0` and `-0.00` are 0, `0.50` is 50, `0.05` is 5, `$0.75` is 75, `12.34` is 1234",
+    "For every whole number of cents from -500 to 500, and for -123456, -100000, -99999, -100001 and 123456, reading the text that `format_money(cents, symbol=\"\")` produces gives back the same number of cents",
+    "A catalogue file with an item price of `-0.50` or of `-0.05` is refused with a `ParseError`, also when it follows a valid row",
+    "An order file with unit price `-0.25` is refused with a `ParseError`, while unit price `0.25` is read as 25 cents",
+    "`stockroom items --file F` on a catalogue with an item priced -0.50 returns exit code 1, writes `stockroom: error: ...` to stderr and nothing to stdout"
+  ],
+  "hidden_map": {
+    "test_negative_amounts_below_one_keep_their_sign": 0,
+    "test_other_negative_amounts_are_unchanged": 1,
+    "test_zero_and_positive_amounts_are_unchanged": 2,
+    "test_formatted_amounts_read_back": 3,
+    "test_catalogue_with_negative_fraction_price_is_refused": 4,
+    "test_order_file_with_negative_fraction_unit_price_is_refused": 5,
+    "test_cli_refuses_a_catalogue_with_a_negative_price": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

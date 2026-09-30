@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-top-zero",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D12",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Asking for the top 0 customers returns all of them: a sales summary built with `top=0` lists every customer, and the ranking of the largest totals returns the whole ranking when the count is 0. The count is the number of entries wanted: the largest totals come first, ties are ordered by name, the first `n` entries are returned, and a count of 0 returns nothing. The rest of the sales summary is unaffected.",
+  "acceptance": [
+    "The ranking for a count of 0 is empty, also for an empty mapping and for tied totals",
+    "For the totals `b`: 5, `a`: 5, `c`: 9, `d`: 1, counts 1, 2, 3, 4 and 99 give the first 1, 2, 3, 4 and all 4 of `c` 9, `a` 5, `b` 5, `d` 1 in that order, and any count on an empty mapping gives an empty list",
+    "For seeded random totals and every count from 0 to the number of names plus 2, the ranking is the totals sorted by total descending then name, cut to the first `n` entries",
+    "A sales summary of the sample orders built with `top=0` has the lines `5 orders, 1 cancelled` and `Revenue: $149.65`, still shows the month row for `2024-02` with `$54.40`, and its customer table has a header and a rule but no rows and none of the customer names",
+    "A sales summary lists as many customers as asked: `top=1` gives `Hana Kim` only, `top=2` gives `Hana Kim` and `Omar Diaz`, the default lists all three customers, and `top=50` lists the three customers"
+  ],
+  "hidden_map": {
+    "test_asking_for_none_returns_an_empty_ranking": 0,
+    "test_other_counts_still_rank_largest_first_with_ties_by_name": 1,
+    "test_random_totals_match_the_definition_for_every_count": 2,
+    "test_a_sales_summary_with_no_top_customers_lists_none": 3,
+    "test_a_sales_summary_lists_as_many_customers_as_asked": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

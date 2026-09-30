@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-truncate-width",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D3",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Text that is shortened to fit a column comes out longer than the column: cutting `a long product name` to width 6 gives 7 characters (`a long…`), and with a three-character ellipsis such as `...` the result is three characters too long. The shortened text must never be longer than the requested width. Text that already fits is returned unchanged; text that does not fit is cut so that it ends in the ellipsis and keeps as many of its leading characters as fit. The ellipsis may be any string, including an empty one or one longer than the width.",
+  "acceptance": [
+    "For any text, any ellipsis and any width from 1 to 13, the result is never longer than the width",
+    "Text of at most `width` characters is returned unchanged, whatever the ellipsis",
+    "When the text is cut and `width` is at least the length of the ellipsis, the result is the first `width - len(ellipsis)` characters of the text followed by the ellipsis, so it has exactly `width` characters",
+    "Examples with the default ellipsis `…`: `a long product name` at width 6 gives `a lon…`, `Blue Mug, Large` at width 10 gives `Blue Mug,…`, `abcdef` at width 1 gives `…`; with other ellipses: `abcdefg` at width 6 with `...` gives `abc...`, `abcdef` at width 3 with `...` gives `...`, `abcdefg` at width 4 with an empty ellipsis gives `abcd`, `abcdefg` at width 2 with `--` gives `--`",
+    "A width below 1 (0, -1, -10) is refused with a `ValueError`, for any text"
+  ],
+  "hidden_map": {
+    "test_result_is_never_longer_than_width": 0,
+    "test_text_that_fits_is_returned_unchanged": 1,
+    "test_a_cut_keeps_as_many_leading_characters_as_fit_and_ends_in_the_ellipsis": 2,
+    "test_examples": 3,
+    "test_width_below_one_is_refused": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

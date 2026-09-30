@@ -1,0 +1,41 @@
+{
+  "task_id": "feature-backorder-split",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/backorder-split",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add backorder splitting to stockroom: divide an order into the part that the available stock covers and a backorder with the rest, and let an `OrderBook` perform that split in place.\n\nCreate the module `stockroom/fulfilment.py` with `split_order(order: Order, inventory: Inventory) -> tuple[Order | None, Order | None]`, returning `(ready, backorder)`.\n\nThe lines of the order are served in their order. The stock available for a SKU is `inventory.available(sku)` (on-hand minus reserved; 0 for a SKU the inventory does not know) and it is shared by all lines of that SKU: each line takes `min(line.quantity, what is still available for its SKU)` and what it takes is no longer available to later lines with the same SKU. For every line, the taken quantity goes into the ready part as a line with the same SKU and unit price (only when the taken quantity is above 0), and the remaining quantity goes into the backorder as a line with the same SKU and unit price (only when it is above 0). Lines keep their order, are never merged, and lines of the same SKU stay separate lines in each part. `inventory` is never changed.\n\n- If nothing is left over for the backorder (everything is covered; this includes an order without lines), the result is `(order, None)` where the first element is the very order object that was passed in.\n- Else, if nothing at all is covered by stock, the result is `(None, order)` with the very order object that was passed in.\n- Otherwise both parts are new `Order` objects that keep `customer`, `placed` and `status` of the original; the ready part has the order id `<original id>-1` and the backorder has `<original id>-2`.\n\nAdd the method `OrderBook.split(order_id: str, inventory: Inventory) -> tuple[Order | None, Order | None]` to `stockroom/orders.py`. An id that is not in the book raises `StockroomError`. Only orders whose status is `open` or `paid` may be split: for any other status it raises `StockroomError` (even if the stock would cover the whole order). It then computes `split_order`. When the result has a `None` part the book is left unchanged and the result is returned as it is. When there are two parts, the book replaces the original order by the ready part followed directly by the backorder, at the position the original had: every other order keeps its place relative to the others, and the original id is gone from the book (`get` raises `StockroomError` for it). If the book already holds an order with the id of either new part, the method raises `StockroomError` and leaves the book unchanged. On success it returns `(ready, backorder)`.",
+  "acceptance": [
+    "split_order serves lines in order from inventory.available per SKU, shares each SKU's stock between its lines, never changes the inventory, keeps lines unmerged in their order with the same SKU and unit price, and omits zero-quantity lines from each part",
+    "When everything is covered (including an order without lines) split_order returns (order, None) with the same order object; when nothing is covered it returns (None, order) with the same order object",
+    "Otherwise split_order returns two new orders '<id>-1' (ready) and '<id>-2' (backorder) that keep customer, placed and status of the original",
+    "OrderBook.split raises StockroomError for an unknown id and for any status other than open or paid",
+    "OrderBook.split leaves the book unchanged and returns the result when a part is None; with two parts it replaces the original by ready then backorder at the original's position (other orders keep their relative order, the original id is gone) and returns them",
+    "OrderBook.split raises StockroomError and leaves the book unchanged when either new id already exists in the book"
+  ],
+  "hidden_map": {
+    "test_partial_split_lines": 0,
+    "test_lines_of_one_sku_share_stock": 0,
+    "test_inventory_is_not_changed": 0,
+    "test_fully_covered_returns_same_order": 1,
+    "test_nothing_covered_returns_same_order": 1,
+    "test_part_attributes_and_ids": 2,
+    "test_book_split_errors": 3,
+    "test_book_split_without_split_changes_nothing": 4,
+    "test_book_split_replaces_in_place": 4,
+    "test_book_split_id_collision": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

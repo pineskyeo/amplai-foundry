@@ -1,0 +1,35 @@
+{
+  "task_id": "refactor-items-table-and-alignment",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "extract",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-items-table-and-alignment",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The `items` command in `stockroom/cli.py` measures its columns and pads every cell by hand with `ljust` and `rjust`, while the rest of the package pads text through `textutil.align`. Move the catalogue listing out of the command into a function `items_table(items, symbol=\"$\")` in `stockroom/report.py` that returns the listing as text, make the command print it, and route all space padding through `textutil.align`. This is a pure refactor: the listing printed by `stockroom items` stays byte for byte the same for every catalogue, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`report.items_table(items, symbol)` returns the catalogue listing without a trailing newline, with the layout the `items` command printed before: columns `SKU`, `Name`, `Price` separated by two spaces; each column as wide as its widest cell or its header; the header line left-aligned in every column; then a rule of `-` per column width; then one line per item in the given order with SKU and name left-aligned and the price (formatted with the currency symbol) right-aligned; trailing spaces removed from every line; an empty catalogue gives the header line and the rule only",
+    "The `symbol` argument defaults to `$`, and no line of the result ends with a space",
+    "`stockroom items --file F [--tag T]` (run through `cli.main`) exits 0, prints the listing of `items_table` followed by one newline, nothing on stderr, and honours the currency symbol setting",
+    "Outside `textutil.align`, no module of the `stockroom` package and no script pads text with spaces by calling `ljust`, `rjust` or `center` with a single argument",
+    "`textutil.align` itself is unchanged for `left`, `right`, `center`, a width smaller than the text, and an unknown alignment name (which raises `ValueError`)"
+  ],
+  "hidden_map": {
+    "test_items_table_layout": 0,
+    "test_items_table_defaults_to_the_dollar_sign_and_has_clean_lines": 1,
+    "test_items_command_prints_the_table": 2,
+    "test_no_module_pads_with_spaces_except_the_align_helper": 3,
+    "test_align_helper_is_unchanged": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

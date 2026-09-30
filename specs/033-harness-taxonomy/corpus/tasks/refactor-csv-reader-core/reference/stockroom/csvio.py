@@ -1,0 +1,160 @@
+"""CSV files: the item catalogue, stock levels and orders.
+
+Every reader takes the file's text and every writer returns text, so callers decide where the
+bytes come from and go.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+from collections.abc import Iterable
+
+from .dates import format_date, parse_date
+from .errors import ParseError
+from .models import Item, Order, OrderLine, check_sku
+from .money import format_money, parse_money
+
+ITEM_HEADER = ("sku", "name", "price", "tags", "reorder_level")
+STOCK_HEADER = ("sku", "on_hand", "reserved")
+ORDER_HEADER = ("order_id", "customer", "placed", "status", "sku", "quantity", "unit_price")
+
+
+def _int(value: str, what: str, number: int) -> int:
+    try:
+        return int(value.strip())
+    except ValueError as exc:
+        raise ParseError(f"line {number}: {what} is not a whole number: {value!r}") from exc
+
+
+def parse_tags(cell: str) -> tuple[str, ...]:
+    """``"Kitchen; gift"`` -> ``("kitchen", "gift")``: ``;``-separated, trimmed, lower-case."""
+    return tuple(tag.strip().lower() for tag in cell.split(";") if tag.strip())
+
+
+def read_items(text: str) -> list[Item]:
+    """The items of a catalogue file with the header ``ITEM_HEADER``."""
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        raise ParseError("empty item file")
+    header = tuple(cell.strip() for cell in lines[0].split(","))
+    if header != ITEM_HEADER:
+        raise ParseError(f"item header must be {','.join(ITEM_HEADER)}")
+    items = []
+    for number, line in enumerate(lines[1:], start=2):
+        cells = line.split(",")
+        if len(cells) != len(ITEM_HEADER):
+            raise ParseError(f"line {number}: expected {len(ITEM_HEADER)} fields")
+        sku, name, price, tags, reorder = cells
+        items.append(
+            Item(
+                sku=sku.strip(),
+                name=name.strip(),
+                price_cents=parse_money(price),
+                tags=parse_tags(tags),
+                reorder_level=_int(reorder, "reorder_level", number),
+            )
+        )
+    return items
+
+
+def write_items(items: Iterable[Item]) -> str:
+    """The catalogue file for ``items`` (``read_items`` reads it back)."""
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(ITEM_HEADER)
+    for item in items:
+        writer.writerow(
+            [
+                item.sku,
+                item.name,
+                format_money(item.price_cents, symbol=""),
+                ";".join(item.tags),
+                item.reorder_level,
+            ]
+        )
+    return out.getvalue()
+
+
+def _table(
+    text: str, header: tuple[str, ...], what: str, *, padded_header: bool
+) -> list[tuple[int, list[str]]]:
+    """The numbered data rows of ``text`` after a check of its header row.
+
+    Rows are numbered from 2 (the header is line 1) counting only the rows that are kept. With
+    ``padded_header`` blank rows are dropped everywhere, even before the header, and the header
+    cells are trimmed before the comparison. Without it the first row is the header exactly as
+    written and only completely empty rows are dropped after it.
+    """
+    rows = list(csv.reader(io.StringIO(text)))
+    if padded_header:
+        rows = [row for row in rows if any(cell.strip() for cell in row)]
+        head = tuple(cell.strip() for cell in rows[0]) if rows else ()
+    else:
+        head = tuple(rows[0]) if rows else ()
+    if head != header:
+        raise ParseError(f"{what} header must be {','.join(header)}")
+    body = [row for row in rows[1:] if row != []]
+    return list(enumerate(body, start=2))
+
+
+def read_stock(text: str) -> list[tuple[str, int, int]]:
+    """``(sku, on_hand, reserved)`` rows of a stock file with the header ``STOCK_HEADER``."""
+    levels = []
+    for number, row in _table(text, STOCK_HEADER, "stock", padded_header=True):
+        if len(row) != len(STOCK_HEADER):
+            raise ParseError(f"line {number}: expected {len(STOCK_HEADER)} fields")
+        sku = check_sku(row[0].strip())
+        levels.append((sku, _int(row[1], "on_hand", number), _int(row[2], "reserved", number)))
+    return levels
+
+
+def read_orders(text: str) -> list[Order]:
+    """Orders from one row per order line; rows of one order share ``order_id``, ``customer``,
+    ``placed`` and ``status``. Orders come back in the order their first row appears."""
+    heads: dict[str, dict[str, str]] = {}
+    lines: dict[str, list[OrderLine]] = {}
+    for number, cells in _table(text, ORDER_HEADER, "order", padded_header=False):
+        row = dict(zip(ORDER_HEADER, cells))
+        order_id = row["order_id"].strip()
+        if order_id not in heads:
+            heads[order_id] = row
+            lines[order_id] = []
+        lines[order_id].append(
+            OrderLine(
+                sku=row["sku"].strip(),
+                quantity=_int(row["quantity"], "quantity", number),
+                unit_price_cents=parse_money(row["unit_price"]),
+            )
+        )
+    return [
+        Order(
+            order_id=order_id,
+            customer=head["customer"].strip(),
+            placed=parse_date(head["placed"]),
+            lines=tuple(lines[order_id]),
+            status=head["status"].strip(),
+        )
+        for order_id, head in heads.items()
+    ]
+
+
+def write_orders(orders: Iterable[Order]) -> str:
+    """The order file for ``orders`` (``read_orders`` reads it back)."""
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(ORDER_HEADER)
+    for order in orders:
+        for line in order.lines:
+            writer.writerow(
+                [
+                    order.order_id,
+                    order.customer,
+                    format_date(order.placed),
+                    order.status,
+                    line.sku,
+                    line.quantity,
+                    format_money(line.unit_price_cents, symbol=""),
+                ]
+            )
+    return out.getvalue()

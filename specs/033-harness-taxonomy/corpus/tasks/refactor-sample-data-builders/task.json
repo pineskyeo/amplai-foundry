@@ -1,0 +1,38 @@
+{
+  "task_id": "refactor-sample-data-builders",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "extract",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-sample-data-builders",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`scripts/make_sample_data.py` builds the whole sample data set in one long `build` function and writes the stock file by hand, line by line, because `stockroom/csvio.py` has a reader for the stock file but no writer. Add `write_stock(levels)` to `stockroom/csvio.py`, the counterpart of `read_stock`, and split the script's `build` into one function per file that uses it. This is a pure refactor: for the same seed and order count the script writes byte-identical files, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`csvio.write_stock(levels)` takes an iterable of `(sku, on_hand, reserved)` rows and returns the stock file text: the header line `sku,on_hand,reserved` and one line per row, every line ending in a newline; `read_stock(write_stock(levels))` returns the rows, and an empty iterable gives the header line only",
+    "The script defines `make_items(rng)`, `make_stock(rng, items)`, `make_orders(rng, items, count)` and still `build(seed, orders)`; `make_items` returns the list of `Item` records, `make_stock` the list of `(sku, on_hand, reserved)` rows and `make_orders` the list of `Order` records",
+    "Calling `make_items`, `make_stock` and `make_orders` in this order on one `random.Random(seed)` produces exactly the records that `build(seed, count)` writes, and the builders draw only from the generator they are given (they never touch the global `random` state)",
+    "The generator is used in the same order as before, so the files written for the same seed and order count are byte for byte the same: `build` returns the same three texts for seeds and counts such as (7, 20), (3, 9) and (11, 0), and `python scripts/make_sample_data.py --out DIR --seed 3 --orders 9` prints the same line and writes the same files",
+    "`build` writes the stock text with `write_stock`; the script no longer contains string literals that spell out the stock file's columns"
+  ],
+  "hidden_map": {
+    "test_write_stock_writes_what_read_stock_reads": 0,
+    "test_the_script_has_one_builder_per_file": 1,
+    "test_builders_chained_on_one_generator_give_the_files_of_build": 2,
+    "test_the_builders_use_only_the_generator_they_are_given": 2,
+    "test_the_generator_is_drawn_from_in_the_same_order_as_before": 3,
+    "test_build_output_is_byte_identical_to_before": 3,
+    "test_the_command_line_still_writes_the_same_files": 3,
+    "test_the_script_no_longer_spells_out_the_stock_file_itself": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,41 @@
+{
+  "task_id": "refactor-csvio-split-modules",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "split",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-csvio-split-modules",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`stockroom/csvio.py` holds the reader and writer of three unrelated file formats (item catalogue, stock levels, orders) and a helper they share. Split it by file format into three new modules, `stockroom/items_csv.py`, `stockroom/stock_csv.py` and `stockroom/orders_csv.py`, keep `stockroom/csvio.py` as the place callers import from, and make sure the shared whole-number helper exists once and is not copied into each new module. Move the code as it is: every reader and writer behaves exactly as before, including its error messages, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`items_csv` defines `ITEM_HEADER`, `parse_tags`, `read_items` and `write_items`; `stock_csv` defines `STOCK_HEADER` and `read_stock`; `orders_csv` defines `ORDER_HEADER`, `read_orders` and `write_orders`; the `__module__` of each function is its new module",
+    "`csvio` exports exactly these nine names, lists them in `__all__`, and each is the same object as in the module that defines it; `csvio.py` itself holds only its docstring, imports and `__all__`, no definitions of its own",
+    "`items_csv`, `stock_csv` and `orders_csv` do not import `csvio` and do not import each other",
+    "The code that turns a cell into a whole number or raises the `... is not a whole number: ...` error exists exactly once in the `stockroom` package",
+    "`read_items`, `read_stock` and `read_orders` return the same result, or raise the same exception class with the same message (line numbers included), as before for the same text: empty input and blank lines, padded and wrong headers, rows with too few or too many fields, bad or negative numbers, bad SKUs, dates and statuses, CRLF line endings, a missing final newline, repeated order ids, empty rows, and quoted fields in an order file, including the order in which several problems in one file are reported",
+    "`write_items` and `write_orders` produce the same text as before (including quoting of cells with commas and of prices from 1,000.00 in orders) and `read_items(write_items(x))` and `read_orders(write_orders(x))` return `x`",
+    "`from stockroom.csvio import *` exposes exactly the nine names, and `scripts/make_sample_data.py` writes byte-identical files for the same seed and order count"
+  ],
+  "hidden_map": {
+    "test_each_file_format_has_its_own_module": 0,
+    "test_csvio_only_re_exports_the_public_names": 1,
+    "test_the_format_modules_do_not_depend_on_each_other_or_on_csvio": 2,
+    "test_the_whole_number_parser_is_not_copied_into_each_module": 3,
+    "test_read_items_is_unchanged": 4,
+    "test_read_stock_is_unchanged": 4,
+    "test_read_orders_is_unchanged": 4,
+    "test_writers_and_round_trips_are_unchanged": 5,
+    "test_callers_of_csvio_keep_working": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,41 @@
+{
+  "task_id": "data-bom-readers",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D15",
+    "author": "Claude Sonnet 5.5 (S6-data)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Spreadsheet programs and Windows tools save CSV and INI files as UTF-8 with a byte order mark (BOM). Read as text, such a file starts with the single character U+FEFF, and today the readers refuse it (the header does not match, or the settings file has no section). Make every reader of a data or settings file accept one leading U+FEFF: `read_items`, `read_stock` and `read_orders` in `stockroom/csvio.py` (they take the file's text), `load_config` for an INI settings file (it reads bytes from a path), and through them the `stockroom` command (`items`, `stock`, `sales` and the global `--config`). Also let the two CSV writers produce such files: `write_items(items, *, bom=False)` and `write_orders(orders, *, bom=False)`; with `bom=True` the returned text starts with U+FEFF, otherwise the output is exactly what it is today. Only a leading mark is special: it is removed once, before anything else is looked at, and U+FEFF anywhere else is ordinary data. Existing behaviour otherwise stays, including every `ParseError` and `ConfigError` that exists today.",
+  "acceptance": [
+    "`read_items`, `read_stock` and `read_orders` return the same result for a text that starts with one U+FEFF as for the same text without it, whether lines end in `\\n` or `\\r\\n`; blank lines between the mark and the header are ignored",
+    "A text that is only U+FEFF (optionally followed by blank or whitespace-only lines) is refused with `ParseError` like an empty file, and a text that starts with two U+FEFF is refused with `ParseError`, by each of the three readers",
+    "Only the leading U+FEFF is removed: a U+FEFF inside a name or customer is read back unchanged (`Note\\ufeffbook`, `Omar\\ufeffDiaz`, also at the start of a name), while a U+FEFF inside a header cell or inside a SKU makes the reader raise `ParseError`",
+    "`write_items(items, bom=True)` returns U+FEFF followed by exactly `write_items(items)`, `write_orders(orders, bom=True)` returns U+FEFF followed by exactly `write_orders(orders)`, and without `bom` neither output starts with U+FEFF",
+    "For 200 seeded generated catalogues and order lists (names and customers of letters including accented ones, digits, spaces and hyphens, with no comma, quote or line break; prices below 1,000.00), `read_items` and `read_orders` return exactly what was written, for `bom` False and True and for `\\n` and `\\r\\n` line ends",
+    "`load_config` on a settings file whose bytes start with the UTF-8 BOM returns the same settings as the same file without it (known keys, an accented currency symbol, environment overrides, a file with no section, an unknown key still raising `ConfigError`), and a file with two BOMs raises `ConfigError`",
+    "`python -m stockroom items`, `stock` and `sales` on files that start with a BOM print exactly the same stdout and stderr and exit with the same code as on the same files without it, `--config` accepts a settings file with a BOM, and a BOM file with a wrong header still exits with code 1 and `stockroom: error: ...` on stderr"
+  ],
+  "hidden_map": {
+    "test_readers_accept_a_leading_bom": 0,
+    "test_a_bom_alone_or_a_second_bom_is_refused_by_items": 1,
+    "test_a_bom_alone_or_a_second_bom_is_refused_by_stock": 1,
+    "test_a_bom_alone_or_a_second_bom_is_refused_by_orders": 1,
+    "test_only_a_leading_bom_is_removed": 2,
+    "test_writers_can_start_with_a_bom": 3,
+    "test_generated_files_round_trip_with_and_without_a_bom": 4,
+    "test_settings_file_with_a_bom": 5,
+    "test_command_line_reads_files_with_a_bom": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

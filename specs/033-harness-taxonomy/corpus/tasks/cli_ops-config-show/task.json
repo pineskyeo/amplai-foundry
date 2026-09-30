@@ -1,0 +1,38 @@
+{
+  "task_id": "cli_ops-config-show",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/config-show",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a `config` command that shows the settings in effect, so that an operator can see which value the command line would use and where it comes from: `python -m stockroom [--config PATH] config [KEY] [--origin] [--json]`.\n\nWithout `KEY` the command lists every setting (every key the settings code defines, currently `currency_symbol`, `low_stock_warning`, `tax_bp` and `data_dir`), sorted by key, one per line as `<key> = <value>`. The value is the one the other commands would use (defaults, then the settings file given with the global `--config`, then `STOCKROOM_*` variables). Text is printed as is, integers in decimal and booleans as `true` or `false`.\n\nWith `--origin` every line ends with ` (<origin>)`, a space and the origin in parentheses, where the origin says which source decided the value: `env` when a `STOCKROOM_<KEY>` variable is set for that key (even when its value equals the default), otherwise `file` when the settings file sets the key (even when its value equals the default), otherwise `default`.\n\nWith a `KEY` the output is only the line of that setting, in the same format (with the origin when `--origin` is given). A key that is not a setting ends the command with exit code 1 and the usual `stockroom: error: ...` line on stderr that contains the key; nothing is written to stdout.\n\nWith `--json` the output is JSON text: `json.dumps(data, indent=2, sort_keys=True)` followed by a newline, where `data` is an object from key to value with native JSON types (string, number, true or false). With `--origin` each value becomes an object `{\"value\": <value>, \"origin\": <origin>}`. With a `KEY` and `--json`, `data` is just that setting's value (or its `{\"value\", \"origin\"}` object with `--origin`).\n\nAn unreadable or invalid settings file or an invalid environment value ends the command with exit code 1 and the usual error line, as it does for every other command. The other commands, and what they do with the settings, stay as they are.",
+  "acceptance": [
+    "'config' prints one '<key> = <value>' line per setting sorted by key: text as is, integers in decimal, booleans as true/false; with no file and no environment it shows the defaults",
+    "Values follow the precedence defaults < settings file (--config) < STOCKROOM_<KEY> environment variables",
+    "With --origin each line ends with ' (env)', ' (file)' or ' (default)': env wins over file, a file value or an environment value equal to the default still counts as file or env, and unrelated environment variables do not count",
+    "'config KEY' prints only that setting's line (with the origin when asked); an unknown key, including different letter case, exits 1 with 'stockroom: error: ' on stderr naming the key and nothing on stdout",
+    "--json prints json.dumps(data, indent=2, sort_keys=True) plus a newline with native types; with --origin each value is {\"value\", \"origin\"}; with KEY only that value or object is printed",
+    "A bad settings file or environment value gives exit code 1 and the usual single error line for config as for other commands; other commands and the settings loader keep their behaviour"
+  ],
+  "hidden_map": {
+    "test_defaults_are_listed_sorted": 0,
+    "test_file_and_environment_values_win_in_order": 1,
+    "test_origin_of_each_setting": 2,
+    "test_single_key_and_unknown_key": 3,
+    "test_json_output": 4,
+    "test_bad_settings_end_the_command": 5,
+    "test_other_commands_and_the_loader_are_unchanged": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

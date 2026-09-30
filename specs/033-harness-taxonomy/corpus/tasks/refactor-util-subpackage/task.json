@@ -1,0 +1,43 @@
+{
+  "task_id": "refactor-util-subpackage",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "move",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-util-subpackage",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Three modules of the `stockroom` package have nothing to do with inventory or orders: `money.py`, `textutil.py` and `dates.py`. Move them into a new subpackage `stockroom/util/` (as `stockroom/util/money.py`, `stockroom/util/textutil.py` and `stockroom/util/dates.py`) and let the rest of the package import them from there. The old module paths `stockroom.money`, `stockroom.textutil` and `stockroom.dates` must keep working for outside callers, but only as thin re-export shims. The project is installed from `pyproject.toml`, so the new subpackage has to be part of what gets packaged. This is a pure refactor: the moved functions behave exactly as before, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`stockroom.util` is a package, and the functions of the three moved modules report `stockroom.util.money`, `stockroom.util.textutil` and `stockroom.util.dates` as their `__module__`",
+    "`stockroom.money`, `stockroom.textutil` and `stockroom.dates` still import, and every public function they offered (`format_money`, `parse_money`, `split_evenly`; `align`, `plural`, `slugify`, `truncate`; `add_months`, `days_between`, `days_in_month`, `format_date`, `month_key`, `months_between`, `parse_date`) is the very same object as in the new module; each shim lists exactly these names in `__all__`",
+    "Each shim contains only its docstring, imports and `__all__`, no definitions of its own",
+    "No module of the package other than the three shims imports `stockroom.money`, `stockroom.textutil` or `stockroom.dates` by the old path (neither relative nor absolute); they import the `util` modules instead",
+    "The `packages` list of `[tool.setuptools]` in `pyproject.toml` names both `stockroom` and `stockroom.util`",
+    "The moved money functions give the same results and raise the same errors as before (`parse_money` with and without `$` and thousands commas, refusing text that is not an amount; `format_money`; `split_evenly` including its `ValueError` for zero parts)",
+    "The moved text functions give the same results and raise the same errors as before (`slugify`, `truncate` of short text and its `ValueError` for width 0, `align` for `left`, `right`, `center` and an unknown name, `plural`)",
+    "The moved date functions give the same results and raise the same errors as before (`parse_date` and its `ParseError`, `format_date`, `month_key`, `days_in_month` outside February, February of a year that is not a leap year and a month out of range, `add_months` forwards and backwards across year ends with clamping to the last day, `days_between`, `months_between`)",
+    "The modules that use the helpers (`csvio`, `jsonio`, `orders`, `report`, `cli`) still work together: orders read from CSV and written back are identical, and the revenue per month and the sales summary of those orders are the same as before"
+  ],
+  "hidden_map": {
+    "test_the_helpers_live_in_a_util_subpackage": 0,
+    "test_the_old_module_paths_still_work_and_give_the_same_objects": 1,
+    "test_the_old_modules_are_thin_shims": 2,
+    "test_package_modules_import_the_helpers_from_util": 3,
+    "test_the_new_subpackage_is_part_of_the_distribution": 4,
+    "test_money_functions_are_unchanged": 5,
+    "test_text_functions_are_unchanged": 6,
+    "test_date_functions_are_unchanged": 7,
+    "test_modules_that_use_the_helpers_still_work_together": 8
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

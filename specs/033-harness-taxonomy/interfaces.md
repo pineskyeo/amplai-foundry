@@ -2761,3 +2761,22 @@ authority or policy decision):
 - **Still open for later slices**: options wiring from the loop (`resolve_options`, S8); route roles and driver
   options in the router (S9/S10); plan-time router refusal (S10); `append_system_prompt` validator refusing a
   leading `-` or NUL in `policies.py` (S10).
+
+## Provisional Operator Decisions (2026-10-01)
+
+IC-15 … IC-21 were put to the operator on 2026-09-30 and are unanswered. Implementation proceeds with the
+recommended option of each, marked provisional; nothing below takes effect without a human act, and the final report
+lists them for explicit confirmation before the nightly loop is activated.
+
+| IC | Provisional choice | Why it is safe to implement before confirmation |
+|---|---|---|
+| IC-15 | stage sampling subsets allowed for versioned evaluator plans (`select_cases`, recomputed at freeze and run) | evaluator change behind `evaluator_version_ref`; legacy plans unchanged (G3) |
+| IC-16 | (B) a new proposal with the same arms continues the e-process | e-processes stay valid under optional continuation (`research-continuous-search.md`); a new proposal still needs its own approval |
+| IC-17 | standing approval `nightly.explore` + service identity `amplai-meta-nightly` issuing exploratory approvals only | inert until the operator issues a standing approval; never confirmatory, holdout, canary or promotion |
+| IC-18 | human-only `experiment.reconcile` permission and `amplai meta reconcile` | usable only by the human operator |
+| IC-19 | (A) derived ablation proposals: never screened, never promoted | keeps the screen gate unchanged |
+| IC-20 | focused stage holds `NO_INFORMATIVE_TASKS` below `max(16, n_min)` | conservative: no inflated non-inferiority |
+| IC-21 | `aux_max_tokens` 0: strategies with auxiliary turns are ineligible for real goals until the operator sets a cap | conservative default |
+
+Split status (§10.2): own tasks alone give holdout 22 (≥ 16) and validation ≈ 13 (< 24); `splits.json` is written
+after Terminal-Bench 2.0 admission (S16), as S6-freeze foresees.

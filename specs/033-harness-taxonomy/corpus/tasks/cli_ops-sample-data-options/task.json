@@ -1,0 +1,39 @@
+{
+  "task_id": "cli_ops-sample-data-options",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/cli_ops/sample-data-options",
+    "author": "Claude Sonnet 5.5 (S6-cli_ops)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Extend the script `scripts/make_sample_data.py` (run as `python scripts/make_sample_data.py --out DIR [--seed N] [--orders N]`, which writes `items.csv`, `stock.csv` and `orders.csv` into `DIR`) so that it is safe to run in a directory that already holds data and so that the date range can be chosen.\n\nNew options:\n- `--start YYYY-MM-DD`: the first day an order can be placed on; default `2024-01-01`. The value must be written as four digits, `-`, two digits, `-`, two digits and be a real calendar date.\n- `--days N`: the number of days the order dates spread over, default 180; an order is placed on the start day plus a random number of days from 0 to N-1, drawn exactly where the script draws the order date today. `N` must be at least 1, and the last possible day (`--start` plus `--days` minus one) must not pass 9999-12-31.\n- `--force`: allow overwriting existing files (see below).\n- `--dry-run`: do everything but write.\n\nBehaviour:\n- Without the new options the three files and the final stdout line are byte for byte what the script writes today, for every `--seed` and `--orders`, including `--orders 0` (a header-only orders file). Changing only `--start` moves every order date by the same number of days and changes nothing else in the files; `items.csv` and `stock.csv` never depend on `--start`, `--days` or `--orders`.\n- A bad value (`--orders` below 0, `--days` below 1, a `--start` that is not such a date, a range that passes 9999-12-31) is a usage error like any other argparse error: exit code 2, stdout empty, and the message on stderr names the option (`--orders`, `--days` or `--start`). A range that passes 9999-12-31 is reported against `--days` (its message names `--days`), because each of `--start` and `--days` is valid on its own. Nothing is written.\n- When `--out` exists and is not a directory, or when any of the three files already exists in it and `--force` is not given, the script ends with exit code 1, writes nothing (it does not even create `DIR`), and prints one line to stderr, `make_sample_data: error: <reason>`, with stdout empty. The reason contains the path of `--out` for the first case, and for the second the names (`items.csv`, `stock.csv`, `orders.csv`) of the files that already exist and of no other. Other files in `DIR` are never touched; with `--force` the three files are overwritten.\n- With `--dry-run` no directory and no file is created or changed. The script prints the three lines `would write <path>` for `items.csv`, `stock.csv` and `orders.csv` in that order, where `<path>` is `--out` joined with the file name as `pathlib.Path` would print it, and nothing else, and exits with 0. The checks above apply to a dry run too (a conflict still gives exit code 1 without `--force`).",
+  "acceptance": [
+    "Without --start, --days, --force or --dry-run the files (by SHA-256) and the stdout line 'wrote 8 items and N orders to DIR' are identical to the current script for the seeds and order counts 7/20, 1/5, 42/0 and 9/60; explicit --start 2024-01-01 --days 180 gives the same files",
+    "--start only shifts every order date by the same number of days (other columns identical) and items.csv and stock.csv do not change with --start, --days or --orders",
+    "--days N keeps every order date within start .. start+N-1 (1 gives only the start day, 2 gives both days over 60 orders, 400 reaches beyond day 180) and the range may end on 9999-12-31",
+    "--orders < 0, --days < 1, a --start that is not YYYY-MM-DD or not a real date (for example 2024-02-30, 2024-2-3, 20240101, tomorrow), and a range passing 9999-12-31 (reported against --days, e.g. --start 9999-12-30 --days 5) exit with code 2, empty stdout, a stderr message naming the option, and write nothing",
+    "An existing item, stock or order file without --force gives exit code 1, empty stdout and one 'make_sample_data: error: ' line naming exactly the files that exist, and nothing is written (other files and existing files are untouched); an --out that is a regular file gives the same single error line containing its path",
+    "--force overwrites the three files and leaves other files alone",
+    "--dry-run creates no directory or file, prints exactly the lines 'would write <out>/items.csv', '<out>/stock.csv' and '<out>/orders.csv' (as Path prints them) and exits 0; conflicts still give exit code 1 without --force and usage errors still give 2"
+  ],
+  "hidden_map": {
+    "test_defaults_are_byte_identical_to_the_current_script": 0,
+    "test_start_shifts_dates_and_nothing_else": 1,
+    "test_days_bound_the_order_dates": 2,
+    "test_bad_values_are_usage_errors_and_write_nothing": 3,
+    "test_existing_files_are_protected": 4,
+    "test_force_overwrites_only_the_three_files": 5,
+    "test_dry_run_writes_nothing": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

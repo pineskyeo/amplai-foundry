@@ -1,0 +1,39 @@
+{
+  "task_id": "bug-discount-rounding",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D9",
+    "author": "Claude Sonnet 5.5 (S6-bug)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Percentage discounts are cut off instead of rounded: 15% off an item priced 9.99 gives 8.50 instead of 8.49, so order totals and the `price` command are off by a cent. The discount amount (the price times the percentage divided by 100, in cents) must be rounded half up to a whole cent, and the discounted price is the price less that rounded discount. The result must be exact for any whole number of cents, however large. Example: 10% of 5 cents is 0.5 cent, which rounds up to 1 cent, so the price becomes 4 cents; 15% of 999 cents is 149.85, which rounds to 150, so the price becomes 849.",
+  "acceptance": [
+    "Half-cent discounts round up: 5 cents at 10% gives 4, 25 at 10% gives 22, 15 at 10% gives 13, 35 at 10% gives 31, 5 at 50% gives 2, 1 at 50% gives 0, 3 at 50% gives 1; discounts below half a cent vanish: 1 cent at 10% gives 1 and 4 cents at 10% gives 4",
+    "Ordinary discounts round to the nearest cent: 999 at 15% gives 849, 1000 at 15% gives 850, 1999 at 15% gives 1699, 101 at 33% gives 68, 199 at 12.5% gives 174, 1234 at 12.5% gives 1080, 1236 at 12.5% gives 1081, 999 at 99.5% gives 5",
+    "For the percentages 0, 0.5, 1, 2.5, 5, 7.5, 10, 12.5, 15, 20, 25, 33, 37.5, 50, 62.5, 75, 99 and 100 and every amount from 0 to 1299 cents (and for 1000005, 123456789 and 99999999995 cents), the result equals the amount less `floor(amount * percent / 100 + 1/2)` computed exactly; the same holds for huge amounts such as 100000000000000005, 123456789012345675, 99999999999999995 and 1000000000000000050 cents with the percentages 10, 15, 50, 25, 12.5, 33, 7.5, 62.5 and 99",
+    "A discount of 0% returns the amount unchanged and a discount of 100% returns 0",
+    "A percentage below 0 or above 100 (-0.01, -5, 100.01, 120) is refused with a `ValueError`",
+    "Order totals use the rounded discount: an order of one 999-cent line at 15% is 849 (919 with 8.25% tax), one 5-cent line at 10% is 4, an order of three 999-cent units at 15% is 2547",
+    "`stockroom price` with `--discount 15` prints `1 x MUG-001 Blue Mug: $8.49`, `tax: $0.00`, `total: $8.49` for one unit priced 9.99, `3 x MUG-001 Blue Mug: $25.47` for three units, and `1 x PEN-100 Pen: $0.04` for one unit priced 0.05 with `--discount 10`"
+  ],
+  "hidden_map": {
+    "test_a_half_cent_discount_is_rounded_up": 0,
+    "test_ordinary_discounts_round_to_the_nearest_cent": 1,
+    "test_every_small_amount_with_common_percentages_matches_exact_half_up_rounding": 2,
+    "test_no_discount_and_full_discount": 3,
+    "test_a_percentage_outside_zero_to_one_hundred_is_refused": 4,
+    "test_order_totals_use_the_rounded_discount": 5,
+    "test_the_price_command_uses_the_rounded_discount": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

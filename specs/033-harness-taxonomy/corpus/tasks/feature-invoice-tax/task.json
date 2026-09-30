@@ -1,0 +1,43 @@
+{
+  "task_id": "feature-invoice-tax",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench/feature/invoice-tax",
+    "author": "S6-feature author (Sonnet 5.5)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add invoices with per-tag tax rates to stockroom: build an invoice for an order, render it as text, and add an `invoice` command.\n\nCreate the module `stockroom/invoice.py` with these names.\n\n- `InvoiceLine`, a frozen dataclass with the fields `sku`, `name`, `quantity`, `unit_price_cents`, `net_cents`, `tax_bp`, `tax_cents`, in that order (str, str, int, int, int, int, int).\n- `Invoice`, a frozen dataclass with the fields `order_id`, `customer`, `lines` (a tuple of `InvoiceLine`), `subtotal_cents`, `tax_cents`, `total_cents`, in that order.\n- `build_invoice(order: Order, items: Iterable[Item], *, default_tax_bp: int = 0, tag_tax_bp: Mapping[str, int] | None = None) -> Invoice`.\n- `render_invoice(invoice: Invoice, symbol: str = \"$\") -> str`.\n\n`build_invoice` makes one `InvoiceLine` per line of the order, in the order of the order's lines. `sku`, `quantity` and `unit_price_cents` come from the order line (the price on the order, not the catalogue price); `name` is the name of the catalogue item with that SKU (looked up in `items`). `net_cents` is `quantity * unit_price_cents`. The tax rate `tax_bp` (basis points, 825 = 8.25 %) of a line is decided by the item's tags: if at least one of the item's tags (compared with the item's `tags` strings exactly) is a key of `tag_tax_bp`, the rate is the largest of the `tag_tax_bp` values of those tags, even if it is lower than `default_tax_bp`; otherwise it is `default_tax_bp`. `tax_cents` is the tax of that line's `net_cents` at that rate, rounded half up to a whole cent (as `pricing.tax` does), computed per line and not on the total. `subtotal_cents` is the sum of the lines' `net_cents`, `tax_cents` of the invoice is the sum of the lines' `tax_cents`, and `total_cents` is their sum. An order line whose SKU is not in `items` raises `ParseError`. A negative `default_tax_bp` or any negative value in `tag_tax_bp` raises `ValueError` (for every given rate, used or not, before anything else is checked). The arguments are not modified; `items` may be any iterable. An order without lines gives an invoice with no lines and all sums 0.\n\n`render_invoice` returns these lines joined by `\"\\n\"` (no trailing newline); money is formatted as `money.format_money(cents, symbol)` does:\n\n1. `Invoice <order_id> for <customer>`\n2. for each line: `<sku>  <name>  <quantity> x <unit price> = <net>  tax <tax> (<rate>)`, with two spaces between the groups exactly as shown. `<rate>` is the line's `tax_bp` as a percentage with exactly two decimals and a `%` sign, written from integers: `825` gives `8.25%`, `1000` gives `10.00%`, `0` gives `0.00%`, `5` gives `0.05%`.\n3. `Subtotal: <subtotal>`\n4. `Tax: <tax total>`\n5. `Total: <total>`\n\nAdd a command `python -m stockroom invoice --items ITEMS.csv --orders ORDERS.csv --order ORDER_ID [--tag-tax TAG=BP]...`. It reads both files like the other commands do, finds the order, builds the invoice and prints `render_invoice` of it. The default rate is the `tax_bp` setting, the symbol is the `currency_symbol` setting. `--tag-tax` may be repeated; `TAG` is lower-cased before use (item tags are lower-case when read from a file) and must not be empty, `BP` is written with the ASCII digits 0-9 only (0 allowed). A malformed `--tag-tax` value, a tag given twice, an unknown order id, or an order line whose SKU is not in the catalogue ends the command with exit code 1 and `stockroom: error: ...` on stderr, with nothing on stdout.",
+  "acceptance": [
+    "InvoiceLine and Invoice are frozen dataclasses with the listed fields in order; build_invoice takes sku, quantity and unit price from the order line and the name from the catalogue item, with net = quantity * unit price",
+    "The tax rate of a line is the largest tag_tax_bp value among the item's tags that are in the mapping (even below the default), otherwise default_tax_bp; tax is rounded half up per line and the invoice tax is the sum of the line taxes (not the tax on the subtotal)",
+    "Invoice sums: subtotal = sum of nets, tax = sum of line taxes, total = subtotal + tax; an order without lines gives no lines and zeros; an unknown SKU raises ParseError; a negative default or tag rate raises ValueError; arguments are not modified and items may be any iterable",
+    "render_invoice produces the header, one line per invoice line in the stated format with the rate shown as a two-decimal percentage, then Subtotal, Tax and Total, joined by newlines without a trailing newline, using the given symbol",
+    "The invoice command uses the tax_bp setting as default rate, the currency_symbol setting, lower-cases --tag-tax tags, accepts repeated --tag-tax, and exits 1 with an error message and empty stdout for malformed or duplicate --tag-tax values, an unknown order or an unknown SKU"
+  ],
+  "hidden_map": {
+    "test_line_fields_come_from_order_and_catalogue": 0,
+    "test_dataclasses_are_frozen_and_ordered": 0,
+    "test_default_rate_and_tag_rates": 1,
+    "test_highest_tag_rate_wins_even_below_default": 1,
+    "test_tax_is_rounded_per_line": 1,
+    "test_sums_and_empty_order": 2,
+    "test_errors_and_argument_handling": 2,
+    "test_render_layout": 3,
+    "test_render_rate_format_and_symbol": 3,
+    "test_cli_invoice_with_tag_rates": 4,
+    "test_cli_default_rate_and_symbol": 4,
+    "test_cli_errors": 4,
+    "test_cli_unknown_sku": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

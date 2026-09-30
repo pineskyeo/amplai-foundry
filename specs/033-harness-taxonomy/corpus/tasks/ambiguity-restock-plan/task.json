@@ -1,0 +1,51 @@
+{
+  "task_id": "ambiguity-restock-plan",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/ambiguity-restock-plan",
+    "author": "Claude Sonnet 5.5 (S6-ambiguity)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add restock planning. `stockroom/restock.py` gets a frozen dataclass `RestockLine(sku: str, quantity: int, pack: int)` and `plan_restock(items: Sequence[Item], inventory: Inventory, orders: Iterable[Order], *, budget_cents: int | None = None) -> list[RestockLine]`. `items` have distinct SKUs. For each item whose `reorder_level` is above 0 (an item with reorder level 0 is never restocked), the units missing are `2 * reorder_level + demand - on_hand`, where `demand` is the quantity of that SKU on all lines of all orders with status `open` or `paid` (orders with another status are ignored, SKUs the items do not list are ignored) and `on_hand` is `inventory.on_hand(sku)` (reserved stock is not considered). An item with no units missing (0 or fewer) gets no line. The pack size of an item is the number of its first tag of the form `pack:N` in `item.tags` (tags are used as stored, so `PACK:12` is not a pack tag), or 1 without such a tag; `N` must be a positive whole number written with ASCII digits only, and every tag of an item that starts with `pack:` must be valid: the first invalid one (in items order, then tag order, checked for every item before any planning and whether or not the item needs units) raises `ParseError` with the message `<sku>: bad pack tag '<tag>'`. The quantity of a line is the units missing rounded up to a whole number of packs; `pack` is the pack size. Lines come in plain SKU order. A `budget_cents` of `None` means no limit; a negative budget raises `ValueError`; otherwise the lines are considered in SKU order with the whole budget remaining, a line costing `quantity * item.price_cents` is kept when that is at most the remaining budget (which then shrinks by the cost), and is dropped otherwise while later, cheaper lines can still be kept. A new command `python -m stockroom restock --items FILE --stock FILE --orders FILE [--budget AMOUNT]` reads the three files, parses `--budget` like a price (negative values give the data error `budget must not be negative`), and prints, for the kept lines in order, `RESTOCK <sku> <name>: <quantity>` with ` (<packs> x <pack>)` appended when the pack size is above 1, then `total: <cost of the kept lines>` when there is at least one kept line, then, when the budget dropped lines, `over budget: ` and the dropped SKUs separated by `, ` in SKU order. When nothing is needed even without a budget it prints the single line `nothing to restock`. The exit code is 0; errors follow the usual `stockroom: error: ...` convention with exit code 1.",
+  "acceptance": [
+    "The quantity is twice the reorder level plus the demand of open and paid orders minus the on-hand stock, reserved units are ignored, shipped and cancelled orders and unknown SKUs are ignored, and the lines are in SKU order",
+    "No line is planned for an item with reorder level 0 or with no units missing, `plan_restock([], ...)` is `[]`, and an empty inventory counts every on-hand level as 0",
+    "Quantities are rounded up to whole packs of the first `pack:N` tag (24 for 16 missing with `pack:12`, 12 for exactly 12 missing), items without a valid lower-case first pack tag use 1, and `RestockLine.pack` is the pack size",
+    "Every tag starting with `pack:` must be a positive ASCII number (`pack:0`, `pack:x`, `pack:-3`, `pack:`, `pack:+5`, `pack: 5`, `pack:5.0`, `pack:1x` are refused with `ParseError('<sku>: bad pack tag ...')`), also on items that need nothing, also after a valid pack tag, and the first such item in items order is reported",
+    "With a budget the lines are considered in SKU order; a line that costs at most the remaining budget is kept and lowers it, a line that does not fit is dropped and later cheaper lines can still be kept; a budget of 0 keeps nothing and a negative budget raises `ValueError`",
+    "For seeded random items, inventories, orders and budgets the plan equals the plan computed from the definition",
+    "`restock` on the sample data prints the five `RESTOCK` lines for CND-007 (7), MUG-002 (7), NB-200 (4), PEN-100 (2) and TEA-011 (13) and `total: $345.30`",
+    "`restock --budget` prints the kept lines, their total and `over budget: ` with the dropped SKUs in SKU order (and only that line when nothing fits); pack counts appear as `(2 x 12)`, the currency symbol comes from the settings, `nothing to restock` is printed when nothing is needed, and a negative budget or an invalid pack tag gives the `stockroom: error: ...` line, exit code 1 and empty stdout"
+  ],
+  "hidden_map": {
+    "test_the_quantity_is_twice_the_reorder_level_plus_demand_minus_on_hand": 0,
+    "test_nothing_is_ordered_when_nothing_is_missing_or_the_reorder_level_is_zero": 1,
+    "test_quantities_are_rounded_up_to_whole_packs_of_the_first_pack_tag": 2,
+    "test_an_invalid_pack_tag_is_refused_even_when_nothing_is_ordered": 3,
+    "test_lines_come_in_sku_order_and_the_budget_skips_what_does_not_fit": 4,
+    "test_random_plans_match_the_definition": 5,
+    "test_the_sample_data_needs_five_orders": 6,
+    "test_the_command_shows_packs_and_the_budget_cut": 7,
+    "test_the_command_prints_pack_counts_and_honours_the_currency_setting": 7,
+    "test_the_command_says_when_nothing_is_needed": 7,
+    "test_the_command_reports_bad_input_as_data_errors": 7
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Quantities are rounded up to whole packs, the budget keeps lines that fit in SKU order and skips the rest (as stated)",
+      "The budget stops at the first line that does not fit (contradicts the stated rule)"
+    ]
+  },
+  "difficulty_declared": null
+}

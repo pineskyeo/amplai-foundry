@@ -1,0 +1,36 @@
+{
+  "task_id": "refactor-money-format-single-source",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "dedupe",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/refactor-money-format-single-source",
+    "author": "Claude Sonnet 5.5 (S6-refactor)",
+    "created": "2026-10-01"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The sales report in `stockroom/report.py` formats amounts with its own private helper `_cents`, which does the same job as `format_money` in `stockroom/money.py`. Remove the duplicate so that amounts are formatted in one place, the money module. This is a pure refactor: the text of every report stays byte for byte the same, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "The `report` module no longer defines `_cents` (no function of that name exists in `stockroom/report.py` and `report._cents` is absent)",
+    "`stockroom/report.py` formats every amount it prints with `format_money` from the money module",
+    "Outside `stockroom/money.py`, no module of the `stockroom` package splits cents with `divmod`, pads digits with `zfill` or builds thousands separators with a `,` or `_` format spec",
+    "`sales_summary` returns exactly the same text as before for the currency symbols `$`, `EUR ` and the empty string, for `top` values 1, 2 and 3, and for an empty book and a book with a nine-digit revenue",
+    "`format_money` itself is unchanged: `format_money(0)` is `$0.00`, `format_money(5, \"\")` is `0.05`, `format_money(-99, \"EUR \")` is `-EUR 0.99` and `format_money(123456789)` is `$1,234,567.89`"
+  ],
+  "hidden_map": {
+    "test_report_has_no_private_copy_of_the_formatter": 0,
+    "test_report_formats_amounts_with_the_money_module": 1,
+    "test_only_the_money_module_splits_cents_or_groups_thousands": 2,
+    "test_sales_summary_output_is_unchanged": 3,
+    "test_sales_summary_of_extreme_books_is_unchanged": 3,
+    "test_format_money_itself_is_unchanged": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
