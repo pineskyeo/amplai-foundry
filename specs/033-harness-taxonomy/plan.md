@@ -440,3 +440,12 @@ same decision procedure:
   cheapest and fastest.
 - A judge that sends goal text off the machine is limited by the data class (synthetic corpus by default).
 - One judge connector interface; adding a provider is a new option, not a code path per decider.
+
+### 10.5 Operator decisions on the judge and the nightly budget (2026-09-30)
+
+- Jev: build the judge connector and qualification now; connect and run Jev only after the system is
+  complete and access is confirmed. LLM cells are the judges until then.
+- Nightly budget B: start with a pilot of about 150 trials per night for 3 nights, measure how much of each
+  subscription window a night uses, then set B as a share of the measured headroom (default: keep at least
+  half of the subscription windows for the operator's own daytime work). B is shown in the dashboard with
+  the quota observed.
