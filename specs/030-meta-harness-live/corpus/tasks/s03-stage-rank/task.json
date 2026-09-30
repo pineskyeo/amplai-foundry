@@ -1,0 +1,15 @@
+{
+  "task_id": "s03-stage-rank",
+  "difficulty": "small",
+  "objective": "Add a new module `demo_app/stages.py` with a function `stage_rank(stage: str) -> int` that turns a release stage name into a sortable integer. Accepted stage names are exactly: `DEV-` followed by a two-digit number from `01` to `99` (returns that number as an int, so `DEV-07` returns 7); `RC-` followed by a number from 1 to 99 written without leading zeros (returns 100 plus that number, so `RC-3` returns 103); and `FINAL` (returns 1000). Matching is exact and case-sensitive: the whole string must match, with no surrounding whitespace allowed, and digits must be ASCII 0-9. Any other string raises ValueError.",
+  "acceptance": [
+    "stage_rank('DEV-01') returns 1, stage_rank('DEV-07') returns 7 and stage_rank('DEV-99') returns 99",
+    "stage_rank('RC-1') returns 101, stage_rank('RC-3') returns 103 and stage_rank('RC-99') returns 199",
+    "stage_rank('FINAL') returns 1000",
+    "DEV numbers must have exactly two digits and be at least 01: 'DEV-00', 'DEV-1', 'DEV-100', 'DEV-123' and 'DEV-' raise ValueError",
+    "RC numbers must be 1 to 99 without leading zeros: 'RC-0', 'RC-01', 'RC-100', 'RC-' and 'RC-A' raise ValueError",
+    "Matching is case-sensitive and exact: 'dev-01', 'Final', 'final', ' FINAL', 'FINAL ', 'DEV-01 ' and 'DEV-01\\n' raise ValueError, as do the empty string, 'DEV', 'RC', 'DEV-AB' and 'BETA-1'",
+    "Non-ASCII digits are not accepted: 'DEV-０１' (full-width digits) raises ValueError",
+    "The results order the stages: stage_rank('DEV-99') < stage_rank('RC-1') and stage_rank('RC-99') < stage_rank('FINAL')"
+  ]
+}

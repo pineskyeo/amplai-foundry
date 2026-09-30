@@ -1,0 +1,11 @@
+{
+  "task_id": "s01-semver-parse",
+  "difficulty": "small",
+  "objective": "Add a module `demo_app/semver.py` with a function `parse_version(text: str) -> tuple[int, int, int]` that turns a `MAJOR.MINOR.PATCH` string into a tuple of three ints. A single leading `v` is allowed (`v1.2.3`). Surrounding whitespace is ignored.",
+  "acceptance": [
+    "parse_version('1.2.3') returns (1, 2, 3) and parse_version('v10.0.7') returns (10, 0, 7)",
+    "parse_version('  2.0.1 ') returns (2, 0, 1)",
+    "Text with fewer or more than three dot-separated parts, an empty string, or a non-numeric part raises ValueError",
+    "A negative number or a part with a sign (for example '1.-2.3' or '+1.2.3') raises ValueError"
+  ]
+}

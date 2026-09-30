@@ -165,3 +165,26 @@ def effective(
                 out[driver_id] = component_ref
                 break
     return out
+
+
+def class_a_driver(
+    store: Store, scope: Scope, installed: dict[str, dict[str, Any]], ref: dict[str, Any]
+) -> str | None:
+    """The driver id whose installed composition ``ref`` is, or is a class-A candidate of.
+
+    A class-A candidate is named ``<installed id>__<suffix>`` and keeps the driver, model and
+    sandbox profiles of the composition it derives from. Anything else is None.
+    """
+    try:
+        value = store.get(scope, "harness-composition", ref)
+    except RuntimeFault:
+        return None
+    for driver_id, base_ref in installed.items():
+        if ref == base_ref:
+            return driver_id
+        base = store.get(scope, "harness-composition", base_ref)
+        if value["composition_id"].startswith(base["composition_id"] + CANDIDATE_SEP) and all(
+            value[k] == base[k] for k in CLASS_A_FIXED
+        ):
+            return driver_id
+    return None

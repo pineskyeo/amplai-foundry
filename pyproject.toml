@@ -82,6 +82,9 @@ extend-exclude = [
     "scripts/amplai.py", "scripts/amplai_hook.py", "scripts/amplai_hosts.py",
     "scripts/amplai_runtime.py", "scripts/amplai_supervisor.py",
     "tests/ai",
+    # Work 030 코퍼스: base 는 demo-app 의 고정 commit 그대로이고, 과제의 hidden 시험과
+    # 기준 해답은 agent 가 못 보는 판정 재료다. 형식을 이 저장소 규칙에 맞춰 고치지 않는다.
+    "specs/030-meta-harness-live/corpus",
 ]
 
 [tool.ruff.lint]

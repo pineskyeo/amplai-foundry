@@ -1,0 +1,13 @@
+{
+  "task_id": "m11-latest-per-stage",
+  "difficulty": "medium",
+  "objective": "Add a function `latest_per_stage(infos: list[dict]) -> dict[str, dict]` to `demo_app/version_report.py`. Each info is a dict that may have a `stage` key (a `str`) and a `package_version` (a `str`). The function returns a dict that maps each stage to the info with the highest `package_version` among the infos of that stage. The values are the original info dict objects from the input, not copies. An info with no `stage` key is skipped entirely (its `package_version` is never looked at). A `stage` that is present is used as-is as the key, including the empty string. If two infos of one stage have equal versions, the one that appears LATER in the input wins. The keys of the returned dict are ordered by stage name ascending (plain Python `str` ordering). Version ordering rule: a version string is either `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH.devN`, where MAJOR, MINOR, PATCH and N are each one or more ASCII digits (0-9); leading zeros are allowed and the numbers are compared as integers (so `1.02.0` equals `1.2.0`). Anything else (empty text, surrounding whitespace, a `v` prefix, fewer or more parts, a different suffix, a `.dev` with no digits, a sign) is unparsable. Versions are compared by the tuple (MAJOR, MINOR, PATCH) first. For the same (MAJOR, MINOR, PATCH), every `.devN` build is LOWER than the release without a suffix, and `.devN` builds compare among themselves by N (numeric, so `dev10` is higher than `dev9`). If an info that has a `stage` has an unparsable `package_version`, `latest_per_stage` raises `ValueError`. An empty list returns an empty dict.",
+  "acceptance": [
+    "latest_per_stage([{'stage': 'A', 'package_version': '1.2.0'}, {'stage': 'A', 'package_version': '1.10.0'}]) returns {'A': {'stage': 'A', 'package_version': '1.10.0'}}",
+    "'3.0.0' is higher than '3.0.0.dev10', which is higher than '3.0.0.dev9'; '3.0.1.dev1' is higher than '3.0.0'",
+    "With equal versions in one stage (including '1.02.0' and '1.2.0') the later input item is the value, and the value is the very same dict object that was passed in",
+    "Infos without a 'stage' key are skipped, even if their package_version is unparsable; a stage of '' is a normal key",
+    "list(result) is ordered by stage name ascending regardless of input order (for example 'DEV-02' before 'DEV-10', and 'Z' before 'a')",
+    "An unparsable package_version ('', 'v1.0.0', '1.0', '1.0.0.dev', '1.0.0 ') on an info that has a stage raises ValueError; an empty list returns {}"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "task_id": "m14-in-range",
+  "difficulty": "medium",
+  "objective": "Add a module `demo_app/ranges.py` with a function `in_range(version: str, spec: str) -> bool`. Version parsing rules: a version is `MAJOR.MINOR.PATCH`, exactly three parts separated by dots, each part one or more ASCII digits (0-9, so no sign and no empty part), optionally preceded by one lowercase `v`; whitespace around the whole version is ignored; leading zeros are allowed and parts compare as integers. Versions compare as tuples (MAJOR, MINOR, PATCH). `spec` is a comma-separated list of comparisons. Each comparison is an operator followed by a version, where the operator is exactly one of `>=`, `>`, `<=`, `<`, `==`, `!=`; whitespace around the comparison and between the operator and the version is ignored. `in_range` returns True only if the version satisfies every comparison. A `spec` that is empty or only whitespace has no comparisons and returns True. Otherwise every comma-separated piece must be a valid comparison: a piece that is empty (as in `>=1.0.0,` or `,`), has no operator (`1.0.0`), has an unknown or misspelled operator (`=1.0.0`, `=>1.0.0`, `<>1.0.0`, `> =1.0.0`), or has an unparsable version raises `ValueError`. The `version` argument is always parsed first, so an unparsable `version` raises `ValueError` even when `spec` is empty. The whole `spec` is validated before any comparison is evaluated, so a malformed piece raises `ValueError` even if an earlier comparison would already be False.",
+  "acceptance": [
+    "in_range('1.5.0', '>=1.0.0, <2.0.0') is True; in_range('2.0.0', '>=1.0.0,<2.0.0') is False; in_range('0.9.9', '>=1.0.0') is False",
+    "Each operator works on equal, lower and higher versions: '>=' and '<=' include equality, '>' and '<' exclude it, '==' requires equality and '!=' requires inequality",
+    "Versions and spec versions compare numerically (in_range('1.10.0', '>1.9.0') is True) and accept a leading 'v' and surrounding whitespace ('  v1.2.3 ' with '>= v1.0.0')",
+    "in_range('1.2.3', '') and in_range('1.2.3', '   ') are True",
+    "A malformed comparison ('1.0.0', '=1.0.0', '>=', '>=1.0', '>=1.0.0,', ',', '>=1.0.0,,<2.0.0', '>= 1.0.0.0', '>=vv1.0.0', '>=V1.0.0', '>=+1.0.0') raises ValueError, even when an earlier comparison is already False (in_range('0.1.0', '>=1.0.0, bad') raises)",
+    "An unparsable version argument ('', '1.2', '1.2.3.4', 'a.b.c', '1.-2.3', 'vv1.2.3') raises ValueError, also with an empty spec"
+  ]
+}

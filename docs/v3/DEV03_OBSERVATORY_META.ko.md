@@ -106,7 +106,9 @@ timeout, 연결 유실, 비정상 receipt는 외부 실행이 끝났다는 증�
 - 검토자는 사람 운영자다. 목표용 권한에 meta 검토 권한을 더한 신원(`meta_operator()`)이며 `harness.propose`는 가지지 않는다.
 - 실험·카나리·승격·롤백 승인은 운영자가 발급하는 durable 기록이다. 기록은 action과 승인 대상의 digest에 묶이고, 사람 운영자만 발급하며, 철회하면 이후 검사가 거절한다. 재시작 후에도 store에서 다시 읽는다.
 - `reject`는 draft, screened, offline_evaluated, promotion_pending의 후보를 끝낸다. 사유가 필수이고 검토자와 직전 상태를 후보 기록에 남긴다. 끝난 후보는 다시 움직이지 않는다.
-- 아직 실험 실행기가 없다. 실험은 실행기 자격이 고정되는 다음 단계(S4) 전에는 시작할 수 없다. 운영자용 `amplai meta` 명령도 아직 없다(S6).
+- 오프라인 시험 실행기는 corpus 과제 하나를 실제 goal 하나로 돌린다(`src/amplai_foundry/meta_harness/local_executor.py`, Work 030 S4). 계획 단계의 모델 대신 과제의 고정 contract를 쓰고, 고정한 base commit과 고정한 composition(설치된 것 또는 그 class-A 후보)에서 시작하며, 게시는 끈다. 결과는 검증을 통과한 변경의 scratch 사본에 agent가 못 본 hidden 시험을 얹어 판정한다. 답을 못 낸 시도(driver 오류, 멈춘 goal)는 `success=None`이라 후보의 실패로 세지 않는다.
+- corpus는 `specs/030-meta-harness-live/corpus/`의 demo-app 과제 20개(작은 7, 중간 7, 큰 6)다. 각 과제는 base에서 hidden 시험이 실패하고 기준 해답에서 통과해야 하며(`scripts/corpus_check.py`), 과제 문구에는 hidden 시험 내용을 넣지 않는다.
+- 실험 승인·실행 정책(실행기 자격)은 아직 고정하지 않았다. 실험 자체(S7)와 운영자용 `amplai meta` 명령(S6)도 아직 없다.
 
 ## 7. 네트워크 없이 실제 파이프라인 재현
 
