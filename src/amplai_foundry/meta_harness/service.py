@@ -1006,6 +1006,27 @@ class MetaHarness:
             "data_restored": False,
         }
 
+    def reject(self, actor: Actor, proposal_id: str, reason: str) -> str:
+        """The reviewer ends a candidate that should not go on (state machine ``reject``).
+
+        Allowed from draft, screened, offline_evaluated and promotion_pending. The findings that
+        led there stay on the evolution record; the reason and the reviewer are added to it.
+        """
+        actor.require("harness.review")
+        if not isinstance(reason, str) or not reason.strip():
+            raise RuntimeFault("REJECT_REASON", "Audit reason is required")
+        head = self.store.head(actor.scope, "evolution", proposal_id)
+        self._independent(actor, head)
+        obs = {"G-16": Observation.check(True, "Independent reviewer ended the candidate")}
+        rejection = {
+            "reason": reason.strip(),
+            "by": actor.wire(),
+            "from_state": head["state"],
+            "at": now(),
+        }
+        with self.store.tx() as db:
+            return self._move(db, actor.scope, proposal_id, "reject", obs, {"rejection": rejection})
+
     def abort(self, actor: Actor, proposal_id: str, reason: str) -> dict[str, Any]:
         actor.require("canary.run")
         if not isinstance(reason, str) or not reason.strip():

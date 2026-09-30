@@ -52,6 +52,7 @@ from .execution.codex import (
     install_driver_profile,
 )
 from .execution.loop import ExecutionLoop
+from .execution.meta_local import META_OPERATOR_PERMISSIONS, LocalMeta
 from .execution.outcomes import PullRequestTracker
 from .execution.planner_codex import ClaudePlanner, CodexPlanner
 from .execution.product import (
@@ -197,6 +198,10 @@ class LocalProductDeployment:
             verifier=Actor("amplai-local-verifier", self.scope, frozenset({"verifier.run"}),
                            "service", "local-verifier"),
         )  # fmt: skip
+        # the meta-harness on this product's store; the release key is the local authority's (S3)
+        self.meta_local = LocalMeta(
+            self.store, self.contracts, self.artifacts, self.scope, signer.public_key()
+        )
         self._compose(cfg)
         self._planning: set[str] = set()
         self._planning_lock = threading.Lock()
@@ -360,6 +365,13 @@ class LocalProductDeployment:
         return Actor(
             self.config.operator_subject, self.scope, OPERATOR_PERMISSIONS, "human",
             "local-operator-token",
+        )  # fmt: skip
+
+    def meta_operator(self) -> Actor:
+        """The same human operator with the meta-harness reviewer permissions (never a proposer)."""
+        return Actor(
+            self.config.operator_subject, self.scope,
+            OPERATOR_PERMISSIONS | META_OPERATOR_PERMISSIONS, "human", "local-operator-token",
         )  # fmt: skip
 
     def authenticate(self, authorization: str | None) -> Actor:

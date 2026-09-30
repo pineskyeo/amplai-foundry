@@ -338,7 +338,7 @@
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "explicit_dependency": false,
       "kind": "repository_path",
-      "line": 125,
+      "line": 135,
       "raw_reference": "validation/",
       "reason": "선언된 경로가 repository 에 없다",
       "reference": "validation/",
@@ -353,7 +353,7 @@
       "document": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "explicit_dependency": false,
       "kind": "repository_path",
-      "line": 125,
+      "line": 135,
       "raw_reference": "_v3_delivery/TEST_RESULTS.json",
       "reason": "선언된 경로가 repository 에 없다",
       "reference": "_v3_delivery/TEST_RESULTS.json",
@@ -423,10 +423,12 @@
     "src/amplai_foundry/evaluation/analysis.py",
     "src/amplai_foundry/evaluation/service.py",
     "src/amplai_foundry/meta_harness/budget.py",
+    "src/amplai_foundry/meta_harness/service.py",
     "src/amplai_foundry/runtime/budgets/service.py",
     "src/amplai_foundry/runtime/cli.py",
     "src/amplai_foundry/runtime/execution/envelope.py",
     "src/amplai_foundry/runtime/execution/loop.py",
+    "src/amplai_foundry/runtime/execution/meta_local.py",
     "src/amplai_foundry/runtime/execution/product.py",
     "src/amplai_foundry/runtime/execution/prompts.py",
     "src/amplai_foundry/runtime/execution/publish.py",
@@ -451,6 +453,7 @@
     "tests/v3/test_rc02_driver.py",
     "tests/v3/test_rc02_runtime.py",
     "tests/v3/test_rc07_local_config.py",
+    "tests/v3/test_rc09_meta_local.py",
     "tools/amplai-loop-kit/CHECKSUMS.sha256",
     "tools/amplai-loop-kit/README.md.amplai.json",
     "tools/amplai-loop-kit/baseline/manifest.json",
@@ -563,10 +566,12 @@
       "src/amplai_foundry/evaluation/analysis.py",
       "src/amplai_foundry/evaluation/service.py",
       "src/amplai_foundry/meta_harness/budget.py",
+      "src/amplai_foundry/meta_harness/service.py",
       "src/amplai_foundry/runtime/budgets/service.py",
       "src/amplai_foundry/runtime/cli.py",
       "src/amplai_foundry/runtime/execution/envelope.py",
       "src/amplai_foundry/runtime/execution/loop.py",
+      "src/amplai_foundry/runtime/execution/meta_local.py",
       "src/amplai_foundry/runtime/execution/product.py",
       "src/amplai_foundry/runtime/execution/prompts.py",
       "src/amplai_foundry/runtime/execution/publish.py",
@@ -591,6 +596,7 @@
       "tests/v3/test_rc02_driver.py",
       "tests/v3/test_rc02_runtime.py",
       "tests/v3/test_rc07_local_config.py",
+      "tests/v3/test_rc09_meta_local.py",
       "tools/amplai-loop-kit/CHECKSUMS.sha256",
       "tools/amplai-loop-kit/README.md.amplai.json",
       "tools/amplai-loop-kit/baseline/manifest.json",
@@ -612,10 +618,12 @@
       "src/amplai_foundry/evaluation/analysis.py",
       "src/amplai_foundry/evaluation/service.py",
       "src/amplai_foundry/meta_harness/budget.py",
+      "src/amplai_foundry/meta_harness/service.py",
       "src/amplai_foundry/runtime/budgets/service.py",
       "src/amplai_foundry/runtime/cli.py",
       "src/amplai_foundry/runtime/execution/envelope.py",
       "src/amplai_foundry/runtime/execution/loop.py",
+      "src/amplai_foundry/runtime/execution/meta_local.py",
       "src/amplai_foundry/runtime/execution/product.py",
       "src/amplai_foundry/runtime/execution/prompts.py",
       "src/amplai_foundry/runtime/execution/publish.py",
@@ -640,6 +648,7 @@
       "tests/v3/test_rc02_driver.py",
       "tests/v3/test_rc02_runtime.py",
       "tests/v3/test_rc07_local_config.py",
+      "tests/v3/test_rc09_meta_local.py",
       "tools/amplai-loop-kit/CHECKSUMS.sha256",
       "tools/amplai-loop-kit/README.md.amplai.json",
       "tools/amplai-loop-kit/baseline/manifest.json",
@@ -648,21 +657,21 @@
     "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
     "unprocessed": []
   },
-  "content_hash": "09c4f7594ae0ee4103bb470bb4c77ad669d9c96e1f101d3a11635e098fea2806",
+  "content_hash": "de9ffe548b0a46617a797da7d114bcc1772308f1941170fff1399d298fe3f635",
   "dependency_snapshot": {
     "base_commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969"
+      "sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc"
     },
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-          "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+          "declared_reference_sha256": "a797645f39745e2ced6d9623ba7fc1aa29c3b22f4d5eb020d00cc9faf3ae8c8b",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -680,7 +689,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -699,7 +708,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -718,8 +727,8 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-          "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+          "declared_reference_sha256": "0a303e18eb6ac681dd2de04a2ad1b45abdf6b56639fc87e0911b2f418a240c4f",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -737,7 +746,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -756,7 +765,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -775,7 +784,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -794,7 +803,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -813,7 +822,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -832,7 +841,7 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -851,7 +860,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -870,8 +879,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-          "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+          "declared_reference_sha256": "19f3b1459734994f54eb8cac2d178717f9901f2364f44d9c8f5447129e53d516",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -889,7 +898,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -908,7 +917,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -927,7 +936,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -946,7 +955,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -965,7 +974,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -984,7 +993,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1003,7 +1012,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
           "metadata_owner": "sidecar",
@@ -1022,7 +1031,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1041,7 +1050,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1060,7 +1069,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1079,7 +1088,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1098,7 +1107,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
           "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
           "metadata_owner": "sidecar",
@@ -1117,7 +1126,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
           "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
           "metadata_owner": "sidecar",
@@ -1136,9 +1145,9 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-          "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
-          "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+          "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+          "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
           "rules": {
@@ -1149,15 +1158,15 @@
           },
           "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+          "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
         }
       },
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
+          "dependency_snapshot_sha256": "9184c2992bf8bf840dc2edb00945e776d7296adfdce5e8cdb4d7dac73ccd5884",
           "metadata_owner": "sidecar",
           "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
           "rules": {
@@ -1174,9 +1183,9 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
-          "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+          "dependency_snapshot_sha256": "3755f925c6a4866604a2183f6fcf474a8312709594fcdc15eeb8abc0832c194f",
           "metadata_owner": "sidecar",
           "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
           "rules": {
@@ -1193,7 +1202,7 @@
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
@@ -1212,7 +1221,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1231,7 +1240,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1250,7 +1259,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+          "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
           "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1489,7 +1498,7 @@
       {
         "mode": 420,
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-        "sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732",
+        "sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d",
         "state": "PRESENT"
       },
       {
@@ -1554,6 +1563,12 @@
       },
       {
         "mode": 420,
+        "path": "src/amplai_foundry/meta_harness/service.py",
+        "sha256": "e0256864467a9e0fbad94c3d3182364dea8bd3524580e718898ff5172acf9482",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
         "path": "src/amplai_foundry/runtime/budgets/service.py",
         "sha256": "1998c71c87fd12b4fab2021e50fbb16fb297c79d51d58b7637fc26d9ab2670d5",
         "state": "PRESENT"
@@ -1574,6 +1589,12 @@
         "mode": 420,
         "path": "src/amplai_foundry/runtime/execution/loop.py",
         "sha256": "8ba2cf12e0d0a0109bd6576d37b88e6836d0091b7330d7a5aea1bc918da77d7b",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
+        "path": "src/amplai_foundry/runtime/execution/meta_local.py",
+        "sha256": "8f8019f6c9f5de3d10b02d8e25d1df5cb50e57c8ed9bdf60ec4c8a77987929e8",
         "state": "PRESENT"
       },
       {
@@ -1615,7 +1636,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/runtime/local_deployment.py",
-        "sha256": "9b16718c9cf3285d93819f2057a7bec90683c7c3102371d8499c4227dc2c62ae",
+        "sha256": "5b514ac6b8f52a5b551891d04d77f32ad7967d3e7b5141904a2c422d64764863",
         "state": "PRESENT"
       },
       {
@@ -1722,6 +1743,12 @@
       },
       {
         "mode": 420,
+        "path": "tests/v3/test_rc09_meta_local.py",
+        "sha256": "288f473f56976af10b51333a087fd77a0e1c1530f47daddb4029fb644349a085",
+        "state": "PRESENT"
+      },
+      {
+        "mode": 420,
         "path": "tools/amplai-loop-kit/CHECKSUMS.sha256",
         "sha256": "7ac1c5df4db072053c790d177880cd5f01cf8fc1d2f3f172523a1f502168f373",
         "state": "PRESENT"
@@ -1746,7 +1773,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+  "dependency_snapshot_hash": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -1754,7 +1781,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "56bcf43201c00729a630ebb0adcfc82068257fc6",
+    "commit": "988698d76c1da06e09d7511f5db8711664b43034",
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
   },
@@ -1783,9 +1810,9 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword knowledge,policy,runtime; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "a797645f39745e2ced6d9623ba7fc1aa29c3b22f4d5eb020d00cc9faf3ae8c8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -1799,7 +1826,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "8f114b8c13a23f25e2de8797f1480aebc4d19e68455c4543fc884e2b50e95e57",
+      "review_hash": "b0e7d1ef1f7df865ba49284cd8152e120aa0b8661566b1ff3a6e5ba8782b47ed",
       "state": "ACTIVE"
     },
     {
@@ -1817,8 +1844,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1833,7 +1860,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "94244083fd536540b96a4370b724978bfa297d63f315dfcfc8ef30f60c3e7d22",
+      "review_hash": "2d87718a380fec525dec2f046e70b2d7933dec3a829eb4f8c493e894e46054a3",
       "state": "ACTIVE"
     },
     {
@@ -1851,8 +1878,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1867,7 +1894,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "8c3e1cf268139297b406b405538f6645a97ec8a03f7ca09615c35dabe162f6f2",
+      "review_hash": "5b24bb75d526f46ddfc3488afcbed691c6f75ab69d61b92bb62c3b5fc3372913",
       "state": "ACTIVE"
     },
     {
@@ -1887,9 +1914,9 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "0a303e18eb6ac681dd2de04a2ad1b45abdf6b56639fc87e0911b2f418a240c4f",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -1903,7 +1930,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "298b3ca7d2421c8fbcc64a8acc41278a0b378ebabfa9f3197b6387187f7cfe19",
+      "review_hash": "3ba617fa4fe5cb90f2c99e4c94a3c3aea15868b7abcfa952cf52e3b6d73d9c59",
       "state": "ACTIVE"
     },
     {
@@ -1921,8 +1948,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1937,7 +1964,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "8643984f34b462836c6c42ecdf1411ff37382c3752c75f22b7416d8b87078f8a",
+      "review_hash": "293b6fab3d45695b3505da58012657fbe30a30f28e3333b7f56b40ec9699d8ce",
       "state": "ACTIVE"
     },
     {
@@ -1955,8 +1982,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -1971,7 +1998,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "d83f3be6dbefd9e2a39e0209003fa690416737891778aa6a1c41337f4c5cce67",
+      "review_hash": "8eb9c7fd28b171c991e2df2b0c2f4b9053084fdcb1def0d91f8fac706fe5e84b",
       "state": "ACTIVE"
     },
     {
@@ -1996,8 +2023,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2012,7 +2039,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "6073778b1d14428aa740d6bd54cf0008704367aa30ab38e025c3b53ff49f7a67",
+      "review_hash": "a85266ed865ec7519bf567dd7b065b6ca45a6d622f79c5273b80a1a6b993d56e",
       "state": "ACTIVE"
     },
     {
@@ -2030,8 +2057,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2046,7 +2073,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "23a0ec4287421438c1f09dabaaee7cd123c86b79886127426911899935c89da9",
+      "review_hash": "951c9c39455b63dd903e6a82463edc365388a03121f3e412a3807a096ca56a33",
       "state": "ACTIVE"
     },
     {
@@ -2066,8 +2093,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2082,7 +2109,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "53accfc178063cce3e6c7eab5f52ab0c684e526c99e192005ac8504eccd04d8a",
+      "review_hash": "7f51bbdcc97897e47f41dcbdd1653a8ba09b8cc6e6130a0cac02c08581bb24ad",
       "state": "ACTIVE"
     },
     {
@@ -2104,8 +2131,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2120,7 +2147,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "bd3befb3d04a0dd44566566eab35ef4a7eb40fb060ddc95182f5e110e6366ca7",
+      "review_hash": "6650a72776c4120665ecf89c71094f06e84f56e2d5046a715e8da9b89bf3a541",
       "state": "ACTIVE"
     },
     {
@@ -2142,8 +2169,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2158,7 +2185,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "b5ff9bae9baf3f26f75765389d01b7888b1b0cc4af0c7cf78e2cac9147e1c789",
+      "review_hash": "32af311e30e5903d36ba1e93e309eed81d46982b9b5f0d0be2787e289930394e",
       "state": "ACTIVE"
     },
     {
@@ -2178,9 +2205,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "19f3b1459734994f54eb8cac2d178717f9901f2364f44d9c8f5447129e53d516",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -2194,7 +2221,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "c56027e5e21b16a8333058c1a5d94c30c3e280f4008e2901400ab1ade69855a0",
+      "review_hash": "6b5adef71723fdba0de8e1ea27a81c8e7f2b49c66832cc5fd960c2531564688d",
       "state": "ACTIVE"
     },
     {
@@ -2214,8 +2241,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2230,7 +2257,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "a33f3c451bdfdd5b73a16bf23893cad28221ebd6524630a0cd9e247f93ef7205",
+      "review_hash": "699f6c42b0bdd4b50b8693d53110a46fcb0a9a45f92748f4afcc8f054deba2bc",
       "state": "ACTIVE"
     },
     {
@@ -2248,8 +2275,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2264,7 +2291,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "aa1929c10a8bb5757a1e5ef3d7f70edcbb5dd902be7ef7c3ae4a094f5aa69ba1",
+      "review_hash": "fa9e66b02fc7088f2b3e6b2d99467807d55af635ac8ef189895369beea7a23b6",
       "state": "ACTIVE"
     },
     {
@@ -2282,8 +2309,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2298,7 +2325,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "bce76100879c7199abbdb9ca7c65e4c3e97a7ce72886f1374ccb7008149c93e0",
+      "review_hash": "0705f819762c6bbb6385cafe319f5577461aee5b0453c48929baacbfd23818e0",
       "state": "ACTIVE"
     },
     {
@@ -2318,8 +2345,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2334,7 +2361,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "9d287c9935a0fc82933dd7c2195156f1e49597179b540cd99f30aeffa52e9ef3",
+      "review_hash": "ac7dbdb4f5d316f3bad48b300bc3abc416a860f0c84b731f45ebb0090e79a686",
       "state": "ACTIVE"
     },
     {
@@ -2354,8 +2381,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2370,7 +2397,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "6609b258472aee7d2dde05f7b086552ff90c04428e747bcce88aada83bae332d",
+      "review_hash": "c64aeb18883f8fea6f16f2a730adc64ff03ca874c59a8aaf4976a3e981cfb974",
       "state": "ACTIVE"
     },
     {
@@ -2388,8 +2415,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2404,7 +2431,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "74c64ead727c7bc82b3ff1cd0a54c0a15958a6ff199474cd83390c5cc1666aa0",
+      "review_hash": "f8e85f1e7d69035bd44c1a03687b92cf2cf513237a2a1916d2ecd4a1f0b876da",
       "state": "ACTIVE"
     },
     {
@@ -2422,8 +2449,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -2438,7 +2465,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "99f264340c6343429b85131424ea13b364bbaeaf747db0d7bfdbb121231fc8c1",
+      "review_hash": "88e925d5d475ffe5ba8fe228da7a40e4c9ad946ede92780cf49e9a1def863028",
       "state": "ACTIVE"
     },
     {
@@ -2456,8 +2483,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2472,7 +2499,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "2b676ac6795714dd05fafc06d583613aa82bb4bd3620fb05ee957408210b4282",
+      "review_hash": "432d724d1b74ae87c55fe6f41c88eef5da2203bcf405038f9a9f868c9829e9df",
       "state": "ACTIVE"
     },
     {
@@ -2490,8 +2517,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2506,7 +2533,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "b809f12497794290d8f88c24c2b96c527aa0606dbba0e5a45e88988192096aef",
+      "review_hash": "0ff6e09b10324f6ac0b3c532fce47fd2a22aef715d1b30da3c1c364555b78550",
       "state": "ACTIVE"
     },
     {
@@ -2524,8 +2551,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2540,7 +2567,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "b0175aa2395357fc8e2310974474606282080dcacd1eeed0e26eb642371f5c69",
+      "review_hash": "31d4e42cb8f9bbbf7d49702cc7d11c34dc54bfa6de4105dd195c49b2de9394e6",
       "state": "ACTIVE"
     },
     {
@@ -2560,8 +2587,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2576,7 +2603,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "510196b8ce37f4e6d74ee69b37171b070764f03ead8e39c08ef26935baca7846",
+      "review_hash": "44f5b6debd03495049c19009cfde3b48df22b2b787ea0b489b68b68a15cfd3a9",
       "state": "ACTIVE"
     },
     {
@@ -2596,8 +2623,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh, src/amplai_foundry/agent_drivers/protocol.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -2612,7 +2639,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
       },
-      "review_hash": "05cba513af457f6864dceca78514a51170294cd8c89b3935199c9126cd06228e",
+      "review_hash": "b426e695d39b6230a6e249233dd291d5a6e1d15f2a0ef60eee05bd1d20d7a250",
       "state": "ACTIVE"
     },
     {
@@ -2630,8 +2657,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -2646,18 +2673,18 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "4221a4313d32a731dde21ea01b71c98f3062099ca9597a50efb12706c2171f5a",
+      "review_hash": "81137f07501b35fde343d9f78d84ff80d83e6afad8562921989e7f02f4fc6356",
       "state": "ACTIVE"
     },
     {
-      "action": "acknowledge",
+      "action": "update",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
-      "document_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732",
+      "document_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d",
       "evidence": [
         "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "git grep -F src/amplai_foundry/evaluation/analysis.py"
@@ -2666,10 +2693,10 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/service.py, src/amplai_foundry/meta_harness/budget.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
-        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+        "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -2680,9 +2707,9 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+        "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
       },
-      "review_hash": "1687e3212d58c901224f6f82389c25d5c8442855c40dde1c6d7744e1370c3d23",
+      "review_hash": "80e276114974bb113ad56b61034be7ad74c47f4683b166d801165d2e4bf2c1fe",
       "state": "ACTIVE"
     },
     {
@@ -2700,10 +2727,10 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
+        "dependency_snapshot_sha256": "9184c2992bf8bf840dc2edb00945e776d7296adfdce5e8cdb4d7dac73ccd5884",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -2716,11 +2743,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "f55fb83f9fa5e0f1a94b73ac930898eac92aa17205fdf332338389bbe3e22b21",
+      "review_hash": "b27d124dc3350e0412352c20695e02561291a1bcd84225a019a5e4cf64a6fe4a",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "internal_guide",
       "discovered_by": [
         "declared_document_dependency",
@@ -2736,10 +2763,10 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
-        "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+        "dependency_snapshot_sha256": "3755f925c6a4866604a2183f6fcf474a8312709594fcdc15eeb8abc0832c194f",
         "metadata_owner": "sidecar",
         "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
         "rules": {
@@ -2752,11 +2779,11 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "033fe87d9fa33f3b6eecf9bc6c6a6f2ce5ce233500d52d6855c7582746581c51"
       },
-      "review_hash": "027e92697246f1a2fa9ca3d97ab7724f42338e1e0a1bf9208445318f285d9e6b",
+      "review_hash": "0515c5001a0b8197663981bae740169f32b314fbf0399f5e3b5163d73b32b151",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "decision_record",
       "discovered_by": [
         "decision_index",
@@ -2790,8 +2817,8 @@
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "reason": "active decision D-068; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; active decision D-091; 문서가 .ai-team/policy/documentation.json, scripts/amplai_docs.py, scripts/container_qualify.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -2806,7 +2833,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "91ff4f0807722b31168ae51d242d2c69fb80b4aee91e06f54f54b4a75b242b9b"
       },
-      "review_hash": "fee96ceda5d9db9676c9b465b7603b1e86f5e939f7540868d129d1290dac651e",
+      "review_hash": "4f48af1d888f1c20113cd0eded5f1a3274f96f9de8e3f7ed63685270047e7efb",
       "state": "ACTIVE"
     },
     {
@@ -2826,8 +2853,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -2842,7 +2869,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "495b4f86dcef3866899bfc340ea3a54a03b5062548d959ad3e4541f1b3ffc0c5",
+      "review_hash": "a3eb1e2a98a00f76696a23a520542a3b8fa14f085a1ed3033eed8a93a65f5cab",
       "state": "ACTIVE"
     },
     {
@@ -2862,8 +2889,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2878,7 +2905,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "8d1db33a6b1f82bf8627e7cf772e99d9cb02adbc6a3563e971b62f28a4b700a2",
+      "review_hash": "853ccec03589b8c37cb2008c6d04ff079386b504f5ac90bc56b16204fa93349b",
       "state": "ACTIVE"
     },
     {
@@ -2903,8 +2930,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2919,7 +2946,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "8fddc5e2039079ab0495875d7024d9046be1e95e2abf7df35c017989bcf7b5a9",
+      "review_hash": "7e6ac255d2e21ce809f7fa6454936d37d4c84e1c8d1c35579cc6529f646ad558",
       "state": "ACTIVE"
     }
   ],
@@ -3024,10 +3051,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 58,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3035,10 +3062,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "evidence/*.json",
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3065,10 +3092,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3076,10 +3103,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3106,10 +3133,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 54,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3117,10 +3144,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/change.json",
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3147,10 +3174,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3158,10 +3185,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3188,10 +3215,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3199,10 +3226,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3229,10 +3256,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 55,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3240,10 +3267,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/work/*.json",
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3270,10 +3297,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 59,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3281,10 +3308,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "decisions/*.json",
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3311,10 +3338,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3322,10 +3349,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "questions/*.json",
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3352,10 +3379,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3363,10 +3390,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/",
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3393,10 +3420,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3404,10 +3431,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3475,10 +3502,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3486,10 +3513,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3516,10 +3543,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 19,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3527,10 +3554,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3557,10 +3584,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3568,10 +3595,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "patches/",
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3598,10 +3625,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 116,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3609,10 +3636,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3639,10 +3666,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3650,10 +3677,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "speckit-tasks/SKILL.md",
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3680,10 +3707,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 107,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3691,10 +3718,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3721,10 +3748,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3732,10 +3759,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".amplai/tasks/tasks.md",
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3762,10 +3789,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 36,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3773,10 +3800,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "ui/dist/",
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3803,10 +3830,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 7,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3814,10 +3841,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/*TRACE.json",
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -3885,6 +3912,47 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
+        }
+      ],
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "line": 135,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "validation/",
+      "reference_hash": "6f1ed1528c19b7457f0a43d434600c4cc3e96670a06a0975b88833f784ca3669",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
+      "snapshot": {
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+        "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
           "sha256": "6f99058698bdcd345e71394e8959c42a5588232be7e6549d9f2a0074a18dae99"
         }
       ],
@@ -3913,6 +3981,47 @@
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "80065a838f78d9e10d80f1564baed9425b159e6cdef8928a45f1eb562d905814"
+      }
+    },
+    {
+      "authority": "attributed_semantic_review_not_human_gate",
+      "contract": {
+        "path": "specs/019-v3-completion/work-contract.json",
+        "sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34"
+      },
+      "disposition": "external",
+      "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
+      "evidence": [
+        {
+          "path": "specs/019-v3-completion/document-review-evidence-019.json",
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
+        }
+      ],
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "line": 135,
+      "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
+      "outcome": "reviewed_unchanged",
+      "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
+      "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
+      "reference": "_v3_delivery/TEST_RESULTS.json",
+      "reference_hash": "828fc39d7cc2d29089f317284b59717e3845f84539b36fe67a9690dd97fd7129",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
+      "snapshot": {
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+        "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
+        "metadata_owner": "sidecar",
+        "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
+        "rules": {
+          "context_dependencies_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "engine_version": "document-lifecycle-1",
+          "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
+          "profile_sha256": "ac49b5d6528015c042f320d1b31327efe4dc302e0b622c387d9e1dc34cc6f0b5"
+        },
+        "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
+        "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
       }
     },
     {
@@ -3967,10 +4076,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 3,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3978,12 +4087,12 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
-        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+        "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -3994,7 +4103,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+        "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
       }
     },
     {
@@ -4295,10 +4404,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4306,11 +4415,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "19f3b1459734994f54eb8cac2d178717f9901f2364f44d9c8f5447129e53d516",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4336,10 +4445,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4347,11 +4456,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/",
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "19f3b1459734994f54eb8cac2d178717f9901f2364f44d9c8f5447129e53d516",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4500,10 +4609,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 86,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4511,10 +4620,10 @@
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
       "reference": "supervisor/",
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4828,10 +4937,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 145,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4839,10 +4948,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".ai-team/skills/handoff/SKILL.md",
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4951,10 +5060,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
       "line": 144,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4962,10 +5071,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".agents/skills/handoff/SKILL.md",
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5158,18 +5267,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "a154e5c7fdc26e73447f55b39298ebe3eec20c61f2d04d3f6787b6ecaf415b4b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5195,18 +5304,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5232,18 +5341,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5269,19 +5378,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "4fe4663cab97d76aacf5d2c96b24a7ebff258a070c91239b23c591a1bc75a156",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "0a303e18eb6ac681dd2de04a2ad1b45abdf6b56639fc87e0911b2f418a240c4f",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -5306,19 +5415,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "af0b0084a88342326997382768c2945e599ee0a86031a14843694830843fbf65",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "a797645f39745e2ced6d9623ba7fc1aa29c3b22f4d5eb020d00cc9faf3ae8c8b",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -5343,18 +5452,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5380,18 +5489,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5417,18 +5526,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5454,18 +5563,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5491,18 +5600,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5528,18 +5637,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5565,18 +5674,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5602,18 +5711,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5639,18 +5748,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5676,18 +5785,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5713,18 +5822,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5750,18 +5859,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5787,18 +5896,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -5824,18 +5933,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5861,18 +5970,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5898,18 +6007,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -5935,18 +6044,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -5972,20 +6081,20 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
-      "outcome": "reviewed_unchanged",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
+      "outcome": "updated",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "A subsection describes the local wiring: proposer and operator identities, durable approvals bound to action and subject, reject, and what is still missing (executor S4, CLI S6); no earlier statement changed.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "4152e1ac8c19db876470e7ee5a383e230575113aec793eefde51fe2d82d465df",
-        "dependency_snapshot_sha256": "314411624338dcfbeed2b45a6d1a4deb3fa7d2402a889b2688feb7cea2fd018d",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "6bfd0faab61e0c15cb9a39c3d90d316236a019cfc73d7cf9a4abfc6bb7149a6b",
+        "dependency_snapshot_sha256": "afc69c0c3f5073ff05816b30e9812bbb9e6facc59437a49d860a1dd3dde387d5",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
         "rules": {
@@ -5996,7 +6105,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "a9a2c6c90c9908541753f941b07f644c468416559a159833620672940b1c8732"
+        "source_sha256": "1135551bd28b53242525c39d42e7f27ee50612fb83a18c2448878dc9bd52070d"
       }
     },
     {
@@ -6009,20 +6118,20 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "c7ff0c1bcf62bff225376983491f09c762f87ae18955a57825671cd304fb6632",
+        "dependency_snapshot_sha256": "9184c2992bf8bf840dc2edb00945e776d7296adfdce5e8cdb4d7dac73ccd5884",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -6046,20 +6155,20 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
+      "outcome": "reviewed_unchanged",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-      "reason": "A limits bullet states that the agent tools can read the driver credential (D-091), what is measured and what is not, and points to Work 032; no earlier statement changed.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
-        "dependency_snapshot_sha256": "7a2c0aa8b42f705b637e57f47b4bedea6a69366a18add5136a2cb8d9cc9d045e",
+        "dependency_snapshot_sha256": "3755f925c6a4866604a2183f6fcf474a8312709594fcdc15eeb8abc0832c194f",
         "metadata_owner": "sidecar",
         "metadata_sha256": "fa56d528722868314cc04e517002a86e861d6951118086f8106e6b0e5b8a4403",
         "rules": {
@@ -6083,18 +6192,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6120,18 +6229,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6157,18 +6266,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
-      "outcome": "updated",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
+      "outcome": "reviewed_unchanged",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "D-091 appended (driver provider credentials are readable by the agent tools; the risk is accepted); no earlier entry changed.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "6903bc6550ae7bc88d84b0a029c371441eba32a0582989071a3dd090b6bc50a0",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -6194,19 +6303,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
-        "declared_reference_sha256": "7bceaaab8d13ed10d62eea49f8857bb7337c1de78c372a30ffec0896d9d41410",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
+        "declared_reference_sha256": "19f3b1459734994f54eb8cac2d178717f9901f2364f44d9c8f5447129e53d516",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6231,18 +6340,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -6268,18 +6377,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6305,18 +6414,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "9f02f5b5cd0818d4d725106c02c7658d99e539a18fb88b9accd53f2f81ab020e"
+          "sha256": "33ac18f6326e6515fb60ddb36a09ae5e33e5fc9aba1e9dcddbb2b9bb55c471aa"
         }
       ],
-      "impact_snapshot_sha256": "33da4484cb8ae6e3fda081706e793f5ba31fa3b8dce3e8ab254cda30dced7e87",
-      "method": "Grepped each document for credential, token, isolation, sandbox and broker wording and compared the hits against D-091 and the measured baseline in specs/032-credential-broker-probe/baseline-exposure.json.",
+      "impact_snapshot_sha256": "46deb35138670e154878cfe9e6f0a675cef81cdaa1aff82b31c661865f78592d",
+      "method": "Grepped each document for meta-harness, proposer, reviewer, approval, reject and release wording and compared the hits against the S3 diff of meta_local.py, meta_harness/service.py and local_deployment.py.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
-      "reason": "D-091 records that driver provider credentials are readable by the agent tools. This document makes no credential isolation claim that it changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-d091-document-review",
+      "reason": "Work 030 S3 wires the meta-harness into the local product and adds MetaHarness.reject. This document says nothing that S3 changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s3-document-review",
       "snapshot": {
-        "candidate_revision": "56bcf43201c00729a630ebb0adcfc82068257fc6",
-        "candidate_sha256": "0a4b61f4b0f42f001ffd37a55abc1c338b864177baf2c5302d4fd20379e03969",
+        "candidate_revision": "988698d76c1da06e09d7511f5db8711664b43034",
+        "candidate_sha256": "eed1e2d8a092aaa8ff1e4e206bee28fdaa2c71c37551a8aed19899369b2d96fc",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",

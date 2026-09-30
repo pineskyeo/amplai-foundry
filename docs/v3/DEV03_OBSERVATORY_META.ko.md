@@ -98,6 +98,16 @@ timeout, 연결 유실, 비정상 receipt는 외부 실행이 끝났다는 증�
 
 롤백은 선언된 이전 signed release로만 가능하다. **권한·예산·외부 효과·사용자 데이터는 되돌리지 않는다.** 알 수 없는 외부 실행이 남아 있으면 롤백을 보류한다. kill switch도 proposer가 임의로 다시 켜지 못한다. 이 단계는 signed release pointer와 상태 수명주기를 검증하며, 사내 설치·전환·운영 migration 자격은 RC에서 별도로 확인해야 한다.
 
+### 로컬 제품에서의 연결 (Work 030 S3, D-089)
+
+로컬 제품(`LocalProductDeployment`)은 같은 store 위에 MetaHarness와 EvaluationService를 둔다(`src/amplai_foundry/runtime/execution/meta_local.py`).
+
+- 제안자는 `amplai-meta-proposer` 서비스 신원이고 `harness.propose`만 가진다. 검토·승인·실행·승격·거절은 못 한다. 그 권한을 얹어도 자기 제안에는 `SELF_APPROVAL`로 거절된다.
+- 검토자는 사람 운영자다. 목표용 권한에 meta 검토 권한을 더한 신원(`meta_operator()`)이며 `harness.propose`는 가지지 않는다.
+- 실험·카나리·승격·롤백 승인은 운영자가 발급하는 durable 기록이다. 기록은 action과 승인 대상의 digest에 묶이고, 사람 운영자만 발급하며, 철회하면 이후 검사가 거절한다. 재시작 후에도 store에서 다시 읽는다.
+- `reject`는 draft, screened, offline_evaluated, promotion_pending의 후보를 끝낸다. 사유가 필수이고 검토자와 직전 상태를 후보 기록에 남긴다. 끝난 후보는 다시 움직이지 않는다.
+- 아직 실험 실행기가 없다. 실험은 실행기 자격이 고정되는 다음 단계(S4) 전에는 시작할 수 없다. 운영자용 `amplai meta` 명령도 아직 없다(S6).
+
 ## 7. 네트워크 없이 실제 파이프라인 재현
 
 패키지를 설치한 Linux/WSL 환경에서 빈 출력 경로를 사용한다. 기존 경로를 덮어쓰지 않는다.
