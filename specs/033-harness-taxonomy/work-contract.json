@@ -173,13 +173,17 @@
     "max_attempts_per_slice": 3
   },
   "decisions": [
-    "D-096 (proposed)",
-    "D-097 (proposed)",
-    "D-098 (proposed)",
-    "D-099 (proposed)",
-    "D-100 (proposed)",
-    "D-101 (proposed)"
+    "D-096",
+    "D-097",
+    "D-098",
+    "D-099",
+    "D-100",
+    "D-101",
+    "D-102",
+    "D-103",
+    "D-104",
+    "D-105"
   ],
   "blocked_by": [],
-  "status": "awaiting_approval"
+  "status": "ready"
 }

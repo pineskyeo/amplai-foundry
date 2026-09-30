@@ -1,7 +1,7 @@
 # Work 033 — The V3 Meta-Harness System
 
 **Work ID**: 033-meta-harness-system · **Created**: 2026-09-30 · **Type**: architecture · **Risk**: high
-**Status**: design, awaiting operator decisions (OD-9 … OD-13)
+**Status**: design approved 2026-09-30 (D-096 … D-105); implementation by workflow
 
 Inputs in this folder: `components-draft.md` (operator requirements A–F), `research-meta-harness.md`,
 `research-benchmark-domains.md`, `research-dashboards.md`. Normative design:
