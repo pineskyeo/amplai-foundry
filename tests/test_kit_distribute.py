@@ -8,6 +8,7 @@ failed plan, and stop at the first failure instead of continuing.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -36,6 +37,13 @@ def config() -> dict:
 def _write(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value), encoding="utf-8")
+
+
+def _kit_copy(tmp_path: Path) -> Path:
+    """A private copy of the kit package; tests that break it never touch the real one."""
+    kit = tmp_path / "amplai-loop-kit"
+    shutil.copytree(kd.KIT_ROOT, kit, ignore=shutil.ignore_patterns("__pycache__"))
+    return kit
 
 
 class TestPathResolution:
@@ -474,7 +482,10 @@ class TestRealPackage:
         sat broken across two commits.  A green-only test would not have
         noticed either.
         """
-        seal = kd.KIT_ROOT / "seal.py"
+        # Work on a copy: seal.py verifies the directory it lives in (seal.py ROOT), and breaking
+        # the real kit even for a moment races the tests that install it under pytest -n.
+        kit = _kit_copy(tmp_path)
+        seal = kit / "seal.py"
         clean = subprocess.run(
             [sys.executable, str(seal), "--verify"],
             capture_output=True,
@@ -483,39 +494,32 @@ class TestRealPackage:
         assert clean.returncode == 0, clean.stdout
         assert json.loads(clean.stdout)["ok"] is True
 
-        target = kd.KIT_ROOT / "distribution" / "targets.json"
-        original = target.read_bytes()
-        try:
-            target.write_bytes(original + b"\n")
-            broken = subprocess.run(
-                [sys.executable, str(seal), "--verify"],
-                capture_output=True,
-                text=True,
-            )
-            payload = json.loads(broken.stdout)
-            assert broken.returncode == 1
-            assert payload["ok"] is False
-            assert "distribution/targets.json" in payload["checksum_mismatched"]
-            assert payload["hint"]
-        finally:
-            target.write_bytes(original)
+        target = kit / "distribution" / "targets.json"
+        target.write_bytes(target.read_bytes() + b"\n")
+        broken = subprocess.run(
+            [sys.executable, str(seal), "--verify"],
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(broken.stdout)
+        assert broken.returncode == 1
+        assert payload["ok"] is False
+        assert "distribution/targets.json" in payload["checksum_mismatched"]
+        assert payload["hint"]
 
     def test_seal_verify_notices_a_file_missing_from_checksums(self, tmp_path):
         """A new package file that was never sealed must not pass silently."""
-        seal = kd.KIT_ROOT / "seal.py"
-        extra = kd.KIT_ROOT / "distribution" / "__seal_probe__.json"
-        extra.write_text("{}\n", encoding="utf-8")
-        try:
-            result = subprocess.run(
-                [sys.executable, str(seal), "--verify"],
-                capture_output=True,
-                text=True,
-            )
-            payload = json.loads(result.stdout)
-            assert result.returncode == 1
-            assert "distribution/__seal_probe__.json" in payload["not_in_checksums"]
-        finally:
-            extra.unlink()
+        kit = _kit_copy(tmp_path)
+        seal = kit / "seal.py"
+        (kit / "distribution" / "__seal_probe__.json").write_text("{}\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(seal), "--verify"],
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(result.stdout)
+        assert result.returncode == 1
+        assert "distribution/__seal_probe__.json" in payload["not_in_checksums"]
 
     def test_kit_version_matches_the_manifest(self):
         manifest = json.loads((kd.KIT_ROOT / "manifest.json").read_text(encoding="utf-8"))
