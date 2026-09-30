@@ -1,6 +1,6 @@
 # 031 OpenCode Driver — Design
 
-Status: Phase 2. 운영자 결정(2026-09-29) 반영. auth 방식은 아직 선택 전이다(Auth Options).
+Status: 연결 완료(2026-09-30, D-095). auth 는 비밀번호 켬 + env guard(Auth Options 1)이고 남은 위험은 D-091 로 받아들였다. 아래 본문 중 'stub', 'OPENCODE_NOT_WIRED', 'PendingDockerLauncher' 를 말하는 부분은 연결 전 기록이다.
 Base: `origin/feat/029-opencode-loopback` (PR #28, D-087 포함). PR #28 은 2026-09-29 닫혔다(Tool UID Separation 참고).
 
 ## Goal

@@ -1,0 +1,89 @@
+{
+  "schema_version": "2.0",
+  "id": "031-opencode-driver",
+  "title": "OpenCode as the third system-selected driver",
+  "goal": "OpenCode serve runs a real goal end to end as the third driver candidate, per dispatch, password on, env guard (D-095)",
+  "source": [
+    "design.md",
+    "measurements.md",
+    "runs/README.md"
+  ],
+  "work_type": "new_feature",
+  "risk": "normal",
+  "scope": {
+    "include": [
+      "src/amplai_foundry/agent_drivers/opencode_launcher.py",
+      "src/amplai_foundry/agent_drivers/opencode_port.py",
+      "src/amplai_foundry/agent_drivers/http.py",
+      "src/amplai_foundry/runtime/execution/codex.py",
+      "src/amplai_foundry/runtime/local_deployment.py",
+      "src/amplai_foundry/runtime/cli.py",
+      "scripts/opencode_qualify.py",
+      "deployment/local-container-app-amplai-foundry-opencode.json"
+    ],
+    "exclude": [
+      "3.0.0 wire schemas",
+      "design-reference",
+      "deployment/local-container-app-amplai-foundry.json (running server profile)"
+    ]
+  },
+  "non_goals": [
+    "Switching the running server to the new image",
+    "OpenCode token usage reporting (design R5)"
+  ],
+  "acceptance": [
+    {
+      "id": "AC-001",
+      "statement": "OpenCode passes all nine qualification checks and tool_use in the app image",
+      "evidence": [
+        "specs/031-opencode-driver/driver-qualification-amplai-foundry.json"
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A corpus task runs as a real goal on the OpenCode composition and is verified",
+      "evidence": [
+        "specs/031-opencode-driver/runs/trial-1.json"
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Without a passing report OpenCode is refused (DRIVER_UNQUALIFIED) and codex stays chosen",
+      "evidence": [
+        "tests/v3/test_031_opencode_wiring.py",
+        "tests/v3/test_031_opencode_port.py",
+        "tests/v3/test_031_opencode_launcher.py"
+      ]
+    }
+  ],
+  "knowledge": {
+    "readiness": "optional",
+    "readiness_file": "knowledge-readiness.json",
+    "context_pack": "required",
+    "context_pack_file": "context-pack.json",
+    "domain_discovery": "required_if_not_ready",
+    "domain_discovery_file": "domain-discovery.json"
+  },
+  "verification": {
+    "profile": "v2",
+    "operational": []
+  },
+  "environment": {
+    "fingerprint": "required",
+    "fingerprint_file": "environment.json"
+  },
+  "provenance": {
+    "evidence_trace": "required",
+    "trace_file": "evidence-trace.jsonl"
+  },
+  "human_gates": [],
+  "retry": {
+    "max_attempts_per_slice": 3
+  },
+  "decisions": [
+    "D-095",
+    "D-091"
+  ],
+  "blocked_by": [],
+  "status": "executing"
+}

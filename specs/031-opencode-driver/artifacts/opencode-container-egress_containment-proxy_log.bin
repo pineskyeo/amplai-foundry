@@ -1,0 +1,7 @@
+{"ts": 1790754170.137, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790754170.438, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790754170.593, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
+{"ts": 1790754368.694, "target": "registry.npmjs.org:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790754368.995, "target": "github.com:443", "decision": "deny", "reason": "allowlist"}
+{"ts": 1790754369.115, "target": "opencode.ai:443", "decision": "allow", "reason": "connect"}
+{"ts": 1790754370.95, "target": "example.com:443", "decision": "deny", "reason": "allowlist"}

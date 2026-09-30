@@ -333,6 +333,33 @@ def install_codex_profile(
 install_driver_profile = install_codex_profile
 
 
+def build_opencode_port(
+    inputs: CodexProfileInputs, journal_root: Path, credential_home: Path
+) -> Any:
+    """OpenCode server per dispatch in the qualified app image (specs/031-opencode-driver).
+
+    The server password is new per run and on (design 11:36); the agent can read it (D-091).
+    """
+    from ...agent_drivers.opencode_launcher import DockerOpenCodeLauncher
+    from ...agent_drivers.opencode_port import PerDispatchOpenCodePort, ScopedOpenCodeHome
+
+    measured = measured_qualification(inputs)
+    provider_id, _, model_id = inputs.model.partition("/")
+    if not model_id:
+        raise Hold("MODEL_UNPINNED", "The OpenCode model is provider/model")
+    return PerDispatchOpenCodePort(
+        version=measured["driver_version"],
+        launcher=DockerOpenCodeLauncher(
+            ContainerSandbox(container_profile(inputs)), journal_root / "opencode-guard"
+        ),
+        credential=ScopedOpenCodeHome(credential_home),
+        journal=SessionJournal(journal_root),
+        native_root=journal_root / "opencode-native",
+        provider_id=provider_id,
+        model_id=model_id,
+    )
+
+
 def build_claude_port(inputs: CodexProfileInputs, journal_root: Path, token: str) -> CliPort:
     """Claude CLI in the same qualified container; the OAuth token is passed by env name."""
     measured = measured_qualification(inputs)

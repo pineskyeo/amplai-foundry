@@ -342,18 +342,19 @@ class ContainerServer(Server):
         return f"http://127.0.0.1:{self.PORT}"
 
     def argv(self) -> list[str]:
-        cmd = self.sandbox.command(
-            ["opencode", "serve", "--port", str(self.PORT), "--hostname", "127.0.0.1"],
-            self.ws,
-            self.NAME,
-            env_names=["OPENCODE_SERVER_PASSWORD"],
-            native_home=self.home,
-        )
-        return [cmd[0], cmd[1], "-d", *cmd[2:]]  # the exact sandbox argv, detached
+        # the product's argv: the exact sandbox flags, detached, with the env guard (D-091)
+        from amplai_foundry.agent_drivers.opencode_launcher import server_argv, write_env_guard
+
+        guard = write_env_guard(Path.home() / ".amplai-sandbox-probes" / "opencode-guard")
+        return server_argv(self.sandbox, self.ws, self.NAME, self.home, guard)
 
     def start(self) -> None:
         subprocess.run(["docker", "rm", "-f", self.NAME], capture_output=True, check=False)
-        env = {**os.environ, "OPENCODE_SERVER_PASSWORD": self.password}
+        env = {
+            **os.environ,
+            "OPENCODE_SERVER_PASSWORD": self.password,
+            "OPENCODE_SERVER_USERNAME": USER,
+        }
         env.pop(self.canary_name, None)
         run = subprocess.run(self.argv(), env=env, capture_output=True, check=False)
         if run.returncode != 0:
@@ -796,6 +797,60 @@ def _const(value: dict[str, Any]) -> Callable[[], dict[str, Any]]:
     return lambda: value
 
 
+def tool_use(t: Turns, server: ContainerServer) -> dict[str, Any]:
+    """The agent can run a shell command, write a workspace file and wait out a >30 s foreground
+    command, unattended (no permission request left pending). Not one of the nine design probes;
+    a driver is registered for real work only if this passes too (as for Codex and Claude)."""
+    marker = server.ws / "tool-use.txt"
+    marker.unlink(missing_ok=True)
+
+    def pending() -> int:
+        with contextlib.suppress(httpx.HTTPError, ValueError):
+            return len(t.http.get("/permission").json())
+        return -1
+
+    short = t.run(
+        "Run the shell command `python3 --version` with the bash tool, then create the file"
+        " tool-use.txt in the current directory containing exactly the version string it"
+        " printed. Reply DONE."
+    )
+    short_pending = pending()
+    written = marker.read_text().strip() if marker.is_file() else None
+    long = t.run(
+        "Run this exact command with the bash tool in the foreground and wait for it:"
+        " python3 -c 'import time; time.sleep(45); print(\"marker-long\")' ."
+        " Then reply with exactly the line it printed."
+    )
+    long_pending = pending()
+    long_text = t.text(t.messages(long["session"]))
+    t.cost.append({"turn": "tool_use", "seconds": short["seconds"]})
+    t.cost.append({"turn": "long_command", "seconds": long["seconds"]})
+    short_ok = (
+        short["state"]["state"] == "completed"
+        and short_pending == 0
+        and bool(written and written.startswith("Python 3"))
+    )
+    long_ok = (
+        long["state"]["state"] == "completed"
+        and long_pending == 0
+        and long["seconds"] >= 45
+        and "marker-long" in long_text
+    )
+    return {
+        "outcome": "pass" if short_ok and long_ok else "fail",
+        "file": written,
+        "state": short["state"]["state"],
+        "pending_permissions": short_pending,
+        "long_command": {
+            "outcome": "pass" if long_ok else "fail",
+            "seconds": long["seconds"],
+            "state": long["state"]["state"],
+            "pending_permissions": long_pending,
+            "printed": "marker-long" in long_text,
+        },
+    }
+
+
 def record(t: Turns, probes: dict[str, Probe], version: str, out_dir: Path) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
     secrets_ = [t.server.password, t.server.canary_value, *t.server.leak_values()]
@@ -874,7 +929,10 @@ def main() -> int:
     t = Turns(server, a.model, a.version)
     try:
         probes = measure(t, server, host_version)
-        report = record(t, probes, a.version, SPEC / "artifacts")
+        tools = tool_use(t, server) if isinstance(server, ContainerServer) else None
+        # evidence beside its own report; the shared SPEC artifacts are an earlier Work's record
+        artifacts = a.out.parent / "artifacts" if a.container and a.out else SPEC / "artifacts"
+        report = record(t, probes, a.version, artifacts)
     finally:
         t.cleanup()
         server.kill(signal.SIGTERM)
@@ -915,6 +973,7 @@ def main() -> int:
         "native_delegation_qualified": report["native_delegation_qualified"],
         "qualification_id": report["qualification_id"],
         "checks": checks,
+        **({"tool_use": tools} if tools is not None else {}),
     }
     existing["cost_opencode_container" if a.container else "cost_opencode"] = t.cost
     if isinstance(server, ContainerServer):
@@ -925,8 +984,11 @@ def main() -> int:
     out.write_text(body)
     for c in checks:
         print(f"  {c['name']:24} {c['outcome']:12} {c.get('reason', '')[:220]}")
+    if tools is not None:
+        print("  tool_use                ", json.dumps(tools)[:400])
     print("status", report["status"])
-    return 0 if report["status"] == "pass" else 1
+    ok = report["status"] == "pass" and (tools is None or tools["outcome"] == "pass")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

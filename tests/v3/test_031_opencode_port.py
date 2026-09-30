@@ -244,7 +244,7 @@ def run(*args: str) -> str:
     return result.output
 
 
-def test_opencode_config_is_parsed_switched_and_held_until_wired(tmp_path: Path) -> None:
+def test_opencode_needs_its_own_passing_report_and_can_be_switched(tmp_path: Path) -> None:
     repo = make_repo(tmp_path)
     inputs = codex_inputs(tmp_path)
     codex_home = tmp_path / "codex-home"
@@ -269,9 +269,14 @@ def test_opencode_config_is_parsed_switched_and_held_until_wired(tmp_path: Path)
     value["opencode"] = {"credential_home": str(scoped_home(tmp_path))}
     value["apps"][0]["opencode_qualification_report"] = str(inputs.qualification_report)
     config.write_text(json.dumps(value))
+    # the Codex report has no opencode-server entry: OpenCode is not admitted on it
     with pytest.raises(Hold) as held:
         LocalProductDeployment(config, start_loop=False)
-    assert held.value.code == "OPENCODE_NOT_WIRED"
+    assert held.value.code == "DRIVER_UNQUALIFIED"
+    # without a report for this app OpenCode is simply not a candidate; the switch still works
+    value = json.loads(config.read_text())
+    value["apps"][0].pop("opencode_qualification_report")
+    config.write_text(json.dumps(value))
     run("ops", "local-driver", "opencode", "--disable", "--config", str(config))
     assert json.loads(config.read_text())["opencode"]["enabled"] is False
     dep = LocalProductDeployment(config, start_loop=False)

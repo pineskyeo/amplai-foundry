@@ -1,0 +1,21 @@
+{
+  "kind": "meta_smoke",
+  "corpus_id": "demo-app-implementer-v1",
+  "base_commit": "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b",
+  "driver": "opencode-server",
+  "trials": [
+    {
+      "task_id": "s01-semver-parse",
+      "arm": "baseline",
+      "success": true,
+      "goal_status": "verified",
+      "goal_reason": null,
+      "hidden_passed": true,
+      "visible_passed": true,
+      "input_tokens": null,
+      "output_tokens": null,
+      "usage_status": "unknown",
+      "seconds": 46.3
+    }
+  ]
+}

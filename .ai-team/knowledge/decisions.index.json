@@ -494,6 +494,17 @@
         "src/amplai_foundry/meta_harness/trial_metrics.py",
         "deployment/prices"
       ]
+    },
+    {
+      "id": "D-095",
+      "status": "active",
+      "title": "OpenCode is the third driver: a server per dispatch, password on, env guard",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/agent_drivers/opencode_launcher.py",
+        "src/amplai_foundry/agent_drivers/opencode_port.py",
+        "src/amplai_foundry/runtime/local_deployment.py"
+      ]
     }
   ]
 }

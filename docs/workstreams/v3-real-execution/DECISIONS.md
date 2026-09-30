@@ -481,3 +481,28 @@
 - Evidence: `tests/v3/test_rc13_usage_pricing.py`, `tests/e2e/test_rc13_usage_detail.py`,
   `tests/v3/test_rc12_meta_cli.py`(prices, report). corpus 20개 `--repeats 3` 모두 같은 판정.
 
+## D-095 — OpenCode Is The Third Driver: A Server Per Dispatch, Password On, Env Guard
+
+- Status: accepted (운영자 선택 2026-09-30: 3번 끝내기)
+- Date: 2026-09-30
+- Decision: OpenCode(`opencode serve` 1.17.13)를 system-selected driver 의 세 번째 후보로 연결한다(router 순서
+  codex, claude, opencode; OpenCode 는 계획하지 않는다).
+  - dispatch 하나마다 app image 안에 서버 container 하나를 띄우고(`agent_drivers/opencode_launcher.py`), 그
+    run 의 workspace 와 dispatch 전용 HOME 에만 묶는다. host 는 `docker exec curl` 로 container loopback 에 붙고,
+    SSE 는 `curl -N` 으로 흘린다.
+  - 서버 비밀번호는 켠다(design 11:36). run 마다 새로 만들고 `docker run` 에는 변수 이름으로만, curl 에는 stdin
+    config 로만 넘긴다. 읽기 전용 config dir 의 `shell.env` plugin 과 `SHELL` wrapper 가 agent 의 shell 환경에서
+    `OPENCODE_SERVER_*` 이름을 지운다(031 M1 측정). `/proc/<server pid>/environ` 으로는 같은 uid 가 읽을 수 있다.
+    이 위험은 D-091 과 같은 기준으로 받아들인다.
+  - 자격은 app image 별 report(`reports["opencode-server"]`, top-level `container_image`, `tool_use`)로만 받는다.
+    report 가 없거나 통과하지 않으면 `DRIVER_UNQUALIFIED` 로 멈춘다.
+  - 운영자 명령 `amplai ops local-opencode` 를 둔다.
+- Superseded path: PR #28(D-087, 비밀번호 없는 서버)은 닫혔고 merge 하지 않았다. tool uid 분리(031 M-c)는 file tool 이
+  서버 process 안에서 도는 한 credential 격리를 보장하지 못해(031 design) 채택하지 않았다.
+- Evidence: `specs/031-opencode-driver/runs/README.md`: 새 app image 에서 OpenCode 9 check + `tool_use` pass, Codex
+  재자격 pass, corpus 과제 1개를 OpenCode 로 실제 실행해 verified(숨긴 시험 통과, 46 s).
+  `tests/v3/test_031_opencode_{port,events,launcher,wiring}.py`.
+- Open: OpenCode driver 는 token 사용량을 넘기지 않는다(usage `unknown`, design R5). 서버 재시작 뒤 세션 복원은
+  qualification 의 raw HTTP resume 으로만 확인했고 `OpenCodeDriver.resume` 경로로는 측정하지 않았다(R3).
+  운영 서버의 image 전환은 Codex·Claude 재자격이 함께 필요해 하지 않았다.
+
