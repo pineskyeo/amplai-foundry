@@ -287,3 +287,28 @@ Selection (`route_policy`), in order:
    changes mid-goal (design 16 §2: composition fixed after dispatch).
 6. The policy itself is a class B candidate: a new table/rule goes through screening → focused →
    holdout → canary against the current policy; no online learning (design 16 §2).
+
+### 8.1 Metrics for strategy selection (in scope)
+
+Per trial (stored with the trial receipt; existing ones marked *):
+
+| Metric | Why |
+|---|---|
+| success*, hidden-test result*, verified-but-hidden-fail* | outcome (D-094) |
+| tokens by class*, API-equivalent cost*, wall time* | cost (D-094) |
+| strategy id, cell(s) used, agent calls, turns, attempts used | what the strategy actually did |
+| escalations (cascade), reviewer rounds and fix requests (generator + reviewer) | whether the extra step was used and helped |
+| best-of-n: attempts until the first pass | how much n is needed |
+| workgraph / orchestrator: nodes, sub-agents, integration conflicts, re-verifications | cost of splitting |
+| verification wall time | component F |
+
+Per feature bucket × (strategy, cell), computed from the trials:
+success rate with its interval, pass^k, cost and time per solved task, sample count.
+
+Router quality (for evaluating a `route_policy` candidate):
+- **regret**: on tasks where every option was measured, the gap between the chosen option and the
+  best option in hindsight (success first, then cost);
+- **coverage**: share of tasks decided by measured data vs the fallback prior;
+- **escalation rate** and cost of escalations.
+
+All are descriptive except the pre-declared endpoint of each experiment (D-093, D-099).
