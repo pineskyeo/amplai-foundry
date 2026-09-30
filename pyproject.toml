@@ -26,6 +26,8 @@ visual = ["playwright>=1.49,<2", "pillow>=10,<13"]
 dev = [
   "mypy>=1.11,<2",
   "pytest>=8.3,<10",
+  # CI runs the suite across the runner's cores (`-n auto`); serial it took ~15 min.
+  "pytest-xdist>=3.6,<4",
   # 상한을 두는 이유: CI 는 매번 최신을 받고 로컬은 설치된 것을 쓴다. 0.16 이 markdown
   # 코드 블록 포맷을 켜면서 로컬 verifier 는 PASS 인데 CI 만 FAIL 인 상태가 됐다.
   # 그 대상에 DECISIONS.md 같은 역사 기록이 들어 있어 포맷터에 맞춰 다시 쓸 수 없다.
