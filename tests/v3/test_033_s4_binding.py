@@ -9,7 +9,6 @@ execution loop; stand-in: the scripted host-process "container" of the rc06 rig.
 
 from __future__ import annotations
 
-import functools
 from pathlib import Path
 from typing import Any
 
@@ -114,11 +113,15 @@ class Setup:
         return {"branch": "amplai/" + goal_id}
 
     def with_options(self, options: DispatchOptions | None) -> None:
-        """What a caller that resolved options would pass (the loop does not pass any yet)."""
-        original = self.coordinator.execute
-        self.coordinator.execute = functools.partial(  # type: ignore[method-assign]
-            original, options=options
-        )
+        """Force these options on the worker, whatever the loop resolved (S8 wires the loop to
+        pass ``cells.resolve_options``); the worker's binding check is what these tests prove."""
+        # wrap the real execute once; a second call replaces the forced options, not stacks them
+        original = self.__dict__.setdefault("_real_execute", self.coordinator.execute)
+
+        def forced(*args: Any, **kwargs: Any) -> Any:
+            return original(*args, **{**kwargs, "options": options})
+
+        self.coordinator.execute = forced  # type: ignore[method-assign]
 
     def goal(self, composition: dict[str, Any] | None = None) -> str:
         self.goals += 1  # a goal per text: `submit` is idempotent on the text
@@ -230,13 +233,23 @@ def test_options_that_differ_from_the_activated_profile_hold_before_anything_run
 
 
 def test_an_effort_profile_never_runs_without_its_options(setup: Setup) -> None:
-    # the loop passes no options today: a port that takes options would run the profile's model at
-    # the provider default, which is a substitution of the effort; it holds instead
+    # no options at the worker for an effort profile would run the model at the provider default,
+    # a substitution of the effort: the worker holds
+    setup.with_options(None)
     composition = setup.rig.service.apps["app"].compositions[HIGH_ID]
     goal = setup.goal(composition)
     record = setup.loop.run_goal(goal)
     assert record["status"] == "held" and "DISPATCH_OPTIONS_BINDING" in record["reason"]
     assert setup.container.argvs == []
+
+
+def test_the_loop_resolves_an_effort_profile_to_its_options(setup: Setup) -> None:
+    # S8: the loop passes cells.resolve_options, so the effort reaches the argv without a caller
+    composition = setup.rig.service.apps["app"].compositions[HIGH_ID]
+    goal = setup.goal(composition)
+    assert setup.loop.run_goal(goal)["status"] == "published"
+    (argv,) = setup.container.argvs
+    assert argv[argv.index("-c") : argv.index("-c") + 2] == ["-c", "model_reasoning_effort=high"]
 
 
 def test_no_options_on_the_legacy_profile_keeps_working(setup: Setup) -> None:

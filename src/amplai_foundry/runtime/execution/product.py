@@ -171,6 +171,68 @@ class InstalledApp:
     cells: dict[str, Cell] = field(default_factory=dict)  # the non-legacy cells (Work 033 S4)
 
 
+PLANNER_MODES = ("fixed", "real")
+
+
+@dataclass(frozen=True)
+class TrialContext:
+    """What a trial goal carries into its plan (Work 033 S8, interfaces.md §3.3, §8.3).
+
+    ``write_scope`` "trial" makes every node of the goal claim ``sandbox:<app>:trial:<goal_id>``
+    instead of ``sandbox:<app>`` (IC-03): trial goals never publish and work on their own
+    workspace copy, so two trials of one app may run at once while published goals keep the one
+    write claim per repository.
+    """
+
+    subject: dict[str, str]  # {"experiment_id"|"calibration_plan_id", "trial_id"}
+    arm: str
+    cell_id: str
+    split: str
+    capture_trace: bool
+    planner_mode: Literal["fixed", "real"]
+    environment_id: str  # "app" or a task environment id
+    write_scope: Literal["trial"] = "trial"
+
+    def __post_init__(self) -> None:
+        bad = [
+            name
+            for name, ok in (
+                ("subject", isinstance(self.subject, dict)
+                 and all(isinstance(k, str) and isinstance(v, str)
+                         for k, v in self.subject.items())),
+                ("arm", isinstance(self.arm, str) and bool(self.arm)),
+                ("cell_id", isinstance(self.cell_id, str) and bool(self.cell_id)),
+                ("split", isinstance(self.split, str) and bool(self.split)),
+                ("capture_trace", type(self.capture_trace) is bool),
+                ("planner_mode", self.planner_mode in PLANNER_MODES),
+                ("environment_id", isinstance(self.environment_id, str)
+                 and bool(self.environment_id)),
+                ("write_scope", self.write_scope == "trial"),
+            )
+            if not ok
+        ]  # fmt: skip
+        if bad:
+            raise RuntimeFault("TRIAL_CONTEXT", "Invalid trial context fields", details=bad)
+
+    def wire(self) -> dict[str, Any]:
+        return {
+            "subject": dict(self.subject),
+            "arm": self.arm,
+            "cell_id": self.cell_id,
+            "split": self.split,
+            "capture_trace": self.capture_trace,
+            "planner_mode": self.planner_mode,
+            "environment_id": self.environment_id,
+            "write_scope": self.write_scope,
+        }
+
+
+def write_resource(app_id: str, goal_id: str, *, trial: bool) -> str:
+    """The resource a node of ``goal_id`` claims exclusively (IC-03): ``sandbox:<app>`` for every
+    goal that may publish, ``sandbox:<app>:trial:<goal_id>`` for an experiment trial goal."""
+    return f"sandbox:{app_id}:trial:{goal_id}" if trial else "sandbox:" + app_id
+
+
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
     """Model text within contract schema bounds: trimmed, non-empty, at most 4000 characters."""
 
@@ -598,6 +660,7 @@ class LocalExecutionService:
         composition: dict[str, Any] | None = None,
         planner: Any | None = None,
         revision: str | None = None,
+        trial: TrialContext | None = None,
     ) -> dict[str, Any]:
         """Draft (selected driver, read-only) → compile → freeze contract → save graph.
 
@@ -605,9 +668,14 @@ class LocalExecutionService:
         and ``revision`` starts from that exact commit instead of the fetched base (an offline
         experiment trial: a fixed corpus contract on a fixed base, no model, D-089).
 
+        ``trial`` marks an experiment trial goal (Work 033 S8): the plan record keeps it as
+        ``record["trial"]`` and every node claims the per-trial write resource (IC-03).
+
         One app or several (D-081): every draft is normalised to work items (one per app that
         must change, with the apps it comes after); a one-app goal is exactly one item.
         """
+        if trial is not None and not isinstance(trial, TrialContext):
+            raise RuntimeFault("TRIAL_CONTEXT", "A trial goal carries a TrialContext")
         service, scope = self.actors.service, self.scope
         goal = self.store.head(scope, "goal", goal_id)
         intent = self.store.get(scope, "intent-envelope", goal["data"]["intent_ref"])
@@ -701,6 +769,7 @@ class LocalExecutionService:
             "work_items": items,
             "base_check": base_check,
             "repo_facts": repo_facts,
+            **({"trial": trial.wire()} if trial is not None else {}),
             "created_at": now(),
         }
         if draft["questions"]:
@@ -752,7 +821,7 @@ class LocalExecutionService:
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
             mode=mode, items=items, policy_ref=policy_ref,
-            budget=self._budget_policy(chosen["ref"]),
+            budget=self._budget_policy(chosen["ref"]), trial_scope=trial is not None,
         )  # fmt: skip
         record["acceptance_map"] = acceptance_map
         record["composition"] = chosen
@@ -832,6 +901,7 @@ class LocalExecutionService:
             policy_ref=previous["policy_ref"], revision=revision,
             previous_graph_ref=plan["graph_ref"], replan_reason=reason[:4000],
             budget=self._budget_policy(chosen["ref"]),
+            trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
         )  # fmt: skip
         record = {
             **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
@@ -941,12 +1011,16 @@ class LocalExecutionService:
         previous_graph_ref: dict[str, Any] | None = None,
         replan_reason: str | None = None,
         budget: policies.BudgetPolicy | None = None,
+        trial_scope: bool = False,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
         """Deterministic contract + graph: one node per work item (a one-app goal is one).
 
         ``budget`` is the goal composition's budget policy (v1 without one): the root keeps
         min(limits, deployment ceiling) per field; each node takes the attempt policy's attempts
         and (root tokens - aux_max_tokens) // (attempts x nodes) (interfaces.md §2.3, IC-21).
+
+        ``trial_scope``: the nodes of an experiment trial goal claim the per-trial write resource
+        (IC-03); the requested capabilities stay those of the app (``sandbox:<app>``).
         """
         scope, service = self.scope, self.actors.service
         policy_ref = policy_ref or installed.policy_ref
@@ -1144,7 +1218,12 @@ class LocalExecutionService:
                     "acceptance_ids": ids,
                     "verification_profile_ref": acceptance[int(ids[0][3:]) - 1]["verifier_ref"],
                     "capabilities": mode_capabilities(a, mode),
-                    "resource_claims": [{"resource": "sandbox:" + a, "mode": "exclusive_write"}],
+                    "resource_claims": [
+                        {
+                            "resource": write_resource(a, goal_id, trial=trial_scope),
+                            "mode": "exclusive_write",
+                        }
+                    ],
                     "budget": policies.node_budget(
                         root, budget.attempt_policy, budget.limits, len(items)
                     ),

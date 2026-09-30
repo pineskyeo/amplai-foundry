@@ -14,22 +14,53 @@ Per trial:
 
 Per arm: success count, the two counts above, and the tokens, seconds and cost per solved task.
 None of these decide a verdict; the pre-registered analysis does (D-093).
+
+Work 033 S8 (interfaces.md §2.10, ``plan.md`` §8.1, §9.10): ``trial`` adds the ``trial-metrics``
+fields (source, split, stage, cell, strategy, token classes, verification time, what the strategy
+did, hack-guard signals); ``record`` stores them as a ``trial-metrics`` record; ``summarize`` adds a
+per-strategy breakdown per arm; ``guards`` compares the arms' guard signals at screening. The run
+helpers below are also what the trial executor counts safety failures and unknown effects from
+(§8.3, IC-18).
 """
 
 from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import PurePosixPath
 from statistics import mean, median
 from typing import Any
 
+from jsonschema import Draft202012Validator
+
 from ..evaluation import pricing
+from ..runtime.contracts.identity import now
+from ..runtime.contracts.semantics import resolve_ref
+from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.execution.product import LocalExecutionService
 from ..runtime.execution.worker import USAGE_DETAIL_KIND
+from ..runtime.storage.store import Scope, Store
 
 DIFF_FILE = re.compile(r"^diff --git a/(\S+) b/(\S+)$")
+
+KIND = "trial-metrics"
+SCHEMA = "amplai.trial-metrics.v1"
+TRIAL_KINDS = ("eval-trial", "calibration-trial")
+SPLITS = ("development", "validation", "holdout")
+STAGES = ("screening", "focused", "ablation", "holdout")
+PHASES = ("calibration", "stage", "drift", "screening_design", "search", "confirmation")
+# A calibration trial has no experiment arm (§2.8); its rows carry this arm label.
+CALIBRATION_ARM = "calibration"
+# The token classes of a run's usage detail (agent_drivers/protocol.py USAGE_DETAIL_FIELDS):
+# cached input is Codex `cached_input_tokens` / Claude `cache_read_input_tokens`; reasoning is
+# reported by Codex only (`reasoning_output_tokens`), so it is null for a Claude run.
+CACHED_FIELD = {"codex": "cached_input_tokens", "claude": "cache_read_input_tokens"}
+REASONING_FIELD = {"codex": "reasoning_output_tokens"}
+# Unknown-effect states of an effect head (runtime/execution/service.py:976-985).
+OPEN_EFFECT_STATES = ("dispatched", "unknown")
+SECRET_CODE = "SECRET_DETECTED"  # runtime/evidence/cas.py:82-87
 
 
 def diff_stats(patch: bytes) -> dict[str, Any]:
@@ -65,6 +96,222 @@ def diff_stats(patch: bytes) -> dict[str, Any]:
     }
 
 
+def protected_paths(paths: Iterable[str]) -> list[str]:
+    """The paths with a component in the protected set of ``runtime/execution/strategies.py``
+    (``PROTECTED``, lines 16-28): a trial change there is a safety failure (§8.3)."""
+    from ..runtime.execution.strategies import PROTECTED
+
+    return sorted(p for p in paths if set(PurePosixPath(p).parts) & PROTECTED)
+
+
+# -- what a goal ran ----------------------------------------------------------------------------
+def goal_run_ids(store: Store, scope: Scope, plan: dict[str, Any]) -> list[str]:
+    """Every run of a goal: the plan's attempts (this and earlier revisions) and every run the
+    current graph's works were claimed for (a claimed run discarded before its turn included)."""
+    ids: dict[str, None] = {}
+    for attempt in [*(plan.get("previous_attempts") or []), *(plan.get("attempts") or [])]:
+        if attempt.get("run_id"):
+            ids[attempt["run_id"]] = None
+    if plan.get("graph_ref"):
+        graph = store.get(scope, "workgraph", plan["graph_ref"])
+        for node in graph["nodes"]:
+            try:
+                work = store.head(scope, "work", node["work_id"])
+            except RuntimeFault:
+                continue
+            for run_id in work["data"].get("run_ids") or []:
+                ids[run_id] = None
+    return list(ids)
+
+
+def run_executions(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[dict[str, Any]]:
+    """The worker-execution heads of those runs (one per dispatch, ``worker.py``), with ``id``."""
+    wanted = list(run_ids)
+    if not wanted:
+        return []
+    marks = ",".join("?" for _ in wanted)
+    with store._lock:
+        rows = store.conn.execute(
+            "SELECT dispatch_id FROM worker_dispatch WHERE tenant=? AND project=? "
+            f"AND run_id IN ({marks}) ORDER BY rowid",
+            (*scope.keys(), *wanted),
+        ).fetchall()
+    out = []
+    for row in rows:
+        try:
+            head = store.head(scope, "worker-execution", row["dispatch_id"])
+        except RuntimeFault:
+            continue  # dispatched, never taken by a worker: nothing started
+        out.append({"id": row["dispatch_id"], **head})
+    return out
+
+
+def open_effects(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[str]:
+    """Effect heads of those runs still ``dispatched`` or ``unknown`` (the query of
+    ``runtime/execution/service.py:976-985``)."""
+    wanted = set(run_ids)
+    if not wanted:
+        return []
+    with store._lock:
+        rows = store.conn.execute(
+            "SELECT id,data FROM heads WHERE tenant=? AND project=? AND kind='effect' "
+            "AND state IN ('dispatched','unknown') ORDER BY rowid",
+            scope.keys(),
+        ).fetchall()
+    return [
+        r["id"]
+        for r in rows
+        if (json.loads(r["data"]).get("request") or {}).get("run_id") in wanted
+    ]
+
+
+def strategy_of(service: LocalExecutionService, composition_ref: dict[str, Any]) -> str | None:
+    """The execution strategy a composition declares first (``execution_strategy.enabled[0]``;
+    v1: ``repair_loop``). S8's loop runs the v1 strategy only and holds any other before a claim
+    (``loop._policies``), so for S8 trials this is the strategy that ran or was refused."""
+    from ..runtime.execution import policies
+
+    try:
+        composition = service.store.get(service.scope, "harness-composition", composition_ref)
+        budget = policies.budget_policy(
+            service.store, service.scope, composition, ceiling=service.budget.wire()
+        )
+    except (Hold, RuntimeFault):
+        return None
+    enabled = budget.execution_strategy.get("enabled") or []
+    return str(enabled[0]) if enabled else None
+
+
+def cell_of(
+    service: LocalExecutionService, app_id: str, composition_ref: dict[str, Any]
+) -> str | None:
+    """The cell of an installed composition or of its class-A candidate (``pin_allowed``)."""
+    from ..runtime.execution import releases
+
+    installed = service.apps.get(app_id)
+    if installed is None:
+        return None
+    return releases.pin_allowed(
+        service.store, service.scope, installed.compositions, composition_ref
+    )
+
+
+def _utc(value: str) -> float:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+
+
+# -- the record ---------------------------------------------------------------------------------
+_REF = {
+    "type": "object",
+    "required": ["id", "revision", "digest"],
+    "additionalProperties": False,
+    "properties": {
+        "id": {"type": "string"},
+        "revision": {"type": "integer", "minimum": 1},
+        "digest": {"type": "string"},
+    },
+}
+_COUNT = {"type": "integer", "minimum": 0}
+_OPT_COUNT = {"type": ["integer", "null"], "minimum": 0}
+_OPT_REF = {"oneOf": [_REF, {"type": "null"}]}
+RECORD_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "schema", "scope", "trial_ref", "experiment_ref", "calibration_plan_ref", "source",
+        "split", "stage", "task_id", "domain", "arm", "cell_id", "strategy", "success",
+        "hidden_passed", "verified_hidden_fail", "tokens", "api_cost", "wall_seconds",
+        "verification_seconds", "cells_used", "agent_calls", "turns", "attempts_used",
+        "escalations", "reviewer_rounds", "fix_requests", "best_of_n_first_pass", "nodes",
+        "sub_agents", "integration_conflicts", "re_verifications", "guards", "phase", "fidelity",
+        "computed_at",
+    ],
+    "properties": {
+        "schema": {"const": SCHEMA},
+        "scope": {"type": "object"},
+        "trial_ref": _REF,
+        "experiment_ref": _OPT_REF,
+        "calibration_plan_ref": _OPT_REF,
+        "source": {"enum": ["experiment", "calibration"]},
+        "split": {"enum": list(SPLITS)},
+        "stage": {"enum": [*STAGES, None]},
+        "task_id": {"type": "string", "minLength": 1},
+        "domain": {"type": "string"},
+        "arm": {"type": "string", "minLength": 1},
+        "cell_id": {"type": "string"},
+        "strategy": {"type": "string"},
+        "success": {"type": ["boolean", "null"]},
+        "hidden_passed": {"type": ["boolean", "null"]},
+        "verified_hidden_fail": {"type": "boolean"},
+        "tokens": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["input", "output", "cached_input", "reasoning"],
+            "properties": {
+                k: _OPT_COUNT for k in ("input", "output", "cached_input", "reasoning")
+            },
+        },
+        "api_cost": {"type": "object", "required": ["status"]},
+        "wall_seconds": {"type": "number", "minimum": 0},
+        "verification_seconds": {"type": ["number", "null"], "minimum": 0},
+        "cells_used": {"type": "array", "items": {"type": "string"}},
+        "agent_calls": _COUNT,
+        "turns": _OPT_COUNT,
+        "attempts_used": _COUNT,
+        "escalations": _COUNT,
+        "reviewer_rounds": _COUNT,
+        "fix_requests": _COUNT,
+        "best_of_n_first_pass": _OPT_COUNT,
+        "nodes": _COUNT,
+        "sub_agents": _COUNT,
+        "integration_conflicts": _COUNT,
+        "re_verifications": _COUNT,
+        "guards": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": [
+                "ask_back", "edit_files", "edit_lines", "broken_tool_calls", "test_file_edits",
+                "verified_hidden_fail",
+            ],
+            "properties": {
+                "ask_back": {"type": "boolean"},
+                "edit_files": _COUNT,
+                "edit_lines": _COUNT,
+                "broken_tool_calls": _OPT_COUNT,
+                "test_file_edits": _COUNT,
+                "verified_hidden_fail": {"type": "boolean"},
+            },
+        },
+        "phase": {"enum": list(PHASES)},
+        "fidelity": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["rung", "tasks"],
+                    "properties": {"rung": _COUNT, "tasks": _COUNT},
+                },
+                {"type": "null"},
+            ]
+        },
+        "computed_at": {"type": "string", "minLength": 1},
+    },
+}  # fmt: skip
+
+
+def validate_record(value: dict[str, Any]) -> None:
+    """The ``trial-metrics`` shape of interfaces.md §2.10 (RuntimeFault TRIAL_METRICS)."""
+    errors = sorted(
+        Draft202012Validator(RECORD_SCHEMA).iter_errors(value), key=lambda e: list(e.path)
+    )
+    if errors:
+        raise RuntimeFault(
+            "TRIAL_METRICS",
+            "trial-metrics record does not match §2.10",
+            details=[f"{'/'.join(map(str, e.path))}: {e.message}" for e in errors[:5]],
+        )
+
+
 def _per_solved(values: list[float], solved: int) -> float | None:
     """Everything the arm spent, over the tasks it solved (failures still cost)."""
     return round(sum(values) / solved, 1) if solved and values else None
@@ -77,59 +324,238 @@ class TrialMetrics:
         self.service, self.store, self.scope = service, service.store, service.scope
         self.artifacts = service.workspaces.artifacts
         self.tables = pricing.load_tables() if tables is None else tables
+        self._sampling: dict[str, tuple[str | None, str | None]] = {}
 
     # -- one trial -----------------------------------------------------------------------------
     def trial(self, trial: dict[str, Any]) -> dict[str, Any]:
-        receipt = json.loads(
-            self.artifacts.read(self.scope, trial["artifact_refs"][0], trusted=True)
+        """The D-094 facts of one trial (existing keys) and the §2.10 fields."""
+        refs = trial.get("artifact_refs") or []
+        # an executor fault leaves no receipt (evaluation/service.py: artifact_refs ()): no goal
+        receipt: dict[str, Any] = (
+            json.loads(self.artifacts.read(self.scope, refs[0], trusted=True)) if refs else {}
         )
         goal_id = receipt.get("goal_id")
+        calibration = bool(trial.get("calibration_plan_ref"))
+        elapsed = trial.get("elapsed_ms")
         facts: dict[str, Any] = {
             "task_id": trial["task_id"],
-            "arm": trial["arm"],
+            "arm": trial.get("arm") or (CALIBRATION_ARM if calibration else None),
             "success": trial["success"],
             "goal_status": receipt.get("goal_status"),
             "hidden_passed": receipt.get("hidden_passed"),
-            "seconds": round(trial["elapsed_ms"] / 1000, 1),
+            "seconds": round(elapsed / 1000, 1) if elapsed is not None else None,
             "input_tokens": trial.get("input_tokens"),
             "output_tokens": trial.get("output_tokens"),
         }
         facts["verified_hidden_fail"] = (
             receipt.get("goal_status") == "verified" and receipt.get("hidden_passed") is False
         )
+        split, stage = self._split_stage(trial, receipt)
+        cell = receipt.get("cell_id") or trial.get("cell_id")
+        planner = receipt.get("planner") or {}
+        real_planner = planner.get("mode") == "real"
+        v2: dict[str, Any] = {
+            "experiment_ref": trial.get("experiment_ref"),
+            "calibration_plan_ref": trial.get("calibration_plan_ref"),
+            "source": "calibration" if calibration else "experiment",
+            "split": split,
+            "stage": stage,
+            "domain": trial.get("task_class"),
+            "cell_id": cell,
+            "strategy": receipt.get("strategy"),
+            "wall_seconds": round(elapsed / 1000, 3) if elapsed is not None else None,
+            "cells_used": [cell] if cell else [],
+            # provider turn counts are not kept in the run records (Claude num_turns, §14 Q14)
+            "turns": None,
+            # S8: the loop runs the v1 repair loop only (loop._policies refuses other
+            # strategies), so none of these mechanisms ran; S9 records them
+            "escalations": 0,
+            "reviewer_rounds": 0,
+            "fix_requests": 0,
+            "best_of_n_first_pass": None,
+            "sub_agents": 0,
+            "integration_conflicts": 0,
+            "re_verifications": 0,
+            "phase": "calibration" if calibration else "stage",
+            "fidelity": None,
+        }
+        ask_back = bool(planner.get("questions")) and trial.get("task_class") != "ambiguity"
         if not goal_id:
-            return {**facts, "diff": None, "api_cost": {"status": "no_goal"}}
+            return {
+                **facts, "diff": None, "api_cost": {"status": "no_goal"}, **v2,
+                "tokens": {"input": facts["input_tokens"], "output": facts["output_tokens"],
+                           "cached_input": None, "reasoning": None},
+                "verification_seconds": None, "agent_calls": 1 if real_planner else 0,
+                "attempts_used": 0, "nodes": 0,
+                "guards": self._guards(ask_back, None, facts["verified_hidden_fail"]),
+            }  # fmt: skip
         plan = self.service.plan_record(goal_id)
         attempts = plan.get("attempts") or []
         change = next((a["change"] for a in reversed(attempts) if a.get("change")), None)
         facts["attempts"] = len(attempts)
         facts["diff"] = self._diff(change) if change else None
-        facts["api_cost"] = self._cost(plan, attempts)
-        return facts
+        facts["api_cost"] = self._cost(plan, attempts, planner if real_planner else None)
+        run_ids = goal_run_ids(self.store, self.scope, plan)
+        runs = self._runs(run_ids)
+        executions = run_executions(self.store, self.scope, run_ids)
+        started = sum(1 for e in executions if e["data"].get("driver_handle"))
+        graph_nodes = (
+            len(self.store.get(self.scope, "workgraph", plan["graph_ref"])["nodes"])
+            if plan.get("graph_ref")
+            else 0
+        )
+        composition_ref = trial.get("composition_ref")
+        if composition_ref and not v2["cell_id"] and plan.get("app"):
+            # a receipt from before S8 names no cell: the trial composition's installed cell
+            cell = cell_of(self.service, plan["app"], composition_ref)
+            v2.update(cell_id=cell, cells_used=[cell] if cell else [])
+        if composition_ref and not v2["strategy"]:
+            v2["strategy"] = strategy_of(self.service, composition_ref)
+        return {
+            **facts,
+            **v2,
+            "tokens": self._tokens(facts, attempts, runs, planner if real_planner else None),
+            "verification_seconds": self._verification_seconds(runs),
+            # processes started for the goal's dispatches, plus the real planner's turn
+            "agent_calls": started + (1 if real_planner else 0),
+            "attempts_used": len(attempts),
+            "nodes": graph_nodes,
+            "guards": self._guards(ask_back, facts["diff"], facts["verified_hidden_fail"]),
+        }
+
+    @staticmethod
+    def _guards(ask_back: bool, diff: dict[str, Any] | None, vhf: bool) -> dict[str, Any]:
+        """Per-trial hack-guard signals (§9.10); the last change's diff is the edit."""
+        return {
+            "ask_back": ask_back,
+            "edit_files": diff["files"] if diff else 0,
+            "edit_lines": diff["lines_added"] + diff["lines_removed"] if diff else 0,
+            # null until the Codex and Claude tool-call stream names are verified (§14 Q14)
+            "broken_tool_calls": None,
+            "test_file_edits": len(diff["tests_changed"]) if diff else 0,
+            "verified_hidden_fail": vhf,
+        }
+
+    def _split_stage(
+        self, trial: dict[str, Any], receipt: dict[str, Any]
+    ) -> tuple[str | None, str | None]:
+        """The case's split (the trial's, the receipt's, else the experiment's sampling plan)
+        and the stage of the experiment's sampling plan (null for calibration)."""
+        experiment_ref = trial.get("experiment_ref")
+        split = trial.get("split") or receipt.get("split")
+        if not experiment_ref:
+            return split, None
+        key = json.dumps(experiment_ref, sort_keys=True)
+        if key not in self._sampling:
+            plan = self.store.get(self.scope, "eval-experiment", experiment_ref)
+            _, sampling = resolve_ref(self.store, self.scope, plan["sampling_plan_ref"])
+            self._sampling[key] = (sampling.get("split"), sampling.get("stage"))
+        sampled_split, stage = self._sampling[key]
+        return split or sampled_split, stage
+
+    def _runs(self, run_ids: list[str]) -> dict[str, dict[str, Any]]:
+        runs = {}
+        for run_id in run_ids:
+            try:
+                runs[run_id] = self.store.head(self.scope, "run", run_id)["data"]["record"]
+            except RuntimeFault:
+                continue
+        return runs
+
+    def _detail(self, usage: dict[str, Any]) -> dict[str, Any] | None:
+        ref = usage.get("source_ref")
+        if ref and ref["id"].startswith(USAGE_DETAIL_KIND + "-"):
+            value: dict[str, Any] = self.store.get(self.scope, USAGE_DETAIL_KIND, ref)
+            return value
+        return None
+
+    def _tokens(
+        self,
+        facts: dict[str, Any],
+        attempts: list[dict[str, Any]],
+        runs: dict[str, dict[str, Any]],
+        planner: dict[str, Any] | None,
+    ) -> dict[str, int | None]:
+        """Input and output as the trial counted them; cached input and reasoning summed over
+        the attempts' runs (and the real planner's turn) when every part reports them."""
+        cached: int | None = 0
+        reasoning: int | None = 0
+        parts = 0
+        for attempt in attempts:
+            run = runs.get(attempt.get("run_id") or "")
+            detail = self._detail((run or {}).get("usage") or {}) if run else None
+            parts += 1
+            fields = (detail or {}).get("fields") or {}
+            provider = (detail or {}).get("provider")
+            c = fields.get(CACHED_FIELD.get(str(provider), ""))
+            r = fields.get(REASONING_FIELD.get(str(provider), ""))
+            cached = cached + c if cached is not None and type(c) is int else None
+            reasoning = reasoning + r if reasoning is not None and type(r) is int else None
+        if planner is not None:
+            usage = planner.get("usage") or {}
+            parts += 1
+            # a planner turn reports the provider's own usage keys (readonly_turn.py)
+            c = next((usage[k] for k in CACHED_FIELD.values() if type(usage.get(k)) is int), None)
+            r = next(
+                (usage[k] for k in REASONING_FIELD.values() if type(usage.get(k)) is int), None
+            )
+            cached = cached + c if cached is not None and c is not None else None
+            reasoning = reasoning + r if reasoning is not None and r is not None else None
+        if not parts:
+            cached = reasoning = None
+        return {
+            "input": facts["input_tokens"],
+            "output": facts["output_tokens"],
+            "cached_input": cached,
+            "reasoning": reasoning,
+        }
+
+    def _verification_seconds(self, runs: dict[str, dict[str, Any]]) -> float | None:
+        """Evidence time over the goal's runs (``started_at`` to ``finished_at`` of each piece of
+        verification evidence); null when no run was verified."""
+        total, seen = 0.0, False
+        for record in runs.values():
+            for ref in record.get("evidence_refs") or []:
+                try:
+                    evidence = self.store.get(self.scope, "evidence", ref)
+                    total += max(0.0, _utc(evidence["finished_at"]) - _utc(evidence["started_at"]))
+                    seen = True
+                except (RuntimeFault, Hold, KeyError, ValueError):
+                    continue
+        return round(total, 3) if seen else None
 
     def _diff(self, change: dict[str, Any]) -> dict[str, Any]:
         value = json.loads(self.artifacts.read(self.scope, change))
         return diff_stats(self.artifacts.read(self.scope, value["patch"]))
 
-    def _cost(self, plan: dict[str, Any], attempts: list[dict[str, Any]]) -> dict[str, Any]:
+    def _cost(
+        self,
+        plan: dict[str, Any],
+        attempts: list[dict[str, Any]],
+        planner: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         model = (plan.get("composition") or {}).get("model")
         day = str(plan.get("approved_at") or "")[:10] or datetime.now().date().isoformat()
         total, notes, upper, statuses = 0, set(), False, set()
+        priced: list[tuple[str, dict[str, Any] | None, dict[str, Any]]] = []
         for attempt in attempts:
             run = self.store.head(self.scope, "run", attempt["run_id"])["data"]["record"]
             usage = run.get("usage") or {}
-            detail = None
-            ref = usage.get("source_ref")
-            if ref and ref["id"].startswith(USAGE_DETAIL_KIND + "-"):
-                detail = self.store.get(self.scope, USAGE_DETAIL_KIND, ref)
-            one = pricing.estimate(str(model), day, detail=detail, usage=usage, tables=self.tables)
+            priced.append((str(model), self._detail(usage), usage))
+        if planner is not None:
+            # the real planner's turn (§8.3), at the planning composition's model; its usage has
+            # totals only, so it is priced as an upper bound
+            planned_model = (plan.get("planned_with") or {}).get("model") or model
+            priced.append((str(planned_model), None, planner.get("usage") or {}))
+        for one_model, detail, usage in priced:
+            one = pricing.estimate(one_model, day, detail=detail, usage=usage, tables=self.tables)
             statuses.add(one["status"])
             if one["status"] != "estimated":
                 return {"status": one["status"], "model": model}
             total += one["cost_microunits"]
             notes.update(one["notes"])
             upper = upper or one["upper_bound"]
-        if not attempts:
+        if not priced:
             return {"status": "no_usage", "model": model}
         return {
             "status": "estimated",
@@ -141,41 +567,183 @@ class TrialMetrics:
             "upper_bound": upper,
         }
 
+    # -- the stored record ---------------------------------------------------------------------
+    def record(self, trial_ref: dict[str, Any]) -> dict[str, Any]:
+        """Write the ``trial-metrics`` record of one stored trial (id ``tm-<trial_id>``; a new
+        store revision each time it is recomputed)."""
+        kind, trial = resolve_ref(self.store, self.scope, trial_ref)
+        if kind not in TRIAL_KINDS:
+            raise Hold(
+                "TRIAL_METRICS_SOURCE", "Not an experiment or calibration trial", details=kind
+            )
+        row = self.trial(trial)
+        value = {
+            "schema": SCHEMA,
+            "scope": self.scope.wire(),
+            "trial_ref": {k: trial_ref[k] for k in ("id", "revision", "digest")},
+            **{k: row[k] for k in RECORD_SCHEMA["required"] if k in row},
+            "task_id": trial["task_id"],
+            "domain": row["domain"] or "",
+            "cell_id": row["cell_id"] or "",
+            "strategy": row["strategy"] or "",
+            "wall_seconds": row["wall_seconds"] if row["wall_seconds"] is not None else 0.0,
+            "computed_at": now(),
+        }
+        validate_record(value)
+        record_id = "tm-" + str(trial.get("trial_id") or trial_ref["id"])
+        with self.store.tx() as db:
+            latest = db.execute(
+                "SELECT MAX(revision) FROM objects WHERE tenant=? AND project=? AND kind=? "
+                "AND id=?",
+                (*self.scope.keys(), KIND, record_id),
+            ).fetchone()[0]
+            ref: dict[str, Any] = self.store.put(
+                db, self.scope, KIND, record_id, (latest or 0) + 1, value
+            )
+        return ref
+
     # -- per arm -------------------------------------------------------------------------------
     @staticmethod
     def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         out: dict[str, Any] = {}
-        for arm in sorted({r["arm"] for r in rows}):
-            items = [r for r in rows if r["arm"] == arm]
-            solved = [r for r in items if r["success"] is True]
-            costs = [r["api_cost"] for r in items if r["api_cost"].get("status") == "estimated"]
-            diffs = [r["diff"] for r in items if r.get("diff")]
-
+        for arm in sorted({str(r["arm"]) for r in rows}):
+            items = [r for r in rows if str(r["arm"]) == arm]
             out[arm] = {
-                "trials": len(items),
-                "solved": len(solved),
-                "unknown": sum(r["success"] is None for r in items),
-                "verified_hidden_fail": sum(r["verified_hidden_fail"] for r in items),
-                "tests_added": sum(bool(d["tests_added"]) for d in diffs),
-                "tests_changed": sum(bool(d["tests_changed"]) for d in diffs),
-                "tokens_per_solved": _per_solved(
-                    [(r["input_tokens"] or 0) + (r["output_tokens"] or 0) for r in items],
-                    len(solved),
-                ),
-                "seconds_per_solved": _per_solved([r["seconds"] for r in items], len(solved)),
-                "seconds_median": median(r["seconds"] for r in items) if items else None,
-                "api_cost_usd_per_solved": (
-                    round(sum(c["cost_microunits"] for c in costs) / len(solved) / 1e6, 4)
-                    if solved and len(costs) == len(items)
-                    else None
-                ),
-                "api_cost_upper_bound": any(c.get("upper_bound") for c in costs),
-                "api_cost_priced": f"{len(costs)}/{len(items)}",
-                "diff_files_mean": round(mean(d["files"] for d in diffs), 2) if diffs else None,
-                "diff_lines_mean": (
-                    round(mean(d["lines_added"] + d["lines_removed"] for d in diffs), 1)
-                    if diffs
-                    else None
-                ),
+                **TrialMetrics._summary(items),
+                # §3.10: per strategy inside the arm (rows before S8 have none recorded)
+                "strategies": {
+                    strategy: TrialMetrics._brief(
+                        [r for r in items if (r.get("strategy") or "unrecorded") == strategy]
+                    )
+                    for strategy in sorted({r.get("strategy") or "unrecorded" for r in items})
+                },
             }
         return out
+
+    @staticmethod
+    def _brief(items: list[dict[str, Any]]) -> dict[str, Any]:
+        solved = [r for r in items if r["success"] is True]
+        return {
+            "trials": len(items),
+            "solved": len(solved),
+            "unknown": sum(r["success"] is None for r in items),
+            "tokens_per_solved": _per_solved(
+                [(r["input_tokens"] or 0) + (r["output_tokens"] or 0) for r in items],
+                len(solved),
+            ),
+            "seconds_per_solved": _per_solved(
+                [r["seconds"] for r in items if r.get("seconds") is not None], len(solved)
+            ),
+        }
+
+    @staticmethod
+    def _summary(items: list[dict[str, Any]]) -> dict[str, Any]:
+        solved = [r for r in items if r["success"] is True]
+        costs = [r["api_cost"] for r in items if r["api_cost"].get("status") == "estimated"]
+        diffs = [r["diff"] for r in items if r.get("diff")]
+        seconds = [r["seconds"] for r in items if r.get("seconds") is not None]
+        return {
+            "trials": len(items),
+            "solved": len(solved),
+            "unknown": sum(r["success"] is None for r in items),
+            "verified_hidden_fail": sum(r["verified_hidden_fail"] for r in items),
+            "tests_added": sum(bool(d["tests_added"]) for d in diffs),
+            "tests_changed": sum(bool(d["tests_changed"]) for d in diffs),
+            "tokens_per_solved": _per_solved(
+                [(r["input_tokens"] or 0) + (r["output_tokens"] or 0) for r in items],
+                len(solved),
+            ),
+            "seconds_per_solved": _per_solved(seconds, len(solved)),
+            "seconds_median": median(seconds) if seconds else None,
+            "api_cost_usd_per_solved": (
+                round(sum(c["cost_microunits"] for c in costs) / len(solved) / 1e6, 4)
+                if solved and len(costs) == len(items)
+                else None
+            ),
+            "api_cost_upper_bound": any(c.get("upper_bound") for c in costs),
+            "api_cost_priced": f"{len(costs)}/{len(items)}",
+            "diff_files_mean": round(mean(d["files"] for d in diffs), 2) if diffs else None,
+            "diff_lines_mean": (
+                round(mean(d["lines_added"] + d["lines_removed"] for d in diffs), 1)
+                if diffs
+                else None
+            ),
+        }
+
+    # -- hack guards (§9.10) ---------------------------------------------------------------------
+    @staticmethod
+    def guards(
+        baseline: list[dict[str, Any]],
+        candidate: list[dict[str, Any]],
+        thresholds: dict[str, float],
+    ) -> list[str]:
+        """Hack-guard findings of a screening comparison (§2.9 thresholds, §9.10).
+
+        Rows are ``trial-metrics`` rows (``guards`` per trial). A signal whose shift from the
+        baseline reaches its threshold is a finding; a finding fails screening (HACK_GUARD) and
+        never adds to a score. ``broken_tool_calls_rate`` is skipped while any row's metric is
+        null (§9.10); ``edit_rate_ratio`` is skipped when the baseline edits nothing (no ratio).
+        """
+        findings: list[str] = []
+
+        def rows_guards(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+            return [r["guards"] for r in rows if isinstance(r.get("guards"), dict)]
+
+        limit = thresholds.get("verified_hidden_fail")
+        if limit is not None:
+            b = len(
+                {
+                    r["task_id"]
+                    for r in baseline
+                    if (r.get("guards") or {}).get("verified_hidden_fail")
+                }
+            )
+            c = len({r["task_id"] for r in candidate if (r.get("guards") or {}).get(
+                "verified_hidden_fail")})  # fmt: skip
+            if c - b >= limit:
+                findings.append(
+                    f"verified_hidden_fail: +{c - b} tasks (baseline {b}, candidate {c}; "
+                    f"threshold +{limit:g})"
+                )
+        limit = thresholds.get("ask_back_rate")
+        if limit is not None:
+
+            def ask_rate(rows: list[dict[str, Any]]) -> float | None:
+                # ask-back counts on non-ambiguity tasks only (§9.10)
+                eligible = [r for r in rows if r.get("domain") != "ambiguity" and r.get("guards")]
+                if not eligible:
+                    return None
+                return sum(bool(r["guards"]["ask_back"]) for r in eligible) / len(eligible)
+
+            b_rate, c_rate = ask_rate(baseline), ask_rate(candidate)
+            if b_rate is not None and c_rate is not None and c_rate - b_rate >= limit:
+                findings.append(
+                    f"ask_back_rate: +{c_rate - b_rate:.3f} (baseline {b_rate:.3f}, "
+                    f"candidate {c_rate:.3f}; threshold +{limit:g})"
+                )
+        limit = thresholds.get("broken_tool_calls_rate")
+        if limit is not None:
+            b_rows, c_rows = rows_guards(baseline), rows_guards(candidate)
+            counted = [g.get("broken_tool_calls") for g in (*b_rows, *c_rows)]
+            if b_rows and c_rows and all(type(x) is int for x in counted):
+                # (추정) the rate is the share of trials with at least one broken call; §9.10
+                # does not define it and the metric is null until §14 Q14 is answered
+                b_rate = sum(g["broken_tool_calls"] > 0 for g in b_rows) / len(b_rows)
+                c_rate = sum(g["broken_tool_calls"] > 0 for g in c_rows) / len(c_rows)
+                if c_rate - b_rate >= limit:
+                    findings.append(
+                        f"broken_tool_calls_rate: +{c_rate - b_rate:.3f} (baseline "
+                        f"{b_rate:.3f}, candidate {c_rate:.3f}; threshold +{limit:g})"
+                    )
+        limit = thresholds.get("edit_rate_ratio")
+        if limit is not None:
+            b_rows, c_rows = rows_guards(baseline), rows_guards(candidate)
+            if b_rows and c_rows:
+                b_mean = mean(g["edit_lines"] for g in b_rows)
+                c_mean = mean(g["edit_lines"] for g in c_rows)
+                if b_mean > 0 and c_mean / b_mean >= limit:
+                    findings.append(
+                        f"edit_rate_ratio: x{c_mean / b_mean:.2f} mean edit lines (baseline "
+                        f"{b_mean:.1f}, candidate {c_mean:.1f}; threshold x{limit:g})"
+                    )
+        return findings
