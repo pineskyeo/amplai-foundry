@@ -1,0 +1,9 @@
+sku,name,price,tags,reorder_level
+MUG-001,Blue Mug,12.50,kitchen;gift,5
+MUG-002,Red Mug,12.50,kitchen,5
+TEA-010,Green Tea 100g,8.95,food;tea,10
+TEA-011,Black Tea 100g,7.40,food;tea,10
+PEN-100,Fountain Pen,34.00,office;gift,2
+NB-200,Notebook A5,6.25,office,20
+LMP-030,Desk Lamp,49.99,office;home,1
+CND-007,Beeswax Candle,9.80,home;gift,8

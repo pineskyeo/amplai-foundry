@@ -13,7 +13,7 @@ import os
 import subprocess
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
@@ -21,6 +21,7 @@ from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from .protocol import EventNormalizer, JsonlDecoder, SessionJournal
 
 if TYPE_CHECKING:
+    from amplai_foundry.runtime.execution.cells import DispatchOptions
     from amplai_foundry.sandbox.container import ContainerSandbox
 
 ACTIVE = frozenset({"starting", "running", "cancelling", "unknown"})
@@ -28,6 +29,10 @@ TERMINAL = frozenset({"completed", "failed", "cancelled", "paused"})
 
 
 class CliDriver:
+    # Work 033 S4 (interfaces.md §3.4): argv/prepare/checkpoint/resume take DispatchOptions
+    accepts_options: ClassVar[bool] = True
+    CLAUDE_DEFAULT_TOOLS: ClassVar[str] = "Read,Edit,Write,Glob,Grep,Bash"
+
     def __init__(
         self,
         provider: str,
@@ -92,18 +97,41 @@ class CliDriver:
             raise Hold("SESSION_UNPINNED", "Only an exact native session ID is accepted")
         return session
 
+    def _options(self, options: DispatchOptions | None) -> DispatchOptions | None:
+        """None for no options or default options (today's argv, golden G2)."""
+        if options is None:
+            return None
+        if options.model != self.model:
+            # a port is built and qualified for one model (codex.py build_*_port)
+            raise Hold(
+                "MODEL_NOT_QUALIFIED_FOR_PORT",
+                "The options name a model this port is not built for",
+                details={"port": self.model, "options": options.model},
+            )
+        if self.provider == "codex" and (
+            options.max_turns is not None
+            or options.append_system_prompt is not None
+            or options.allowed_tools is not None
+        ):
+            raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "Claude options on the Codex CLI")
+        if self.provider == "claude" and options.codex_config:
+            raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "Codex config overrides on the Claude CLI")
+        return None if options.is_default() else options
+
     def argv(
         self,
         prompt: str,
         *,
         session: str | None = None,
         output_schema: dict[str, Any] | None = None,
+        options: DispatchOptions | None = None,
     ) -> list[str]:
         import json
 
         self.exact_session(session)
         if not isinstance(prompt, str) or len(prompt.encode()) > 1024 * 1024:
             raise Hold("PROMPT_LIMIT", "Driver prompt exceeds its configured budget")
+        opts = self._options(options)
         if self.provider == "claude":
             isolation = (
                 ["--bare"]
@@ -126,9 +154,22 @@ class CliDriver:
                 "--verbose",
                 "--model",
                 self.model,
-                "--allowedTools",
-                "Read,Edit,Write,Glob,Grep,Bash",
             ]
+            # §3.4 argv contract: effort, then max-turns and system prompt, then the tools
+            # (`claude --help` of 2.1.278 quotes --effort, --append-system-prompt and
+            # --allowedTools; --max-turns is not listed, §14 Q13, specs/033-.../cli-effort-facts.md)
+            if opts is not None and opts.effort is not None:
+                args += ["--effort", opts.effort]
+            if opts is not None and opts.max_turns is not None:
+                args += ["--max-turns", str(opts.max_turns)]
+            if opts is not None and opts.append_system_prompt is not None:
+                args += ["--append-system-prompt", opts.append_system_prompt]
+            tools = (
+                ",".join(opts.allowed_tools)
+                if opts is not None and opts.allowed_tools is not None
+                else self.CLAUDE_DEFAULT_TOOLS
+            )
+            args += ["--allowedTools", tools]
             if session:
                 args += ["--resume", session]
             if output_schema:
@@ -142,10 +183,15 @@ class CliDriver:
         # Codex's own bwrap sandbox cannot create namespaces in the unprivileged container
         # (measured 2026-09-28: shell and file writes fail), so the qualified container is the
         # sandbox and Codex's is bypassed (D-073).
-        args += [
-            "--json", "--model", self.model, "--skip-git-repo-check",
-            "--dangerously-bypass-approvals-and-sandbox",
-        ]  # fmt: skip
+        args += ["--json", "--model", self.model]
+        # `-c key=value` is an option of `codex exec` and of `codex exec resume` (Codex CLI
+        # 0.155.1 help, specs/033-harness-taxonomy/runs/cli-effort-facts.md, §14 Q1); it sits
+        # with --json/--model, which the qualified argv already passes after the session id
+        if opts is not None and opts.effort is not None:
+            args += ["-c", "model_reasoning_effort=" + opts.effort]
+        for key, value in opts.codex_config if opts is not None else ():
+            args += ["-c", key + "=" + value]
+        args += ["--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox"]
         if output_schema is not None:
             raise Hold("SCHEMA_FILE_REQUIRED", "Codex needs a pinned read-only schema file")
         return [*args, prompt]
@@ -193,6 +239,7 @@ class CliDriver:
         *,
         session: str | None = None,
         native_home: Path | None = None,
+        options: DispatchOptions | None = None,
     ) -> dict[str, Any]:
         if not self.qualified:
             raise Hold("DRIVER_UNQUALIFIED", "Exact-version environment qualification is required")
@@ -200,8 +247,9 @@ class CliDriver:
         workspace = Path(workspace).absolute()
         if workspace.resolve() != workspace or not workspace.is_dir():
             raise Hold("WORKSPACE_PATH", "An isolated non-symlink workspace is required")
+        opts = self._options(options)
         home = self._home(dispatch["dispatch_id"], native_home)
-        args = self.argv(prompt, session=session)
+        args = self.argv(prompt, session=session, options=opts)
         command = self.sandbox.command(
             args,
             workspace,
@@ -216,6 +264,11 @@ class CliDriver:
             "native_home": str(home),
             "session": session,
         }
+        # effort and options digest only for non-default options: a default dispatch keeps
+        # today's journal bytes (checkpoint/resume compare them, §3.4). They enter the request
+        # digest here and are stored with the immutable metadata below, since
+        # SessionJournal.create keeps only the digest of its payload.
+        bound = {"effort": opts.effort, "options_digest": opts.digest()} if opts is not None else {}
         record = self.journal.create(
             dispatch["dispatch_id"],
             {
@@ -224,6 +277,7 @@ class CliDriver:
                 "prepared_digest": digest(prepared),
                 "version": self.version,
                 "model": self.model,
+                **bound,
             },
         )
         # Immutable metadata is written before spawning. Duplicate prepare is safe.
@@ -237,6 +291,7 @@ class CliDriver:
                 workspace=str(workspace),
                 driver_version=self.version,
                 model=self.model,
+                **bound,
             )
         return prepared
 
@@ -453,10 +508,18 @@ class CliDriver:
             "model": self.model,
             "native_home": record.get("native_home"),
             "workspace": record.get("workspace"),
+            "effort": record.get("effort"),
+            "options_digest": record.get("options_digest"),
         }
 
     def resume(
-        self, new_dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+        self,
+        new_dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        checkpoint: dict[str, Any],
+        *,
+        options: DispatchOptions | None = None,
     ) -> str:
         prior = self.journal.read(checkpoint["dispatch_id"])
         if (
@@ -465,7 +528,14 @@ class CliDriver:
             or prior["session_handle"] != checkpoint["session_handle"]
         ):
             raise Hold("CHECKPOINT_RECEIPT", "Checkpoint differs from the durable driver journal")
-        if checkpoint["driver_version"] != self.version or checkpoint["model"] != self.model:
+        opts = self._options(options)
+        if (
+            checkpoint["driver_version"] != self.version
+            or checkpoint["model"] != self.model
+            # the resumed turn runs under the same effort and options (§3.4)
+            or checkpoint.get("effort") != (opts.effort if opts is not None else None)
+            or checkpoint.get("options_digest") != (opts.digest() if opts is not None else None)
+        ):
             raise Hold("RESUME_PROFILE", "Native state cannot resume under a different profile")
         self.exact_session(checkpoint["session_handle"])
         if not checkpoint["session_handle"] or not checkpoint.get("native_home"):
@@ -481,8 +551,14 @@ class CliDriver:
                 workspace,
                 session=checkpoint["session_handle"],
                 native_home=Path(checkpoint["native_home"]),
+                options=opts,
             )
         )
+
+    def trace(self, handle: str) -> dict[str, Any] | None:
+        """The sanitized trace of a dispatch (S13, §9.1); no capture exists before S13."""
+        self.journal.read(handle)
+        return None
 
     def collect(self, handle: str) -> dict[str, Any]:
         record = self.poll(handle)

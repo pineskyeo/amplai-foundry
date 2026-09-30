@@ -10,13 +10,14 @@ from __future__ import annotations
 import contextlib
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from ...agent_drivers.ports import UNKNOWN_USAGE, DriverRegistry
 from ...agent_drivers.sessions import SessionStore
 from ..contracts.authority import Actor
 from ..contracts.identity import digest
 from ..errors import Conflict, Hold, RuntimeFault
+from .cells import DispatchOptions, check_binding, profile_effort
 from .envelope import assert_execution_live, execution_envelope
 
 USAGE_DETAIL_KIND = "usage-detail"
@@ -96,6 +97,38 @@ class WorkCoordinator:
             )
         return None
 
+    def _check_options(
+        self, worker: Actor, dispatch: dict[str, Any], port: Any, options: DispatchOptions | None
+    ) -> DispatchOptions | None:
+        """Work 033 S4 (interfaces.md §3.4): the options a port receives, checked against the
+        activated model profile before anything is prepared.
+
+        A port without ``accepts_options`` receives none, and non-default options for it hold
+        DRIVER_OPTIONS_UNSUPPORTED. A port that takes options but got none runs the profile's
+        model at the provider default, so an effort profile holds DISPATCH_OPTIONS_BINDING
+        rather than run without its effort (never substituted, spec.md Constraints).
+        """
+        profile = dispatch["profile"]
+        accepts = getattr(port, "accepts_options", False) is True
+        if options is not None:
+            if not accepts:
+                if options.is_default():
+                    return None
+                raise Hold(
+                    "DRIVER_OPTIONS_UNSUPPORTED", "This driver port takes no dispatch options",
+                    details={"driver_id": getattr(port, "driver_id", None)},
+                )  # fmt: skip
+            check_binding(self.store, worker.scope, profile, options)
+            return options
+        if accepts:
+            model = self.store.get(worker.scope, "model-profile", profile["model_profile_ref"])
+            if profile_effort(model) is not None:
+                raise Hold(
+                    "DISPATCH_OPTIONS_BINDING", "An effort profile needs its dispatch options",
+                    details={"effort": model.get("reasoning_profile")},
+                )  # fmt: skip
+        return None
+
     def _existing(self, worker: Actor, did: str, request_digest: str) -> dict[str, Any] | None:
         try:
             h = self._state(worker, did)
@@ -124,6 +157,7 @@ class WorkCoordinator:
         base_snapshot: dict[str, Any],
         output_paths: dict[str, str],
         planning_receipt: dict[str, Any] | None = None,
+        options: DispatchOptions | None = None,
     ) -> dict[str, Any]:
         worker.require("worker.execute")
         did = dispatch["dispatch_id"]
@@ -135,6 +169,9 @@ class WorkCoordinator:
             "output_paths": output_paths,
             "planning_receipt": planning_receipt,
         }
+        if options is not None and not options.is_default():
+            # only non-default options: an existing dispatch replays with its digest (§3.4)
+            request["options_digest"] = options.digest()
         request_digest = digest(request)
         prior = self._existing(worker, did, request_digest)
         if prior:
@@ -145,6 +182,7 @@ class WorkCoordinator:
         port = self.registry.resolve(
             scope, dispatch["profile"]["driver_profile_ref"], dispatch["node"]["strategy"]
         )
+        options = self._check_options(worker, dispatch, port, options)
         if dispatch["node"]["strategy"] == "deliberative":
             # A planner's unsigned text is not an approval. Refer to an immutable
             # server-reviewed artifact, independent of this worker.
@@ -186,6 +224,8 @@ class WorkCoordinator:
                     "workspace": None,
                     "result": None,
                     "prompt_artifact": prompt_ref,
+                    # a resumed turn runs under the same options (checkpoint/resume, §3.4)
+                    **({"options": options.wire()} if options is not None else {}),
                 },
             )
             self.store.event(
@@ -196,7 +236,11 @@ class WorkCoordinator:
         session = self.sessions.prepare(
             worker, did, envelope, dispatch["profile"], workspace_digest=base_snapshot["digest"]
         )
-        prepared = port.prepare(dispatch, prompt, workspace)
+        prepared = (
+            cast(Any, port).prepare(dispatch, prompt, workspace, options=options)
+            if options is not None
+            else port.prepare(dispatch, prompt, workspace)
+        )
         # Context/authority may have changed while preparing the sandbox.
         assert_execution_live(self.runtime, worker, dispatch)
         self._update(worker, did, "launching", prepared_digest=digest(prepared))
@@ -435,9 +479,17 @@ class WorkCoordinator:
         )
         if prompt is None:  # a plain resume repeats the original turn's prompt
             prompt = self.runtime.artifacts.read(worker.scope, data["prompt_artifact"]).decode()
+        options = DispatchOptions.from_wire(data["options"]) if data.get("options") else None
+        if options is not None and getattr(port, "accepts_options", False) is not True:
+            raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "This driver port takes no dispatch options")
         self._update(worker, did, "resuming", resume_dispatch_id=request["dispatch_id"])
         self.store.assert_outside_tx()
-        handle = port.resume(request, prompt, Path(data["workspace"]), data["driver_checkpoint"])
+        workspace, checkpoint_receipt = Path(data["workspace"]), data["driver_checkpoint"]
+        handle = (
+            cast(Any, port).resume(request, prompt, workspace, checkpoint_receipt, options=options)
+            if options is not None
+            else port.resume(request, prompt, workspace, checkpoint_receipt)
+        )
         self._update(worker, did, "resuming", driver_handle=handle)
         start = time.monotonic()
         while time.monotonic() - start < min(30, self.max_seconds):
@@ -481,12 +533,26 @@ class WorkCoordinator:
         usage["source_ref"] = {k: ref[k] for k in ("id", "revision", "digest")}
         return usage
 
-    def continue_resumed(self, worker: Actor, run_id: str) -> dict[str, Any]:
-        """Collect a resumed turn only after the controller commits the new lease."""
+    def continue_resumed(
+        self, worker: Actor, run_id: str, *, options: DispatchOptions | None = None
+    ) -> dict[str, Any]:
+        """Collect a resumed turn only after the controller commits the new lease.
+
+        ``options``, when given, must be the options the run was dispatched with (the resumed
+        turn already runs under them, ``resume_exact``); Hold DISPATCH_OPTIONS_BINDING otherwise.
+        """
         from copy import deepcopy
 
         did, h = self._run_execution(worker, run_id)
         data = h["data"]
+        stored = DispatchOptions.from_wire(data["options"]) if data.get("options") else None
+        if options is not None and (None if options.is_default() else options.digest()) != (
+            None if stored is None or stored.is_default() else stored.digest()
+        ):
+            raise Hold(
+                "DISPATCH_OPTIONS_BINDING",
+                "A resumed turn keeps the options it was dispatched with",
+            )
         run = self.store.head(worker.scope, "run", run_id)
         if (
             h["state"] != "resuming"

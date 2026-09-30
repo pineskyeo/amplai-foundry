@@ -14,14 +14,17 @@ driver, a model or an image, nor move one app onto another app's composition.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from ..contracts.identity import digest, sign
-from ..errors import RuntimeFault
+from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from .codex import put_record
+
+if TYPE_CHECKING:
+    from .product import InstalledApp
 
 BASELINE_PREFIX = "local-baseline-"
 POINTER_KIND, POINTER_ID = "release-pointer", "active"
@@ -143,8 +146,8 @@ def bootstrap(
 def effective(
     store: Store, scope: Scope, installed: dict[str, dict[str, Any]]
 ) -> dict[str, dict[str, Any]]:
-    """The installed compositions by driver id, with class-A replacements from the active
-    release (same driver, model and sandbox profile)."""
+    """The installed compositions by cell id (the legacy cell id is the driver id, IC-07), with
+    class-A replacements from the active release (same driver, model and sandbox profile)."""
     try:
         pointer = store.head(scope, POINTER_KIND, POINTER_ID)
     except RuntimeFault as exc:
@@ -167,13 +170,16 @@ def effective(
     return out
 
 
-def class_a_driver(
+def pin_allowed(
     store: Store, scope: Scope, installed: dict[str, dict[str, Any]], ref: dict[str, Any]
 ) -> str | None:
-    """The driver id whose installed composition ``ref`` is, or is a class-A candidate of.
+    """The cell id whose installed composition ``ref`` is, or is a candidate of (§3.3).
 
-    A class-A candidate is named ``<installed id>__<suffix>`` and keeps the driver, model and
-    sandbox profiles of the composition it derives from. Anything else is None.
+    A candidate is named ``<installed id>__<suffix>`` and keeps the driver, model and sandbox
+    profiles of the composition it derives from. With one installed composition per cell this
+    also admits a cell sibling (``ManifestService.cell_sibling``: the cell's installed id plus
+    the source suffix, the cell's own profiles). IC-12 environment siblings arrive with S7b.
+    Anything else is None.
     """
     try:
         value = store.get(scope, "harness-composition", ref)
@@ -188,3 +194,50 @@ def class_a_driver(
         ):
             return driver_id
     return None
+
+
+class_a_driver = pin_allowed  # the Work 030 name stays for its callers (§3.3)
+
+
+def router_ref(store: Store, scope: Scope, installed: InstalledApp) -> dict[str, Any]:
+    """The ``router_policy_ref`` of the app's effective compositions (§3.3).
+
+    Hold ROUTER_POLICY without a router (as ``select_composition`` did), ROUTER_INCONSISTENT when
+    the effective compositions name different routers.
+
+    A promoted class-A candidate is a copy of the composition it derives from, router included.
+    When the installed router changes afterwards (a cell added or removed changes the app's
+    route order, ``product._baseline_carriers``), the candidate still names the old one. This
+    holds rather than preferring either router; the details name the promoted release and the
+    remedy. Rebasing candidates or skipping them is an open decision (S4 review, not taken here).
+    """
+    if installed.router_ref is None:
+        raise Hold("ROUTER_POLICY", "The app has no router policy")
+    refs = {
+        digest(value): value
+        for value in (
+            store.get(scope, "harness-composition", ref).get("router_policy_ref")
+            for ref in effective(store, scope, installed.compositions).values()
+        )
+        if value is not None
+    }
+    if len(refs) > 1:
+        details: dict[str, Any] = {"routers": sorted(v["id"] for v in refs.values())}
+        try:
+            release = store.head(scope, POINTER_KIND, POINTER_ID)["data"]["release_ref"]
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            release = None
+        if release is not None and not release["id"].startswith(BASELINE_PREFIX):
+            details["active_release"] = release["id"]
+            details["remedy"] = (
+                "the promoted release names the router installed before the configuration "
+                "changed; amplai meta rollback <proposal> returns to the installed compositions"
+            )
+        raise Hold(
+            "ROUTER_INCONSISTENT", "The app's compositions name different routers",
+            details=details,
+        )  # fmt: skip
+    ref: dict[str, Any] = next(iter(refs.values()), installed.router_ref)
+    return ref

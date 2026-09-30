@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from ...sandbox.git_workspace import CHANGE_MEDIA, GitWorkspaceManager
 from ...verification.runtime.design_check import DESIGN_ROOT, DesignDocumentCheck
@@ -30,6 +30,7 @@ from ..contracts.identity import digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from . import context_assembly, policies, prompts, releases
+from .cells import LEGACY_CELLS, Cell, model_slug
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
 from .steering import SteeringService
@@ -161,11 +162,13 @@ class InstalledApp:
     invariant_ref: dict[str, Any]
     composition_ref: dict[str, Any]
     capabilities: list[dict[str, Any]] = field(default_factory=list)
-    compositions: dict[str, dict[str, Any]] = field(default_factory=dict)  # driver id -> ref
+    # cell id -> ref; the legacy cell id is the driver id (IC-07), so Work 030 keys stay valid
+    compositions: dict[str, dict[str, Any]] = field(default_factory=dict)
     router_ref: dict[str, Any] | None = None
     design_ref: dict[str, Any] | None = None  # the design-document verifier profile (F)
-    driver_refs: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
-    planners: dict[str, Any] = field(default_factory=dict)
+    driver_refs: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)  # by cell id
+    planners: dict[str, Any] = field(default_factory=dict)  # cell id -> planner
+    cells: dict[str, Cell] = field(default_factory=dict)  # the non-legacy cells (Work 033 S4)
 
 
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
@@ -282,10 +285,23 @@ class LocalExecutionService:
         *,
         driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
         planners: dict[str, Any] | None = None,
+        cells: list[Cell] | None = None,
     ) -> InstalledApp:
+        """Install ``app`` with one composition per cell (Work 033 S4, §2.4).
+
+        ``driver_refs`` and ``planners`` are keyed by cell id; a legacy key is a driver id
+        (IC-07) and needs no ``Cell``, every other key names one of ``cells`` (Hold
+        CELL_UNKNOWN otherwise).
+        """
         scope, a = self.scope, app.app_id
         caps = app_capabilities(a)
         drivers = driver_refs or self.drivers
+        known = {c.cell_id: c for c in cells or []}
+        unknown = sorted(k for k in drivers if k not in LEGACY_CELLS and k not in known)
+        if unknown:
+            raise Hold(
+                "CELL_UNKNOWN", "Every non-legacy driver ref needs its cell", details=unknown
+            )
         env_ref = (drivers.get("codex-cli") or self.codex)["environment"]
         invariant_ref = self._put(
             "invariant-registry",
@@ -368,12 +384,15 @@ class LocalExecutionService:
         # The v1 manifest (D-096, interfaces.md §2.3): context, budget and router carriers name
         # the baseline components, which reproduce today's behaviour. The router keeps the id
         # <app>-router in the layered shape; its task-class order is the operator's (D-079).
-        carriers = self._baseline_carriers(a, prompt_ref)
+        # the legacy order first (D-079, Work 031 D4), then the app's other cells in config order:
+        # the first eligible cell stays the one selected today (Work 033 S4)
+        route_order = [*ROUTER_ORDER, *(k for k in drivers if k not in LEGACY_CELLS)]
+        carriers = self._baseline_carriers(a, prompt_ref, route_order)
         router_ref = carriers["router_policy_ref"]
         compositions = {}
-        for driver_id, refs in drivers.items():
-            name = f"{a}-{driver_id.split('-')[0]}"
-            compositions[driver_id] = self._put_composition(
+        for cell_id, refs in drivers.items():
+            name = self._composition_id(a, cell_id, known.get(cell_id))
+            compositions[cell_id] = self._put_composition(
                 name,
                 {
                     "schema_version": "3.0.0",
@@ -414,9 +433,19 @@ class LocalExecutionService:
             app, binding_ref, verifier_refs, global_ref, policy_ref, invariant_ref,
             composition_ref, caps, compositions, router_ref, design_ref,
             dict(drivers), dict(planners or {}),
+            {k: c for k, c in known.items() if k in drivers},
         )  # fmt: skip
         self.apps[a] = installed
         return installed
+
+    @staticmethod
+    def _composition_id(app_id: str, cell_id: str, cell: Cell | None) -> str:
+        """``<app>-<driver short>`` for a legacy cell (unchanged), else
+        ``<app>-<driver short>-<model_slug>-<effort>`` (interfaces.md §2.4)."""
+        if cell is None:
+            return f"{app_id}-{cell_id.split('-')[0]}"
+        short = cell.driver_id.split("-")[0]
+        return f"{app_id}-{short}-{model_slug(cell.model)}-{cell.effort}"
 
     def _register_app(self, binding: dict[str, Any]) -> dict[str, Any]:
         existing = [
@@ -433,20 +462,37 @@ class LocalExecutionService:
         result: dict[str, Any] = self.goals.apps.register(self.actors.service, binding)
         return result
 
-    def _baseline_carriers(self, app_id: str, prompt_ref: dict[str, Any]) -> dict[str, Any]:
-        """Baseline components and the carriers of the v1 manifest (idempotent per boot)."""
+    def _baseline_carriers(
+        self, app_id: str, prompt_ref: dict[str, Any], route_order: list[str] | None = None
+    ) -> dict[str, Any]:
+        """Baseline components and the carriers of the v1 manifest (idempotent per boot).
+
+        An app whose cells extend the legacy order gets its own baseline route policy,
+        ``route_policy.baseline.<app>`` (clarification after W0-W1: the shared
+        ``route_policy.baseline`` would otherwise alternate versions between apps with different
+        cells); an app with the legacy cells only keeps the shared one, as installed by S3.
+        """
         from ...meta_harness.components import ComponentService
         from ...meta_harness.manifest import ManifestService
 
-        manifests = ManifestService(
-            self.store, self.scope, self.runtime.contracts, ComponentService(self.store, self.scope)
-        )
+        components = ComponentService(self.store, self.scope)
+        manifests = ManifestService(self.store, self.scope, self.runtime.contracts, components)
         manifest = manifests.baseline(
             self.actors.service,
             app_id,
             prompt_bundle_ref=prompt_ref,
             route_order=list(ROUTER_ORDER),
         )
+        if route_order is not None and list(route_order) != list(ROUTER_ORDER):
+            own = components.register(
+                self.actors.service,
+                component_id=f"route_policy.baseline.{app_id}",
+                kind="route_policy",
+                content={"order": {"*": list(route_order)}, "roles": {}},
+                source="baseline",
+                rationale="v1 order (D-079, Work 031 D4) and the app's other cells (Work 033 S4)",
+            )
+            manifest = manifests.change(manifest, route_policy=own)
         return manifests.write(self.actors.service, manifest, app_id=app_id)
 
     def _put_composition(self, name: str, value: dict[str, Any]) -> dict[str, Any]:
@@ -487,23 +533,29 @@ class LocalExecutionService:
         task_class: str | None = None,
         *,
         pin: dict[str, Any] | None = None,
+        router_ref: dict[str, Any] | None = None,
+        role: Literal["planner", "executor", "reviewer", "proposer"] = "executor",
     ) -> dict[str, Any]:
         """Filter candidates on data class, qualification and capabilities, then rank them by
         the task-class baseline policy. The operator sees the choice; nobody picks a driver.
 
         ``pin`` fixes the composition (an offline experiment arm or a canary goal, D-089). It must
-        be an installed composition or its class-A candidate, and it still has to be eligible."""
+        be an installed composition or its class-A candidate, and it still has to be eligible.
+
+        Work 033 S4 (§3.3): candidates are cells; the router is ``router_ref`` or the one the
+        app's effective compositions name (``releases.router_ref``); ``role`` reads the route
+        policy's cell list for that role when it has one, else the task-class order."""
         from ...meta_harness.composition import CompositionService
 
-        if installed.router_ref is None:
-            raise Hold("ROUTER_POLICY", "The app has no router policy")
         # the layered router (D-096) or a legacy task_class_baseline one, same order semantics
-        policy = policies.router_policy(self.store, self.scope, installed.router_ref)
-        order = policy.order.get(task_class or "*") or policy.order["*"]
+        router = router_ref or releases.router_ref(self.store, self.scope, installed)
+        policy = policies.router_policy(self.store, self.scope, router)
+        order = policy.roles.get(role) if role != "executor" else None
+        order = order or policy.order.get(task_class or "*") or policy.order["*"]
         # the active release may carry a promoted class-A candidate of a composition (D-089 S2)
         available = releases.effective(self.store, self.scope, installed.compositions)
         if pin is not None:
-            if releases.class_a_driver(self.store, self.scope, installed.compositions, pin) is None:
+            if releases.pin_allowed(self.store, self.scope, installed.compositions, pin) is None:
                 raise Hold(
                     "COMPOSITION_PIN",
                     "A pinned composition must be an installed one or its class-A candidate",
@@ -529,10 +581,13 @@ class LocalExecutionService:
             "task_class": task_class,
             "rank": candidates.index(chosen) + 1,
             "pinned": pin is not None,
-            "policy_ref": installed.router_ref,
+            "policy_ref": router,
             "candidates": [
                 {k: r[k] for k in ("driver_id", "model", "eligible", "reasons")} for r in rows
             ],
+            "cell_id": releases.pin_allowed(self.store, self.scope, installed.compositions, chosen),
+            "router_ref": router,
+            "role": role,
         }
 
     # -- plan --------------------------------------------------------------------------------
@@ -589,8 +644,8 @@ class LocalExecutionService:
             if mode == "design"
             else {v.id: v.description for v in app.verifiers}
         )
-        planning = self.select_composition(installed, pin=composition)
-        planner = planner or self._planner(installed, planning["driver_id"])
+        planning = self.select_composition(installed, pin=composition, role="planner")
+        planner = planner or self._planner(installed, planning["cell_id"] or planning["driver_id"])
         workspaces = {
             a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
         }
@@ -732,8 +787,8 @@ class LocalExecutionService:
         )
         was = plan.get("composition") or {}
         pin = was["ref"] if was.get("pinned") else None
-        planning = self.select_composition(installed, pin=pin)
-        planner = self._planner(installed, planning["driver_id"])
+        planning = self.select_composition(installed, pin=pin, role="planner")
+        planner = self._planner(installed, planning["cell_id"] or planning["driver_id"])
         workspaces = {
             a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
         }
@@ -1128,10 +1183,13 @@ class LocalExecutionService:
         env: dict[str, Any] = refs["environment"]
         return env
 
-    def _planner(self, installed: InstalledApp, driver_id: str) -> Any:
-        planner = installed.planners.get(driver_id) or (
-            self.planner if driver_id == "codex-cli" else self.planners.get(driver_id)
+    def _planner(self, installed: InstalledApp, cell_id: str) -> Any:
+        """The planner of a cell (legacy cell id = driver id, IC-07); an OpenCode cell's goals
+        are planned by the first available planner in router order (Work 031 O1)."""
+        planner = installed.planners.get(cell_id) or (
+            self.planner if cell_id == "codex-cli" else self.planners.get(cell_id)
         )
+        driver_id = cell_id.split(".", 1)[0]  # IC-07: <driver>[.<model_slug>.<effort>]
         if planner is None and driver_id in NON_PLANNING_DRIVERS:
             # Work 031 O1 (operator 2026-09-29): OpenCode never plans; the first available
             # planner in router order does, whichever driver executes.

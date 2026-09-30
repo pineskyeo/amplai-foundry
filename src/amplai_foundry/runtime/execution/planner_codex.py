@@ -6,24 +6,22 @@ objective, scope, non-goals, constraints, acceptance statements each bound to on
 verifier command id, risk, assumptions and open questions. It never writes contract refs,
 digests, capabilities or budgets; ``compile_plan`` (product.py) derives those deterministically,
 so the model cannot invent a verifier, widen a capability or set its own budget.
+
+Work 033 S4 (interfaces.md §3.5): the turn itself is a ``ReadOnlyTurn``
+(``readonly_turn.py``); the planners keep their prompts, public methods and fault codes
+(``PLANNER_TIMEOUT``/``PLANNER_FAILED``/``PLANNER_OUTPUT``, mapped from ``TURN_*``) and take the
+cell's effort. With ``effort=None`` argv and prompts are byte-identical (golden G2, G4).
 """
 
 from __future__ import annotations
 
-import json
-import os
-import subprocess
-import time
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator
-
-from ...agent_drivers.protocol import JsonlDecoder
 from ...sandbox.container import ContainerSandbox
-from ..contracts.identity import new_id
 from ..errors import Hold
 from .codex import ScopedCredential
+from .readonly_turn import ClaudeReadOnlyTurn, CodexReadOnlyTurn, ReadOnlyTurn
 
 # The workgraph node's task_class vocabulary (the repository's Work types, D-076).
 TASK_CLASSES = (
@@ -192,6 +190,24 @@ def _has_plan(draft: dict[str, Any]) -> bool:
     return bool(draft.get("acceptance") or draft.get("work_items") or draft.get("questions"))
 
 
+# TURN_* (readonly_turn.py) -> the planner codes callers and the plan record know
+TURN_CODES = {
+    "TURN_TIMEOUT": "PLANNER_TIMEOUT",
+    "TURN_FAILED": "PLANNER_FAILED",
+    "TURN_OUTPUT": "PLANNER_OUTPUT",
+}
+
+
+def _planner_hold(hold: Hold) -> Hold:
+    code = TURN_CODES.get(hold.code)
+    if code is None:
+        return hold
+    message = hold.message.replace("Read-only turn", "Planner").replace(
+        "its schema", "the plan schema"
+    )
+    return Hold(code, message, details=hold.details)
+
+
 class CodexPlanner:
     def __init__(
         self,
@@ -201,6 +217,8 @@ class CodexPlanner:
         *,
         model: str,
         timeout_seconds: int = 900,
+        effort: str | None = None,
+        cell_id: str = "codex-cli",
     ) -> None:
         self.sandbox, self.credential, self.model = sandbox, credential, model
         self.runs_root = Path(runs_root).absolute()
@@ -208,6 +226,11 @@ class CodexPlanner:
             raise Hold("PLANNER_ROOT", "Planner run storage cannot traverse links")
         self.runs_root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.timeout = timeout_seconds
+        self.effort, self.cell_id = effort, cell_id
+        self.turn: ReadOnlyTurn = CodexReadOnlyTurn(
+            sandbox, credential, self.runs_root, model=model, effort=effort, cell_id=cell_id,
+            timeout_seconds=timeout_seconds,
+        )  # fmt: skip
 
     def prompt(self, goal: str, app: str, verifiers: dict[str, str], mode: str = "work") -> str:
         listed = "\n".join(f"- {k}: {v}" for k, v in sorted(verifiers.items()))
@@ -218,11 +241,8 @@ class CodexPlanner:
         )
 
     def argv(self, prompt: str) -> list[str]:
-        return [
-            "codex", "--ask-for-approval", "never", "exec", "--json", "--model", self.model,
-            "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox",
-            "--output-schema", "/amplai-input/plan-schema.json", prompt,
-        ]  # fmt: skip
+        assert isinstance(self.turn, CodexReadOnlyTurn)
+        return self.turn.argv(prompt)
 
     def multi_prompt(self, goal: str, apps: dict[str, dict[str, str]]) -> str:
         lines = []
@@ -258,58 +278,18 @@ class CodexPlanner:
         mounts: dict[str, Path] | None = None,
     ) -> dict[str, Any]:
         schema = schema or plan_schema(list(verifiers))
-        run = self.runs_root / new_id("plan")
-        home = run / "home"
-        home.mkdir(parents=True, mode=0o700)
-        schema_path = run / "plan-schema.json"
-        schema_path.write_text(json.dumps(schema))
-        name = "amplai-plan-" + run.name[-20:].replace("_", "-").lower()
-        self.credential.seed(home)
-        started = time.time()
         try:
-            command = self.sandbox.command(
-                self.argv(prompt or self.prompt(goal, app, verifiers, mode)),
-                workspace,
-                name,
-                native_home=home,
-                readonly_mounts={"/amplai-input/plan-schema.json": schema_path, **(mounts or {})},
-                # read-only is the docker mount, not Codex's sandbox (D-073)
-                workspace_readonly=True,
+            result = self.turn.run(
+                prompt=prompt or self.prompt(goal, app, verifiers, mode),
+                schema=schema,
+                workspace=workspace,
+                mounts=mounts,
             )
-            try:
-                result = subprocess.run(
-                    command, capture_output=True, timeout=self.timeout, check=False
-                )
-            except subprocess.TimeoutExpired:
-                subprocess.run(["docker", "kill", name], capture_output=True, check=False)
-                raise Hold("PLANNER_TIMEOUT", "Planner exceeded its time budget") from None
-        finally:
-            subprocess.run(["docker", "rm", "-f", name], capture_output=True, check=False)
-            self.credential.release(home)
-        events = JsonlDecoder().feed(result.stdout, final=True)
-        messages = [
-            e["item"].get("text", "")
-            for e in events
-            if e.get("type") == "item.completed"
-            and e.get("item", {}).get("type") == "agent_message"
-        ]
-        usage = next(
-            (e.get("usage") for e in reversed(events) if e.get("type") == "turn.completed"), None
-        )
-        if result.returncode != 0 or not messages:
-            raise Hold(
-                "PLANNER_FAILED",
-                "Planner turn did not complete",
-                details={"rc": result.returncode, "stderr": result.stderr.decode()[-400:]},
-            )
-        try:
-            draft = json.loads(messages[-1])
-        except ValueError:
-            raise Hold("PLANNER_OUTPUT", "Planner reply is not JSON") from None
-        errors = list(Draft202012Validator(schema).iter_errors(draft))
-        if errors or not _has_plan(draft):
+        except Hold as hold:
+            raise _planner_hold(hold) from None
+        if not _has_plan(result.output):
             raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
-        return {"draft": draft, "usage": usage, "seconds": round(time.time() - started, 1)}
+        return {"draft": result.output, "usage": result.usage, "seconds": result.seconds}
 
 
 class ClaudePlanner(CodexPlanner):
@@ -330,6 +310,8 @@ class ClaudePlanner(CodexPlanner):
         *,
         model: str,
         timeout_seconds: int = 900,
+        effort: str | None = None,
+        cell_id: str = "claude-cli",
     ) -> None:
         if not token:
             raise Hold("AUTH_TOKEN_REQUIRED", "Claude planning needs CLAUDE_CODE_OAUTH_TOKEN")
@@ -339,70 +321,12 @@ class ClaudePlanner(CodexPlanner):
             raise Hold("PLANNER_ROOT", "Planner run storage cannot traverse links")
         self.runs_root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.timeout = timeout_seconds
+        self.effort, self.cell_id = effort, cell_id
+        self.turn = ClaudeReadOnlyTurn(
+            sandbox, token, self.runs_root, model=model, effort=effort, cell_id=cell_id,
+            tools=self.READ_ONLY_TOOLS, timeout_seconds=timeout_seconds,
+        )  # fmt: skip
 
     def claude_argv(self, prompt: str, schema: dict[str, Any]) -> list[str]:
-        return [
-            "claude", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
-            "--no-chrome", "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--model", self.model, "--allowedTools", self.READ_ONLY_TOOLS,
-            "--json-schema", json.dumps(schema, separators=(",", ":")),
-        ]  # fmt: skip
-
-    def draft(
-        self,
-        goal: str,
-        app: str,
-        verifiers: dict[str, str],
-        workspace: Path,
-        *,
-        mode: str = "work",
-        schema: dict[str, Any] | None = None,
-        prompt: str | None = None,
-        mounts: dict[str, Path] | None = None,
-    ) -> dict[str, Any]:
-        schema = schema or plan_schema(list(verifiers))
-        run = self.runs_root / new_id("plan")
-        home = run / "home"
-        home.mkdir(parents=True, mode=0o700)
-        name = "amplai-plan-" + run.name[-20:].replace("_", "-").lower()
-        started = time.time()
-        env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.token}
-        try:
-            command = self.sandbox.command(
-                self.claude_argv(prompt or self.prompt(goal, app, verifiers, mode), schema),
-                workspace,
-                name,
-                env_names=["CLAUDE_CODE_OAUTH_TOKEN"],
-                native_home=home,
-                workspace_readonly=True,
-                readonly_mounts=mounts or None,
-            )
-            try:
-                result = subprocess.run(
-                    command, capture_output=True, timeout=self.timeout, check=False, env=env
-                )
-            except subprocess.TimeoutExpired:
-                subprocess.run(["docker", "kill", name], capture_output=True, check=False)
-                raise Hold("PLANNER_TIMEOUT", "Planner exceeded its time budget") from None
-        finally:
-            subprocess.run(["docker", "rm", "-f", name], capture_output=True, check=False)
-        events = JsonlDecoder().feed(result.stdout, final=True)
-        final = next((e for e in reversed(events) if e.get("type") == "result"), None)
-        if result.returncode != 0 or not final or final.get("is_error"):
-            raise Hold(
-                "PLANNER_FAILED",
-                "Planner turn did not complete",
-                details={"rc": result.returncode, "stderr": result.stderr.decode()[-400:]},
-            )
-        draft = final.get("structured_output")
-        if not isinstance(draft, dict):
-            raise Hold("PLANNER_OUTPUT", "Planner reply has no structured output")
-        errors = list(Draft202012Validator(schema).iter_errors(draft))
-        if errors or not _has_plan(draft):
-            raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
-        usage = final.get("usage") or {}
-        return {
-            "draft": draft,
-            "usage": {k: usage.get(k) for k in ("input_tokens", "output_tokens")},
-            "seconds": round(time.time() - started, 1),
-        }
+        assert isinstance(self.turn, ClaudeReadOnlyTurn)
+        return self.turn.argv(prompt, schema)

@@ -31,6 +31,7 @@ from ...sandbox.egress import EgressProfile, load_qualification
 from ..contracts.identity import now
 from ..errors import Hold
 from ..storage.store import Scope, Store
+from .cells import LEGACY_EFFORT, DispatchOptions, model_slug
 
 DRIVER_ID = "codex-cli"
 # provider -> driver id / account kind (Work 019 E: Claude is a second qualified driver)
@@ -100,7 +101,39 @@ class ScopedCredential:
         target.unlink()
 
 
-class SeededCodexPort(CliPort):
+class OptionsCliPort(CliPort):
+    """A ``CliPort`` that forwards ``DispatchOptions`` to its driver (Work 033 S4, §3.4).
+
+    ``CliPort`` (``agent_drivers/ports.py``) and ``AgentDriverPort`` stay unchanged: a port
+    without ``accepts_options`` receives no options, and the worker holds non-default options
+    for it (``DRIVER_OPTIONS_UNSUPPORTED``).
+    """
+
+    accepts_options = True
+
+    def prepare(
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        *,
+        options: DispatchOptions | None = None,
+    ) -> dict[str, Any]:
+        return self.driver.prepare(dispatch, prompt, workspace, options=options)
+
+    def resume(
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        checkpoint: dict[str, Any],
+        *,
+        options: DispatchOptions | None = None,
+    ) -> str:
+        return self.driver.resume(dispatch, prompt, workspace, checkpoint, options=options)
+
+
+class SeededCodexPort(OptionsCliPort):
     def __init__(self, driver: CodexCliDriver, credential_home: Path | ScopedCredential) -> None:
         super().__init__(driver)
         self.credential = (
@@ -114,10 +147,17 @@ class SeededCodexPort(CliPort):
         self.driver.journal._path(dispatch_id)  # validate the id before joining a path
         return self.driver.native_root / dispatch_id
 
-    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
+    def prepare(
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        *,
+        options: DispatchOptions | None = None,
+    ) -> dict[str, Any]:
         home = self._dispatch_home(dispatch["dispatch_id"])
         self.credential.seed(home)
-        return self.driver.prepare(dispatch, prompt, workspace, native_home=home)
+        return self.driver.prepare(dispatch, prompt, workspace, native_home=home, options=options)
 
     def _release(self, handle: str) -> None:
         home = self._resumed.pop(handle, None) or self._dispatch_home(handle)
@@ -130,13 +170,19 @@ class SeededCodexPort(CliPort):
         return result
 
     def resume(
-        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        checkpoint: dict[str, Any],
+        *,
+        options: DispatchOptions | None = None,
     ) -> str:
         """Seed the credential into the paused session's home, then resume it exactly."""
         home = Path(checkpoint["native_home"])
         self.credential.seed(home)
         try:
-            handle = self.driver.resume(dispatch, prompt, workspace, checkpoint)
+            handle = self.driver.resume(dispatch, prompt, workspace, checkpoint, options=options)
         except Exception:
             self.credential.release(home)
             raise
@@ -260,8 +306,20 @@ def install_codex_profile(
     scope: Scope,
     inputs: CodexProfileInputs,
     capabilities: list[dict[str, Any]],
+    *,
+    effort: str = LEGACY_EFFORT,
+    legacy: bool = True,
+    own_driver_record: bool = False,
 ) -> dict[str, dict[str, Any]]:
-    """Write environment → qualification → driver-capabilities → model-profile records."""
+    """Write environment → qualification → driver-capabilities → model-profile records.
+
+    Per cell (Work 033 S4, interfaces.md §2.4): ``effort`` is the model profile's
+    ``reasoning_profile``; a non-legacy cell's model profile is ``<provider>-<model>-<effort>-
+    <image12>``. ``own_driver_record`` gives a model other than the driver's legacy model its own
+    ``driver-capabilities`` id ``<driver_id>-<image12>-<model_slug>``, so two models with
+    different qualification reports never alternate revisions of one id. The defaults write
+    exactly the records of a legacy cell (unchanged ids and values).
+    """
     from ..contracts.registry import Contracts
 
     contracts = Contracts()
@@ -303,9 +361,14 @@ def install_codex_profile(
         "maturity": "qualified",
         "probed_at": measured["checked_at"] or now(),
     }
-    driver_ref = put("driver-capabilities", f"{inputs.driver_id}-{image12}", driver)
+    driver_id = f"{inputs.driver_id}-{image12}"
+    if own_driver_record:
+        driver_id += "-" + model_slug(inputs.model)
+    driver_ref = put("driver-capabilities", driver_id, driver)
     # OpenCode models are "<provider>/<model>"; a record id has no "/" (common.schema $defs/id)
     model_id = f"{inputs.provider}-{inputs.model}".replace("/", ".")
+    if not legacy:
+        model_id += "-" + effort
     model = {
         "schema_version": "3.0.0",
         "profile_id": model_id,
@@ -313,7 +376,8 @@ def install_codex_profile(
         "provider_model_id": inputs.model,
         "model_version_policy": "pinned",
         "driver_profile_ref": driver_ref,
-        "reasoning_profile": "provider-default",
+        # the cell's effort; "provider-default" sends no effort flag (§2.4)
+        "reasoning_profile": effort,
         "data_classes_allowed": list(inputs.data_classes),
         "required_capabilities": [],
         "context_limit_tokens": 200000,
@@ -360,7 +424,7 @@ def build_opencode_port(
     )
 
 
-def build_claude_port(inputs: CodexProfileInputs, journal_root: Path, token: str) -> CliPort:
+def build_claude_port(inputs: CodexProfileInputs, journal_root: Path, token: str) -> OptionsCliPort:
     """Claude CLI in the same qualified container; the OAuth token is passed by env name."""
     measured = measured_qualification(inputs)
     sandbox = ContainerSandbox(container_profile(inputs))
@@ -373,7 +437,7 @@ def build_claude_port(inputs: CodexProfileInputs, journal_root: Path, token: str
         environment={"CLAUDE_CODE_OAUTH_TOKEN": token},
         auth="oauth_token",
     )
-    return CliPort(driver)
+    return OptionsCliPort(driver)
 
 
 def build_codex_port(
