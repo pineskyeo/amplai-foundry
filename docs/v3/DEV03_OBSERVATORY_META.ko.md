@@ -108,7 +108,10 @@ timeout, 연결 유실, 비정상 receipt는 외부 실행이 끝났다는 증�
 - `reject`는 draft, screened, offline_evaluated, promotion_pending의 후보를 끝낸다. 사유가 필수이고 검토자와 직전 상태를 후보 기록에 남긴다. 끝난 후보는 다시 움직이지 않는다.
 - 오프라인 시험 실행기는 corpus 과제 하나를 실제 goal 하나로 돌린다(`src/amplai_foundry/meta_harness/local_executor.py`, Work 030 S4). 계획 단계의 모델 대신 과제의 고정 contract를 쓰고, 고정한 base commit과 고정한 composition(설치된 것 또는 그 class-A 후보)에서 시작하며, 게시는 끈다. 결과는 검증을 통과한 변경의 scratch 사본에 agent가 못 본 hidden 시험을 얹어 판정한다. 답을 못 낸 시도(driver 오류, 멈춘 goal)는 `success=None`이라 후보의 실패로 세지 않는다.
 - corpus는 `specs/030-meta-harness-live/corpus/`의 demo-app 과제 20개(작은 7, 중간 7, 큰 6)다. 각 과제는 base에서 hidden 시험이 실패하고 기준 해답에서 통과해야 하며(`scripts/corpus_check.py`), 과제 문구에는 hidden 시험 내용을 넣지 않는다.
-- 실험 승인·실행 정책(실행기 자격)은 아직 고정하지 않았다. 실험 자체(S7)와 운영자용 `amplai meta` 명령(S6)도 아직 없다.
+- canary 정책은 선택 항목 `cost_basis`(`compared` 기본, `not_compared`)를 가진다(D-092, Work 030 S5). `not_compared` 이면 canary 결과의 비용이 unknown 이어도 되고 usage 가 `estimated` 여도 된다. 비용은 예약값을 유지하고 0 으로 세지 않으며, token·safety 카운터·receipt 결합·success 는 그대로 필수다. 기본 동작은 그대로다. 구독 계정 driver 는 비용을 모르기 때문이다(Codex, Claude 는 estimated).
+- canary 어댑터(`src/amplai_foundry/meta_harness/local_canary.py`)는 시험 결과를 canary 가 받는 형식으로 바꾼다. 답이 없는 시도는 어느 쪽으로도 세지 않고 canary 를 uncertain 으로 멈춘다.
+- 운영자용 명령은 `amplai meta`(Work 030 S6, `src/amplai_foundry/runtime/meta_cli.py`)다. 제안, 검사, 실험 승인·실행, canary 승인·실행, 승격, 되돌리기, 거절, 중단, 상태가 각각 하나의 명령이다. 단계를 묶는 명령은 없고, 순서에 맞지 않는 단계는 `META_STATE` 로 거절된다.
+- 실험 판정은 사전 등록한 비열등성이다. 성공률이 천장이므로 개선을 주장하지 않는다(D-093). 실제 진화 실행(S7)은 아직 하지 않았다.
 
 ## 7. 네트워크 없이 실제 파이프라인 재현
 
