@@ -339,3 +339,26 @@ holdout query counter.
 
 Cheaper models as low fidelity are not used (no evidence; transfer is limited, HarnessDev).
 Continuous nightly operation of this combination has no published evidence: the first nights are a pilot.
+
+## 10. Per-Layer Decisions (operator, 2026-09-30)
+
+The router does not pick one fixed combination up front. Each layer has its own decider, called at the
+point in the goal where that layer's inputs exist:
+
+| Decision point | Layer | Inputs available then | Example choices |
+|---|---|---|---|
+| intake | L1 interpretation | goal text, app, history of similar goals | ask back or proceed; contract granularity |
+| after plan | L2 structure, L3 roles, L8 limits | planned files, acceptance items, task class, risk | single vs workgraph vs best-of-n; which cell per role; limit values |
+| dispatch | L4 context, L5 agent options | chosen strategy and cell, repo facts | which context parts; max turns, tools |
+| on failure | L6 loop control, L2 cascade | verdict details, attempt count, cost so far | retry with which feedback, escalate cell, stop |
+| before final verification | L7 intermediate checks | changed files | which fast checks first |
+
+- A decider is a component with versions. Its kind is either a **rule table** fitted from measurements
+  (default) or a **judge**: a model answering typed questions (yes/no, choice, score) — a candidate for a
+  cheap judge such as Jev (`components-draft.md` §D), qualified like any judge before use.
+- Each decider is measured on its own decision (per-layer metrics: e.g. ask-back precision for L1,
+  regret per strategy choice for L2, escalation value for L6) and changed as its own candidate.
+- Because layer effects do not add (AHE, HarnessEvo), a decider change is also confirmed on the full
+  goal outcome before promotion.
+- A decision made after dispatch never changes the running composition (design 16 §2); on-failure
+  decisions start a new attempt.
