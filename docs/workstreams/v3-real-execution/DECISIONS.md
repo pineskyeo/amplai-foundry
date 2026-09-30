@@ -416,3 +416,34 @@
   Decision 으로 이 항목을 supersede 한다.
 - Open: broker 가 성립하지 않으면 accepted risk 를 유지할지, 해당 driver 를 격리된 VM 로 옮길지는 정하지 않았다.
 
+## D-092 — A Canary May Declare That Cost Is Not Compared
+
+- Status: accepted (운영자 선택 2026-09-30: 추천대로)
+- Date: 2026-09-30
+- Decision: canary 정책은 선택 항목 `cost_basis` 를 가진다(`compared` 기본, `not_compared`). `not_compared` 이면
+  canary 결과의 cost 가 unknown 이어도 되고 usage 는 `measured` 또는 `estimated` 여도 된다. cost 는 예약값을 그대로
+  유지하고(0 으로 세지 않는다) 누적 cost 상한 검사는 하지 않는다. token, safety, unknown effect 카운터와 receipt
+  결합, success 는 그대로 필수다. 결과가 주장한 `usage_status` 는 receipt 가 그대로 결합해야 한다. 기본값
+  (`compared`)의 동작은 바뀌지 않는다: 모든 카운터가 알려진 정수이고 usage 는 `measured` 다.
+- Reason: 이 환경의 driver 는 구독 계정이라 Codex 비용을 알 수 없고(D-085) Claude 는 `estimated` 다(D-084).
+  canary 코드는 비용이 정수로 알려져 있고 `usage_status` 가 `measured` 인 결과만 받는다
+  (`src/amplai_foundry/meta_harness/service.py` canary_trial, 수정 전). 비용을 0 으로 적으면 사실이 아닌 값을 알려진
+  값으로 기록하는 것이다. 분석 쪽은 D-088 이 이미 같은 방식으로 풀었다.
+- Evidence: `tests/v3/test_rc11_canary_cost_basis.py` 10개(기본 동작 유지, unknown 비용 수용, token·usage class·
+  receipt 결합·success 는 그대로 필수, 완주 후 승격 가능). 기존 dev03 canary 시험 55개는 그대로 통과한다.
+
+## D-093 — The First Real Evolution Claims No Improvement, Only Safe Change
+
+- Status: accepted (운영자 선택 2026-09-30: 추천대로)
+- Date: 2026-09-30
+- Decision: Work 030 S7 의 실제 진화는 성공률의 **비열등성**으로 판정하고 "성능이 좋아졌다"고 주장하지 않는다.
+  후보는 token 절감처럼 실제 이득이 기대되는 class A prompt 변경으로 고른다. token 과 시간은 탐색용 수치로 함께
+  보고하고 판정 기준으로 쓰지 않는다. 일부러 나쁜 prompt 를 negative control 로 넣어 fail 이나 inconclusive 로 끝나는지
+  확인한다. 분석 계획은 D-089 의 OD-4·OD-5(성공률만, `confirmatory`, margin 0.25, confidence 0.95)를 그대로 쓴다.
+- Reason: 실제 Codex 로 corpus 20개를 baseline 으로 한 번씩 돌렸을 때 20개 모두 통과했다
+  (`specs/030-meta-harness-live/runs/calibration-codex-1.json`, 입력 약 203만 token, 17분). 성공률이 천장이면 후보가
+  성공률을 높였다는 결과는 나올 수 없다. 나올 수 있는 것은 나빠지지 않았다는 결과와 나쁜 변경이 걸러진다는 결과다.
+  과제당 1회라 표본 1개이고 과제별 통과율은 아니다.
+- Open: 성공률 개선을 실제로 보이려면 baseline 통과율이 60~80% 인 어려운 과제가 필요하다. 그 corpus 는 만들지
+  않았다(스펙을 완전하게 유지하면서 어렵게 만들기 어렵다).
+

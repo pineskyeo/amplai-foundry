@@ -102,6 +102,37 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 4. 실패하면 실패 출력과 함께 다시 시도한다. 첫 시도 포함 최대 3번, 승인부터 30분.
 5. 모두 통과하면 `amplai/<goal>` branch 를 push 하고 draft PR 을 만든다. merge 는 사람이 한다.
 
+## 메타하네스: 구현자 prompt 를 시험해 바꾸기 (`amplai meta`)
+
+구현자(IMPLEMENTER) prompt 를 바꾼 후보를 실제 driver 로 시험하고, 나쁘지 않을 때만 새 goal 에 쓰게 한다.
+각 단계는 운영자가 따로 내리는 명령이다. 여러 단계를 한 번에 돌리는 명령은 없다. 제안은 `amplai-meta-proposer`
+신원이 하고, 나머지는 사람 운영자로 실행한다. 제안자는 검토·승인·승격을 못 한다.
+
+명령은 배포를 프로세스 안에서 직접 연다. 그래서 `amplai ops local-serve` 를 멈추거나 별도 배포
+(`amplai ops local-init --home ~/.amplai/local-smoke ...`)에서 실행한다. 두 프로세스가 한 store 를 열면 안 된다.
+
+| 순서 | 명령 | 하는 일 |
+|---|---|---|
+| 1 | `amplai meta propose --suffix S --prompt-file F --hypothesis … --benefit … --observation … --risk …` | 후보 prompt(파일의 각 줄)를 제안한다. `{app_id}`, `{base_commit}` 외의 자리표시자는 거절한다 |
+| 2 | `amplai meta screen ID` | 보호된 표면을 건드리지 않았는지 검사한다 |
+| 3 | `amplai meta approve-experiment ID --max-tokens N --max-wall-seconds N` | corpus 와 사전 등록 분석(비열등성, 성공률만)을 고정하고 실험을 승인한다 |
+| 4 | `amplai meta run-experiment ID --per-trial-tokens N --basis … --evidence …` | 모든 시도를 실제 goal 로 돌리고(게시는 끔) 판정을 기록한다 |
+| 5 | `amplai meta approve-canary ID --tasks a,b,c --max-trial-tokens N` | 낮은 위험 과제 몇 개로 canary 를 승인·시작한다 |
+| 6 | `amplai meta run-canary ID …` | canary 과제를 후보로 돌리고 모두 통과하면 승격을 요청한다 |
+| 7 | `amplai meta promote ID` | 활성 release 를 후보로 옮긴다. 새 plan 부터 후보 prompt 를 쓰고 실행 중인 goal 은 그대로다 |
+| | `amplai meta rollback ID` | 활성 release 를 승격 전 release 로 되돌린다 |
+| | `amplai meta reject ID --reason …` / `abort ID --reason …` / `status ID` | 후보를 끝낸다 / 승인된 실험·canary 를 멈춘다 / 상태를 본다 |
+
+알아 둘 점:
+
+- 실제 Codex 시도는 한 번에 입력 약 9만 token 을 쓰고 40 시도는 30분 안팎이 걸린다(측정). 구독 사용량이 든다.
+- 이 실험이 보이는 것은 **성공률이 나빠지지 않았다**(비열등성, margin 0.25, 신뢰도 0.95)이다. 성공률이 올랐다고
+  주장하지 않는다. baseline 이 corpus 20개를 모두 통과했기 때문이다 (D-093).
+- 시도 하나라도 답을 못 내면(driver 오류 등) 판정은 `inconclusive` 다. 실패로도 통과로도 세지 않는다.
+- canary 과제는 운영자의 실제 프로젝트 goal 이 아니라 corpus 과제를 실제 goal 로 돌린 것이다. 비용은 비교하지 않고
+  (D-092) run 수·token·시간으로 상한을 건다.
+- 모든 승인은 그 행동과 대상에 묶인 기록이고 사람 운영자만 발급한다. 후보가 통과하지 못하면 다음 단계 명령이 거절된다.
+
 ## 보장과 한계
 
 - 사용자 checkout(현재 branch, index, 커밋 안 한 파일)과 `main` 은 어떤 경우에도 쓰지 않는다. branch 는

@@ -3,6 +3,10 @@
     .venv/bin/python scripts/meta_smoke.py --config ~/.amplai/local-smoke/local.json \\
         --tasks s01-semver-parse,s05-truncate --out specs/030-meta-harness-live/runs/smoke.json
 
+``--tasks all`` runs the whole corpus. ``--arms baseline`` runs the installed composition only (a
+calibration of which tasks discriminate, before any candidate exists). The report is rewritten after
+every trial, so an interrupted run keeps what it finished.
+
 Use a deployment of its own (``amplai ops local-init --home ~/.amplai/local-smoke ...``): trials are
 goals in that deployment's store, so they never appear among the operator's real goals and never
 share a store epoch with the running server. Publication is off. Each task runs once on the
@@ -50,16 +54,32 @@ def arms(dep: LocalProductDeployment, app: str, driver: str) -> dict[str, dict[s
     return {"baseline": base_ref, "control": control}
 
 
+def write(out: Path, corpus: local_corpus.Corpus, driver: str, rows: list[dict[str, Any]]) -> None:
+    report = {
+        "kind": "meta_smoke",
+        "corpus_id": corpus.corpus_id,
+        "base_commit": corpus.base_commit,
+        "driver": driver,
+        "trials": rows,
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--tasks", required=True, help="comma-separated corpus task ids")
     ap.add_argument("--driver", default="codex-cli")
+    ap.add_argument("--arms", default="baseline,control", help="baseline, control or both")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args(argv)
 
     corpus = local_corpus.load(CORPUS)
-    ids = args.tasks.split(",")
+    ids = [t.task_id for t in corpus.tasks] if args.tasks == "all" else args.tasks.split(",")
+    wanted = args.arms.split(",")
+    if not set(wanted) <= {"baseline", "control"}:
+        raise SystemExit("--arms takes baseline and/or control")
     for task_id in ids:
         corpus.task(task_id)  # unknown ids stop here, before anything runs
     dep = LocalProductDeployment(args.config, start_loop=False)
@@ -70,33 +90,38 @@ def main(argv: list[str]) -> int:
         rows: list[dict[str, Any]] = []
         for repeat, task_id in enumerate(ids):
             for arm, ref in pinned.items():
+                if arm not in wanted:
+                    continue
                 began = time.monotonic()
-                obs = executor(ref, {"case_id": task_id}, repeat, "sandbox_rerun")
-                trial = executor.trials[-1]
-                row = {
-                    "task_id": task_id,
-                    "arm": arm,
-                    "success": obs.success,
-                    "goal_status": trial.get("goal_status"),
-                    "goal_reason": trial.get("goal_reason"),
-                    "hidden_passed": trial.get("hidden_passed"),
-                    "visible_passed": trial.get("visible_passed"),
-                    "input_tokens": obs.input_tokens,
-                    "output_tokens": obs.output_tokens,
-                    "usage_status": obs.usage_status,
-                    "seconds": round(time.monotonic() - began, 1),
-                }
+                try:
+                    obs = executor(ref, {"case_id": task_id}, repeat, "sandbox_rerun")
+                except Exception as exc:  # one task's fault must not lose the other trials
+                    row = {
+                        "task_id": task_id,
+                        "arm": arm,
+                        "success": None,
+                        "goal_status": "error",
+                        "goal_reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:300],
+                        "seconds": round(time.monotonic() - began, 1),
+                    }
+                else:
+                    trial = executor.trials[-1]
+                    row = {
+                        "task_id": task_id,
+                        "arm": arm,
+                        "success": obs.success,
+                        "goal_status": trial.get("goal_status"),
+                        "goal_reason": trial.get("goal_reason"),
+                        "hidden_passed": trial.get("hidden_passed"),
+                        "visible_passed": trial.get("visible_passed"),
+                        "input_tokens": obs.input_tokens,
+                        "output_tokens": obs.output_tokens,
+                        "usage_status": obs.usage_status,
+                        "seconds": round(time.monotonic() - began, 1),
+                    }
                 rows.append(row)
                 print(json.dumps(row), flush=True)
-        report = {
-            "kind": "meta_smoke",
-            "corpus_id": corpus.corpus_id,
-            "base_commit": corpus.base_commit,
-            "driver": args.driver,
-            "trials": rows,
-        }
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+                write(args.out, corpus, args.driver, rows)
     finally:
         dep.close()
     return 0

@@ -449,6 +449,8 @@ class MetaHarness:
         for k in ("max_cost_microunits", "max_trial_cost_microunits", "max_trial_tokens"):
             if type(p[k]) is not int or p[k] < 0:
                 raise Hold("CANARY_POLICY", "Canary budgets must be finite nonnegative integers")
+        if p.get("cost_basis", "compared") not in {"compared", "not_compared"}:
+            raise Hold("CANARY_POLICY", "cost_basis is compared or not_compared")
         if (
             p["project_opt_in"] is not True
             or p["abort_on_safety_failure"] is not True
@@ -599,6 +601,7 @@ class MetaHarness:
                 "A prior-owner canary must reconcile before new execution",
             )
         policy = self._canary_policy(scope, head["data"]["canary_policy_ref"])
+        compared = policy.get("cost_basis", "compared") == "compared"
         if self.store.clock() - head["data"]["canary_started_epoch"] >= policy["max_wall_seconds"]:
             return self.abort(actor, proposal_id, "wall_budget")
         proposal = self.store.get(scope, "harness-change-proposal", head["data"]["proposal_ref"])
@@ -620,9 +623,10 @@ class MetaHarness:
                     "CANARY_CONCURRENCY", "Another admitted canary occupies the available slot"
                 )
             reserved_cost = len(pending) * policy["max_trial_cost_microunits"]
-            spent = sum(t["cost_microunits"] for t in prior)
+            spent = sum(t["cost_microunits"] for t in prior) if compared else 0
             if (
-                spent + reserved_cost + policy["max_trial_cost_microunits"]
+                compared
+                and spent + reserved_cost + policy["max_trial_cost_microunits"]
                 > policy["max_cost_microunits"]
             ):
                 raise Hold("CANARY_COST", "Reserve the worst-case trial cost before execution")
@@ -675,17 +679,29 @@ class MetaHarness:
             for key in ("success",):
                 if type(result.get(key)) is not bool:
                     raise RuntimeFault("CANARY_RESULT", "Canary success must be boolean")
-            for key in (
-                "safety_failures",
-                "unknown_effects",
-                "cost_microunits",
-                "input_tokens",
-                "output_tokens",
-            ):
+            # D-092: when the policy does not compare cost, the cost may be unknown and the usage
+            # estimated (a subscription driver); tokens, safety counters and the receipt stay
+            # required. The default is unchanged: every counter known and usage measured.
+            usage_status = result.get("usage_status", "measured")
+            counters = ["safety_failures", "unknown_effects", "input_tokens", "output_tokens"]
+            if compared:
+                counters.append("cost_microunits")
+                usage_allowed = {"measured"}
+            else:
+                usage_allowed = {"measured", "estimated"}
+                if result.get("cost_microunits") is not None and (
+                    type(result["cost_microunits"]) is not int or result["cost_microunits"] < 0
+                ):
+                    raise RuntimeFault(
+                        "CANARY_RESULT", "Canary cost is a nonnegative integer or unknown"
+                    )
+            for key in counters:
                 if type(result.get(key)) is not int or result[key] < 0:
                     raise RuntimeFault(
                         "CANARY_RESULT", "Canary counters must be nonnegative known integers"
                     )
+            if usage_status not in usage_allowed:
+                raise RuntimeFault("CANARY_RESULT", "Canary usage classification is not accepted")
             observed = read_receipt(
                 self.artifacts.read(scope, result["artifact_ref"], trusted=True)
             )
@@ -706,7 +722,7 @@ class MetaHarness:
                     "composition_ref": proposal["candidate_ref"],
                     "task_id": task_id,
                     "mode": "canary",
-                    "usage_status": "measured",
+                    "usage_status": usage_status,
                     "scope": scope.wire(),
                     "risk_class": "low",
                     "target_binding_ref": policy["task_binding_refs"][task_id],
@@ -737,6 +753,7 @@ class MetaHarness:
                 tokens=result["input_tokens"] + result["output_tokens"] if result else None,
                 cost=result["cost_microunits"] if result else None,
                 uncertain=result is None or bool(result["unknown_effects"]),
+                cost_required=compared,
             )
             if settle["overrun"]:
                 issue = issue or "canary_budget_overrun"

@@ -39,6 +39,8 @@ On this Mac, V3 improves its own harness on real runs:
 | OD-4 | Cost basis | Success rate only. Subscription accounts give no known cost (D-085; Claude is `estimated`, D-084), so the analysis plan declares cost not compared and the budget counts runs |
 | OD-5 | Statistics | 20 tasks × 1 repeat per arm, non-inferiority margin 0.25, confidence 0.95, purpose `confirmatory` |
 | OD-6 | Roles | V3's meta-proposer identity proposes; the human operator screens, approves the experiment and canary, and promotes (proposer ≠ reviewer, `src/amplai_foundry/meta_harness/service.py:101-109`) |
+| OD-7 | First evolution claim (D-093) | Non-inferiority on success rate plus a negative control; no improvement is claimed. The baseline passes 20 of 20 corpus tasks, so the success rate is at its ceiling |
+| OD-8 | Canary cost basis (D-092) | A canary policy may declare `cost_basis: not_compared`, mirroring D-088: unknown cost and estimated usage are accepted, tokens and receipts are still required |
 
 ## Constraints (verified in code)
 

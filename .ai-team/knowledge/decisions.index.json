@@ -463,6 +463,24 @@
         "src/amplai_foundry/agent_drivers/cli.py",
         "docs/v3/USING_AMPLAI_WORK.ko.md"
       ]
+    },
+    {
+      "id": "D-092",
+      "status": "active",
+      "title": "A canary may declare that cost is not compared",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "src/amplai_foundry/meta_harness/service.py"
+      ]
+    },
+    {
+      "id": "D-093",
+      "status": "active",
+      "title": "The first real evolution claims no improvement, only safe change",
+      "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
+      "scope": [
+        "specs/030-meta-harness-live/spec.md"
+      ]
     }
   ]
 }
