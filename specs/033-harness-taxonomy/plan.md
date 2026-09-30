@@ -406,3 +406,19 @@ Per layer (v1 priors reproduce today; the other options enter as measurements al
 
 Judge kind: the same inputs as typed questions to a qualified judge model (e.g. "is this goal ambiguous
 in a way the repository cannot answer? yes/no with probability"); its answers pass through the same step 3.
+
+### 10.3 The Decision Method Is A Component Too (operator, 2026-09-30)
+
+§10.2 is decision method v1, not a fixed rule. Each decider's method is a versioned component with four
+swappable parts; a changed part is a candidate evaluated like any other (per-layer metric, then full-goal
+confirmation):
+
+| Part | v1 | Alternatives |
+|---|---|---|
+| features | the inputs listed per layer | added or removed features (e.g. repo history, text embeddings of the goal) |
+| estimator | per-bucket success rate and cost with partial pooling | hierarchical Bayesian model; IRT / block-additive surrogate over all runs (`research-continuous-search.md` §Surrogates); judge answers |
+| selection rule | not credibly worse than the best, then lowest cost per solved | maximise success; utility = success − λ·cost; risk-weighted by task risk |
+| fallback | today's behaviour below the minimum samples | coarser bucket; judge model; operator question |
+
+What stays fixed: a decider cannot read validation or holdout results, cannot explore on production goals,
+and its evaluation runs in the evaluator (class C), not inside the decider.
