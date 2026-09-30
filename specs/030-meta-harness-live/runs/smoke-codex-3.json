@@ -1,0 +1,60 @@
+{
+  "kind": "meta_smoke",
+  "corpus_id": "demo-app-implementer-v1",
+  "base_commit": "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b",
+  "driver": "codex-cli",
+  "trials": [
+    {
+      "task_id": "s01-semver-parse",
+      "arm": "baseline",
+      "success": true,
+      "goal_status": "verified",
+      "goal_reason": null,
+      "hidden_passed": true,
+      "visible_passed": true,
+      "input_tokens": 87653,
+      "output_tokens": 1315,
+      "usage_status": "measured",
+      "seconds": 42.4
+    },
+    {
+      "task_id": "s01-semver-parse",
+      "arm": "control",
+      "success": true,
+      "goal_status": "verified",
+      "goal_reason": null,
+      "hidden_passed": true,
+      "visible_passed": true,
+      "input_tokens": 100585,
+      "output_tokens": 1220,
+      "usage_status": "measured",
+      "seconds": 43.7
+    },
+    {
+      "task_id": "s05-truncate",
+      "arm": "baseline",
+      "success": true,
+      "goal_status": "verified",
+      "goal_reason": null,
+      "hidden_passed": true,
+      "visible_passed": true,
+      "input_tokens": 87868,
+      "output_tokens": 1021,
+      "usage_status": "measured",
+      "seconds": 37.7
+    },
+    {
+      "task_id": "s05-truncate",
+      "arm": "control",
+      "success": true,
+      "goal_status": "verified",
+      "goal_reason": null,
+      "hidden_passed": true,
+      "visible_passed": true,
+      "input_tokens": 86762,
+      "output_tokens": 1126,
+      "usage_status": "measured",
+      "seconds": 37.7
+    }
+  ]
+}
