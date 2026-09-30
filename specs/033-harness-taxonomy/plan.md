@@ -377,3 +377,32 @@ per task (one task = one sample), so specialisation follows the evidence:
 - **Per-app parts** (memory notes, environment facts) are specific by construction; they are measured on
   that app's tasks.
 - The dashboard shows, for each bucket, whether its choice is specialised or pooled and on how many samples.
+
+### 10.2 Decision Logic
+
+Common procedure for every decider (rule-table kind):
+
+1. Build the feature vector available at its decision point; find the finest bucket with enough samples
+   (partial pooling, §10.1; minimum samples per option is a policy value).
+2. For each option: success rate with interval and cost per solved task from the measured table.
+3. Keep options not credibly worse than the best (the policy's non-inferiority margin); choose the lowest
+   expected cost per solved task = cost per attempt / success rate; ties → simpler option.
+4. Too few samples → the prior (today's behaviour). Production goals never explore; exploration happens only
+   in nightly experiments.
+5. Record the decision, the bucket, the evidence used and whether the prior was used.
+
+Per layer (v1 priors reproduce today; the other options enter as measurements allow):
+
+| Layer | Inputs | Options | v1 prior | Per-layer metric |
+|---|---|---|---|---|
+| L1 interpretation | goal text features (missing target, conflicting constraints, unknown terms), similar-goal history | ask back / proceed with stated assumptions; contract granularity | proceed unless the planner lists questions (today, `planner_codex.py:166`) | ask-back precision and recall on ambiguity tasks |
+| L2 structure | planned files, acceptance items, apps, task class, risk | the ten strategies | single + repair | regret vs best strategy in hindsight |
+| L3 roles | chosen strategy, task class, risk | cell per role (planner, executor, reviewer, proposer) | today's router order, same cell for all | cost per solved by role assignment |
+| L4 context | strategy, repo size, prior failures in this goal | env bootstrap, memory notes, retrieval of files/decisions (each on/off/version) | all off (today's prompt) | success delta with vs without each part (ablation) |
+| L5 agent options | cell, strategy | max turns, tool set, appended system prompt | driver defaults | success, turns, tokens |
+| L6 on failure | verdict details, attempt number, cost so far, remaining budget | retry with feedback form F, fresh vs continue, escalate cell (cascade), stop | today's repair form and attempt count | value of the next attempt (success gained per cost) |
+| L7 fast checks | changed files, available quick commands | which quick checks run first | none | time saved vs failures caught |
+| L8 limits | task class, strategy | wall time, tokens, attempts (within protected enforcement) | contract defaults | budget overruns vs lost successes |
+
+Judge kind: the same inputs as typed questions to a qualified judge model (e.g. "is this goal ambiguous
+in a way the repository cannot answer? yes/no with probability"); its answers pass through the same step 3.
