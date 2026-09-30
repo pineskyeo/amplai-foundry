@@ -511,6 +511,8 @@
       "specs/019-v3-completion/knowledge-readiness.json": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/runs/README.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/019-v3-completion/work-contract.json": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/candidates/negative-control.txt": "per-Work contract/plan/evidence; active contract independently bound",
+      "specs/030-meta-harness-live/candidates/shorter.txt": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/030-meta-harness-live/corpus/base/.gitignore": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/030-meta-harness-live/corpus/base/README.md": "per-Work contract/plan/evidence; active contract independently bound",
       "specs/030-meta-harness-live/corpus/base/demo_app/__init__.py": "per-Work contract/plan/evidence; active contract independently bound",
@@ -646,6 +648,8 @@
       "specs/019-v3-completion/knowledge-readiness.json",
       "specs/019-v3-completion/runs/README.md",
       "specs/019-v3-completion/work-contract.json",
+      "specs/030-meta-harness-live/candidates/negative-control.txt",
+      "specs/030-meta-harness-live/candidates/shorter.txt",
       "specs/030-meta-harness-live/corpus/base/.gitignore",
       "specs/030-meta-harness-live/corpus/base/README.md",
       "specs/030-meta-harness-live/corpus/base/demo_app/__init__.py",
@@ -849,21 +853,21 @@
     "rule_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32",
     "unprocessed": []
   },
-  "content_hash": "f68714d045e4d53d8626ef44121e6aec8a956d810d7c69d8e8692d317eda7542",
+  "content_hash": "916509715c2086c831a41c63af4b1c299f267b57ccbc792f2caf12eb446c9075",
   "dependency_snapshot": {
     "base_commit": "52b8a3e2c870e8797c80f343c3b433bbd35aff54",
     "candidate": {
       "complete": true,
       "mode": "git",
-      "sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9"
+      "sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf"
     },
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "documents": [
       {
         "path": ".ai-team/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-          "declared_reference_sha256": "afd09202279e7b542d014e3359f7ad850a3dc5a3dabc5e557347eff64054adef",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+          "declared_reference_sha256": "9f080ebca7688fe6ffb3ccf7e55205f092099b564ababb5a7c57abc64456b0ed",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -881,7 +885,7 @@
       {
         "path": ".ai-team/contracts/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -900,7 +904,7 @@
       {
         "path": ".ai-team/evidence/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -919,8 +923,8 @@
       {
         "path": ".ai-team/knowledge/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-          "declared_reference_sha256": "8d34326d1d5bfae0551254412c80547f141d195d4493cc0ad5ca21361f60d6f8",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+          "declared_reference_sha256": "2311b66f93fc3a0e067f72a77c23b29b0f1d511fd7c8a2c2c309019138ba1f8d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -938,7 +942,7 @@
       {
         "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -957,7 +961,7 @@
       {
         "path": ".ai-team/runtime/INSTALLATION.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -976,7 +980,7 @@
       {
         "path": ".ai-team/runtime/WORKFLOW.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -995,7 +999,7 @@
       {
         "path": ".ai-team/runtime/escalation.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1014,7 +1018,7 @@
       {
         "path": ".ai-team/verifiers/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1033,7 +1037,7 @@
       {
         "path": "AGENTS.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "400816becb55bc51ca9503b950c4fd40a203fcc4ac1cc1662ea1048d55322bd1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1052,7 +1056,7 @@
       {
         "path": "CLAUDE.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1071,8 +1075,8 @@
       {
         "path": "README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-          "declared_reference_sha256": "776a54ab3f09c22fafbf67df74d657ea462a6dae92cba1b9cdb06096ae444248",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+          "declared_reference_sha256": "58c9c0e23baf2d045109aa9184e82cac81c0ff267bfa4370952a6fa3a34d142e",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
           "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -1090,7 +1094,7 @@
       {
         "path": "docs/KNOWLEDGE-RULES.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1109,7 +1113,7 @@
       {
         "path": "docs/LIFECYCLE.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1128,7 +1132,7 @@
       {
         "path": "docs/MEMORY-DOMAIN-MODEL.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1147,7 +1151,7 @@
       {
         "path": "docs/PORTABLE-DEVELOPMENT.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1166,7 +1170,7 @@
       {
         "path": "docs/PROJECT-PACK.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1185,7 +1189,7 @@
       {
         "path": "docs/PROPOSALS.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1204,7 +1208,7 @@
       {
         "path": "docs/RELATIONSHIPS.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
           "metadata_owner": "sidecar",
@@ -1223,7 +1227,7 @@
       {
         "path": "docs/ROADMAP.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1242,7 +1246,7 @@
       {
         "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1261,7 +1265,7 @@
       {
         "path": "docs/VERSIONING.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1280,7 +1284,7 @@
       {
         "path": "docs/VISION.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1299,7 +1303,7 @@
       {
         "path": "docs/v3/DEV02_EXECUTION.ko.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
           "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
           "metadata_owner": "sidecar",
@@ -1318,7 +1322,7 @@
       {
         "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
           "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
           "metadata_owner": "sidecar",
@@ -1337,8 +1341,8 @@
       {
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-          "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+          "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
           "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
           "metadata_owner": "sidecar",
           "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -1350,15 +1354,15 @@
           },
           "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+          "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
         }
       },
       {
         "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "dependency_snapshot_sha256": "702a5559e64165307c4ba6396d7d3f39c7a5039b1359a99dd480bf1ae5ca363f",
+          "dependency_snapshot_sha256": "3f8f4ffb4de6b1288eef02b78eb33bc4634afc310b000e72373c22cc753415d5",
           "metadata_owner": "sidecar",
           "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
           "rules": {
@@ -1375,7 +1379,7 @@
       {
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
           "dependency_snapshot_sha256": "0dff400502d388b3c13e8d0e073be26c47d0658c0d123919ff506d8f6951b80a",
           "metadata_owner": "sidecar",
@@ -1388,13 +1392,13 @@
           },
           "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
           "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "source_sha256": "82f48cf0331f8bae2916ac24e98f8ba38c56aee2e2e9ccd43d3e62962ead1392"
+          "source_sha256": "6ff1625c8cc7e10186c1d96f09f7e9060b26c2b37cba364535b3acf804654291"
         }
       },
       {
         "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "80501f71a67ef0e91da11ab9e821dae6903fe222b97301dcac87ab0d540a08e5",
           "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "metadata_owner": "sidecar",
@@ -1413,7 +1417,7 @@
       {
         "path": "tests/e2e/artifacts/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
           "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
           "metadata_owner": "sidecar",
@@ -1432,7 +1436,7 @@
       {
         "path": "tools/amplai-loop-kit/CHANGELOG.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1451,7 +1455,7 @@
       {
         "path": "tools/amplai-loop-kit/README.md",
         "snapshot": {
-          "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+          "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
           "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
           "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
           "metadata_owner": "sidecar",
@@ -1769,13 +1773,13 @@
       {
         "mode": 420,
         "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-        "sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb",
+        "sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6",
         "state": "PRESENT"
       },
       {
         "mode": 420,
         "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-        "sha256": "82f48cf0331f8bae2916ac24e98f8ba38c56aee2e2e9ccd43d3e62962ead1392",
+        "sha256": "6ff1625c8cc7e10186c1d96f09f7e9060b26c2b37cba364535b3acf804654291",
         "state": "PRESENT"
       },
       {
@@ -1907,7 +1911,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/runtime/execution/meta_ops.py",
-        "sha256": "6ce43dd7d23452ce202227b7346d63796edb784b9f0d30a34feeb3dbfdf434b4",
+        "sha256": "546448a0b26b30a0139f5093b5face4d2db405f50c395d5f921ccc22804894cf",
         "state": "PRESENT"
       },
       {
@@ -1955,7 +1959,7 @@
       {
         "mode": 420,
         "path": "src/amplai_foundry/runtime/meta_cli.py",
-        "sha256": "f0066f408a58cdf9248c870ab0edda9d777b561e44332b476a6c787b6cc3f52e",
+        "sha256": "6a364d14a3166f45a0cb18708a1a86b1487cae624a0c1908709008f43465cdfa",
         "state": "PRESENT"
       },
       {
@@ -2021,7 +2025,7 @@
       {
         "mode": 420,
         "path": "tests/e2e/test_rc12_meta_rehearsal.py",
-        "sha256": "71eb1c33b68031d043842352760dcf4176d5aa5b1f54bf74f5c0cc1c83e51931",
+        "sha256": "25632d122b99ab745df4564ef3f345701710a4d9d4d154987bc358688c6378a2",
         "state": "PRESENT"
       },
       {
@@ -2099,7 +2103,7 @@
       {
         "mode": 420,
         "path": "tests/v3/test_rc12_meta_cli.py",
-        "sha256": "3292b54676e0805f563a7390100b70416159db14e27361928d400c0e15ef00d7",
+        "sha256": "a63634f3e0661aa44de5865d905d36b824fc29b1343140fa263314bce5b13bc3",
         "state": "PRESENT"
       },
       {
@@ -2128,7 +2132,7 @@
       }
     ]
   },
-  "dependency_snapshot_hash": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+  "dependency_snapshot_hash": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
   "evidence": [
     "complete_git_scope",
     "declared_dependencies",
@@ -2136,7 +2140,7 @@
     "external_exact_reviews"
   ],
   "generated_from": {
-    "commit": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
+    "commit": "2e958a81725210eac79d6165c777c6ad18249ce5",
     "contract_sha256": "aebc109c1711a1d81c13aa1711f6d682f1eda77bb32ca190dac2d7e5b4431f34",
     "policy_sha256": "23fd4cd5be374609bdbeed1f44f2867f602132b98f1dbb434abd27870afcae32"
   },
@@ -2166,9 +2170,9 @@
       "path": ".ai-team/README.md",
       "reason": "loop runtime contract change; keyword knowledge,policy,runtime; 문서가 .ai-team/knowledge/decisions.index.json, .ai-team/policy/documentation.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "afd09202279e7b542d014e3359f7ad850a3dc5a3dabc5e557347eff64054adef",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "9f080ebca7688fe6ffb3ccf7e55205f092099b564ababb5a7c57abc64456b0ed",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -2182,7 +2186,7 @@
         "source_assets_sha256": "9b6d03d21f683836b24a3c51b314280a2c108cb0bcc7d49fa99e348e82db5c6d",
         "source_sha256": "6f9b1c00884ec20b7de422dbdfc3ba5b75b58b720eed480d84458cf6609cd4da"
       },
-      "review_hash": "15c1964137db9f1248855a5faef25d4b48664d60d737aeab1bcb9bb58e639056",
+      "review_hash": "88f372cbe9a0930a91ceb920f2a2a2dd03b7fab45cc58b17416aafa77749ae5c",
       "state": "ACTIVE"
     },
     {
@@ -2200,8 +2204,8 @@
       "path": ".ai-team/contracts/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2216,7 +2220,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0acbfdeecf15ffa1a60ef9cbefba74464ae83d64ea591ba364e7f9f535957ab9"
       },
-      "review_hash": "2bb200c9e9c8fa476480d04a0f8bb37dded01dde18a93a577540fccf25d69aba",
+      "review_hash": "63e3fe73e2ea4884c7d6adf4ee8d458bd18c6461bdd728965ca02af64882233f",
       "state": "ACTIVE"
     },
     {
@@ -2234,8 +2238,8 @@
       "path": ".ai-team/evidence/README.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2250,7 +2254,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c8ec6fd0fd259a79ed8e15e0f86ae98142f7aebef0022b84e7e08f67860d7f93"
       },
-      "review_hash": "ad7896f2e33438cc629b135245da85e6355175edaf3765994b9a4ae99fba274b",
+      "review_hash": "50b8f5c8aa9b0ea1ca5a66b812673ec1b4317e7870e630eca82a844a7a374ad4",
       "state": "ACTIVE"
     },
     {
@@ -2270,9 +2274,9 @@
       "path": ".ai-team/knowledge/README.md",
       "reason": "문서가 .ai-team/knowledge/decisions.index.json, docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "8d34326d1d5bfae0551254412c80547f141d195d4493cc0ad5ca21361f60d6f8",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "2311b66f93fc3a0e067f72a77c23b29b0f1d511fd7c8a2c2c309019138ba1f8d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -2286,7 +2290,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c97ad05611a7b310443bfa0e283323ff359cd394c968fcaf291a30d228bf6f95"
       },
-      "review_hash": "de1c09456ad39c8c266a48ad637c88eba40803637d31a1d62831b5ae30b44cfb",
+      "review_hash": "a756840bbd61953a79a3c659c7e25e0e41fc8fbb950e91d0487e84e5c1b86915",
       "state": "ACTIVE"
     },
     {
@@ -2304,8 +2308,8 @@
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2320,7 +2324,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e67af4da1f27c9bfaab0cdd63503aab3a77e87152036a2d05b37fbdcf7887925"
       },
-      "review_hash": "5cd7308f5eeec170bf162c44611119b7b0af77946354cfc18b72e4630ed584f6",
+      "review_hash": "b5039467ab9f4b4c980a1e4581e6a13fa1556bbf3aaa2e4bfe70a36565e7584c",
       "state": "ACTIVE"
     },
     {
@@ -2338,8 +2342,8 @@
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2354,7 +2358,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "a7353f5e24fb85231fab7760d1627b1b2a5684b322b858271d61d9d79c65be3a"
       },
-      "review_hash": "156c1c62b23a19ef905d403aefb2e2a4ae4c470c0c927013943fd37f25a165bf",
+      "review_hash": "358ed20be130e5d282a9edc26c2e4c1c1ee270b264811d955785f4fc1f608ec9",
       "state": "ACTIVE"
     },
     {
@@ -2379,8 +2383,8 @@
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "loop runtime contract change; keyword review; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2395,7 +2399,7 @@
         "source_assets_sha256": "ccba6875d956d8be86a53292efdad2d040a735852c472c5f6b680c68e5e75550",
         "source_sha256": "ba01eba7b38f03ad123da997ff6c3eeab2dbaecfef7047e312645555a705107e"
       },
-      "review_hash": "4c7ee90e1aee1cf1c1589ede1bbb203e270831d270119e20ad0f100b0ed7e76d",
+      "review_hash": "e567a44409a9e41ff0ff542f3d4fbbba3329b1874a47d1d2a3cc00598e1c4fda",
       "state": "ACTIVE"
     },
     {
@@ -2413,8 +2417,8 @@
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2429,7 +2433,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "993f88b7320bdad6d35136f14d7adfe72dce37ac69d0c92e7d5934749422a6a6"
       },
-      "review_hash": "676ff433faa379f28d9430db3b63cdeeda25e06c923e30a412f27e4f789d1695",
+      "review_hash": "a48da3b4e5c1f39183d7c407f99bb9179f0557d7a17c55b660988889e2ff0834",
       "state": "ACTIVE"
     },
     {
@@ -2449,8 +2453,8 @@
       "path": ".ai-team/verifiers/README.md",
       "reason": "loop runtime contract change; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2465,7 +2469,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "c3fad17d5d2c88e3cfa3f208535f65e64b81777b446f24ff9abc01fa5c795189"
       },
-      "review_hash": "5d8d89282ed466216fdfe0ca880aaf4d5006abacc6d16eb33bc43c50e2a16457",
+      "review_hash": "f471bf1a490a6b37c3818840058a6ab23c141222b4dbe4a77057d24eb2ff56d0",
       "state": "ACTIVE"
     },
     {
@@ -2487,8 +2491,8 @@
       "path": "AGENTS.md",
       "reason": "loop runtime contract change; 문서가 docs/workstreams/v3-real-execution/DECISIONS.md 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "400816becb55bc51ca9503b950c4fd40a203fcc4ac1cc1662ea1048d55322bd1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2503,7 +2507,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d920e716d080a6e460b1001651f7dc1c5c56101b2ab3d87858599929db7bc6e3"
       },
-      "review_hash": "558637f2e377a1b20edd5635230e633a22519a5ad74e14f26b43ee8a8899d21a",
+      "review_hash": "580aa6dfb6b8021e82e3170acfcb1aa5915d4165db8e9261e2079159dd1951a8",
       "state": "ACTIVE"
     },
     {
@@ -2525,8 +2529,8 @@
       "path": "CLAUDE.md",
       "reason": "loop runtime contract change; keyword adapter,verification; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2541,7 +2545,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "2ed55443211783c046519245aae74e3b3372e27d64f32622e9bac81901640829"
       },
-      "review_hash": "c3eea4ce7dc574a21f88da382ef254d80874124fcf801bd9bdd633643a555b48",
+      "review_hash": "d0e595a4aa70e136602e3b2a1a1b88e857b5cd2ca9e96c38894fc66d75f32300",
       "state": "ACTIVE"
     },
     {
@@ -2563,9 +2567,9 @@
       "path": "README.md",
       "reason": "문서가 docs/v3/DEV03_OBSERVATORY_META.ko.md, docs/v3/USING_AMPLAI_WORK.ko.md 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "776a54ab3f09c22fafbf67df74d657ea462a6dae92cba1b9cdb06096ae444248",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "58c9c0e23baf2d045109aa9184e82cac81c0ff267bfa4370952a6fa3a34d142e",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -2579,7 +2583,7 @@
         "source_assets_sha256": "e0b76f60a5847cfe9e86731b11dd2f612b662375e2c8ef6bd01c76ed31e5ea14",
         "source_sha256": "e7b75aeeb455d182492b5224ff8e046729039c91eda448187bc51b5d0f734a26"
       },
-      "review_hash": "89143d22c348774a69eb018cfd641164a38c4f8e4f5c73b7c3c4daea17ddbb37",
+      "review_hash": "adca6e72ca5edfe17ee2a85c8df53a5007ac5c3d3c50e52f4b674fd6341c67de",
       "state": "ACTIVE"
     },
     {
@@ -2599,8 +2603,8 @@
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "keyword knowledge; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2615,7 +2619,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "4523b43d2acd7ce9af39828296b84f8a164b07b86552d07719c654525cb85a93"
       },
-      "review_hash": "e7a581585165c4804b0e87023e5a4a3322d99a7f70fa96da4f08779c7f5a7433",
+      "review_hash": "db792592adc448b0188f79d0d4235a88b6931f2e024fd4ee018a36f0812d0a3c",
       "state": "ACTIVE"
     },
     {
@@ -2633,8 +2637,8 @@
       "path": "docs/LIFECYCLE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2649,7 +2653,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "0bde2a0deeeb55c743d611bba5138d3c4b361fb9797f3a6433b2c460b052999e"
       },
-      "review_hash": "a97e18588b257a1f599e179e98dc24df1a2c8ccb46acdf1d1bb0a5218f7ec0cc",
+      "review_hash": "0aa31cb78972b0ea34caba9852a9a5bd2a31c71ccde4db083daa8396eeedd581",
       "state": "ACTIVE"
     },
     {
@@ -2667,8 +2671,8 @@
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2683,7 +2687,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "45dd0a4b3eb0812b8a8ee58153c2d4c3fdf06007d30203f08011a60cadb82b20"
       },
-      "review_hash": "123ad7477b15cfbc1b0b637a4e7318698ae24ca77ab17cb40db5acbff0d2bc2c",
+      "review_hash": "ffcc64e9b325a6eed243c734a75d23c5537c06395b72dae463df1912bb44296d",
       "state": "ACTIVE"
     },
     {
@@ -2703,8 +2707,8 @@
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2719,7 +2723,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "b969b5343fc475c926ae34c65abcd10c5e8f4caa3762896f8eab6eecc9c1461f"
       },
-      "review_hash": "ec6d1bc7a6cb54b0288a41124878c13ca08f486c12af21abc6e449a4cde5f005",
+      "review_hash": "3bab2aac51b88cbc547ecee514b5cefb93c7d3811e0a59d860c869f6b6613f02",
       "state": "ACTIVE"
     },
     {
@@ -2739,8 +2743,8 @@
       "path": "docs/PROJECT-PACK.md",
       "reason": "keyword manifest,workspace; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2755,7 +2759,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "aa307172634020f6b96ea47191f42dbed7c2fac372eabb939cd226892708f02f"
       },
-      "review_hash": "4d593587238111bef12827bea09423059be65786a1f1dffd942ba1dd66caa74e",
+      "review_hash": "62b0c4f692f0997590ed3df409fd6c1739bb63a5d1ae7130212ffc6f3959ee1a",
       "state": "ACTIVE"
     },
     {
@@ -2773,8 +2777,8 @@
       "path": "docs/PROPOSALS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2789,7 +2793,7 @@
         "source_assets_sha256": "79bbbf886b8d3e8378fdf9a33fb03a341fbbcfae238ecd5082394652981b65ee",
         "source_sha256": "4e3873e8eb8d7654fc17ba86e76acbaf0203fc7cae5f66438d33aa4f1a3f9475"
       },
-      "review_hash": "3b8b519c3f9738b97d6b94d409302bac90a9df986500f4b7212ba1e490f9e654",
+      "review_hash": "7232bba94aa662e0aebe0327eefff8aa6bcce6e49c208b31b2e159dc0d7213a3",
       "state": "ACTIVE"
     },
     {
@@ -2807,8 +2811,8 @@
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -2823,7 +2827,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "d0dcf3193f20e1c37c4679d5ebca12d4299d83ab2748117ccd4184232e504829"
       },
-      "review_hash": "3b37037a6012615a6aa43f3cbd3592579c9a3e0f02403dd2261d274936059bb2",
+      "review_hash": "c8ea2d9cc68c8ab0d641a7f455ea91030a1102e0eb90698322a57d5b9c38478f",
       "state": "ACTIVE"
     },
     {
@@ -2841,8 +2845,8 @@
       "path": "docs/ROADMAP.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2857,7 +2861,7 @@
         "source_assets_sha256": "7caa80dd96693a3e3a7be18fa5dcc646f472b1ac4accc80226a96164137d0421",
         "source_sha256": "8b7c10179c52ae7d698ccdf2c31e3149b8b59043a3faf515f91f7dc5c12fc48a"
       },
-      "review_hash": "ba042473a484bd53e4768950ec745eac41fc9172a8cd102d45e01d36ace7774d",
+      "review_hash": "fe15b187615292dfbf49901c68dd11310df11addb3032a0b1faf2c09fe10aed0",
       "state": "ACTIVE"
     },
     {
@@ -2875,8 +2879,8 @@
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2891,7 +2895,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "997307db1d23441a3848351eddb884b184f929990c3d98a073a41b9dd0a44574"
       },
-      "review_hash": "fac51212864f797c58841f20a9533e5c1f2667013911c386b01f671ca89183e8",
+      "review_hash": "2dfcb318832a70cd2cd86f8621d3027a1d8244960e9b8a58a63a3e6ca3a706c4",
       "state": "ACTIVE"
     },
     {
@@ -2911,8 +2915,8 @@
       "path": "docs/VERSIONING.md",
       "reason": "문서가 pyproject.toml 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2927,7 +2931,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "16f2aae349920382bdc76d03b5300cbf0a7f2e42bde61c8f0b8df4cff0c8cea8"
       },
-      "review_hash": "fba76fb62c8b29bb3e1cead2cec8aa1c1d1882139936e072077a7b6e2813c6ca",
+      "review_hash": "e7c94239b9be5b954859604e479ce7e6cee7b643d5cb4c335c53cfe6b40bfd08",
       "state": "ACTIVE"
     },
     {
@@ -2947,8 +2951,8 @@
       "path": "docs/VISION.md",
       "reason": "keyword amplai; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -2963,7 +2967,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "7956a74c8d24fadbf698dbe07e9cd29c8d53404de4ce2223ba25621ae084da0e"
       },
-      "review_hash": "44edcc0143d33134837076c25668f206226b924730a25ca5618fb25f572e2073",
+      "review_hash": "a59b72348297cc8c628ba438a97ba3eed8a4db2a22f3650a6820bfe68cb5b5e4",
       "state": "ACTIVE"
     },
     {
@@ -2983,8 +2987,8 @@
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh, src/amplai_foundry/agent_drivers/protocol.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -2999,7 +3003,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "58fc4a14a3fe73fb213139abce3735c8f6d1a45904352fd607df72e224182e57"
       },
-      "review_hash": "09540873f752e676b574077417c4c5e329713439bcdad941f80e9c5f87e54ccf",
+      "review_hash": "4c27d7e7e2453b43a489bff52f473e774f23a7eb870b129f05a8c1c7662241c5",
       "state": "ACTIVE"
     },
     {
@@ -3017,8 +3021,8 @@
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -3033,7 +3037,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "3ab05588c4e7435216dd73ef181619208bada65489ec7e765ab05b5807a39e57"
       },
-      "review_hash": "f5fec4e13b5fde609138775208550ea3108ba89e97aa707b1cff81cf19b4c913",
+      "review_hash": "259b66e54956c0710b7dab5416778b973398b427656af857b5dc80116e8c16ec",
       "state": "ACTIVE"
     },
     {
@@ -3044,7 +3048,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-v3-dev03_observatory_meta-ko-md",
-      "document_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb",
+      "document_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6",
       "evidence": [
         "docs/v3/DEV03_OBSERVATORY_META.ko.md",
         "git grep -F scripts/corpus_check.py"
@@ -3053,9 +3057,9 @@
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
       "reason": "문서가 scripts/corpus_check.py, src/amplai_foundry/evaluation/analysis.py, src/amplai_foundry/evaluation/service.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
         "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -3067,9 +3071,9 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+        "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
       },
-      "review_hash": "0fa98d21a04becd1340aa0dbcb2c306a43f1cb30e00b97de62b61a802d1e6593",
+      "review_hash": "b6cc0da32bc1a54865a49325be65269de6640bd4ec8c5b6913bd96512c1ea3d2",
       "state": "ACTIVE"
     },
     {
@@ -3087,10 +3091,10 @@
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "702a5559e64165307c4ba6396d7d3f39c7a5039b1359a99dd480bf1ae5ca363f",
+        "dependency_snapshot_sha256": "3f8f4ffb4de6b1288eef02b78eb33bc4634afc310b000e72373c22cc753415d5",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -3103,7 +3107,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "e70435c25e37ef2d11ffa77ec0ef060c152bf05dce71847edcc4a38170701404"
       },
-      "review_hash": "4a125fa7cc1dda4ebcc6a3ead70928399873a915ec53d683eb642e2ea129ff6e",
+      "review_hash": "2f840e4cb8a924b35280f4ec231a594c1fd4308e56e14561b46ad25bcdaed278",
       "state": "ACTIVE"
     },
     {
@@ -3114,7 +3118,7 @@
         "doc_reference"
       ],
       "doc_id": "amplai-foundry:docs-v3-using_amplai_work-ko-md",
-      "document_sha256": "82f48cf0331f8bae2916ac24e98f8ba38c56aee2e2e9ccd43d3e62962ead1392",
+      "document_sha256": "6ff1625c8cc7e10186c1d96f09f7e9060b26c2b37cba364535b3acf804654291",
       "evidence": [
         "docs/v3/USING_AMPLAI_WORK.ko.md",
         "git grep -F scripts/container_qualify.py"
@@ -3123,8 +3127,8 @@
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
       "reason": "문서가 scripts/container_qualify.py, scripts/sandbox_up.sh 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "0dff400502d388b3c13e8d0e073be26c47d0658c0d123919ff506d8f6951b80a",
         "metadata_owner": "sidecar",
@@ -3137,13 +3141,13 @@
         },
         "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "82f48cf0331f8bae2916ac24e98f8ba38c56aee2e2e9ccd43d3e62962ead1392"
+        "source_sha256": "6ff1625c8cc7e10186c1d96f09f7e9060b26c2b37cba364535b3acf804654291"
       },
-      "review_hash": "b55fa3f7845d9f3aa2720c26bb563191a3abe712d1140ef8d9b5d3b8b0b9dea6",
+      "review_hash": "a9248d6a90290126e600d3d86f4ab10cfc7924cc64f96173dfcffa3c8e0befc9",
       "state": "ACTIVE"
     },
     {
-      "action": "update",
+      "action": "acknowledge",
       "category": "decision_record",
       "discovered_by": [
         "decision_index",
@@ -3178,8 +3182,8 @@
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
       "reason": "active decision D-068; active decision D-074; active decision D-076; active decision D-077; active decision D-078; active decision D-079; active decision D-080; active decision D-081; active decision D-082; active decision D-083; active decision D-084; active decision D-085; active decision D-086; active decision D-088; active decision D-089; active decision D-090; active decision D-091; active decision D-092; 문서가 .ai-team/policy/documentation.json, pyproject.toml, scripts/amplai_docs.py 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "80501f71a67ef0e91da11ab9e821dae6903fe222b97301dcac87ab0d540a08e5",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -3194,7 +3198,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "9a3350b2a340f090174a7db7658baa35b1c81f6eb7837c95e4712eb7b731d213"
       },
-      "review_hash": "80f3abc219a0af54e8e6f50e0937676113bb128de16777a1d1fe10302f68b90f",
+      "review_hash": "47a96073925dce314ae556ba397e198f0e9ef4a067e1621ec3191bc113895f1a",
       "state": "ACTIVE"
     },
     {
@@ -3214,8 +3218,8 @@
       "path": "tests/e2e/artifacts/README.md",
       "reason": "문서가 .ai-team/policy/documentation.json 를 직접 언급; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -3230,7 +3234,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "ad1b05783016514fce0b30c9b0b298ed9b5845783b13f0578e6f06da1befade8"
       },
-      "review_hash": "1289ec218817ed7081d57cb3357afdaea4a21507b2b1e70501ea145cfad91ec4",
+      "review_hash": "9b8e268f7d536413bffeaacc76798f1693f99b6b66235bfe069052b0a2d7a081",
       "state": "ACTIVE"
     },
     {
@@ -3250,8 +3254,8 @@
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "keyword development,document,kit; Owner source/metadata or exact declared dependency changed",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3266,7 +3270,7 @@
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "source_sha256": "8a886c39631740b2d2627486778ff53da5733b4dc36bada61d929039c794db42"
       },
-      "review_hash": "ccc5d56979a1eb620088efaa1b58374d317f6403ec98b6db2535bc48a69fd46d",
+      "review_hash": "c0c0ac1e0fb44b0b4ee8dbd7c91158fbdeb37437ac94bfd8a47182abb180e986",
       "state": "ACTIVE"
     },
     {
@@ -3291,8 +3295,8 @@
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "keyword development,document,kit; 문서가 tools/amplai-loop-kit/CHECKSUMS.sha256, tools/amplai-loop-kit/baseline/manifest.json 를 직접 언급; Owner source/metadata or exact declared dependency changed; Current owner review includes exact development source bytes; Current owner review includes exact development source bytes",
       "record_snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3307,7 +3311,7 @@
         "source_assets_sha256": "a27a8f402eca5f4536c28c398f224235a173d6281ca3230f9183e2cbf10997a1",
         "source_sha256": "3e7390f1d81d7d82afded15e7a23205ff0c53f6abd6bc31a715006e5f6f2cffd"
       },
-      "review_hash": "b9ab4097ff07fdd32c05e6406ba8a07b96de483b31b10e9553c6ea797c4a17fd",
+      "review_hash": "e22dfee9cc2143011e0c53d47178b3e78443eba3a9577eb3e8617d1e6a0bcaec",
       "state": "ACTIVE"
     }
   ],
@@ -3412,10 +3416,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 58,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3423,10 +3427,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "evidence/*.json",
       "reference_hash": "47de629aad42edb83adbd20e47e37b95eaca95109135f1d384289b2b20964bdd",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3453,10 +3457,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3464,10 +3468,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "55e3967dd46cd50529fd363bfb8688b1263447954323e2723325da80570fcfae",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3494,10 +3498,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 54,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3505,10 +3509,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/change.json",
       "reference_hash": "58b69d423a79347e01555e164999a05f6163fc87096d0b156f7c6cb82e9b07c0",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3535,10 +3539,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 46,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3546,10 +3550,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "5a75b25c42ef70d71caad0bda206ed6e986482210726a52551446590e5405038",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3576,10 +3580,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3587,10 +3591,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/locks",
       "reference_hash": "63a31b1a50dc9fbf4d75f48b18e50405fc58607aa1f5ca7e392741645081907d",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3617,10 +3621,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 55,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3628,10 +3632,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/CR-*/work/*.json",
       "reference_hash": "7973fd2c811054cfa36f5a2ea5dc11922108b980a10caab8e18108e716de729f",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3658,10 +3662,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 59,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3669,10 +3673,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "decisions/*.json",
       "reference_hash": "7a8b16248a73fbb16807156bbd4b9c545f3fa364746f79f23ce807f809b1099c",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3699,10 +3703,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3710,10 +3714,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "questions/*.json",
       "reference_hash": "bb4042ff6401ffbc96d0a1e1d53b4bcefa122f0fa08290ca9b63509607da4e1b",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3740,10 +3744,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3751,10 +3755,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": "changes/",
       "reference_hash": "f58cdb35d0797ffddd508cfc468ed422e324d12d44e3a7faee83c062759e3c4f",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3781,10 +3785,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 167,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3792,10 +3796,10 @@
       "reason": "This is a Project Store locator described by the surrounding Store-layout section, not an app-checkout dependency. Object subpaths for questions/evidence/decisions are relative to the selected change. No availability of an external required dependency is asserted.",
       "reference": ".amplai/local",
       "reference_hash": "faec0acbe2c66f890bfab18d147f57bf25aecd64abe91298d8b72611ff85ce2a",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3863,10 +3867,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3874,10 +3878,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "15cb6ae8eba660121ddd509d8d23389b7aa52865bf4481cfd7b49c74f8c5b37c",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3904,10 +3908,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 19,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3915,10 +3919,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "drafts/",
       "reference_hash": "264f2d647c315e139409279d006be9c0f37fcd1acae333df8996d4cdfadb09c6",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3945,10 +3949,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 9,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3956,10 +3960,10 @@
       "reason": "The path is relative to the selected Proposal directory; proposal path validation enforces that boundary. It is not a top-level repository folder.",
       "reference": "patches/",
       "reference_hash": "a79401256c17fc4ce0979672b6770847293169af95db3c18402a6a6830909c96",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -3986,10 +3990,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 116,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -3997,10 +4001,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "6361460ecb9d92aa3784aa2b9eef22a897c66dc0b08640132a9784b475058ee9",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4027,10 +4031,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 96,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4038,10 +4042,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "speckit-tasks/SKILL.md",
       "reference_hash": "93f2e5292bccadde0c9c678bc96442121e2ad9475f317da246decf03e8a978db",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4068,10 +4072,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 107,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4079,10 +4083,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".ai-team/skills/taskify",
       "reference_hash": "c9d7737971630fc19b6ffee82e5b78aed363f8373227fba4499c6167921ccc60",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4109,10 +4113,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 57,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4120,10 +4124,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": ".amplai/tasks/tasks.md",
       "reference_hash": "eb3584d8b746dd6222d1ade50818efdd096d9d89af90aa50ebc2949b47281274",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4150,10 +4154,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 36,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4161,10 +4165,10 @@
       "reason": "This exact reference belongs to the retained archived 2026-08-03 bridge note and is not current implementation guidance. Original wording is preserved rather than rewritten to manufacture availability.",
       "reference": "ui/dist/",
       "reference_hash": "f9c2b75fda9bea221fabbfa8aa37542e26e737aa1e7bd8e060aae53d6c7e4085",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -4191,10 +4195,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 7,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4202,10 +4206,10 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/*TRACE.json",
       "reference_hash": "e755c542a3cafc4ea53c7f9fbcc0d46539596832fb004efcab2dfc49a79d2413",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -4273,10 +4277,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 140,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4284,11 +4288,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "2647e09f8cb36d8e3f53225e08b6cc7f852978d8b2ec4d38f5a120e7574cd9e1",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
         "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4300,7 +4304,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+        "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
       }
     },
     {
@@ -4355,10 +4359,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 140,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4366,11 +4370,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/TEST_RESULTS.json",
       "reference_hash": "4f2b08a80718a60668b2e7ac3105c9eac04f999e160ed6dadcb3f20416d0948f",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
         "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4382,7 +4386,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+        "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
       }
     },
     {
@@ -4601,10 +4605,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 3,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4612,11 +4616,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/REQUIREMENT_TRACE.json",
       "reference_hash": "a09cd6f7a3a766e58f9360d609e88609f001826393f7e2449947fdeab5f3ad3b",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
         "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -4628,7 +4632,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+        "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
       }
     },
     {
@@ -4929,10 +4933,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4940,11 +4944,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "validation/",
       "reference_hash": "01f86aeef7a71354cf3be81bbbe51a1c2fac2a3e2864c1b3f526dcbca6fc3c91",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "776a54ab3f09c22fafbf67df74d657ea462a6dae92cba1b9cdb06096ae444248",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "58c9c0e23baf2d045109aa9184e82cac81c0ff267bfa4370952a6fa3a34d142e",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -4970,10 +4974,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 196,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -4981,11 +4985,11 @@
       "reason": "Directory of the AMPLAI_V3_DEV_03 delivery zip outside this repository; the text names it as the outer snapshot. No repository file is claimed.",
       "reference": "_v3_delivery/",
       "reference_hash": "31892415cf7c0ecf464ab8b3ae6c4a2bdbcb21f1ff7e0bd51ff67a800e7d020c",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "776a54ab3f09c22fafbf67df74d657ea462a6dae92cba1b9cdb06096ae444248",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "58c9c0e23baf2d045109aa9184e82cac81c0ff267bfa4370952a6fa3a34d142e",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -5134,10 +5138,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 86,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -5145,10 +5149,10 @@
       "reason": "This belongs to an earlier release's Project Store supervisor installation history; no current local supervisor directory or activation is claimed.",
       "reference": "supervisor/",
       "reference_hash": "a1f6c117545a8fbf1b0f906b75512060ad219e407017d1e691c9b3eb89690d4b",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5462,10 +5466,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 145,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -5473,10 +5477,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".ai-team/skills/handoff/SKILL.md",
       "reference_hash": "58cf740b4e9a66d91404981482ef0c0d601b561b10146c2196709a3aabb39d5d",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5585,10 +5589,10 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "line": 144,
       "method": "Rechecked the referencing line on this tree; the reference is the same runtime/delivery path the earlier review classified, so its disposition still applies.",
       "outcome": "reviewed_unchanged",
@@ -5596,10 +5600,10 @@
       "reason": "The manifest explicitly marks this legacy handoff integration target required:false and create_if_missing:false. It is updated only when an app already owns that optional surface.",
       "reference": ".agents/skills/handoff/SKILL.md",
       "reference_hash": "8436e97303b37b744c38e3256749b3966fe3f056652898ac9094b53f198a821c",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5792,18 +5796,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "AGENTS.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "400816becb55bc51ca9503b950c4fd40a203fcc4ac1cc1662ea1048d55322bd1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5829,18 +5833,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/contracts/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5866,18 +5870,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/evidence/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -5903,19 +5907,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/knowledge/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "8d34326d1d5bfae0551254412c80547f141d195d4493cc0ad5ca21361f60d6f8",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "2311b66f93fc3a0e067f72a77c23b29b0f1d511fd7c8a2c2c309019138ba1f8d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6801c7b0a47161f6680506ed623d635e6ddee134a0909d204e2e7e15f6cd8eaa",
@@ -5940,19 +5944,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "afd09202279e7b542d014e3359f7ad850a3dc5a3dabc5e557347eff64054adef",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "9f080ebca7688fe6ffb3ccf7e55205f092099b564ababb5a7c57abc64456b0ed",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "78019ca80705ca0c61f4219d8e53359bbe28d9dba29697eabef188292a953ad5",
@@ -5977,18 +5981,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/DECISION_ASYNC_PROTOCOL.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "d6b94878529683f42e96688faf215f98f492b1b0aa27b326a9610c7a76e690a0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6014,18 +6018,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/escalation.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6051,18 +6055,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/INSTALLATION.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "1eeb6a3d0dec9d4d93bd98e41b19812e835a3b12cb5805ae50c0c2e61579a9c1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6088,18 +6092,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/runtime/WORKFLOW.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6125,18 +6129,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": ".ai-team/verifiers/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6162,18 +6166,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "CLAUDE.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "9dca09832a5d7f858d7e7aec27766e05e27b44f463a0527b5d5762619cebe6f0",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6199,18 +6203,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/KNOWLEDGE-RULES.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6236,18 +6240,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/LIFECYCLE.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6273,18 +6277,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/MEMORY-DOMAIN-MODEL.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6310,18 +6314,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PORTABLE-DEVELOPMENT.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6347,18 +6351,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROJECT-PACK.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6384,18 +6388,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/PROPOSALS.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "c4d99939e9c3ebab74a3cd50da54a2fec9df4d9bed8c671d2bc11116ef3d62d1",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6421,18 +6425,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/RELATIONSHIPS.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "3b0370400a8a0fe009f766b9bbb5d171ea0996224c92a75d734369df74b7356d",
         "metadata_owner": "sidecar",
@@ -6458,18 +6462,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/ROADMAP.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "52a8c7cdb6aa526670cbebf363568ecc42346dc92801cb6caf36c92f64a1df3d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6495,18 +6499,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/SPECKIT-TASKIFY-BRIDGE.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "df7cfc0c5c29598c02c16a00c39895c39bff9ae40c3fb4ca0345e6f8e4708999",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6532,18 +6536,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_EXECUTION.ko.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "61ad8b8c9c9c5a94737c1a47c383486c9698f2784e8b6a1db1341440b1f5861f",
         "dependency_snapshot_sha256": "e3368845aab0b27a418a778f38ecac5091e069bf10dcf4eae158c2fbe6b480fd",
         "metadata_owner": "sidecar",
@@ -6569,18 +6573,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV02_TRANSPORT_SOURCES.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "600c4e0db6190e594bcedac035e2af6a6c4a2cf758253f9a05228a07138881c6",
         "dependency_snapshot_sha256": "526a2bd6319793c6597250821d432dc00ecdb15973b0cc9190b1b2c069f41e0b",
         "metadata_owner": "sidecar",
@@ -6606,19 +6610,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "updated",
       "path": "docs/v3/DEV03_OBSERVATORY_META.ko.md",
-      "reason": "The local wiring subsection now describes the canary cost basis, the canary adapter, the amplai meta commands and the non-inferiority claim; no earlier statement changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reason": "The amplai meta description now says that approve-canary does not start the canary and run-canary starts and runs it in one process; no other statement changed.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "bb02a8956a7f2b247570ef091d98a1f0f5e0fd3aa42bf5d2009e85ba858446ae",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "827fb07918aa78493667a0307de7717acbdfcc6c66513ec62bd32e2eb555b748",
         "dependency_snapshot_sha256": "12c19e996e7080d54bacd2c32edb0b06315039a3e3ebc0625223b71d39f3ad4b",
         "metadata_owner": "sidecar",
         "metadata_sha256": "85388cd85bfa7d9c6aa9c869e39726092ca94afc8f02ec5899ffe9c3eb3ccbb5",
@@ -6630,7 +6634,7 @@
         },
         "sidecar_sha256": "d122468f68f8453391d6d24a76aa06741b8b898dd89654f10c16d876e64a9bc7",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "4c8154aff9c2bebb773628f69dc0e3c350e0195cbfe213cde1b2b549e64358cb"
+        "source_sha256": "478d76820c520b70c2cde73e72b4d2a0fd12772fde44642629377a70f9fdbdd6"
       }
     },
     {
@@ -6643,20 +6647,20 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/v3/DEV03_RESEARCH_SOURCES.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "dependency_snapshot_sha256": "702a5559e64165307c4ba6396d7d3f39c7a5039b1359a99dd480bf1ae5ca363f",
+        "dependency_snapshot_sha256": "3f8f4ffb4de6b1288eef02b78eb33bc4634afc310b000e72373c22cc753415d5",
         "metadata_owner": "sidecar",
         "metadata_sha256": "af195f4b31f4a24ccf86850af298f13c17b76d402fe06cedcd45352f02f8051e",
         "rules": {
@@ -6680,18 +6684,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "updated",
       "path": "docs/v3/USING_AMPLAI_WORK.ko.md",
-      "reason": "A new section explains the amplai meta commands, their order, that they open the deployment in-process, the measured Codex usage per trial, and what the experiment does and does not claim; no earlier statement changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reason": "The table rows for approve-canary and run-canary and one note describe the split (a canary is owned by the process that starts it); no other statement changed.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "e47634fba9f748f7095a4e6a5bb2f0b063d9c85a077c8bc63d9a6e042be02b46",
         "dependency_snapshot_sha256": "0dff400502d388b3c13e8d0e073be26c47d0658c0d123919ff506d8f6951b80a",
         "metadata_owner": "sidecar",
@@ -6704,7 +6708,7 @@
         },
         "sidecar_sha256": "951ff8d43bb84b734358ec6fd1a94587056782b1482b66ffeb5aaeaefe3630fe",
         "source_assets_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "source_sha256": "82f48cf0331f8bae2916ac24e98f8ba38c56aee2e2e9ccd43d3e62962ead1392"
+        "source_sha256": "6ff1625c8cc7e10186c1d96f09f7e9060b26c2b37cba364535b3acf804654291"
       }
     },
     {
@@ -6717,18 +6721,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VERSIONING.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "100a56512d4c5e3d0b18a16bab3ccf877b6301bc5655a705a63d8896b36d38f3",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6754,18 +6758,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "docs/VISION.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6791,18 +6795,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
-      "outcome": "updated",
+      "outcome": "reviewed_unchanged",
       "path": "docs/workstreams/v3-real-execution/DECISIONS.md",
-      "reason": "D-092 (canary cost basis) and D-093 (the first evolution claims no improvement) appended; no earlier entry changed.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "80501f71a67ef0e91da11ab9e821dae6903fe222b97301dcac87ab0d540a08e5",
         "dependency_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "metadata_owner": "sidecar",
@@ -6828,19 +6832,19 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
-        "declared_reference_sha256": "776a54ab3f09c22fafbf67df74d657ea462a6dae92cba1b9cdb06096ae444248",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
+        "declared_reference_sha256": "58c9c0e23baf2d045109aa9184e82cac81c0ff267bfa4370952a6fa3a34d142e",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
         "metadata_sha256": "6c0a956ac4a28d1761403ed22e1a53003b6e0ec07589cbe63818bfebb8dcf5f7",
@@ -6865,18 +6869,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "tests/e2e/artifacts/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "dd54333052c4606531605e491156266200978bd4f90cf7c850536d7c0ad1f258",
         "dependency_snapshot_sha256": "1ab139160bc11fa94ca7b163a9ed8a0fcbea7ebfc696320ef02cce836db092f7",
         "metadata_owner": "sidecar",
@@ -6902,18 +6906,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/CHANGELOG.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "32504d764bf805c38bca59d5a2c4912cbe07e211f250c4c0341b5f7b601a3cac",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",
@@ -6939,18 +6943,18 @@
       "evidence": [
         {
           "path": "specs/019-v3-completion/document-review-evidence-019.json",
-          "sha256": "e77aadfe250bbee525f8be986f4c029c50db46b96cae1f19761d5705ee6bfd02"
+          "sha256": "e2e759566175cdf1f95b3665571ac3dfd2d924a07c91edd03b6d4abf266bcdd7"
         }
       ],
-      "impact_snapshot_sha256": "ee7450af5ee2ab0bf0a3497e789b78c1f5113bdc0ac2fc425ec1fb12138d808c",
+      "impact_snapshot_sha256": "6f0c19c4d0c5da888dc9834eb078e48b5ac420baf6de154c6be722144466d948",
       "method": "Grepped each document for meta-harness, canary, cost, promotion, rollback and operator command wording and compared the hits against the S5 and S6 diff of service.py, local_canary.py, meta_ops.py and meta_cli.py.",
       "outcome": "reviewed_unchanged",
       "path": "tools/amplai-loop-kit/README.md",
       "reason": "Work 030 S5 and S6 add a canary cost basis, a canary adapter and the amplai meta commands. This document says nothing that they changed and stays accurate.",
-      "reviewer": "claude-sonnet-5.5-w030s56-document-review",
+      "reviewer": "claude-sonnet-5.5-w030s7-document-review",
       "snapshot": {
-        "candidate_revision": "5ae3d1f4d90a04bd327d0dcc32154e62f1945c35",
-        "candidate_sha256": "22e511754984eeb694399420612ceff0c00065a84ddc305be43e05ad79585df9",
+        "candidate_revision": "2e958a81725210eac79d6165c777c6ad18249ce5",
+        "candidate_sha256": "b427923a0379b75e530d4e26412339dab2dfb4af09328ba004d251df2fc01adf",
         "declared_reference_sha256": "ea369abe2da36ef12b035ddd55a6a8c58374f0937be579edbb5dd562ac77c01d",
         "dependency_snapshot_sha256": "577929f28aa5a3e3f2fff4264ddb335f6a638dc9cf8a598225d411670d32af71",
         "metadata_owner": "sidecar",

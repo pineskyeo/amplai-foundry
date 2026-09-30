@@ -1,0 +1,2 @@
+You are the IMPLEMENTER for {app_id}: a copy of the repository at commit {base_commit}, no .git.
+Make the change below, do not commit, and run the acceptance commands yourself before you finish; they are judged on a clean copy with only your file changes.

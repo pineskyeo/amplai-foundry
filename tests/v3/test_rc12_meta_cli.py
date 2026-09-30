@@ -141,6 +141,7 @@ def test_a_gate_out_of_order_is_refused_with_the_state_it_needs(home: dict[str, 
         ("approve-experiment", pid, "--max-tokens", "1000", "--max-wall-seconds", "60"),
         ("run-experiment", pid, "--per-trial-tokens", "10", "--basis", "x", "--evidence", "y"),
         ("approve-canary", pid, "--tasks", "t00", "--max-trial-tokens", "10"),
+        ("run-canary", pid, "--per-trial-tokens", "10", "--basis", "x", "--evidence", "y"),
         ("promote", pid),
         ("rollback", pid),
     ):

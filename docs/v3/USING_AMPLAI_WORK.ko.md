@@ -117,8 +117,8 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 | 2 | `amplai meta screen ID` | 보호된 표면을 건드리지 않았는지 검사한다 |
 | 3 | `amplai meta approve-experiment ID --max-tokens N --max-wall-seconds N` | corpus 와 사전 등록 분석(비열등성, 성공률만)을 고정하고 실험을 승인한다 |
 | 4 | `amplai meta run-experiment ID --per-trial-tokens N --basis … --evidence …` | 모든 시도를 실제 goal 로 돌리고(게시는 끔) 판정을 기록한다 |
-| 5 | `amplai meta approve-canary ID --tasks a,b,c --max-trial-tokens N` | 낮은 위험 과제 몇 개로 canary 를 승인·시작한다 |
-| 6 | `amplai meta run-canary ID …` | canary 과제를 후보로 돌리고 모두 통과하면 승격을 요청한다 |
+| 5 | `amplai meta approve-canary ID --tasks a,b,c --max-trial-tokens N` | 낮은 위험 과제 몇 개로 canary 를 승인한다(시작하지는 않는다) |
+| 6 | `amplai meta run-canary ID …` | canary 를 시작하고 그 과제를 후보로 돌린다. 모두 통과하면 승격을 요청한다 |
 | 7 | `amplai meta promote ID` | 활성 release 를 후보로 옮긴다. 새 plan 부터 후보 prompt 를 쓰고 실행 중인 goal 은 그대로다 |
 | | `amplai meta rollback ID` | 활성 release 를 승격 전 release 로 되돌린다 |
 | | `amplai meta reject ID --reason …` / `abort ID --reason …` / `status ID` | 후보를 끝낸다 / 승인된 실험·canary 를 멈춘다 / 상태를 본다 |
@@ -131,6 +131,8 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - 시도 하나라도 답을 못 내면(driver 오류 등) 판정은 `inconclusive` 다. 실패로도 통과로도 세지 않는다.
 - canary 과제는 운영자의 실제 프로젝트 goal 이 아니라 corpus 과제를 실제 goal 로 돌린 것이다. 비용은 비교하지 않고
   (D-092) run 수·token·시간으로 상한을 건다.
+- canary 는 시작한 프로세스만 이어받는다. `run-canary` 가 도중에 끊기면 그 canary 는 이어 갈 수 없고 `abort` 로 끝낸 뒤
+  후보를 새로 제안해야 한다(첫 실제 실행에서 확인했다).
 - 모든 승인은 그 행동과 대상에 묶인 기록이고 사람 운영자만 발급한다. 후보가 통과하지 못하면 다음 단계 명령이 거절된다.
 
 ## 보장과 한계

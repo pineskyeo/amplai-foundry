@@ -137,7 +137,7 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
         driver: DriverOption = "codex-cli",
         corpus: CorpusOption = DEFAULT_CORPUS,
     ) -> None:
-        """Approve and start a canary of those low-risk tasks on the candidate."""
+        """Approve a canary of those low-risk tasks (run-canary starts it)."""
         run(
             config, driver, corpus,
             lambda ops: ops.approve_canary(
@@ -155,7 +155,7 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
         driver: DriverOption = "codex-cli",
         corpus: CorpusOption = DEFAULT_CORPUS,
     ) -> None:
-        """Run the canary tasks on the candidate and request promotion if all pass."""
+        """Start the approved canary and run its tasks; request promotion if all pass."""
 
         def gate(ops: Any) -> Any:
             ops.qualify_executor(basis, list(evidence), per_trial_tokens)

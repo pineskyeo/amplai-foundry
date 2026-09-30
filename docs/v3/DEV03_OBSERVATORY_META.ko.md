@@ -110,7 +110,7 @@ timeout, 연결 유실, 비정상 receipt는 외부 실행이 끝났다는 증�
 - corpus는 `specs/030-meta-harness-live/corpus/`의 demo-app 과제 20개(작은 7, 중간 7, 큰 6)다. 각 과제는 base에서 hidden 시험이 실패하고 기준 해답에서 통과해야 하며(`scripts/corpus_check.py`), 과제 문구에는 hidden 시험 내용을 넣지 않는다.
 - canary 정책은 선택 항목 `cost_basis`(`compared` 기본, `not_compared`)를 가진다(D-092, Work 030 S5). `not_compared` 이면 canary 결과의 비용이 unknown 이어도 되고 usage 가 `estimated` 여도 된다. 비용은 예약값을 유지하고 0 으로 세지 않으며, token·safety 카운터·receipt 결합·success 는 그대로 필수다. 기본 동작은 그대로다. 구독 계정 driver 는 비용을 모르기 때문이다(Codex, Claude 는 estimated).
 - canary 어댑터(`src/amplai_foundry/meta_harness/local_canary.py`)는 시험 결과를 canary 가 받는 형식으로 바꾼다. 답이 없는 시도는 어느 쪽으로도 세지 않고 canary 를 uncertain 으로 멈춘다.
-- 운영자용 명령은 `amplai meta`(Work 030 S6, `src/amplai_foundry/runtime/meta_cli.py`)다. 제안, 검사, 실험 승인·실행, canary 승인·실행, 승격, 되돌리기, 거절, 중단, 상태가 각각 하나의 명령이다. 단계를 묶는 명령은 없고, 순서에 맞지 않는 단계는 `META_STATE` 로 거절된다.
+- 운영자용 명령은 `amplai meta`(Work 030 S6, `src/amplai_foundry/runtime/meta_cli.py`)다. 제안, 검사, 실험 승인·실행, canary 승인·실행(승인은 시작하지 않고, 실행이 시작부터 시험까지 한 프로세스에서 한다), 승격, 되돌리기, 거절, 중단, 상태가 각각 하나의 명령이다. 단계를 묶는 명령은 없고, 순서에 맞지 않는 단계는 `META_STATE` 로 거절된다.
 - 실험 판정은 사전 등록한 비열등성이다. 성공률이 천장이므로 개선을 주장하지 않는다(D-093). 실제 진화 실행(S7)은 아직 하지 않았다.
 
 ## 7. 네트워크 없이 실제 파이프라인 재현
