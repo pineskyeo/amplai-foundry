@@ -1,0 +1,60 @@
+{
+  "kind": "meta_smoke",
+  "corpus_id": "demo-app-implementer-v1",
+  "base_commit": "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b",
+  "driver": "codex-cli",
+  "trials": [
+    {
+      "task_id": "s01-semver-parse",
+      "arm": "baseline",
+      "success": null,
+      "goal_status": "held",
+      "goal_reason": "driver failed: DRIVER_BOUNDARY",
+      "hidden_passed": null,
+      "visible_passed": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "usage_status": "unknown",
+      "seconds": 5.1
+    },
+    {
+      "task_id": "s01-semver-parse",
+      "arm": "control",
+      "success": null,
+      "goal_status": "held",
+      "goal_reason": "driver failed: DRIVER_BOUNDARY",
+      "hidden_passed": null,
+      "visible_passed": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "usage_status": "unknown",
+      "seconds": 4.4
+    },
+    {
+      "task_id": "s05-truncate",
+      "arm": "baseline",
+      "success": null,
+      "goal_status": "held",
+      "goal_reason": "driver failed: DRIVER_BOUNDARY",
+      "hidden_passed": null,
+      "visible_passed": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "usage_status": "unknown",
+      "seconds": 4.4
+    },
+    {
+      "task_id": "s05-truncate",
+      "arm": "control",
+      "success": null,
+      "goal_status": "held",
+      "goal_reason": "driver failed: DRIVER_BOUNDARY",
+      "hidden_passed": null,
+      "visible_passed": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "usage_status": "unknown",
+      "seconds": 4.4
+    }
+  ]
+}
