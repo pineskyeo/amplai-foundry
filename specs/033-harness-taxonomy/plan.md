@@ -422,3 +422,21 @@ confirmation):
 
 What stays fixed: a decider cannot read validation or holdout results, cannot explore on production goals,
 and its evaluation runs in the evaluator (class C), not inside the decider.
+
+### 10.4 The Judge Is A Selectable Component (operator, 2026-09-30)
+
+A judge is not a fixed service. `judge_model` is a component with options chosen per question type by the
+same decision procedure:
+
+| Option | Notes |
+|---|---|
+| none | rule table only (v1) |
+| Jev (TypeSafe) | typed answers with probabilities; external service — access, API, price and data policy 확인 필요 |
+| an LLM cell (Claude, Codex) | typed answers through a JSON schema, as the planners do today |
+
+- Each (judge, question type) pair is qualified before use: accuracy and calibration against past runs with
+  known outcomes, repeat stability, cost and latency per call. Unqualified pairs are never used.
+- Selection among qualified judges uses the measured table: not credibly less accurate than the best, then
+  cheapest and fastest.
+- A judge that sends goal text off the machine is limited by the data class (synthetic corpus by default).
+- One judge connector interface; adding a provider is a new option, not a code path per decider.
