@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import queue
 import uuid
@@ -48,7 +49,7 @@ class FakeServer:
     """An in-process stand-in for one ``opencode serve`` reached by its exec transport."""
 
     base_url = "http://127.0.0.1:4096"
-    password = None  # D-087 stand-in; the auth approach is pending (design.md Auth Options)
+    password = "per-run-test-password"  # the server always runs with a password (D-091)
 
     def __init__(self, workspace: Path, home: Path) -> None:
         self.ws, self.home = workspace, home
@@ -86,7 +87,8 @@ class FakeServer:
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         assert self.running, "request to a stopped server"
-        assert "authorization" not in request.headers  # D-087: no password
+        expected = "Basic " + base64.b64encode(b"opencode:" + self.password.encode()).decode()
+        assert request.headers.get("authorization") == expected  # password on (D-091)
         path = request.url.path
         if path == "/event":
             return httpx.Response(200, stream=IterStream(self.stream()))
