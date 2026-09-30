@@ -312,3 +312,30 @@ Router quality (for evaluating a `route_policy` candidate):
 - **escalation rate** and cost of escalations.
 
 All are descriptive except the pre-declared endpoint of each experiment (D-093, D-099).
+
+## 9. L10 Experiment Operations: The Nightly Loop (research: `research-continuous-search.md`)
+
+A fixed nightly trial budget B (operator-set; subscription windows permitting). Evidence accumulates across
+nights; nothing is re-run that is already measured for the same (config hash, task, model snapshot, corpus version).
+
+| Share of B | Phase | What |
+|---|---|---|
+| ~10% | drift check | the champion on fixed canary tasks; a changed model snapshot or a canary outside its band stops search that night and re-baselines |
+| first nights | screening | layers as factors in a screening design (Plackett–Burman / fold-over) to find the few layers that matter (HARBOR: ~5 of ~40); the rest are fixed |
+| ~60% | search | a surrogate fitted on all runs (task type × configuration, IRT-style or block-additive) proposes candidates, plus proposer edits; successive halving on task-subset fidelity |
+| ~30% | confirmation | top 1–2 candidates paired with the champion on the same tasks |
+
+Guards (evaluator part; qualified alone first, D-099):
+- promotion evidence as an e-process / always-valid test so stopping across nights keeps its error rate;
+- paired differences with task-cluster standard errors; differences under the noise band are "unresolved";
+- a sealed holdout queried through a budget (reusable-holdout rule) and rotated;
+- always compared with the same-budget best-of-n baseline (Rethinking);
+- a chance constraint against regression vs the champion (HARBOR);
+- promotion still goes through canary and the operator (design 16).
+
+Run log per trial: config hash and per-layer options, harness git SHA, resolved model snapshot, task id, type,
+corpus version, split, seed, attempt index, fidelity, phase, outcome, cost, tokens, trace ref, e-value state,
+holdout query counter.
+
+Cheaper models as low fidelity are not used (no evidence; transfer is limited, HarnessDev).
+Continuous nightly operation of this combination has no published evidence: the first nights are a pilot.
