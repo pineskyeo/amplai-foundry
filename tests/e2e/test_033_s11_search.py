@@ -129,8 +129,10 @@ def test_ac08_a_class_b_candidate_goes_through_every_gate_to_an_approved_canary(
     assert w.ops.stages(pid)["state"] == "offline_evaluated"
 
     # 6. the existing gates continue from there: the bound report passes the canary gate
-    canary = w.ops.approve_canary(pid, ["t0"], max_trial_tokens=TRIAL_TOKENS)
-    assert canary["tasks"] == ["t0"] and w.ops.status(pid)["state"] == "canary_approved"
+    # a development task of the plan's app (a holdout task is never a canary task)
+    task = task_ids("development")[0]
+    canary = w.ops.approve_canary(pid, [task], max_trial_tokens=TRIAL_TOKENS)
+    assert canary["tasks"] == [task] and w.ops.status(pid)["state"] == "canary_approved"
 
 
 def test_ac08_a_class_a_candidate_needs_no_review_and_stops_at_the_focused_gate(w: World) -> None:

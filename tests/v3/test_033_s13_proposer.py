@@ -1532,8 +1532,8 @@ def test_a_sweep_that_is_a_removal_passes_holdout_and_the_canary_approval(w: Wor
     assert proposer.removal_verdict(w.store, w.scope, first)["removal_candidate"] is True
     holdout = runner.approve_stage(first, "holdout")
     assert holdout.state == "passed" and w.state(first) == "offline_evaluated"
-    canary = w.ops.approve_canary(first, ["t0"], max_trial_tokens=10)
-    assert canary["tasks"] == ["t0"]
+    canary = w.ops.approve_canary(first, [DEV[0]], max_trial_tokens=10)  # a development task
+    assert canary["tasks"] == [DEV[0]]
 
 
 def test_the_removal_gate_holds_a_sweep_before_its_focused_stage(w: World) -> None:

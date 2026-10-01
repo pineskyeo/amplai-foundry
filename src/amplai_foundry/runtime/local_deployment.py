@@ -729,8 +729,10 @@ class LocalProductDeployment:
         environment, qualification, driver and model records of that image, no ``harness-cell``
         record) and its port, and the app's suite verifier running in the task image with
         network none. A cell whose driver has no report for the environment, or whose records
-        cannot be installed there (``DRIVER_UNQUALIFIED``, ``EFFORT_UNPROBED``: an effort cell
-        is probed in one image, §2.4), is skipped with the reason in ``environment_skips``; an
+        cannot be installed there (``DRIVER_UNQUALIFIED``; ``EFFORT_UNPROBED`` / ``EFFORT_REFUSED``:
+        an effort cell needs an accepted probe of (cell, this environment) whose image and driver
+        version are this environment's, ``ops local-cell probe CELL --environment ENV``; probes
+        never run at boot), is skipped with the reason in ``environment_skips``; an
         environment no cell qualifies in is skipped as a whole (its trials then hold
         ENVIRONMENT_UNQUALIFIED before any claim)."""
         out: list[TaskEnvironment] = []
@@ -751,15 +753,26 @@ class LocalProductDeployment:
                     base_inputs, container_profile=profile_path,
                     qualification_report=self.local(report),
                 )  # fmt: skip
-                found = latest_probe(self.store, self.scope, cell.cell_id)
+                # an effort cell counts only the probe of (cell, this environment): never the
+                # app-image probe nor another environment's (S7b); the probe's image and driver
+                # version must still equal this environment's (``CellInstaller.profile``)
+                found = (
+                    None
+                    if cell.effort == LEGACY_EFFORT
+                    else latest_probe(self.store, self.scope, cell.cell_id, env.environment_id)
+                )
                 try:
                     refs, _measured = cells.profile(
                         cell, env_inputs, caps, probe=found[1] if found is not None else None
                     )
                 except Hold as exc:
-                    self.environment_skips.append(
-                        {**skip, "code": exc.code, "reason": str(exc)[:300]}
-                    )
+                    reason = str(exc)[:240]
+                    if exc.code in ("EFFORT_UNPROBED", "EFFORT_REFUSED"):
+                        reason += (
+                            f"; run amplai ops local-cell probe {cell_id}"
+                            f" --environment {env.environment_id}"
+                        )
+                    self.environment_skips.append({**skip, "code": exc.code, "reason": reason})
                     continue
                 register(refs, env_inputs)
                 env_drivers[cell_id] = refs
@@ -1020,7 +1033,12 @@ def cell_of(cfg: LocalConfig, cell_id: str) -> tuple[CellEntry | None, Cell]:
 
 
 def probe_local_cell(
-    config_path: Path, cell_id: str, *, app_id: str | None = None, turn_factory: Any = None
+    config_path: Path,
+    cell_id: str,
+    *,
+    app_id: str | None = None,
+    environment_id: str | None = None,
+    turn_factory: Any = None,
 ) -> dict[str, Any]:
     """``amplai ops local-cell probe``: one effort probe turn, stored as ``cell-effort-probe``.
 
@@ -1029,9 +1047,15 @@ def probe_local_cell(
     stopped (the store has one owner). ``turn_factory(cell, inputs, scratch_root)`` replaces the
     real container turn in tests.
 
-    One probe per cell id (§2.4): the latest probe decides the image the cell installs in; apps
-    in other images skip the cell at boot (``LocalProductDeployment.cell_skips``). ``app_id``
-    picks the app, and so the image, to probe in; without it the first app with a report.
+    One probe per cell id in the app image (§2.4): the latest probe decides the image the cell
+    installs in; apps in other images skip the cell at boot (``LocalProductDeployment.cell_skips``).
+    ``app_id`` picks the app, and so the image, to probe in; without it the first app with a report.
+
+    ``environment_id`` (S7b) runs the turn in that task environment's image instead (its
+    container profile and its report for the cell's driver, ``EnvironmentEntry``) and records
+    the probe under (cell, environment); the app-image probe is untouched. ``app_id`` then picks
+    the app whose environment it is; without it the first app with that environment and a report.
+    Hold ENVIRONMENT_UNQUALIFIED when no such environment exists. Probes never run at boot.
     """
     from .contracts.identity import new_id
     from .execution.cells import PROBE_PROMPT, PROBE_SCHEMA, run_probe, store_probe
@@ -1048,9 +1072,18 @@ def probe_local_cell(
     entry, cell = cell_of(cfg, cell_id)
     if entry is None or cell.effort == LEGACY_EFFORT:
         raise Hold("EFFORT_UNSUPPORTED", "Only a cell with an effort is probed")
-    chosen: tuple[AppEntry, str] | None = None
+    chosen: tuple[AppEntry, str, str] | None = None  # app, container profile, report
     for candidate in cfg.apps:
         if app_id not in (None, candidate.app_id):
+            continue
+        if environment_id is not None:
+            env = next(
+                (e for e in candidate.environments if e.environment_id == environment_id), None
+            )
+            env_report = env.qualification_reports.get(cell.driver_id) if env else None
+            if env is not None and env_report is not None:
+                chosen = (candidate, env.container_profile, env_report)
+                break
             continue
         report = (
             (entry.qualification_reports or {}).get(candidate.app_id)
@@ -1058,13 +1091,19 @@ def probe_local_cell(
             else candidate.driver_report(cell.driver_id)
         )
         if report is not None:
-            chosen = (candidate, report)
+            chosen = (candidate, candidate.container_profile, report)
             break
+    if chosen is None and environment_id is not None:
+        raise Hold(
+            "ENVIRONMENT_UNQUALIFIED",
+            "No app has this task environment with a report for the cell's driver",
+            details={"environment_id": environment_id, "driver_id": cell.driver_id},
+        )
     if chosen is None:
         raise Hold("DRIVER_UNQUALIFIED", "No app has a qualification report for this cell")
-    app, report = chosen
+    app, profile, report = chosen
     inputs = CodexProfileInputs(
-        container_profile=local(app.container_profile),
+        container_profile=local(profile),
         egress_profile=local(cfg.codex.egress_profile),
         egress_qualification=local(cfg.codex.egress_qualification),
         qualification_report=local(report),
@@ -1101,18 +1140,22 @@ def probe_local_cell(
         scratch.mkdir(parents=True, mode=0o700)
         value = run_probe(
             scope, cell, turn, scratch, driver_version=measured["driver_version"],
-            image=measured["image"], argv=argv,
+            image=measured["image"], argv=argv, environment_id=environment_id,
         )  # fmt: skip
         ref = store_probe(store, scope, value)
     finally:
         store.close()
-    return {
+    out = {
         "cell_id": cell.cell_id,
         "app": app.app_id,
         "outcome": value["outcome"],
         "probe_ref": ref,
         "next": "restart amplai ops local-serve" if value["outcome"] == "accepted" else None,
     }
+    if environment_id is not None:
+        out["environment_id"] = environment_id
+        out["image"] = measured["image"]
+    return out
 
 
 def claude_token(path: Path) -> str:

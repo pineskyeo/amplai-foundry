@@ -1,0 +1,457 @@
+<title>AMPLAI Meta-Harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column for an engineering report — status first, then the loop, then the parts, then what waits for the operator. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #14202b; --muted: #586674; --line: #d8dee5;
+  --accent: #2a57c9; --accent-soft: #e2e9fb;
+  --gate: #6a49c2; --gate-soft: #ece6fa;
+  --ok: #1d7549; --ok-soft: #dff1e7;
+  --warn: #9a5806; --warn-soft: #fbeed6;
+  --crit: #ad2a22; --crit-soft: #f8e0dd;
+  --font-sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1317; --surface: #151c22; --ink: #e4e9ee; --muted: #98a5b1; --line: #29333c;
+    --accent: #8ea8ff; --accent-soft: #1d2846;
+    --gate: #b8a2ff; --gate-soft: #2a2243;
+    --ok: #6dd19c; --ok-soft: #163026;
+    --warn: #efb35b; --warn-soft: #382812;
+    --crit: #ff8b80; --crit-soft: #3a1a17;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1317; --surface: #151c22; --ink: #e4e9ee; --muted: #98a5b1; --line: #29333c;
+  --accent: #8ea8ff; --accent-soft: #1d2846;
+  --gate: #b8a2ff; --gate-soft: #2a2243;
+  --ok: #6dd19c; --ok-soft: #163026;
+  --warn: #efb35b; --warn-soft: #382812;
+  --crit: #ff8b80; --crit-soft: #3a1a17;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 40px; }
+h1, h2, h3 { line-height: 1.3; text-wrap: balance; margin: 0; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header.top { display: grid; gap: 14px; padding-block: 8px 4px; }
+.lede { font-size: 1.06rem; color: var(--ink); }
+.meta-line { color: var(--muted); font-size: 0.9rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.gate { background: var(--gate-soft); color: var(--gate); }
+.chip.info { background: var(--accent-soft); color: var(--accent); }
+.chip.crit { background: var(--crit-soft); color: var(--crit); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.88rem; padding-block: 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover { color: var(--accent); }
+section { display: grid; gap: 16px; scroll-margin-top: 12px; }
+.section-head { display: grid; gap: 4px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .v { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.kpi .k { font-size: 0.85rem; color: var(--muted); }
+.ask { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--gate); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 12px; }
+.ask ol { margin: 0; padding-left: 1.25rem; display: grid; gap: 8px; }
+.ask li { max-width: 72ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 12px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.scroll { overflow-x: auto; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.78rem; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; white-space: nowrap; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .mono { white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.84rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+svg text { font-family: var(--font-sans); }
+.flow-node { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.flow-node.auto { stroke: var(--accent); }
+.flow-node.gate { stroke: var(--gate); fill: var(--gate-soft); }
+.flow-label { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.flow-sub { fill: var(--muted); font-size: 11px; }
+.flow-arrow { stroke: var(--muted); stroke-width: 1.3; fill: none; }
+.flow-head { fill: var(--muted); }
+.bar { fill: var(--accent); }
+.bar.reg { fill: var(--muted); }
+.axis { stroke: var(--line); stroke-width: 1; }
+.tick { fill: var(--muted); font-size: 11px; font-family: var(--font-mono); }
+.bar-label { fill: var(--ink); font-size: 12px; }
+.bar-value { fill: var(--ink); font-size: 12px; font-family: var(--font-mono); }
+ul.clean { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
+ul.clean li { max-width: 72ch; }
+.phase { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.phase div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); display: grid; gap: 2px; }
+.phase b { font-size: 0.88rem; }
+.phase small { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.note { color: var(--muted); font-size: 0.86rem; }
+footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--line); padding-top: 14px; }
+@media (max-width: 520px) { h1 { font-size: 1.6rem; } .wrap { padding-inline: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Work 033 · amplai-foundry · 2026-10-01 23:45 KST 기준</div>
+  <h1>AMPLAI Meta-Harness</h1>
+  <p class="lede">하네스(에이전트를 감싸는 실행 방식: 지시문, 실행 전략, 컨텍스트, 검증, 예산)를 부품으로 쪼개고, 모델×추론강도 칸(cell)마다 부품 조합을 실험으로 비교해, <strong>측정으로 이긴 조합만 사람이 승인해 배포하는</strong> 자가개선 시스템이다.</p>
+  <div class="chips">
+    <span class="chip ok">코드 S1–S15·S7b 완료, PR 8건 merge</span>
+    <span class="chip info">canary v2 경로 보강 중</span>
+    <span class="chip warn">실제 파일럿(S16) 미실행</span>
+    <span class="chip gate">운영자 결정 4건 대기</span>
+  </div>
+  <p class="meta-line">이 페이지는 중간 보고다. 실제 개선 결과(파일럿)와 legacy 제거가 끝나면 같은 주소로 갱신한다.</p>
+</header>
+
+<nav class="toc" aria-label="목차">
+  <a href="#ask">결정 요청</a><a href="#status">현황</a><a href="#loop">자가개선 루프</a><a href="#layers">레이어와 판단</a><a href="#components">부품</a><a href="#strategies">실행 전략</a><a href="#evaluation">평가</a><a href="#corpus">과제 목록</a><a href="#authority">권한과 안전</a><a href="#dashboard">대시보드</a><a href="#decisions">결정 기록</a><a href="#delivery">진행 기록</a><a href="#next">다음 단계</a>
+</nav>
+
+<section id="ask">
+  <div class="section-head"><div class="eyebrow">Operator</div><h2>What Needs Your Decision</h2></div>
+  <div class="ask">
+    <p>코드는 끝났고, 이제 실제로 성능이 오르는지를 보여 줄 차례다. 그 전에 운영자(사람)만 할 수 있는 결정 네 가지가 남아 있다.</p>
+    <ol>
+      <li><strong>파일럿 시작과 예산.</strong> 칸 4개 calibration, 그다음 3일 밤 동안 밤마다 약 150 trial. 승인 명령(<code>calibrate</code>, <code>nightly approve</code>, 단계 gate)은 운영자가 직접 실행한다. 사람 승인을 agent 가 대신 쓰지 않는 것이 이 설계의 원칙이다(IC-17).</li>
+      <li><strong>Legacy 제거 목록 승인.</strong> V1·V2 와 V3 미사용 부분. 사람이 정할 항목은 knowledge CLI·vault(D1), Slack/Hermes governance와 <code>ops serve</code>(D2·D3), Kit 2.x 배포 중단(D9)이다. 근거 목록은 <code>specs/033-harness-taxonomy/legacy-inventory.md</code>.</li>
+      <li><strong>IC-30: 밤에 새 제안을 스스로 screen 해도 되는가.</strong> 지금은 낮에 사람이 screen 한 제안만 밤이 돌린다. 추천은 class A 부품에 한해 기계적 screen(보호 영역 검사와 leak gate)을 허용하는 것이다. 보호 영역(class C) 권한이 바뀌므로 결정 전에는 구현하지 않았다.</li>
+      <li><strong>잠정 결정 확인.</strong> IC-15–IC-29, IC-31, IC-32 는 추천안으로 잠정 구현됐다. 각각은 제약을 더하거나 내부 필드만 더한다. 야간 루프를 켜기 전에 확인이 필요하다(<a href="#decisions">결정 기록</a>).</li>
+    </ol>
+  </div>
+</section>
+
+<section id="status">
+  <div class="section-head"><div class="eyebrow">Status</div><h2>Where It Stands</h2></div>
+  <div class="kpis">
+    <div class="kpi"><span class="v">8</span><span class="k">merge 된 PR (#46–#53)</span></div>
+    <div class="kpi"><span class="v">6,813</span><span class="k">통과한 test (PR #52 CI, 3.11·3.12)</span></div>
+    <div class="kpi"><span class="v">91</span><span class="k">평가 과제 (자체 71 + 회귀 20)</span></div>
+    <div class="kpi"><span class="v">10</span><span class="k">실행 전략</span></div>
+    <div class="kpi"><span class="v">8+1</span><span class="k">판단 레이어 L1–L8, 야간 운영 L10</span></div>
+    <div class="kpi"><span class="v">4</span><span class="k">파일럿 칸 (Codex 2, Claude 2)</span></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>완성된 것</h3>
+      <ul class="clean">
+        <li>부품 manifest: 부품마다 버전·켜고 끄기·class(A/B/C), 기본 조합은 지금 프롬프트와 byte 단위로 같다(golden test).</li>
+        <li>칸(cell) = 드라이버×모델×추론강도. Codex <code>model_reasoning_effort</code>, Claude <code>--effort</code> 를 실제 argv 로 넘기고, 측정 안 된 강도는 거부한다.</li>
+        <li>평가기 v2, 적응형 calibration, 4단계 실험(screening → focused → ablation → holdout), 통계 판정.</li>
+        <li>레이어별 판단기(decider): 상황 특징 → 부분 pooling 추정 → 선택 규칙 → 사전값. 판단 방식 자체도 버전 있는 부품이다.</li>
+        <li>제안자(proposer): 개발 split trace 만 읽고, 싼 칸이 넓게 초안을 만들고 강한 칸이 다듬는다. 예측을 함께 내고, 실험 뒤 그 예측을 채점한다.</li>
+        <li>야간 루프, 정적 대시보드, 평가 품질 지표, 실행 전략 10종.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>아직 아닌 것</h3>
+      <ul class="clean">
+        <li><strong>실제 개선 증거.</strong> 파일럿(S16)을 돌려야 생긴다. 지금까지의 test 는 가짜 드라이버와 scripted 실행으로 동작을 증명한 것이다.</li>
+        <li>Terminal-Bench 2.0 과제 채택: docker 로 과제별 reference 를 돌려 보는 admission 이 필요하고, 과제의 test 실행 명령은 아직 확인 필요(§14 Q7)다.</li>
+        <li>split 고정: 자체 과제만으로는 validation 이 13개라 기준(24) 미달. TB2 채택 뒤 고정한다.</li>
+        <li>v2 제안의 canary·promote 경로와 TB2 이미지 안의 추론강도 측정: 지금 고치는 중이다.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="loop">
+  <div class="section-head"><div class="eyebrow">Loop</div><h2>How The Self-Improving Loop Runs</h2></div>
+  <p>제안 하나가 거치는 길이다. 파란 단계는 자동, 보라 단계는 사람이 승인한다. 사용자에게 실제로 영향을 주는 단계(focused 이후)는 모두 사람 승인이다.</p>
+  <div class="panel scroll">
+    <svg viewBox="0 0 960 170" width="960" height="170" role="img" aria-labelledby="flow-title">
+      <title id="flow-title">제안이 초안에서 배포까지 거치는 여덟 단계</title>
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="flow-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <g>
+        <rect class="flow-node auto" x="8" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="58" y="66" text-anchor="middle">Proposer</text><text class="flow-sub" x="58" y="84" text-anchor="middle">초안·예측</text>
+        <rect class="flow-node auto" x="128" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="178" y="66" text-anchor="middle">Screen</text><text class="flow-sub" x="178" y="84" text-anchor="middle">보호영역·leak</text>
+        <rect class="flow-node auto" x="248" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="298" y="66" text-anchor="middle">Screening</text><text class="flow-sub" x="298" y="84" text-anchor="middle">dev ≤12과제</text>
+        <rect class="flow-node gate" x="368" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="418" y="66" text-anchor="middle">Focused</text><text class="flow-sub" x="418" y="84" text-anchor="middle">validation</text>
+        <rect class="flow-node auto" x="488" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="538" y="66" text-anchor="middle">Ablation</text><text class="flow-sub" x="538" y="84" text-anchor="middle">부품 하나씩 빼기</text>
+        <rect class="flow-node gate" x="608" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="658" y="66" text-anchor="middle">Holdout</text><text class="flow-sub" x="658" y="84" text-anchor="middle">처음 보는 과제</text>
+        <rect class="flow-node gate" x="728" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="778" y="66" text-anchor="middle">Canary</text><text class="flow-sub" x="778" y="84" text-anchor="middle">소수 과제 실행</text>
+        <rect class="flow-node gate" x="848" y="40" width="100" height="62" rx="8"/><text class="flow-label" x="898" y="66" text-anchor="middle">Promote</text><text class="flow-sub" x="898" y="84" text-anchor="middle">release 교체</text>
+      </g>
+      <g>
+        <path class="flow-arrow" d="M108,71 L126,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M228,71 L246,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M348,71 L366,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M468,71 L486,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M588,71 L606,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M708,71 L726,71" marker-end="url(#arr)"/><path class="flow-arrow" d="M828,71 L846,71" marker-end="url(#arr)"/>
+      </g>
+      <text class="flow-sub" x="8" y="128">자동 단계는 서로 다른 split 을 쓴다: 개발(dev) → 검증(validation) → holdout. 제안자와 판단기는 dev 데이터만 읽는다.</text>
+      <text class="flow-sub" x="8" y="148">어느 단계든 판정이 regression, 안전 실패, hack guard 면 멈춘다. ablation 결과는 기여도 기록일 뿐 통과 조건이 아니다.</text>
+    </svg>
+  </div>
+  <div class="legend"><span style="--c: var(--accent)">자동 (야간에도 실행)</span><span style="--c: var(--gate)">사람 승인 gate</span></div>
+  <div class="panel">
+    <h3>야간 루프 (L10)</h3>
+    <p>운영자가 한 번 내준 <strong>상시 승인</strong>(최대 7일, 밤당 trial 수와 token 상한 포함) 안에서 별도 서비스 identity 가 탐색 실험만 승인하고 돌린다. 확정·holdout·canary·promote 는 절대 하지 않는다.</p>
+    <div class="phase">
+      <div><b>Preflight</b><small>kill switch, 칸과 평가기 자격, 종료 시각</small></div>
+      <div><b>Drift ~10%</b><small>회귀 과제로 챔피언 재측정. 범위를 벗어나면 그날 탐색 중단, 재측정 예약</small></div>
+      <div><b>Search ~60%</b><small>screening·ablation, surrogate 순위, successive halving</small></div>
+      <div><b>Confirmation ~30%</b><small>낮에 사람이 승인해 둔 focused 만 실행</small></div>
+      <div><b>Dreaming</b><small>그날 trace 로 memory notes 후보 정리</small></div>
+      <div><b>Dashboard</b><small>정적 페이지 갱신</small></div>
+    </div>
+    <p class="note">예산: 처음 3일은 밤마다 약 150 trial, 그 뒤 B = 측정된 여유분의 일부(최소 절반은 운영자 몫으로 남김). 밤은 예산, 종료 시각 또는 시작 후 최대 8시간, quota 신호, 승인 철회, 첫 미확인 effect 에서 멈춘다.</p>
+  </div>
+</section>
+
+<section id="layers">
+  <div class="section-head"><div class="eyebrow">Layers</div><h2>Layers And How Each Decides</h2></div>
+  <p>과제와 상황마다 유리한 하네스가 다르므로, 레이어마다 실행 중 그 자리에서 판단한다. 판단기는 dev 데이터로 맞춘 규칙표를 쓰고, 표본이 적으면 상위 묶음으로 당겨(partial pooling) 추정하며, 운영 goal 에서는 탐색하지 않는다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>레이어</th><th>판단 시점</th><th>고르는 것</th><th>사전값(판단기 없을 때)</th><th>평가 지표</th></tr></thead>
+      <tbody>
+        <tr><td><b>L1</b> 해석</td><td>계획 직후</td><td>진행 / 되묻기 / ask_first 로 한 번 더 계획</td><td>질문이 있으면 되묻기</td><td>모호 과제의 되묻기 정밀도·재현율</td></tr>
+        <tr><td><b>L2</b> 구조</td><td>계획 뒤</td><td>실행 전략 10종 중 하나</td><td><code>repair_loop</code></td><td>최선 전략 대비 regret</td></tr>
+        <tr><td><b>L3</b> 역할</td><td>계획 뒤</td><td>역할별 칸(모델×강도)</td><td>router 순서</td><td>역할 배정별 해결당 token</td></tr>
+        <tr><td><b>L4</b> 컨텍스트</td><td>dispatch</td><td>env bootstrap, memory notes, retrieval 켜고 끄기</td><td>manifest 그대로</td><td>성공률과 token</td></tr>
+        <tr><td><b>L5</b> 에이전트 옵션</td><td>dispatch</td><td><code>driver_options</code> 버전</td><td>없음</td><td>성공, turn, token</td></tr>
+        <tr><td><b>L6</b> 실패 시</td><td>시도 실패 후</td><td>피드백 재시도 / 새로 재시도 / 상위 칸 escalate / 중단</td><td>attempt policy</td><td>재시도당 회복률</td></tr>
+        <tr><td><b>L7</b> 빠른 검사</td><td>최종 검증 전</td><td>없음 / quick checks</td><td>없음</td><td>절약한 시간 vs 잡은 실패</td></tr>
+        <tr><td><b>L8</b> 한도</td><td>계획 뒤</td><td><code>limits</code> 버전</td><td>배포 예산</td><td>예산 초과 vs 놓친 성공</td></tr>
+        <tr><td><b>L10</b> 실험 운영</td><td>매일 밤</td><td>무엇을 얼마나 시험할지</td><td>상시 승인 정책</td><td>밤당 개선 후보 수, 비용</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">L9(실행 이미지)는 정의만 하고 이번 범위에서 뺐다. 판단 방식(특징, 추정기, 선택 규칙, 대체 규칙)과 judge 모델(none / LLM 칸 / Jev 연결부)도 버전 있는 부품이라 교체하고 비교할 수 있다. Jev 는 연결부만 있고, 설정 전에는 <code>JUDGE_NOT_CONFIGURED</code> 로 막힌다.</p>
+</section>
+
+<section id="components">
+  <div class="section-head"><div class="eyebrow">Components</div><h2>Harness Components</h2></div>
+  <p>class A 는 기계적 검사만으로 실험할 수 있는 내용, class B 는 사람이 코드 리뷰를 해야 하는 동작 변경이다. class C(권한, 보호 영역)는 meta-harness 가 바꾸지 못한다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>부품</th><th>레이어</th><th>class</th><th>무엇을 바꾸나</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">role_prompt</td><td>L4</td><td>A</td><td>실행자 역할 지시문</td></tr>
+        <tr><td class="mono">interpretation</td><td>L1</td><td>A</td><td>계획자 지시: v1 / ask_first / assume_and_state, 계약 형식 steps</td></tr>
+        <tr><td class="mono">env_bootstrap</td><td>L4</td><td>A</td><td>저장소 사실을 프롬프트에 넣기</td></tr>
+        <tr><td class="mono">memory_notes</td><td>L4</td><td>A</td><td>근거 trace 가 붙은 메모 (dreaming 이 갱신 후보를 만든다)</td></tr>
+        <tr><td class="mono">retrieval</td><td>L4</td><td>B</td><td>관련 파일 찾아 넣기</td></tr>
+        <tr><td class="mono">feedback_form</td><td>L6</td><td>B</td><td>실패를 다음 시도에 전하는 형식</td></tr>
+        <tr><td class="mono">attempt_policy</td><td>L6</td><td>B</td><td>최대 시도 수와 재시도 방식</td></tr>
+        <tr><td class="mono">execution_strategy</td><td>L2</td><td>B</td><td>켜 둔 실행 전략과 그 매개변수</td></tr>
+        <tr><td class="mono">driver_options</td><td>L5</td><td>B</td><td>드라이버별 옵션</td></tr>
+        <tr><td class="mono">fast_checks</td><td>L7</td><td>B</td><td>최종 검증 전 빠른 검사</td></tr>
+        <tr><td class="mono">limits</td><td>L8</td><td>B</td><td>시간·token·보조 turn 상한</td></tr>
+        <tr><td class="mono">route_policy</td><td>L2/L3</td><td>B</td><td>과제 종류별 칸 순서</td></tr>
+        <tr><td class="mono">decider · decision_method · judge_model</td><td>L1–L8</td><td>B</td><td>레이어 판단기, 판단 방식, judge</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="strategies">
+  <div class="section-head"><div class="eyebrow">Strategies</div><h2>Ten Execution Strategies</h2></div>
+  <p>한 번에 쓰는 프로세스는 저장소당 하나로 유지한다(동시 쓰기 1, 읽기 전용은 4까지). L2 판단기가 과제마다 고르고, 그 선택 자체가 평가 대상이다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>전략</th><th>방식</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">single</td><td>한 번 실행하고 검증</td></tr>
+        <tr><td class="mono">repair_loop</td><td>실패하면 피드백을 붙여 다시 (지금 동작, 사전값)</td></tr>
+        <tr><td class="mono">workgraph_split</td><td>계획자가 부분으로 쪼개 순서대로 실행</td></tr>
+        <tr><td class="mono">plan_execute</td><td>계획자가 단계를 쓰고 실행자가 따름</td></tr>
+        <tr><td class="mono">best_of_n</td><td>같은 기준에서 n ≤ 3 번 시도해 통과한 것</td></tr>
+        <tr><td class="mono">generator_reviewer</td><td>읽기 전용 reviewer 가 고칠 점을 주고 follow-up turn 으로 반영</td></tr>
+        <tr><td class="mono">cascade</td><td>싼 칸으로 시작해 실패하면 상위 칸으로 새 계약 revision</td></tr>
+        <tr><td class="mono">orchestrator</td><td>lead 가 겹치지 않는 부분을 나누고 각각 검증 후 통합</td></tr>
+        <tr><td class="mono">parallel_readonly</td><td>조사 단계(바꿀 파일, 돌릴 test, 관례)를 병렬로 읽고 실행</td></tr>
+        <tr><td class="mono">vote</td><td>같은 기준에서 후보 k ≤ 3 개, 빠른 검사로 하나 고름</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">보조 turn(reviewer, 조사, lead, judge)은 <code>aux_max_tokens</code> 안에서만 돈다. 운영 goal 의 기본값은 0이라, 운영자가 상한을 정하기 전에는 보조 turn 이 필요한 전략을 운영에서 고르지 않는다(IC-21).</p>
+</section>
+
+<section id="evaluation">
+  <div class="section-head"><div class="eyebrow">Evaluation</div><h2>How A Change Is Judged</h2></div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>판정 클래스</h3>
+      <ul class="clean">
+        <li><b>improvement</b>: 성공률이 의미 있게 오름 (superiority)</li>
+        <li><b>efficiency</b>: 성공률은 같고 비용이 줄어듦</li>
+        <li><b>non_inferior</b>: 나빠지지 않음 (margin 0.25, 신뢰 0.95, 과제 16개 이상 필요)</li>
+        <li><b>regression</b>, <b>tradeoff</b>, <b>inconclusive</b></li>
+      </ul>
+      <p class="note">같은 과제를 짝지어 비교하고(paired), Wilson 구간을 보수적으로 쓴다. 여러 밤에 걸친 누적 판정은 e-process 로 하고, α 는 사슬마다 고정이다.</p>
+    </div>
+    <div class="panel">
+      <h3>Calibration 과 품질</h3>
+      <ul class="clean">
+        <li>칸×과제마다 1회 실행하고, 칸끼리 엇갈리거나 경계인 과제만 최대 5회까지 반복한다.</li>
+        <li>과제를 informative / saturated / unsolved / flaky 로 나눠, 차이를 보여 주는 과제로 실험한다.</li>
+        <li>평가기 자체도 버전이 있다. 바꾸려면 Q-01–Q-15 시험을 다시 돌려 code digest 에 묶어야 하고, 사람만 승인한다(IC-25, IC-26).</li>
+        <li>평가 품질 지표: 변별력, 포화, 채점 흔들림, 오염, dev–holdout 차이, 실제 결과와의 일치, 영역 분포, 판정당 비용.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="corpus">
+  <div class="section-head"><div class="eyebrow">Corpus</div><h2>Evaluation Tasks</h2></div>
+  <p>자체 과제는 결함을 심은 재고관리 앱(bench app)에서 만들었다. 91개 모두 기준을 통과했다(원본은 실패, 정답은 숨긴 test 통과). leak gate 는 과제 id, 숨긴 test 이름, 정답 고유 식별자가 제안에 들어오면 막는다.</p>
+  <div class="panel scroll">
+    <svg viewBox="0 0 640 250" width="640" height="250" role="img" aria-labelledby="corpus-title">
+      <title id="corpus-title">영역별 과제 수: bug 13, feature 12, refactor 11, cli_ops 12, data 11, ambiguity 12, regression 20</title>
+      <line class="axis" x1="130" y1="12" x2="130" y2="222"/>
+      <line class="axis" x1="130" y1="222" x2="610" y2="222"/>
+      <text class="tick" x="130" y="240" text-anchor="middle">0</text>
+      <text class="tick" x="250" y="240" text-anchor="middle">5</text>
+      <text class="tick" x="370" y="240" text-anchor="middle">10</text>
+      <text class="tick" x="490" y="240" text-anchor="middle">15</text>
+      <text class="tick" x="610" y="240" text-anchor="middle">20</text>
+      <g>
+        <text class="bar-label" x="120" y="30" text-anchor="end">bug</text><rect class="bar" x="130" y="18" width="312" height="18" rx="3"/><text class="bar-value" x="448" y="31">13</text>
+        <text class="bar-label" x="120" y="60" text-anchor="end">feature</text><rect class="bar" x="130" y="48" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="61">12</text>
+        <text class="bar-label" x="120" y="90" text-anchor="end">refactor</text><rect class="bar" x="130" y="78" width="264" height="18" rx="3"/><text class="bar-value" x="400" y="91">11</text>
+        <text class="bar-label" x="120" y="120" text-anchor="end">cli_ops</text><rect class="bar" x="130" y="108" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="121">12</text>
+        <text class="bar-label" x="120" y="150" text-anchor="end">data</text><rect class="bar" x="130" y="138" width="264" height="18" rx="3"/><text class="bar-value" x="400" y="151">11</text>
+        <text class="bar-label" x="120" y="180" text-anchor="end">ambiguity</text><rect class="bar" x="130" y="168" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="181">12</text>
+        <text class="bar-label" x="120" y="210" text-anchor="end">regression</text><rect class="bar reg" x="130" y="198" width="480" height="18" rx="3"/><text class="bar-value" x="616" y="211">20</text>
+      </g>
+    </svg>
+  </div>
+  <div class="legend"><span style="--c: var(--accent)">자체 과제 (6개 영역, 71개)</span><span style="--c: var(--muted)">Work 030 회귀 과제 (20개)</span></div>
+  <p class="note">split 은 영역별 층화로 나눈다(자체 과제의 30% 를 holdout: 22개). validation 은 13개로 기준 24개에 못 미쳐, Terminal-Bench 2.0 과제 채택 뒤 <code>splits.json</code> 을 고정한다. TB2 는 Apache-2.0, 89개 과제이며, V3 격리 환경(network none, uid 65534, 쓰기는 workspace 만)에서 reference 가 통과하는 과제만 받는다.</p>
+</section>
+
+<section id="authority">
+  <div class="section-head"><div class="eyebrow">Authority</div><h2>Who May Do What</h2></div>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>행위</th><th>사람 운영자</th><th>야간 identity</th><th>제안자</th></tr></thead>
+      <tbody>
+        <tr><td>부품 초안 제출</td><td>가능</td><td>—</td><td><span class="chip ok">가능</span></td></tr>
+        <tr><td>class B 코드 리뷰, 제안 거절</td><td><span class="chip ok">가능</span></td><td>불가</td><td>불가</td></tr>
+        <tr><td>탐색 실험 승인 (dev, exploratory)</td><td>가능</td><td><span class="chip info">상시 승인 안에서</span></td><td>불가</td></tr>
+        <tr><td>확정 실험(focused, holdout) 승인</td><td><span class="chip gate">사람만</span></td><td>불가</td><td>불가</td></tr>
+        <tr><td>holdout 읽기</td><td><span class="chip gate">사람만</span></td><td>불가</td><td>불가</td></tr>
+        <tr><td>canary, promote, rollback</td><td><span class="chip gate">사람만</span></td><td>불가</td><td>불가</td></tr>
+        <tr><td>중단된 실험 reconcile</td><td><span class="chip gate">사람만</span></td><td>불가</td><td>불가</td></tr>
+        <tr><td>평가기 변경 승인</td><td><span class="chip gate">사람만</span></td><td>불가</td><td>불가</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="clean">
+    <li>Trace 는 dev split 의 trial 에서만 모으고, reasoning 은 버리고, secret 검사 뒤에만 저장하며, 제안자만 읽는다. 밖으로 내보내지 않는다.</li>
+    <li>Trial goal 은 publish 되지 않는다. 운영 goal 은 탐색하지 않는다.</li>
+    <li>야간 루프는 서버와 다른 별도 meta deployment(자기 설정과 store)에서만 돈다. 지금 돌고 있는 서버 설정은 건드리지 않는다.</li>
+  </ul>
+</section>
+
+<section id="dashboard">
+  <div class="section-head"><div class="eyebrow">Dashboard</div><h2>Operator Dashboard</h2></div>
+  <p><code>amplai meta dashboard --out &lt;dir&gt;</code> 가 저장된 기록만 읽어 정적 HTML 을 만든다. script 없음, CSP 적용, 모든 페이지가 접근성 검사(<code>inspect_page</code>)를 통과한다. trace 본문, holdout 과제 내용, 숨긴 test 는 나오지 않는다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>페이지</th><th>보여 주는 것</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">index.html</td><td>모델·드라이버 × 추론강도 행렬: 보정된 성공률과 구간, pass^k, 중앙 시간, 해결당 token, API 환산 비용, 칸별 최선 조합과 차이</td></tr>
+        <tr><td class="mono">cell-*.html</td><td>칸의 조합별 부품 on/off/버전, 성공 대 token frontier, ablation 기여도, 단계 이력</td></tr>
+        <tr><td class="mono">lineage.html</td><td>제안 → 후보 → 실험 → 판정 → release</td></tr>
+        <tr><td class="mono">approvals.html</td><td>사람을 기다리는 모든 것: 단계 gate, 리뷰, canary·promote, 평가기 변경, 대기 중 확정 실험, reconcile 대기, 상시 승인과 기간</td></tr>
+        <tr><td class="mono">layers / strategies / judges / budget / evaluation / corpus / experiments</td><td>레이어별 regret, 전략별 성적, judge 자격, 야간 예산과 quota, 평가 품질, 과제 분포, 실험별 판정</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">실제 데이터로 만든 대시보드는 파일럿 뒤 이 보고서에 붙인다.</p>
+</section>
+
+<section id="decisions">
+  <div class="section-head"><div class="eyebrow">Decisions</div><h2>Decision Record</h2></div>
+  <p>OD-1–OD-17 은 운영자가 정했다(부품화와 측정 기반 추가·제거, 칸별 최선 조합 표시, 실행 전략 10종 전부, 레이어 L1·L3·L4·L7·L8 추가, 야간 루프, 평가 품질 트랙, 판단 방식과 judge 의 부품화, Jev 연결부만, 파일럿 예산 등). 아래는 구현 중 생긴 계약 판단이다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>ID</th><th>내용 (잠정 구현된 추천안)</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">IC-15</td><td>평가기 버전이 있는 실험은 split 의 일부만 표본으로 쓸 수 있다(freeze·run 때 재계산).</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-16</td><td>같은 arm 의 새 제안은 e-process 를 이어 간다(새 제안도 자기 승인은 따로 필요).</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-17</td><td>상시 승인 <code>nightly.explore</code> + 야간 identity 는 탐색 승인만.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-18</td><td>사람만 쓰는 <code>amplai meta reconcile</code>.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-19</td><td>ablation 변형 제안은 screen·promote 없이 부모 ablation 안에서만.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-20</td><td>informative validation 과제가 max(16, n_min) 미만이면 focused 를 멈춘다.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-21</td><td>운영 goal 의 보조 turn 상한 기본 0.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-22</td><td>승인 때 L3 가 고른 조합을 다시 검사.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-23</td><td>trial 에 과제 영역(domain)을 실어 L1/L2 판단에 쓴다.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-24</td><td>제거 sweep 은 일반 제안 + 제거 gate(efficiency 또는 더 싼 non_inferior 일 때만 holdout).</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-25</td><td>평가기 변경은 Q-suite 를 subprocess 로 돌려 code digest 에 묶는다.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-26</td><td>평가기 변경은 사람만의 <code>evaluator.approve</code> 권한.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-27</td><td>과제 종류 → 영역 대응표(품질 지표용).</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-28</td><td>trace 에 그 turn 의 credential 값이 보이면 trace 전체를 버린다.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-29</td><td>실행자 자격 기록을 저장해, launchd 로 시작한 밤도 preflight 를 통과.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-30</td><td>야간에 class A 초안의 기계적 screen 허용 (추천 A).</td><td><span class="chip gate">결정 대기 · 미구현</span></td></tr>
+        <tr><td class="mono">IC-31</td><td>calibration plan 과 stage plan 은 앱 하나씩.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-32</td><td>환경 sibling id 는 <code>:env-</code> (고정 schema 가 <code>@</code> 를 허용하지 않음).</td><td><span class="chip warn">확인 필요</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">전문과 거절한 대안: <code>specs/033-harness-taxonomy/interfaces.md</code> 의 "Provisional Operator Decisions" 절들. 결정 D-096–D-105 는 <code>docs/workstreams/v3-real-execution/DECISIONS.md</code>.</p>
+</section>
+
+<section id="delivery">
+  <div class="section-head"><div class="eyebrow">Delivery</div><h2>Delivery Log</h2></div>
+  <p>구현은 workflow 로 했다. 설계·구현·리뷰는 Opus 5.5(high/xhigh), test 작성은 Sonnet 5.5(medium), 리뷰는 한 번에 하나씩, 동시 agent 는 3개까지. 모든 PR 은 ruff, format, mypy, 전체 test 를 통과하고 CI(3.11·3.12)가 녹색일 때 merge 했다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>PR</th><th>내용</th><th class="num">merge (KST)</th><th class="num">추가/삭제 줄</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">#46</td><td>설계, golden oracle, 평가기 v2, 하네스 부품, corpus v2 틀</td><td class="num">10-01 01:47</td><td class="num">+45,444 / −19,174</td></tr>
+        <tr><td class="mono">#47</td><td>칸과 추론강도, 읽기 전용 turn, bench 앱</td><td class="num">10-01 03:39</td><td class="num">+28,698 / −19,481</td></tr>
+        <tr><td class="mono">#48</td><td>자체 과제 71개(6개 영역), TB2 adapter 도구</td><td class="num">10-01 05:47</td><td class="num">+35,803 / −4</td></tr>
+        <tr><td class="mono">#49</td><td>평가 서비스, calibration, 버전; trial 실행기 v2</td><td class="num">10-01 09:00</td><td class="num">+7,530 / −356</td></tr>
+        <tr><td class="mono">#50</td><td>실행 전략 10종, 실험 단계, meta search</td><td class="num">10-01 13:12</td><td class="num">+13,051 / −187</td></tr>
+        <tr><td class="mono">#51</td><td>레이어별 판단기·judge, trace·제안자, 평가 품질</td><td class="num">10-01 17:18</td><td class="num">+23,211 / −186</td></tr>
+        <tr><td class="mono">#52</td><td>야간 루프, 대시보드, vote 와 follow-up 복구</td><td class="num">10-01 22:25</td><td class="num">+16,218 / −276</td></tr>
+        <tr><td class="mono">#53</td><td>TB2 과제별 환경 sibling, 앱별 calibration</td><td class="num">10-01 23:39</td><td class="num">+2,792 / −96</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">리뷰가 잡아 고친 것 중 중요한 예: 동시 pause 와 resume 사이의 실제 race(CI 에서만 재현, 순서를 강제한 test 로 고정), trace 의 secret 이 잘림 경계를 넘어 저장되던 문제, 제안자 입력으로 validation/holdout id 가 새던 경로, 야간 루프가 실제 배포에서 탐색을 못 하던 배선.</p>
+</section>
+
+<section id="next">
+  <div class="section-head"><div class="eyebrow">Next</div><h2>What Happens Next</h2></div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>1. 파일럿 (S16)</h3>
+      <ul class="clean">
+        <li>별도 meta deployment 준비, 칸 4개 자격 측정과 추론강도 probe</li>
+        <li>TB2 admission, split 고정</li>
+        <li>calibration → 제안자 실행 → screening → focused → holdout → canary → promote 또는 reject 한 바퀴</li>
+        <li>야간 루프 3일(밤마다 약 150 trial), quota 측정으로 다음 예산 B 결정</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>2. 정리와 보고 (S17, S18)</h3>
+      <ul class="clean">
+        <li>승인된 목록대로 legacy 제거: 참조 → 결합 끊기 → 코드 → test → 문서 순서, CI 녹색까지</li>
+        <li>문서와 결정 기록 갱신</li>
+        <li>이 보고서에 실제 결과(칸별 최선 조합과 개선 폭) 추가</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  근거: <code>specs/033-harness-taxonomy/</code> (spec.md, plan.md, interfaces.md, legacy-inventory.md), merge 된 PR #46–#52, PR #52 CI 기록. 숫자는 저장소와 CI 기록에서 가져왔고, 확인되지 않은 것은 "확인 필요"로 적었다.
+</footer>
+</div>
