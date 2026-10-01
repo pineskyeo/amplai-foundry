@@ -3,12 +3,23 @@
 No success authority lives here. VerificationService owns repair and completion.
 Each dispatch is durably bound before I/O. An interrupted launching state is held
 for reconciliation; at-least-once dispatch is not at-least-once native spawn.
+
+Follow-up turns (Work 033 S9, interfaces.md §5.1 M3, IC-04): after a completed turn and before
+``output_ready``, turn hooks may resume the same native session with a message as dispatch
+``<dispatch_id>-f<k>`` (k = 1, 2) on the same run, lease and bound session, inside ``execute``
+(never through the controller's ``resume_pending`` steering path). Each follow-up runs
+collect -> checkpoint -> resume -> poll -> collect, so a seeded credential is released at every
+collect and seeded again at every resume; ``destroy`` runs only after the last turn. An execution
+interrupted inside a follow-up is held, never re-sent (``_existing``: EXECUTION_RECONCILE); its
+recovery is §14 Q16 (a). Vote candidates (M4) are not built (§14 Q16 (b)).
 """
 
 from __future__ import annotations
 
 import contextlib
+import threading
 import time
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -21,6 +32,62 @@ from .cells import DispatchOptions, check_binding, profile_effort
 from .envelope import assert_execution_live, execution_envelope
 
 USAGE_DETAIL_KIND = "usage-detail"
+MAX_FOLLOWUPS = 2  # §5.1 M3: at most 2 follow-up turns per attempt
+STOPPED_STATES = frozenset({"failed", "unknown", "cancelled", "paused", "awaiting_tools"})
+
+
+def _hooks_followups(hooks: Any) -> int:
+    """The follow-up cap of ``hooks`` (0 without hooks). Candidates (M4, vote) are held until
+    §14 Q16 is answered: hooks asking for more than one candidate are refused."""
+    if hooks is None:
+        return 0
+    followups, candidates = getattr(hooks, "max_followups", 0), getattr(hooks, "candidates", 1)
+    if type(followups) is not int or not 0 <= followups <= MAX_FOLLOWUPS:
+        raise RuntimeFault("WORKER_HOOKS", "Turn hooks allow 0..2 follow-up turns")
+    if candidates != 1:
+        raise RuntimeFault(
+            "COMPONENT_CONTENT", "Vote candidates (M4) are held until §14 Q16 is answered"
+        )
+    return followups
+
+
+def sum_usage(receipts: list[dict[str, Any]]) -> dict[str, Any]:
+    """The usage of several turns of one run: token counts and costs summed per turn; unknown
+    when a turn did not report both counts; ``estimated`` when a turn was estimated. The detail
+    breakdown (D-094) is summed per field when every turn reports the same provider's."""
+    usages = [r.get("usage") or {} for r in receipts]
+    counted = all(
+        type(u.get("input_tokens")) is int and type(u.get("output_tokens")) is int for u in usages
+    )
+    if not counted:
+        return dict(UNKNOWN_USAGE)
+    statuses = {u.get("status") for u in usages}
+    status = "measured" if statuses == {"measured"} else "estimated"
+    costs = [c for u in usages if type(c := u.get("cost_microunits")) is int]
+    total: dict[str, Any] = {
+        **UNKNOWN_USAGE,
+        "input_tokens": sum(int(u["input_tokens"]) for u in usages),
+        "output_tokens": sum(int(u["output_tokens"]) for u in usages),
+        "cost_microunits": sum(costs) if len(costs) == len(usages) else None,
+        "status": status,
+    }  # fmt: skip
+    details = [r.get("usage_detail") for r in receipts]
+    out: dict[str, Any] = {"usage": total}
+    if all(isinstance(d, dict) for d in details):
+        first = cast(dict[str, Any], details[0])
+        same = all(
+            isinstance(d, dict)
+            and d.get("provider") == first.get("provider")
+            and d.get("input_includes_cache") == first.get("input_includes_cache")
+            for d in details
+        )
+        if same:
+            keys = set.intersection(*(set((d or {}).get("fields") or {}) for d in details))
+            out["usage_detail"] = {
+                **first,
+                "fields": {k: sum(int((d or {})["fields"][k]) for d in details) for k in keys},
+            }
+    return out
 
 
 class Workspaces(Protocol):
@@ -158,6 +225,165 @@ class WorkCoordinator:
             "EXECUTION_RECONCILE", "Existing dispatch may have started; do not spawn it again"
         )
 
+    # -- turns of one attempt (Work 033 S9, M3) ---------------------------------------------------
+    def _beat(self, worker: Actor, dispatch: dict[str, Any], beat: dict[str, Any]) -> None:
+        """A lease heartbeat every 30 s across all turns and hooks of the attempt."""
+        if time.monotonic() - beat["last"] >= 30:
+            beat["sequence"] += 1
+            self.runtime.heartbeat(
+                worker,
+                dispatch["run_id"],
+                dispatch["lease"]["lease_id"],
+                dispatch["lease"]["fencing_token"],
+                sequence=beat["sequence"],
+            )
+            beat["last"] = time.monotonic()
+
+    def _after_turn(
+        self,
+        worker: Actor,
+        dispatch: dict[str, Any],
+        hooks: Any,
+        workspace: Path,
+        turn: int,
+        receipt: dict[str, Any],
+        *,
+        start: float,
+        timeout: float,
+        beat: dict[str, Any],
+    ) -> str | None:
+        """``hooks.after_turn`` (a host-side read-only turn may take minutes) while this thread
+        keeps the lease alive and checks revocation and steering, as during a native turn.
+
+        When the attempt stops while the hook still runs (deadline, revocation, steering), the
+        hook is told so (``hooks.abandon()`` when it has one) before the exception leaves: its
+        late result is then dropped instead of being written after the loop moved on."""
+        box: dict[str, Any] = {}
+
+        def call() -> None:
+            try:
+                box["message"] = hooks.after_turn(workspace=workspace, turn=turn, receipt=receipt)
+            except BaseException as exc:  # handed to the worker thread below
+                box["error"] = exc
+
+        thread = threading.Thread(target=call, name="amplai-turn-hook", daemon=True)
+        thread.start()
+        try:
+            while thread.is_alive():
+                if time.monotonic() - start >= timeout:
+                    raise Hold("WORKER_DEADLINE", "Native run exceeded its wall budget")
+                assert_execution_live(self.runtime, worker, dispatch)
+                self._beat(worker, dispatch, beat)
+                thread.join(self.poll_seconds)
+        except BaseException:
+            abandon = getattr(hooks, "abandon", None)
+            if callable(abandon):
+                abandon()
+            raise
+        if "error" in box:
+            raise box["error"]
+        message = box.get("message")
+        if message is None:
+            return None
+        if not isinstance(message, str):
+            raise RuntimeFault("WORKER_HOOKS", "A follow-up message is text")
+        return message.strip() or None
+
+    def _followup(
+        self,
+        worker: Actor,
+        dispatch: dict[str, Any],
+        port: Any,
+        handles: list[str],
+        k: int,
+        message: str,
+        workspace: Path,
+        *,
+        session: str,
+        options: DispatchOptions | None,
+        start: float,
+        timeout: float,
+        beat: dict[str, Any],
+        followups: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Follow-up ``k``: checkpoint the finished turn, resume the bound session as dispatch
+        ``<dispatch_id>-f<k>`` (same run id, lease and fencing token), observe it to a completed
+        turn and collect it. Every observed session must be the bound one (SESSION_REBIND).
+
+        The new handle joins ``handles`` as soon as the resume returns, so a failure while it
+        runs stops that process (``execute`` cancels the last handle), not the finished one."""
+        did = dispatch["dispatch_id"]
+        follow = deepcopy(dispatch)
+        follow["dispatch_id"] = f"{did}-f{k}"
+        assert_execution_live(self.runtime, worker, dispatch)
+        self._beat(worker, dispatch, beat)
+        checkpoint = port.checkpoint(handles[-1])
+        if checkpoint.get("session_handle") != session:
+            raise Hold("SESSION_REBIND", "A follow-up resumes only the bound session")
+        entry: dict[str, Any] = {
+            "dispatch_id": follow["dispatch_id"], "prompt_digest": digest(message),
+            "receipt_digest": None, "usage": None,
+        }  # fmt: skip
+        followups.append(entry)
+        # recorded before the resume: an execution interrupted from here on is held (Q16 (a))
+        self._update(
+            worker, did, "observing", followups=deepcopy(followups),
+            followup_dispatch_id=follow["dispatch_id"],
+        )  # fmt: skip
+        self.store.assert_outside_tx()
+        new = (
+            cast(Any, port).resume(follow, message, workspace, checkpoint, options=options)
+            if options is not None
+            else port.resume(follow, message, workspace, checkpoint)
+        )
+        handles.append(new)
+        self._update(worker, did, "observing", driver_handle=new)
+        while True:
+            if time.monotonic() - start >= timeout:
+                raise Hold("WORKER_DEADLINE", "Native run exceeded its wall budget")
+            assert_execution_live(self.runtime, worker, dispatch)
+            self._beat(worker, dispatch, beat)
+            observation = port.poll(new)
+            native = observation.get("session_handle")
+            if native and native != session:
+                raise Hold("SESSION_REBIND", "A follow-up stream changed the exact session")
+            if observation["state"] == "completed":
+                break
+            if observation["state"] in STOPPED_STATES:
+                raise Hold(
+                    "DRIVER_BOUNDARY", "Driver is not a successful completed turn",
+                    details={"state": observation["state"], "followup": k},
+                )  # fmt: skip
+            time.sleep(self.poll_seconds)
+        receipt: dict[str, Any] = port.collect(new)
+        if (
+            receipt.get("process_stopped") is not True
+            or receipt.get("provider_completed") is not True
+        ):
+            raise Hold(
+                "COLLECT_BOUNDARY", "Driver receipt is not positive completion/termination evidence"
+            )
+        if receipt.get("session_handle") not in (None, session):
+            raise Hold("SESSION_REBIND", "A follow-up receipt names another session")
+        entry.update(receipt_digest=digest(receipt), usage=receipt.get("usage"))
+        self._update(worker, did, "observing", followups=deepcopy(followups))
+        assert_execution_live(self.runtime, worker, dispatch)
+        return receipt
+
+    def _turns_usage(
+        self, scope: Any, run_id: str, port: Any, receipts: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """The run's usage over its turns (interfaces.md §5.3, M3 rule 5).
+
+        One turn: its receipt, as before S9. With follow-ups, a Codex session keeps the rule of a
+        resumed Codex turn (the last receipt only, ``continue_resumed``) until §14 Q4 says whether
+        its usage is cumulative; other drivers sum the turns."""
+        if len(receipts) == 1:
+            return self._usage(scope, run_id, receipts[0])
+        if str(getattr(port, "driver_id", "") or "").startswith("codex"):
+            return self._usage(scope, run_id, receipts[-1])
+        return self._usage(scope, run_id, sum_usage(receipts))
+
     def execute(
         self,
         worker: Actor,
@@ -168,6 +394,7 @@ class WorkCoordinator:
         output_paths: dict[str, str],
         planning_receipt: dict[str, Any] | None = None,
         options: DispatchOptions | None = None,
+        hooks: Any = None,
         deadline_seconds: float | None = None,
     ) -> dict[str, Any]:
         """Run one admitted dispatch to evidence.
@@ -175,10 +402,15 @@ class WorkCoordinator:
         ``deadline_seconds`` bounds this call's native run in place of ``max_seconds`` (Work 033
         S8, interfaces.md §3.4): the loop passes its remaining wall budget per call instead of
         writing the shared ``max_seconds``, which raced once trials ran concurrently. The node
-        budget's ``max_wall_seconds`` still caps it.
+        budget's ``max_wall_seconds`` still caps it, over every turn of the attempt.
+
+        ``hooks`` (``strategy_runner.TurnHooks``, Work 033 S9): after each completed turn, while
+        follow-ups remain, ``hooks.after_turn`` may return a message; the bound session is then
+        resumed with it as dispatch ``<dispatch_id>-f<k>`` (module docstring, M3).
         """
         worker.require("worker.execute")
         limit = self._limit(deadline_seconds)
+        followups_cap = _hooks_followups(hooks)
         did = dispatch["dispatch_id"]
         scope = worker.scope
         request = {
@@ -191,6 +423,9 @@ class WorkCoordinator:
         if options is not None and not options.is_default():
             # only non-default options: an existing dispatch replays with its digest (§3.4)
             request["options_digest"] = options.digest()
+        if followups_cap:
+            # only hooks that can resume: an existing dispatch replays with its digest (§3.4)
+            request["hooks_digest"] = hooks.spec_digest()
         request_digest = digest(request)
         prior = self._existing(worker, did, request_digest)
         if prior:
@@ -264,14 +499,15 @@ class WorkCoordinator:
         assert_execution_live(self.runtime, worker, dispatch)
         self._update(worker, did, "launching", prepared_digest=digest(prepared))
         handle = None
-        bound = False
-        sequence = 0
-        last_heartbeat: float = 0
+        bound: str | None = None  # the native session this run is bound to
+        beat = {"sequence": 0, "last": 0.0}
         start = time.monotonic()
         timeout = min(limit, dispatch["node"]["budget"]["max_wall_seconds"])
+        handles: list[str] = []
         try:
             self.store.assert_outside_tx()
             handle = port.start(prepared)
+            handles.append(handle)
             self._update(worker, did, "observing", driver_handle=handle)
             while True:
                 if time.monotonic() - start >= timeout:
@@ -279,31 +515,16 @@ class WorkCoordinator:
                 assert_execution_live(
                     self.runtime, worker, dispatch
                 )  # Revocation & steering are checked during execution.
-                if time.monotonic() - last_heartbeat >= 30:
-                    sequence += 1
-                    self.runtime.heartbeat(
-                        worker,
-                        dispatch["run_id"],
-                        dispatch["lease"]["lease_id"],
-                        dispatch["lease"]["fencing_token"],
-                        sequence=sequence,
-                    )
-                    last_heartbeat = time.monotonic()
+                self._beat(worker, dispatch, beat)
                 observation = port.poll(handle)
                 native = observation.get("session_handle")
                 if native and not bound:
                     self.sessions.bind(worker, did, native, expected_version=session["row_version"])
                     self.runtime.start(worker, dispatch, native)
-                    bound = True
+                    bound = native
                 if observation["state"] == "completed":
                     break
-                if observation["state"] in {
-                    "failed",
-                    "unknown",
-                    "cancelled",
-                    "paused",
-                    "awaiting_tools",
-                }:
+                if observation["state"] in STOPPED_STATES:
                     raise Hold(
                         "DRIVER_BOUNDARY",
                         "Driver is not a successful completed turn",
@@ -323,10 +544,27 @@ class WorkCoordinator:
                 )
             # Stop accepting old-generation outputs even if the provider finished.
             assert_execution_live(self.runtime, worker, dispatch)
+            receipts = [receipt]
+            followups: list[dict[str, Any]] = []
+            for k in range(1, followups_cap + 1):
+                # M3: the hook reads the finished turn; a message resumes the bound session
+                message = self._after_turn(
+                    worker, dispatch, hooks, Path(workspace), k - 1, receipt,
+                    start=start, timeout=timeout, beat=beat,
+                )  # fmt: skip
+                if not message:
+                    break
+                receipt = self._followup(
+                    worker, dispatch, port, handles, k, message, Path(workspace),
+                    session=bound, options=options, start=start, timeout=timeout, beat=beat,
+                    followups=followups,
+                )  # fmt: skip
+                handle = handles[-1]
+                receipts.append(receipt)
             outputs = self.workspaces.collect(
                 scope, workspace, output_paths, dispatch["node"], process_stopped=True
             )
-            usage = self._usage(scope, dispatch["run_id"], receipt)
+            usage = self._turns_usage(scope, dispatch["run_id"], port, receipts)
             self.runtime.contracts.validate(
                 "run-record",
                 {
@@ -346,11 +584,15 @@ class WorkCoordinator:
             self._update(
                 worker, did, "verifying", result=result, driver_receipt_digest=digest(receipt)
             )
-            # Outputs are in the CAS; remove the stopped run's container (never before collect).
-            with contextlib.suppress(Exception):
-                port.destroy(handle)
+            # Outputs are in the CAS; remove the stopped run's containers (never before collect),
+            # every turn's only after the last turn (M3)
+            for each in reversed(handles):
+                with contextlib.suppress(Exception):
+                    port.destroy(each)
             return result
         except Exception as exc:
+            # the running turn's process: a follow-up's from its resume on (M3)
+            handle = handles[-1] if handles else handle
             if getattr(exc, "code", None) == "EXECUTION_PAUSED" and handle is not None:
                 # Steering: the controller stops this process at a boundary and checkpoints it
                 # (SteeringService.quiesce -> stop_and_snapshot); cancelling here would lose the

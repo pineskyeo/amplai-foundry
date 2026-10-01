@@ -2795,3 +2795,45 @@ after Terminal-Bench 2.0 admission (S16), as S6-freeze foresees.
   `analysis_code_digest` = sha256(analysis.py ‖ sequential.py); calibration plan ids are content-addressed
   (`calplan-<24 hex>`); a versioned plan without `case_rule` keeps full-split equality; `run(parallel=k)` above the cap
   runs at the cap; `flaky_grading` needs a stored source (task-index field) before calibration can assign it (open).
+
+## Clarifications After S9 And S11 (2026-10-01)
+
+- **Ownership**: L7 fast checks (`fast_checks`, M3 before final verification) are built in S10, at the L7 decision
+  point. `vote` (M4 candidates) and M3 follow-up crash recovery are a separate slice **S9b** after S13, which first
+  settles §14 Q16 (candidate rows and handles, steering pause of candidate i, follow-up checkpoint resume) by reading
+  the session, steering and reconciliation code paths and writing the fake-port tests. Until then `vote` is held
+  before any claim (`COMPONENT_CONTENT`).
+- **§14 Q4** (Codex usage across resumed turns) is measured in the real pilot (S16); until then a Codex port keeps
+  the last receipt of a session, other drivers sum turns (§5.3).
+- **Strategy choice without a decider**: the first enabled strategy runs when eligible; an ineligible one holds a trial
+  and puts a real goal on the prior `repair_loop` (recorded). S10's L2 decider replaces this.
+- **New codes accepted**: `MERGE_BASE` (Hold, integration queue: a part made on another base commit),
+  `PLANNER_VARIANT` (RuntimeFault, unknown schema variant), `WORKER_HOOKS` (RuntimeFault, invalid hooks),
+  `CORPUS_CHANGED` (Hold: the loaded corpus differs from the frozen corpus a stage binds).
+- **S9 contract choices**: `parallel_readonly.params.steps` are distinct ids from
+  {files_to_change, tests_to_run, conventions}; orchestrator parts must have disjoint `in_scope`; each orchestrator
+  part is verified alone with the whole app suite; a replanned revision of a splitting strategy falls back to the
+  prior; an `escalation_pending` goal found at restart ends failed.
+- **Model-facing schemas** for steps/parts/lead/review/findings carry no count or length keywords (bounds are enforced
+  in code: `TURN_OUTPUT`); whether Codex `--output-schema` strict mode accepts such keywords is 확인 필요.
+
+## Clarifications After The S9/S11 Fix Wave (2026-10-01)
+
+- **Receipt** (§2.10): `escalation_chain` = [{revision, contract_ref, cell_id, composition_ref}] for every revision
+  ([] without escalation); `executed_composition_ref` may be the cell sibling of the escalated revision only when the
+  chain is present; `composition_ref` and `cell_id` stay the arm's.
+- **Trial metrics** (§2.10): `turns` = executor turns AMPLAI dispatched (first turns + follow-ups, every revision);
+  provider-internal turns are not recorded until §14 Q14. Strategy counters come from `plan["strategy_metrics"]`,
+  recomputed read-only when missing or stale. `api_cost` statuses added: `revisions_unpriced` (earlier revisions),
+  `aux_unknown_usage`, `aux_unpriced`; priced auxiliary turns are upper bounds (totals only).
+- **IC-21 in trials**: an auxiliary strategy with `aux_max_tokens` 0 is held before any claim
+  (`<strategy>: AUX_BUDGET: …`), never run degraded.
+- **Corpus binding**: the trial executor compares each task's canonical payload digest with the frozen case
+  `artifact_ref` and holds `CORPUS_CHANGED` on a mismatch or a missing task.
+- **Stages**: ablation never gates (failures are findings `ABLATION <component>: <code>`); `--app` selects the app;
+  `stage-lock` head kind and Hold `SEARCH_BUSY` keep one runner per proposal; `amplai meta reconcile`
+  (human-only `experiment.reconcile`, IC-18 provisional; it also makes `MetaHarness.recover_canary` usable by the
+  local operator) with RuntimeFault `RECONCILE_TARGET`.
+- **Open (next fix)**: a gating stage whose experiment is still `frozen` because the process stopped between the stage
+  turning `running` and the first dispatch is not resumed by `advance`; it must be resumed (no trial ran). With
+  `--app`, stages still select main-set tasks of every app; filtering the corpus by app is open.

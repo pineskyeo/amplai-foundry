@@ -6,6 +6,10 @@ not happen, and there is no command that chains them.
 
 The commands work on the deployment in-process, so stop ``amplai ops local-serve`` first or use a
 deployment of its own (``amplai ops local-init --home ...``): two processes must not own one store.
+
+Work 033 S11: the corpus v2 command groups (stages, components, calibration, corpus) and the
+human operator's ``reconcile`` (IC-18, provisional) live in ``runtime/meta_commands/`` and are
+registered by module discovery; the gates above stay.
 """
 
 from __future__ import annotations
@@ -224,3 +228,9 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
     ) -> None:
         """Where the candidate is and which release is active."""
         run(config, driver, corpus, lambda ops: ops.status(proposal_id))
+
+    # Work 033 S11 (interfaces.md §1.1, §12.1): the command groups of runtime/meta_commands/,
+    # found by module discovery so parallel slices add modules without editing this file.
+    from .meta_commands import register_all
+
+    register_all(meta, guarded)

@@ -203,7 +203,12 @@ def test_cancel_keeps_the_server_until_the_boundary_is_confirmed(tmp_path: Path)
     assert p.cancel("dispatch-a")["state"] == "cancelling"
     assert server.running
     server.children = 0
-    assert p.cancel("dispatch-a")["state"] == "cancelled"
+    # cancel is repeated until the boundary is confirmed: the event thread applies the idle state
+    # asynchronously (driver contract, agent_drivers/http.py:526-544)
+    deadline = time.monotonic() + 10
+    while (state := p.cancel("dispatch-a")["state"]) != "cancelled" and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert state == "cancelled"
     assert not server.running
 
 

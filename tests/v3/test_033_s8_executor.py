@@ -38,6 +38,7 @@ from amplai_foundry.meta_harness.local_executor import (
     TrialPlanner,
     base_scope,
 )
+from amplai_foundry.runtime.contracts.identity import canonical
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution import policies
 from amplai_foundry.runtime.execution.codex import AUTH, SeededCodexPort
@@ -598,6 +599,109 @@ def test_usage_is_unknown_when_the_planner_reports_no_token_counts(
 def test_usage_is_unknown_when_the_planner_reports_nothing(deployment: Any, tmp_path: Path) -> None:
     world = real_world(deployment, tmp_path, [], usage=None)
     assert world.run("amb-02-proceed").usage_status == "unknown"
+
+
+# -- usage: runs + planner + auxiliary read-only turns (§8.3, §5.3 aux_usage) ---------------------
+def aux_entry(tokens: int | None, usage: dict[str, Any] | None) -> dict[str, Any]:
+    """An ``aux_usage`` entry as ``strategy_runner.AuxLedger`` records it."""
+    return {"role": "reviewer", "purpose": "review", "cell_id": "codex-cli", "tokens": tokens,
+            "usage": usage, "error": None}  # fmt: skip
+
+
+def test_usage_adds_the_auxiliary_turns_to_the_runs(world: World) -> None:
+    obs = world.run("bug-01-value")
+    plan = world.rig.service.plan_record(world.receipt(obs)["goal_id"])
+    aux = [aux_entry(100, {"input_tokens": 60, "output_tokens": 40}),
+           aux_entry(7, {"input_tokens": 4, "output_tokens": 3})]  # fmt: skip
+    usage = world.executor._usage(plan["attempts"], None, real=False, aux=aux)
+    assert (usage["input_tokens"], usage["output_tokens"]) == (10 + 60 + 4, 5 + 40 + 3)
+    assert usage["usage_status"] in {"measured", "estimated"}
+    assert usage["cost_microunits"] is None  # a read-only turn reports no cost
+
+
+def test_an_auxiliary_turn_with_unknown_usage_makes_the_usage_unknown(world: World) -> None:
+    obs = world.run("bug-01-value")
+    plan = world.rig.service.plan_record(world.receipt(obs)["goal_id"])
+    aux = [aux_entry(100, {"input_tokens": 60, "output_tokens": 40}), aux_entry(None, None)]
+    usage = world.executor._usage(plan["attempts"], None, real=False, aux=aux)
+    assert usage == {"input_tokens": None, "output_tokens": None, "cost_microunits": None,
+                     "usage_status": "unknown"}  # fmt: skip
+
+
+def test_an_auxiliary_turn_that_never_started_adds_nothing(world: World) -> None:
+    obs = world.run("bug-01-value")
+    plan = world.rig.service.plan_record(world.receipt(obs)["goal_id"])
+    usage = world.executor._usage(plan["attempts"], None, real=False, aux=[aux_entry(0, None)])
+    assert (usage["input_tokens"], usage["output_tokens"]) == (10, 5)
+    assert usage == world.executor._usage(plan["attempts"], None, real=False)
+
+
+def test_a_plain_trial_has_no_auxiliary_usage_and_no_escalation_chain(world: World) -> None:
+    obs = world.run("bug-01-value")
+    receipt = world.receipt(obs)
+    assert (obs.input_tokens, obs.output_tokens) == (10, 5)
+    assert receipt["escalation_chain"] == []
+    assert receipt["executed_composition_ref"] == receipt["composition_ref"] == world.baseline
+
+
+# -- a frozen case is checked against the task loaded now (CORPUS_CHANGED) ------------------------
+def frozen_case(world: World, task_id: str, **payload_over: Any) -> dict[str, Any]:
+    """The eval-corpus case of ``task_id`` as ``corpus_v2.freeze`` admits it (its §2.7 payload);
+    ``payload_over`` changes the frozen payload (a task that changed since)."""
+    payload = {**corpus_v2.case_payload(world.corpus, world.corpus.task(task_id)), **payload_over}
+    ref = world.d.artifacts.admit(
+        world.scope, canonical(payload), "application/json", trust="operator"
+    )
+    return {"case_id": task_id, "split": "development", "artifact_ref": ref}
+
+
+def test_a_frozen_case_equal_to_the_loaded_task_runs(world: World) -> None:
+    case = frozen_case(world, "bug-01-value")
+    obs = world.executor(world.baseline, case, 0, "sandbox_rerun")
+    assert obs.success is True
+    # the cache key binds the frozen task artifact
+    assert world.receipt(obs)["cache_key"].startswith("sha256:")
+
+
+def test_a_frozen_case_whose_task_changed_on_disk_is_held_before_any_goal(world: World) -> None:
+    case = frozen_case(world, "bug-01-value")
+    hidden = world.corpus.root / "tasks" / "bug-01-value" / "hidden" / "test_hidden.py"
+    hidden.write_text(HIDDEN_TWO.replace("== 2", "== 2 and value() > 1"))  # same test, edited
+    world.executor.corpus = corpus_v2.load(world.corpus.root)  # the corpus loaded now
+    goals_before = len(world.store.list_objects(world.scope, "goal-contract"))
+    with pytest.raises(Hold) as held:
+        world.executor(world.baseline, case, 0, "sandbox_rerun")
+    assert held.value.code == "CORPUS_CHANGED"
+    assert held.value.details["case_id"] == "bug-01-value"
+    assert held.value.details["frozen_digest"] == case["artifact_ref"]["digest"]
+    assert held.value.details["loaded_digest"] != case["artifact_ref"]["digest"]
+    assert world.container.prompts == []
+    assert len(world.store.list_objects(world.scope, "goal-contract")) == goals_before
+
+
+def test_a_frozen_case_with_another_payload_is_held(world: World) -> None:
+    for over in ({"contract_text": "another objective"}, {"corpus_version": "0.9.0"},
+                 {"base_commit": "0" * 40}):  # fmt: skip
+        case = frozen_case(world, "bug-01-value", **over)
+        assert hold_code(world.executor, world.baseline, case, 0, "sandbox_rerun") == (
+            "CORPUS_CHANGED"
+        ), over
+    assert world.container.prompts == []
+
+
+def test_a_frozen_case_whose_task_is_gone_is_corpus_changed(world: World) -> None:
+    case = {**frozen_case(world, "bug-01-value"), "case_id": "no-such-task"}
+    with pytest.raises(Hold) as held:
+        world.executor(world.baseline, case, 0, "sandbox_rerun")
+    assert held.value.code == "CORPUS_CHANGED"
+    assert held.value.details == {"case_id": "no-such-task", "corpus_error": "TASK_UNKNOWN"}
+
+
+@pytest.mark.parametrize("ref", [None, {}, {"digest": 7}, "sha256:" + "0" * 64])
+def test_a_frozen_case_without_a_readable_digest_is_held(world: World, ref: Any) -> None:
+    case = {"case_id": "bug-01-value", "split": "development", "artifact_ref": ref}
+    assert hold_code(world.executor, world.baseline, case, 0, "sandbox_rerun") == "CORPUS_CHANGED"
+    assert world.container.prompts == []
 
 
 def test_a_plain_task_uses_the_fixed_planner_and_never_asks_the_model(world: World) -> None:

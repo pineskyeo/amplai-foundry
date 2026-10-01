@@ -33,6 +33,7 @@ from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
 from .product import PORT, LocalExecutionService
 from .steering import SteeringService
+from .strategy_runner import node_app
 
 # the v1 feedback form's tail; the form of a goal comes from its composition (D-096)
 FEEDBACK_TAIL = policies.V1["feedback_form"]["tail_chars"]
@@ -54,10 +55,9 @@ class _Replan(Exception):
 
 
 def _node_app(plan: dict[str, Any], node: dict[str, Any] | None) -> str:
-    """Nodes are ``node-<app>`` (product._compile); older one-node plans name plan["app"]."""
-    node_id = (node or {}).get("node_id", "")
-    app = node_id[len("node-") :] if node_id.startswith("node-") else ""
-    return app if app in (plan.get("bases") or {plan["app"]: None}) else str(plan["app"])
+    """``plan["node_apps"]`` first (Work 033 S9: ``node-<app>.s<k>`` / ``.p<k>`` / ``.int``), else
+    ``node-<app>`` (product._compile); older one-node plans name plan["app"]."""
+    return node_app(plan, node)
 
 
 class ExecutionLoop:
@@ -93,7 +93,12 @@ class ExecutionLoop:
             self._cancel.add(goal_id)
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
-        if plan["status"] in {"awaiting_approval", "needs_answers", "replan_failed"}:
+        if plan["status"] in {
+            "awaiting_approval",
+            "needs_answers",
+            "replan_failed",
+            "escalation_pending",
+        }:
             self._end(goal_id, "cancelled", "cancelled by the operator")
             return self._finish(goal_id, "cancelled", reason="cancelled by the operator")
         return {**plan, "status": "cancelling"}
@@ -155,6 +160,7 @@ class ExecutionLoop:
         *,
         options: DispatchOptions | None = None,
         deadline_seconds: float | None = None,
+        hooks: Any = None,
     ) -> bool:
         """Run one attempt; take over whenever operator steering paused it. True if steered.
 
@@ -166,15 +172,18 @@ class ExecutionLoop:
 
         ``options`` are the goal's resolved dispatch options and ``deadline_seconds`` the wall
         budget left at the attempt's start; both go to every turn of the attempt as call
-        arguments (Work 033 S8), never into the shared coordinator.
+        arguments (Work 033 S8), never into the shared coordinator. ``hooks`` are the strategy's
+        turn hooks (Work 033 S9, M3); a resumed turn after steering runs without them.
         """
         worker = self.service.actors.worker
+        # passed only when set: a coordinator stand-in without hooks keeps working (v1 strategies)
+        extra = {"hooks": hooks} if hooks is not None else {}
 
         def first() -> Any:
             return self.coordinator.execute(
                 worker, dispatch, prompt=prompt, base_snapshot=base,
                 output_paths={PORT: PATCH_BINDING}, options=options,
-                deadline_seconds=deadline_seconds,
+                deadline_seconds=deadline_seconds, **extra,
             )  # fmt: skip
 
         def resumed() -> Any:
@@ -306,6 +315,12 @@ class ExecutionLoop:
             elif status == "held" and not plan.get("attempts") and self._approval_valid(plan):
                 self._update(goal_id, status="approved", reason=None)
                 actions.append({"goal_id": goal_id, "action": "requeued"})
+            elif status == "escalation_pending":
+                # stopped between ending the revision and compiling the next (M6): the goal
+                # failed on its cell; the next revision is not compiled after a restart
+                self._end(goal_id, "failed", "escalation interrupted by a server restart")
+                self._finish(goal_id, "failed", reason="escalation interrupted by a restart")
+                actions.append({"goal_id": goal_id, "action": "ended_escalation_pending"})
             elif status in {"failed", "held", "timed_out", "cancelled"} and goal_state not in {
                 "verified",
                 "failed",
@@ -371,34 +386,56 @@ class ExecutionLoop:
         return None
 
     def run_goal(self, goal_id: str) -> dict[str, Any]:
-        svc, worker, verifier = (
-            self.service,
-            self.service.actors.worker,
-            self.service.actors.verifier,
-        )
+        svc = self.service
         plan = svc.plan_record(goal_id)
         if plan["status"] != "approved":
             raise Hold("PLAN_NOT_APPROVED", "Only an approved goal runs")
         try:  # read once, before any claim: a composition the loop cannot honour never runs
             context, budget = self._policies(plan)
         except (Hold, RuntimeFault) as exc:
-            reason = f"harness components: {exc.code}: {exc.message}"[:600]
+            parts = exc.details if isinstance(exc.details, list) else []
+            named = f" ({'; '.join(str(p) for p in parts)})" if parts else ""
+            reason = f"harness components: {exc.code}: {exc.message}{named}"[:600]
             return self._stop_goal(goal_id, "held", reason, [])
         try:  # the activated profile's model and effort, the L5 driver options (S8)
             options = self._options(goal_id, plan, budget)
         except (Hold, RuntimeFault) as exc:
             reason = f"dispatch options: {exc.code}: {exc.message}"[:600]
             return self._stop_goal(goal_id, "held", reason, [])
-        attempt_policy = budget.attempt_policy  # M1: repair base and feedback (D-096)
+        runner = self.service.strategy_runner()  # Work 033 S9: the goal's strategy (§5)
+        try:
+            return self._run_attempts(goal_id, plan, context, options, runner)
+        finally:
+            runner.forget(goal_id)
+
+    def _run_attempts(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        context: policies.ContextPolicy,
+        options: DispatchOptions,
+        runner: Any,
+    ) -> dict[str, Any]:
+        """Claim -> attempt -> protected verification until the graph is done or stops.
+
+        The strategy (``StrategyRunner``, Work 033 S9) gives each attempt its base, feedback,
+        hooks and extra prompt sections (M1, M3, M5) and decides after a failed verification
+        (retry, escalate, stop); ``finish_work`` stays the only judge of an attempt."""
+        svc, worker, verifier = (
+            self.service,
+            self.service.actors.worker,
+            self.service.actors.verifier,
+        )
         contract = self.store.get(self.scope, "goal-contract", plan["contract_ref"])
         graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
         deadline = _utc(plan["approved_at"]) + contract["budget"]["max_wall_seconds"]
         attempts: list[dict[str, Any]] = []
-        # one node per app (D-081); a one-app goal is one node on plan["base"]
-        bases = plan.get("bases") or {plan["app"]: plan["base"]}
-        feedback: dict[str, list[dict[str, Any]]] = {}
-        repair: dict[str, dict[str, Any]] = {}
         self._update(goal_id, status="running", attempts=attempts)
+        try:  # M2 before the first claim (parallel read-only investigators): no lease waits
+            runner.prepare(svc.plan_record(goal_id))
+        except (Hold, RuntimeFault) as exc:  # a failed turn is recorded; this is the copy etc.
+            reason = f"strategy: {exc.code}: {exc.message}"[:600]
+            return self._stop_goal(goal_id, "held", reason, attempts)
         while True:
             if goal_id in self._cancel:
                 return self._stop_goal(goal_id, "cancelled", "cancelled by the operator", attempts)
@@ -419,10 +456,16 @@ class ExecutionLoop:
             started = self.clock()
             node = dispatch["node"]
             app = _node_app(plan, node)
+            number = 1 + sum(1 for a in attempts if a.get("node_id") == node["node_id"])
             try:  # after the claim: a fault here must end the goal, which frees its claims
+                # M1/M3/M5: the strategy's base, feedback, hooks and sections for this attempt
+                spec = runner.before_attempt(
+                    svc.plan_record(goal_id), node, number, options=options
+                )
                 prompt = self.prompt(
-                    contract, plan, feedback.get(node["node_id"]), node=node,
-                    upstream=self._upstream(graph, node), context=context,
+                    contract, plan, spec.feedback, node=node,
+                    upstream=self._upstream(graph, node, plan), context=context,
+                    extra_sections=spec.extra_sections,
                 )  # fmt: skip
             except Exception as exc:
                 self._discard(dispatch["run_id"])
@@ -432,13 +475,14 @@ class ExecutionLoop:
                 # the remaining wall budget is this call's deadline (S8): writing the shared
                 # coordinator.max_seconds raced once trials of one app run concurrently
                 steered = self._execute(
-                    goal_id, dispatch, prompt, repair.get(node["node_id"]) or bases[app],
-                    options=options, deadline_seconds=max(1, int(remaining)),
+                    goal_id, dispatch, prompt, spec.base, options=options,
+                    deadline_seconds=max(1, int(remaining)), hooks=spec.hooks,
                 )  # fmt: skip
             except _Replan as replan:
                 attempts.append(
-                    {"run_id": dispatch["run_id"], "app": app, "outcome": "replanned",
-                     "reason": replan.reason[:200], "seconds": round(self.clock() - started, 1)}
+                    {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
+                     "outcome": "replanned", "reason": replan.reason[:200],
+                     "seconds": round(self.clock() - started, 1)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 self._update(goal_id, status="replanning", attempts=attempts)
@@ -452,9 +496,11 @@ class ExecutionLoop:
                     )  # fmt: skip
             except Exception as exc:
                 attempts.append(
-                    {"run_id": dispatch["run_id"], "app": app, "outcome": "driver_failed",
+                    {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
+                     "outcome": "driver_failed",
                      "reason": getattr(exc, "code", type(exc).__name__),
-                     "seconds": round(self.clock() - started, 1)}
+                     "seconds": round(self.clock() - started, 1),
+                     **self._turns(spec.hooks)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 status = "cancelled" if goal_id in self._cancel else "held"
@@ -475,38 +521,38 @@ class ExecutionLoop:
             except Exception as exc:  # never leave the goal open on a verification fault
                 code = getattr(exc, "code", type(exc).__name__)
                 attempts.append(
-                    {"run_id": dispatch["run_id"], "app": app, "outcome": "verify_failed",
-                     "reason": code, "seconds": round(self.clock() - started, 1)}
+                    {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
+                     "outcome": "verify_failed", "reason": code,
+                     "seconds": round(self.clock() - started, 1), **self._turns(spec.hooks)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 return self._stop_goal(goal_id, "held", f"verification: {code}", attempts)
             observations = [self._observation(v) for v in verdicts]
             attempts.append(
-                {"run_id": dispatch["run_id"], "app": app, "outcome": finished["outcome"],
+                {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
+                 "outcome": finished["outcome"],
                  "change": change, **({"steered": True} if steered else {}),
                  "verdicts": [{"acceptance": o["acceptance_id"], "outcome": o["outcome"],
                                "reason": o["reason"]} for o in observations],
-                 "seconds": round(self.clock() - started, 1)}
+                 "seconds": round(self.clock() - started, 1), **self._turns(spec.hooks)}
             )  # fmt: skip
             self._update(goal_id, attempts=attempts)
             self._discard(dispatch["run_id"])
             state = self.store.head(self.scope, "work", node["work_id"])["state"]
             if state == "succeeded":
-                feedback.pop(node["node_id"], None)
                 if self._all_succeeded(graph):
                     break
                 continue  # the next node whose dependencies are now met
-            if state != "ready":
-                return self._stop_goal(
-                    goal_id, "failed", "acceptance failed within the attempt budget", attempts
-                )
-            # the next attempt of this node (finish_work allowed it within the node's
-            # max_attempts, which the attempt policy set at compile time)
-            if attempt_policy["feedback"]:
-                feedback[node["node_id"]] = observations
-            if attempt_policy["repair_base"] == "previous_patch":
-                repair[node["node_id"]] = self._repair_base(bases[app], change)
-            # fresh_base: the next attempt starts from the node's base again
+            # M1/M6: another attempt of this node (finish_work allowed it within the node's
+            # max_attempts), an escalation to the cascade's next cell, or the end
+            decision = runner.on_failure(svc.plan_record(goal_id), node, observations)
+            if decision == "retry" and state == "ready":
+                continue
+            if decision == "escalate":
+                return self._escalate(goal_id, attempts, runner)
+            return self._stop_goal(
+                goal_id, "failed", "acceptance failed within the attempt budget", attempts
+            )
         try:
             result = self.service.verification.finish_goal(verifier, goal_id)
         except Hold as exc:
@@ -538,19 +584,55 @@ class ExecutionLoop:
         return record
 
     # -- helpers ---------------------------------------------------------------------------------
+    @staticmethod
+    def _turns(hooks: Any) -> dict[str, Any]:
+        """The follow-up turns and reviewer rounds an attempt's hooks made (M3), for metrics."""
+        if hooks is None:
+            return {}
+        return {
+            "followups": int(getattr(hooks, "sent", 0) or 0),
+            "reviewer_rounds": int(getattr(hooks, "rounds", 0) or 0),
+        }
+
+    def _escalate(
+        self, goal_id: str, attempts: list[dict[str, Any]], runner: Any
+    ) -> dict[str, Any]:
+        """M6 (IC-05): the goal ends failed on its cell (approval revoked, runtime goal ended,
+        status ``escalation_pending``), then the next revision is compiled on the cascade's next
+        cell and waits for approval (``LocalExecutionService.escalate``)."""
+        plan = self.service.plan_record(goal_id)
+        to_cell = runner.next_cell(plan)
+        cell = (plan.get("composition") or {}).get("cell_id")
+        reason = f"acceptance failed within the attempt budget on {cell}; escalating to {to_cell}"
+        self._stop_goal(goal_id, "escalation_pending", reason, attempts)
+        try:
+            record: dict[str, Any] = self.service.escalate(goal_id, to_cell=to_cell, reason=reason)
+        except (Hold, RuntimeFault) as exc:
+            return self._finish(
+                goal_id, "failed", reason=f"escalation: {exc.code}: {exc.message}"[:600]
+            )
+        return record
+
     def _all_succeeded(self, graph: dict[str, Any]) -> bool:
         return all(
             self.store.head(self.scope, "work", n["work_id"])["state"] == "succeeded"
             for n in graph["nodes"]
         )
 
-    def _upstream(self, graph: dict[str, Any], node: dict[str, Any]) -> list[tuple[str, str]]:
-        """(app, verified patch text) of every node this one consumes (D-081)."""
+    def _upstream(
+        self, graph: dict[str, Any], node: dict[str, Any], plan: dict[str, Any] | None = None
+    ) -> list[tuple[str, str]]:
+        """(app, verified patch text) of every node of another app this one consumes (D-081).
+
+        A producer of the same app (Work 033 S9, M5) is not text: its verified change is the
+        node's base (``StrategyRunner.before_attempt``)."""
         by_id = {n["node_id"]: n for n in graph["nodes"]}
         out = []
         for consumed in node.get("consumes") or []:
             producer = by_id.get(consumed.get("from_node") or "")
             if producer is None:
+                continue
+            if plan is not None and node_app(plan, producer) == node_app(plan, node):
                 continue
             work = self.store.head(self.scope, "work", producer["work_id"])
             ref = (work["data"].get("outputs") or {}).get(consumed["output_name"])
@@ -558,7 +640,12 @@ class ExecutionLoop:
                 continue
             raw = self.service.workspaces.artifacts.read(self.scope, ref)
             _base, patch = self.service.workspaces.read_change(self.scope, raw)
-            out.append((producer["node_id"][len("node-") :], patch.decode(errors="replace")))
+            name = (
+                node_app(plan, producer)
+                if plan is not None
+                else producer["node_id"][len("node-") :]
+            )
+            out.append((name, patch.decode(errors="replace")))
         return out
 
     def prompt(
@@ -570,9 +657,14 @@ class ExecutionLoop:
         node: dict[str, Any] | None = None,
         upstream: list[tuple[str, str]] | None = None,
         context: policies.ContextPolicy | None = None,
+        extra_sections: tuple[tuple[str, tuple[str, ...]], ...] = (),
     ) -> str:
         """The execution prompt. ``context`` is the goal composition's context policy (read from
-        the plan's composition when not given); the v1 policy renders today's text (G1)."""
+        the plan's composition when not given); the v1 policy renders today's text (G1).
+
+        ``extra_sections`` are the strategy's (Work 033 S9: plan steps, investigation notes,
+        earlier parts, merged and conflicting parts), after the context sections and before the
+        feedback; none for the v1 strategies, so their text is unchanged."""
         context = context or self._context_policy(plan)
         app = self.service.apps[_node_app(plan, node) if node else plan["app"]].config
         commands = {v.id: " ".join(v.argv) for v in app.verifiers}
@@ -632,6 +724,8 @@ class ExecutionLoop:
             ]
         # context sections after acceptance/upstream, before feedback, only when enabled
         lines += context_assembly.sections(context, plan=plan, app=app, commands=commands)
+        for title, body in extra_sections:
+            lines += ["", title, *body]
         if feedback:
             lines += context_assembly.feedback(context.feedback_form, feedback)
         return "\n".join(lines)
@@ -664,12 +758,14 @@ class ExecutionLoop:
         budget = policies.budget_policy(self.store, self.scope, composition, ceiling=ceiling)
         policies.check_combination(context.feedback_form, budget.attempt_policy, budget.limits)
         context_assembly.check_supported(context)
-        # driver_options (L5) are honoured since S8: resolve_options carries them to the port
+        # driver_options (L5) are honoured since S8: resolve_options carries them to the port;
+        # the execution strategies since S9, except a strategy the plan refused or one held
+        # (vote, §14 Q16); fast checks (L7, M3) are not built yet
+        refused = self.service.strategy_runner().refusal(plan, budget)
         unsupported = [
             name
             for name, on in (
-                ("execution_strategy (S9)",
-                 budget.execution_strategy != policies.V1["execution_strategy"]),
+                (refused or "", refused is not None),
                 ("fast_checks (S9)", bool(budget.fast_checks and budget.fast_checks["enabled"])),
                 ("deciders L5-L8 (S10)", any(budget.deciders.values())),
             )
@@ -813,4 +909,8 @@ class ExecutionLoop:
     def _finish(self, goal_id: str, status: str, **fields: Any) -> dict[str, Any]:
         with self._lock:
             self._cancel.discard(goal_id)
+        # what the strategy did (plan.md §8.1), over every revision so far (Work 033 S9)
+        with contextlib.suppress(Exception):  # metrics never stop a goal from finishing
+            plan = {**self.service.plan_record(goal_id), **fields}
+            fields["strategy_metrics"] = self.service.strategy_runner().metrics(plan)
         return self._update(goal_id, status=status, finished_at=now(), **fields)

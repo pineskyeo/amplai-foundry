@@ -69,9 +69,14 @@ class MetaHarness:
         *,
         approval_check: Callable[..., Any],
         trusted_release_keys: dict[str, Ed25519PublicKey],
+        leak_gate: Callable[[Scope, dict[str, Any]], list[dict[str, Any]]] | None = None,
     ) -> None:
+        """``leak_gate(scope, proposal)`` (Work 033 S11, interfaces.md §3.9, §10.4) returns 3.0.0
+        findings; ``screen`` refuses a proposal with any (``Hold LEAK_GATE``). None checks
+        nothing, as before."""
         self.store, self.contracts, self.artifacts = store, contracts, artifacts
         self.approval_check, self.keys = approval_check, trusted_release_keys
+        self.leak_gate = leak_gate
         self.compositions = CompositionService(store, contracts)
         self.machines, self.budgets = StateMachines(contracts), EvolutionBudget(store)
 
@@ -242,6 +247,16 @@ class MetaHarness:
                 "PROTECTED_META_SURFACE",
                 "Protected controls require a separate governed engineering Work",
             )
+        if self.leak_gate is not None:
+            # §3.9: after the protected-surface check; the findings name the token kind and where
+            # it sits, never the token (leak_gate.LeakGate.findings)
+            findings = self.leak_gate(scope, proposal)
+            if findings:
+                raise Hold(
+                    "LEAK_GATE",
+                    "The candidate names validation or holdout task material",
+                    details=findings,
+                )
         if classification["surface_class"] == "B" and not head["data"].get("review_ref"):
             raise Hold(
                 "CODE_REVIEW_REQUIRED",

@@ -349,11 +349,16 @@ def test_a_real_trial_carries_the_v2_fields(world: World) -> None:
     # plan 8.1 metrics
     assert out["tokens"] == {"input": 10, "output": 5, "cached_input": None, "reasoning": None}
     assert out["wall_seconds"] == 2.5 and isinstance(out["verification_seconds"], float)
-    assert out["cells_used"] == ["codex-cli"] and out["agent_calls"] == 1 and out["turns"] is None
+    assert out["cells_used"] == ["codex-cli"] and out["agent_calls"] == 1
+    # one executor turn AMPLAI dispatched; provider-internal turns are not recorded (§14 Q14)
+    assert out["turns"] == 1 and out["provider_turns"] is None
     assert out["attempts_used"] == 1 and out["nodes"] == 1
     for zero in ("escalations", "reviewer_rounds", "fix_requests", "sub_agents",
                  "integration_conflicts", "re_verifications"):  # fmt: skip
-        assert out[zero] == 0, zero  # the loop runs the v1 repair loop only
+        assert out[zero] == 0, zero  # the repair loop used no other mechanism
+    # read from what the loop recorded for the strategy (S9), not constants
+    plan = world.rig.service.plan_record(world.receipt(obs)["goal_id"])
+    assert plan["strategy_metrics"]["turns"] == 1 and plan["strategy_metrics"]["escalations"] == 0
     assert out["best_of_n_first_pass"] is None and out["fidelity"] is None
     assert out["phase"] == "stage" and out["api_cost"]["status"]
     assert out["guards"] == {
@@ -475,6 +480,72 @@ def test_the_real_planners_turn_counts_as_an_agent_call_beside_the_run(
     assert out["guards"]["ask_back"] is False
 
 
+def test_the_strategy_fields_come_from_the_plans_strategy_record(world: World) -> None:
+    """``escalations`` ... ``re_verifications`` and ``turns`` are the plan record's
+    ``strategy_metrics`` (when it was written for the plan as it is now), never constants."""
+    obs = world.run("bug-01-value")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    recorded = {**plan["strategy_metrics"], "reviewer_rounds": 2, "fix_requests": 3,
+                "sub_agents": 4, "integration_conflicts": 1, "re_verifications": 5,
+                "best_of_n_first_pass": 1, "turns": 3}  # fmt: skip
+    world.rig.service._save_plan(goal, {**plan, "strategy_metrics": recorded})
+    out = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    for key in ("reviewer_rounds", "fix_requests", "sub_agents", "integration_conflicts",
+                "re_verifications", "best_of_n_first_pass", "turns"):  # fmt: skip
+        assert out[key] == recorded[key], key
+    trial_ref = stored(world, trial_dict(world, obs, "bug-01-value", split="development"))
+    value = world.store.get(world.scope, trial_metrics.KIND, metrics_of(world).record(trial_ref))
+    assert value["turns"] == 3 and value["fix_requests"] == 3
+    assert "provider_turns" not in value  # §2.10 stores the executor turns only
+
+
+def test_auxiliary_turns_count_as_agent_calls_and_in_the_token_classes(world: World) -> None:
+    obs = world.run("bug-01-value")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    aux = [
+        {"role": "reviewer", "cell_id": "codex-cli", "tokens": 100, "error": None,
+         "usage": {"input_tokens": 60, "output_tokens": 40, "cached_input_tokens": 8,
+                   "reasoning_output_tokens": 2}},
+        {"role": "reviewer", "cell_id": "codex-cli", "tokens": 0, "usage": None,
+         "error": "TURN_FAILED"},  # never started: no agent call, no tokens
+    ]  # fmt: skip
+    world.rig.service._save_plan(
+        goal, {k: v for k, v in {**plan, "aux_usage": aux}.items() if k != "strategy_metrics"}
+    )
+    out = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    assert out["agent_calls"] == 2  # the run's process and the one reviewer turn that ran
+    assert out["turns"] == 1  # a read-only turn is not an executor turn
+    # the run reports no token classes in this rig, so the sums stay unknown
+    assert out["tokens"]["cached_input"] is None and out["tokens"]["reasoning"] is None
+    # an auxiliary turn without the classes makes them unknown even when the runs report them
+    rows = metrics_of(world)._tokens(
+        {"input_tokens": 1, "output_tokens": 1}, [], {}, None,
+        [{**aux[0], "usage": {"input_tokens": 60, "output_tokens": 40}}],
+    )  # fmt: skip
+    assert rows["cached_input"] is None and rows["reasoning"] is None
+    summed = metrics_of(world)._tokens({"input_tokens": 1, "output_tokens": 1}, [], {}, None, aux)
+    assert (summed["cached_input"], summed["reasoning"]) == (8, 2)
+
+
+def test_a_goal_with_an_earlier_revision_is_not_priced_at_the_last_model(world: World) -> None:
+    obs = world.run("bug-01-value")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    earlier = {**plan, "previous_attempts": list(plan["attempts"])}
+    world.rig.service._save_plan(goal, earlier)
+    out = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    assert out["api_cost"]["status"] == "revisions_unpriced"
+    assert out["attempts_used"] == 2 and out["attempts"] == 2  # both revisions count
+    # without an earlier revision the run is priced as before
+    world.rig.service._save_plan(goal, plan)
+    assert (
+        metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))["api_cost"]["status"]
+        != "revisions_unpriced"
+    )
+
+
 # -- record: one trial-metrics record per trial --
 def test_record_writes_a_validated_trial_metrics_record(world: World) -> None:
     obs = world.run("bug-01-value", split="validation")
@@ -588,3 +659,97 @@ def test_strategy_and_cell_helpers_fall_back_to_none_for_a_stranger(world: World
     router = service.apps["app"].router_ref
     assert trial_metrics.strategy_of(service, router) is None  # not a composition
     assert json.dumps(trial_metrics.TRIAL_KINDS) == '["eval-trial", "calibration-trial"]'
+
+
+# -- api_cost: auxiliary read-only turns are priced, never left out (§5.3 aux_usage, §8.3) --
+def aux_entry(cell_id: str = "codex-cli", **over: Any) -> dict[str, Any]:
+    """An ``aux_usage`` entry as ``strategy_runner.AuxLedger`` records a turn that ran."""
+    value: dict[str, Any] = {
+        "role": "reviewer", "purpose": "review", "cell_id": cell_id, "node_id": None,
+        "tokens": 100, "usage": {"input_tokens": 60, "output_tokens": 40}, "error": None,
+    }  # fmt: skip
+    value.update(over)
+    return value
+
+
+def cost_with(world: World, obs: Any, aux: list[dict[str, Any]]) -> dict[str, Any]:
+    """The trial's ``api_cost`` with the plan record's ``aux_usage`` set to ``aux``."""
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    world.rig.service._save_plan(
+        goal, {k: v for k, v in {**plan, "aux_usage": aux}.items() if k != "strategy_metrics"}
+    )
+    cost: dict[str, Any] = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))[
+        "api_cost"
+    ]
+    return cost
+
+
+def register_cell(world: World, cell_id: str, model: str) -> None:
+    """A ``harness-cell`` record in the cell registry (what ``CellInstaller.install`` leaves)."""
+    from amplai_foundry.runtime.execution.cells import CELL_KIND, CellInstaller
+
+    with world.store.tx() as db:
+        ref = world.store.put(
+            db, world.scope, CELL_KIND, cell_id, 1,
+            {"cell_id": cell_id, "provider_model_id": model},
+        )  # fmt: skip
+    CellInstaller(world.store, world.scope)._register(cell_id, ref)
+
+
+def test_an_auxiliary_turn_that_ran_is_priced_beside_the_run(world: World) -> None:
+    obs = world.run("bug-01-value")
+    base = cost_with(world, obs, [])
+    assert base["status"] == "estimated"
+    # the goal's own cell (the composition's): 60 input + 40 output tokens at its model's price
+    one = cost_with(world, obs, [aux_entry()])
+    assert one["status"] == "estimated" and one["cost_microunits"] > base["cost_microunits"]
+    assert one["upper_bound"] is True and "no_cache_breakdown" in one["notes"]
+    table = next(t for t in metrics_of(world).tables if t.table_id == base["price_table_id"])
+    expected = table.models[base["model"]]
+    assert one["cost_microunits"] - base["cost_microunits"] == round(
+        (60 * expected["input"] + 40 * expected["output"]) / 1_000_000
+    )
+    # two turns cost more than one: every turn is priced, not just the first
+    two = cost_with(world, obs, [aux_entry(), aux_entry(role="investigator")])
+    assert two["cost_microunits"] > one["cost_microunits"]
+    # an installed cell other than the goal's is priced at its own model (its harness-cell)
+    register_cell(world, "codex-cli.lead.high", base["model"])
+    lead = cost_with(world, obs, [aux_entry("codex-cli.lead.high", role="lead")])
+    assert lead["status"] == "estimated" and lead["cost_microunits"] == one["cost_microunits"]
+
+
+def test_a_turn_that_never_started_leaves_the_price_unchanged(world: World) -> None:
+    obs = world.run("bug-01-value")
+    base = cost_with(world, obs, [])
+    never = aux_entry("no-such-cell", tokens=0, usage=None, error="TURN_FAILED")
+    assert cost_with(world, obs, [never]) == base
+
+
+def test_an_auxiliary_turn_with_unknown_usage_is_never_a_plain_estimate(world: World) -> None:
+    obs = world.run("bug-01-value")
+    unknown = aux_entry(tokens=None, usage=None, error="TURN_TIMEOUT")
+    out = cost_with(world, obs, [aux_entry(), unknown])
+    assert out["status"] == "aux_unknown_usage" and "cost_microunits" not in out
+    # the arm then reports no per-solved cost instead of a run-only figure
+    rows = [{**row("a", True, "generator_reviewer"), "api_cost": out}]
+    summary = TrialMetrics.summarize(rows)["a"]
+    assert summary["api_cost_usd_per_solved"] is None and summary["api_cost_priced"] == "0/1"
+
+
+def test_an_auxiliary_turn_on_an_unresolvable_cell_is_unpriced(world: World) -> None:
+    obs = world.run("bug-01-value")
+    out = cost_with(world, obs, [aux_entry("codex-cli.unknown.high")])
+    assert out["status"] == "aux_unpriced" and "cost_microunits" not in out
+    assert cost_with(world, obs, [aux_entry("")])["status"] == "aux_unpriced"
+    # a cell whose model has no price is reported as such, never priced at another model
+    register_cell(world, "codex-cli.unpriced.high", "no-such-model")
+    assert cost_with(world, obs, [aux_entry("codex-cli.unpriced.high")])["status"] == "no_price"
+
+
+def test_an_earlier_revision_stays_unpriced_whatever_the_auxiliary_turns(world: World) -> None:
+    obs = world.run("bug-01-value")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    world.rig.service._save_plan(goal, {**plan, "previous_attempts": list(plan["attempts"])})
+    assert cost_with(world, obs, [aux_entry()])["status"] == "revisions_unpriced"

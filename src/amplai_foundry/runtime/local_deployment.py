@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -59,6 +60,7 @@ from .execution.codex import (
     container_profile,
     measured_qualification,
 )
+from .execution.integration_queue import IntegrationQueue
 from .execution.loop import ExecutionLoop
 from .execution.meta_local import META_OPERATOR_PERMISSIONS, LocalMeta
 from .execution.outcomes import PullRequestTracker
@@ -74,6 +76,7 @@ from .execution.product import (
 )
 from .execution.publish import GitPublisher
 from .execution.service import Runtime
+from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
 from .goals.service import GoalService
 from .storage.store import Scope, Store
@@ -661,6 +664,12 @@ class LocalProductDeployment:
                 planners=planners,
                 cells=app_cells,
             )
+        # Work 033 S9 (§3.6): the execution strategies with their read-only turns, one per cell
+        self.service.strategies = StrategyRunner(
+            self.service,
+            read_only_turns([per_app[entry.app_id][1] for entry in cfg.apps]),
+            IntegrationQueue(self.workspaces, self.scope),
+        )
         # the baseline release of what is installed; a promoted release stays active (D-089 S2)
         releases.bootstrap(
             self.store, self.scope, self.contracts,
@@ -827,6 +836,33 @@ class LocalProductDeployment:
     def close(self) -> None:
         self.loop.stop()
         self.store.close()
+
+
+def read_only_turns(planners_by_app: list[dict[str, Any]]) -> Callable[[str], Any]:
+    """The ``StrategyRunner``'s turn factory (Work 033 S9, interfaces.md §3.6).
+
+    A cell's read-only turn is its planner's (``CodexPlanner.turn`` / ``ClaudePlanner.turn``,
+    ``readonly_turn.py``) in the first configured app that has the cell, so it runs in that app's
+    qualified image with the cell's model and effort, on the read-only copy the runner mounts. A
+    cell without a planner (OpenCode never plans, Work 031 O1) has no read-only turn: Hold
+    TURN_FAILED, which the runner records like a failed turn."""
+    turns: dict[str, Any] = {}
+    for planners in planners_by_app:
+        for cell_id, planner in planners.items():
+            turn = getattr(planner, "turn", None)
+            if turn is not None:
+                turns.setdefault(cell_id, turn)
+
+    def turn_of(cell_id: str) -> Any:
+        found = turns.get(cell_id)
+        if found is None:
+            raise Hold(
+                "TURN_FAILED", "No read-only turn is configured for this cell",
+                details={"cell_id": cell_id},
+            )  # fmt: skip
+        return found
+
+    return turn_of
 
 
 def legacy_cell(driver_id: str, inputs: CodexProfileInputs, app_id: str) -> Cell:

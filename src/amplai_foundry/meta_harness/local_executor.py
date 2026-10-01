@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from ..evaluation.service import TrialObservation
 from ..runtime.contracts.authority import Actor
-from ..runtime.contracts.identity import canonical, digest, new_id
+from ..runtime.contracts.identity import canonical, digest, digest_bytes, new_id
 from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.execution import policies
@@ -65,6 +65,9 @@ PLAN_WAITING = frozenset({"awaiting_approval", "needs_answers", "replan_failed"}
 GOAL_ENDED = frozenset({"verified", "failed", "cancelled"})
 BEHAVIOUR_VERIFIER = "unit"
 COUNTERS_SOURCE = "run_records_v1"  # §2.10: safety/unknown counted from the goal's runs (§8.3)
+# M6 (Work 033 S9): escalated revisions one trial follows; cascade.max_escalations is 1 (§5.2),
+# and LocalExecutionService.escalate holds ESCALATION_LIMIT past the cascade's own limit
+MAX_ESCALATIONS = 1
 # TrialContext values when a call cannot be tied to one dispatching trial record (a direct call,
 # or two in-flight trials of one case, repeat and composition), or its case has no split yet.
 UNBOUND_ARM = "unbound"
@@ -325,10 +328,17 @@ class LocalTrialExecutor:
         plan = self.service.plan_record(record["goal_id"])
         counters = self._counters(plan)
         real = context.planner_mode == "real"
-        usage = self._usage(plan.get("attempts") or [], plan.get("planner_usage"), real=real)
+        # M6 (Work 033 S9): an escalated trial spent the revisions on every cell it ran on
+        ran = [
+            *((plan.get("previous_attempts") or []) if plan.get("escalations") else []),
+            *(plan.get("attempts") or []),
+        ]
+        # §8.3: runs + planner + the strategy's auxiliary read-only turns (every revision)
+        usage = self._usage(ran, plan.get("planner_usage"), real=real, aux=plan.get("aux_usage"))
         composition = self.store.get(self.scope, "harness-composition", composition_ref)
         snapshot, effort = self._snapshot(composition)
         strategy = trial_metrics.strategy_of(self.service, composition_ref) or ""
+        chain = self._escalation_chain(plan, composition_ref)
         task = spec.task
         receipt = {
             "task_id": task.task_id,
@@ -346,8 +356,11 @@ class LocalTrialExecutor:
             "corpus_id": self.corpus.corpus_id,
             "base_commit": spec.base_commit,
             **detail,
-            # receipt v2 (interfaces.md §2.10), descriptive
-            "executed_composition_ref": composition_ref,
+            # receipt v2 (interfaces.md §2.10), descriptive. After an escalation (M6) the graded
+            # revision ran on the cell sibling of the arm composition; the receipt then names it
+            # only together with the chain of every revision's cell and composition
+            "executed_composition_ref": chain[-1]["composition_ref"] if chain else composition_ref,
+            "escalation_chain": chain,
             "environment_binding": None,  # the app environment (S7b binds task environments)
             "environment_drift": False,
             "cell_id": context.cell_id,
@@ -377,8 +390,7 @@ class LocalTrialExecutor:
             "task_id": task.task_id,
             "goal_id": record.get("goal_id"),
             "attempts": [
-                {k: a.get(k) for k in ("run_id", "outcome", "reason", "seconds")}
-                for a in plan.get("attempts") or []
+                {k: a.get(k) for k in ("run_id", "outcome", "reason", "seconds")} for a in ran
             ],
             "counters": counters["detail"],
         }
@@ -402,23 +414,64 @@ class LocalTrialExecutor:
         )
 
     def _spec(self, case: dict[str, Any]) -> _Spec:
+        """What the case is, from the corpus loaded now, checked against the frozen case.
+
+        A frozen case (``EvaluationService`` and ``CalibrationService`` pass the eval-corpus case)
+        carries ``artifact_ref``, the admitted canonical payload of its task at freeze time
+        (``corpus_v2.case_payload``, ``corpus_cases``). The trial is built from the loaded task of
+        the case id, so a task edited, removed or re-versioned after the freeze would run under
+        the frozen case id: Hold CORPUS_CHANGED (as ``LocalMetaOps.check_corpus``) unless the
+        loaded task's payload digest equals the frozen one. A case without ``artifact_ref`` (a
+        direct call) has no frozen payload to compare with."""
         corpus = self.corpus
+        frozen = "artifact_ref" in case
+        try:
+            if isinstance(corpus, CorpusV2):
+                task_v2 = corpus.task(case["case_id"])
+                payload = corpus_v2.case_payload(corpus, task_v2)
+            else:
+                task = corpus.task(case["case_id"])
+                payload = _legacy_payload(corpus, task)
+        except local_corpus.CorpusError as exc:
+            if not frozen:
+                raise
+            # the frozen task is gone, or its base commit is unreadable now
+            raise Hold(
+                "CORPUS_CHANGED",
+                "The task loaded now differs from the frozen corpus case",
+                details={"case_id": case.get("case_id"), "corpus_error": exc.code},
+            ) from exc
+        if frozen:
+            self._check_frozen(case, payload)
         if isinstance(corpus, CorpusV2):
-            task_v2 = corpus.task(case["case_id"])
             base = corpus.bases.get(task_v2.base_id) or {}
             app_id = base.get("app_id")
             if not isinstance(app_id, str) or not app_id:
                 raise Hold("TRIAL_TASK", "The task's base names no app", details=task_v2.base_id)
             return _Spec(
-                task_v2, app_id, corpus_v2.base_commit(corpus, task_v2), task_v2.grading,
+                task_v2, app_id, payload["base_commit"], task_v2.grading,
                 task_v2.environment_id, case.get("split") or task_v2.split, corpus.version,
-                corpus_v2.case_payload(corpus, task_v2),
+                payload,
             )  # fmt: skip
-        task = corpus.task(case["case_id"])
         return _Spec(
             task, corpus.app_id, corpus.base_commit, "pytest_hidden", "app", case.get("split"),
-            None, _legacy_payload(corpus, task),
+            None, payload,
         )  # fmt: skip
+
+    @staticmethod
+    def _check_frozen(case: dict[str, Any], payload: dict[str, Any]) -> None:
+        """Hold CORPUS_CHANGED unless ``digest_bytes(canonical(payload))`` (the digest the
+        artifact store gave the frozen payload, ``cas.admit``) equals ``case.artifact_ref``."""
+        ref = case.get("artifact_ref")
+        frozen = ref.get("digest") if isinstance(ref, dict) else None
+        loaded = digest_bytes(canonical(payload))
+        if not isinstance(frozen, str) or frozen != loaded:
+            raise Hold(
+                "CORPUS_CHANGED",
+                "The task loaded now differs from the frozen corpus case; freeze a new corpus",
+                details={"case_id": case.get("case_id"), "frozen_digest": frozen,
+                         "loaded_digest": loaded},
+            )  # fmt: skip
 
     def _planner_mode(
         self, spec: _Spec, composition_ref: dict[str, Any]
@@ -535,6 +588,14 @@ class LocalTrialExecutor:
         try:
             self.service.approve(self.operator, goal_id)
             record: dict[str, Any] = self.loop.run_goal(goal_id)
+            # M6 (IC-05, Work 033 S9): a cascade that failed its attempts on its cell compiled
+            # the next revision on the next cell; the trial follows it under the experiment's
+            # operator identity. ``escalate`` holds past the cascade's max_escalations (1).
+            for _ in range(MAX_ESCALATIONS):
+                if record.get("status") != "awaiting_approval" or not record.get("escalation"):
+                    break
+                self.service.approve(self.operator, goal_id)
+                record = self.loop.run_goal(goal_id)
         except Exception as exc:
             # the error is the caller's answer; the goal must not stay approved behind it
             with contextlib.suppress(Exception):
@@ -647,10 +708,16 @@ class LocalTrialExecutor:
         }
 
     def _usage(
-        self, attempts: list[dict[str, Any]], planner: dict[str, Any] | None, *, real: bool
+        self,
+        attempts: list[dict[str, Any]],
+        planner: dict[str, Any] | None,
+        *,
+        real: bool,
+        aux: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        """Tokens and cost summed over the goal's attempts and, in real-planner mode, the
-        planner's turn; unknown unless every part says (§8.3)."""
+        """Tokens and cost summed over the goal's attempts, in real-planner mode the planner's
+        turn, and the strategy's auxiliary read-only turns (``aux_usage``, Work 033 S9); unknown
+        unless every part says (§8.3: runs + planner + auxiliary read-only turns)."""
         parts: list[dict[str, Any]] = []
         for attempt in attempts:
             try:
@@ -661,6 +728,19 @@ class LocalTrialExecutor:
         if real:
             # the planner turn's own provider-reported counts (readonly_turn.py); no cost
             parts.append({"status": "measured", **(planner or {})} if planner else {})
+        for entry in aux or []:
+            # strategy_runner.AuxLedger entries (§5.3): ``tokens`` None is a turn that may have
+            # spent tokens without reporting them (failed, abandoned), so the usage is unknown;
+            # ``usage`` None with ``tokens`` 0 is a turn that never started and spent nothing
+            if entry.get("tokens") is None:
+                parts.append({})
+            elif isinstance(entry.get("usage"), dict):
+                # the read-only turn's provider-reported counts (readonly_turn.py); no cost
+                parts.append({
+                    "status": "measured",
+                    "input_tokens": entry["usage"].get("input_tokens"),
+                    "output_tokens": entry["usage"].get("output_tokens"),
+                })  # fmt: skip
         totals = {"input_tokens": 0, "output_tokens": 0, "cost_microunits": 0}
         statuses: set[str] = set()
         known = bool(parts)
@@ -693,6 +773,41 @@ class LocalTrialExecutor:
         }
 
     # -- receipt v2 facts (§2.10, §8.5) ------------------------------------------------------------
+    def _escalation_chain(
+        self, plan: dict[str, Any], composition_ref: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Every revision of an escalated trial goal (M6, IC-05), first to last: its contract
+        revision, cell and composition; empty without an escalation.
+
+        The first revision ran on the arm composition (the trial pins it); the last on the
+        plan record's composition (``escalate``: the cell sibling on ``to_cell``). A revision
+        between them would have no stored composition, but a cascade allows exactly one
+        escalation (``policies``: ``max_escalations`` 1, ``MAX_ESCALATIONS``), so there is none;
+        such a revision would be recorded with ``composition_ref`` null, never guessed."""
+        escalations = [e for e in plan.get("escalations") or [] if isinstance(e, dict)]
+        if not escalations:
+            return []
+        contracts = [*(e.get("previous_contract_ref") for e in escalations), plan["contract_ref"]]
+        cells = [escalations[0].get("from_cell"), *(e.get("to_cell") for e in escalations)]
+        last = len(contracts) - 1
+        chain = []
+        for index, (contract_ref, cell) in enumerate(zip(contracts, cells, strict=True)):
+            revision = None
+            if isinstance(contract_ref, dict):
+                contract = self.store.get(self.scope, "goal-contract", contract_ref)
+                revision = contract.get("revision")
+            if index == 0:
+                ref: dict[str, Any] | None = composition_ref
+            elif index == last:
+                ref = (plan.get("composition") or {}).get("ref")
+            else:
+                ref = None
+            chain.append(
+                {"revision": revision, "contract_ref": contract_ref, "cell_id": cell,
+                 "composition_ref": ref}
+            )  # fmt: skip
+        return chain
+
     def _snapshot(self, composition: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
         """The receipt's ``model_snapshot`` (§2.10) and the model profile's reasoning profile."""
         model = self.store.get(self.scope, "model-profile", composition["model_profile_ref"])

@@ -455,7 +455,11 @@ def held_before_any_claim(rig: Any, loop: Any, container: Any, goal: str, part: 
 @pytest.mark.parametrize(
     ("components", "part"),
     [
-        ({"execution_strategy": {"enabled": ["single"]}}, "execution_strategy (S9)"),
+        # S9 runs the strategies; vote stays held until §14 Q16 is answered
+        (
+            {"execution_strategy": {"enabled": ["vote"]}},
+            "vote: vote (M4 candidates held until §14 Q16 is answered)",
+        ),
         (
             {"retrieval": {"enabled": True}},
             "retrieval (method path_keyword_v1 is not specified yet)",

@@ -4,10 +4,25 @@ MetaHarness and EvaluationService share the product's store. The meta-proposer i
 identity that can only propose; the human operator is the reviewer. Approvals of an experiment, a
 canary, a promotion or a rollback are durable operator-issued objects that name their action and
 the exact subject they approve, so nothing lives only in memory and a proposer can never issue one.
+
+Work 033 S11 (interfaces.md §3.8, §3.9, §7.4, §10.4):
+
+- ``MetaHarness.screen`` calls the leak-gate hook ``leak_findings``: the proposal, its change
+  artifact and the content of every component the candidate brings in are scanned against every
+  stored ``leak-index`` (latest revision of each corpus). The index is opened by a host-side reader
+  identity without permissions (never ``harness.propose``, so ``LeakGate`` admits it); a store with
+  no frozen corpus v2 has no index and nothing to find.
+- ``EvaluationService`` gets the real ``reference_validator``: the declared reference composition
+  is pinnable (``releases.pin_allowed``) for the baseline's cell and differs from the baseline only
+  in ``attempt_policy``/``execution_strategy``, the latter a ``best_of_n`` with the declared n
+  (``ManifestService.diff``). The installed compositions come from ``installed_compositions``,
+  which ``LocalMetaOps`` sets from the product it opens.
 """
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -16,7 +31,8 @@ from ...evaluation.service import EvaluationService
 from ...meta_harness.service import MetaHarness
 from ..contracts.authority import Actor
 from ..contracts.identity import new_id, now
-from ..errors import Hold
+from ..contracts.semantics import resolve_ref
+from ..errors import Hold, RuntimeFault
 from ..evidence.cas import ArtifactStore
 from ..storage.store import Scope, Store
 
@@ -24,6 +40,16 @@ APPROVAL_KIND = "meta-approval"
 PROPOSER_ID = "amplai-meta-proposer"
 EXECUTOR_ID = "local-offline-executor"
 RELEASE_KEY_ID = "local-authority"
+# Host-side reader of leak-index records (§3.11: built by host code, never a proposer identity).
+LEAK_READER_ID = "amplai-meta-leak-reader"
+LEAK_INDEX_KIND = "leak-index"
+# §7.4: a reference composition differs from the baseline only in these budget-policy slots.
+REFERENCE_SLOTS = frozenset({"attempt_policy", "execution_strategy"})
+# composition fields a reference may differ in besides its carriers (the record's own identity)
+IDENTITY_FIELDS = frozenset({"composition_id", "revision", "created_at"})
+CARRIER_FIELDS = frozenset(
+    {"prompt_bundle_ref", "context_policy_ref", "budget_policy_ref", "router_policy_ref"}
+)
 
 # the action a MetaHarness/EvaluationService approval_check names -> the permission that issues it
 ACTION_PERMISSION = {
@@ -46,6 +72,9 @@ META_OPERATOR_PERMISSIONS = frozenset(
         "corpus.manage",
         "corpus.read",
         "corpus.holdout.evaluate",
+        # IC-18 (provisional): the human operator's reconcile path (``amplai meta reconcile``,
+        # ``LocalMetaOps.reconcile``, which also refuses a non-human or proposer actor)
+        "experiment.reconcile",
     }
 )
 PROPOSER_PERMISSIONS = frozenset({"harness.propose"})
@@ -122,6 +151,37 @@ class LocalMetaApprovals:
         return value
 
 
+def leak_subject(
+    store: Store, artifacts: ArtifactStore, scope: Scope, proposal: dict[str, Any]
+) -> dict[str, Any]:
+    """What the leak gate scans for one proposal (§10.4): the proposal record, its change artifact
+    and the content of every component the change brings in (``component_changes[].to``; a
+    prompt bundle's role lines). Values that cannot be read are scanned as absent: the screen's
+    own checks refuse an unreadable change artifact."""
+    subject: dict[str, Any] = {"proposal": proposal, "change_artifact": None, "components": []}
+    try:
+        change = json.loads(artifacts.read(scope, proposal["change_artifact"]))
+    except (RuntimeFault, KeyError, TypeError, ValueError):
+        return subject
+    subject["change_artifact"] = change
+    changes = change.get("component_changes") if isinstance(change, dict) else None
+    for item in changes if isinstance(changes, list) else []:
+        to = item.get("to") if isinstance(item, dict) else None
+        if not isinstance(to, dict):
+            continue
+        try:
+            kind, value = resolve_ref(store, scope, to)
+        except RuntimeFault:
+            continue
+        if kind == "harness-component":
+            subject["components"].append({"component_id": value.get("component_id"),
+                                          "content": value.get("content")})  # fmt: skip
+        elif kind == "prompt-bundle":
+            subject["components"].append({"bundle_id": value.get("bundle_id"),
+                                          "implementer": value.get("implementer")})  # fmt: skip
+    return subject
+
+
 class LocalMeta:
     def __init__(
         self,
@@ -131,15 +191,22 @@ class LocalMeta:
         scope: Scope,
         release_key: Ed25519PublicKey,
     ) -> None:
+        self.store, self.contracts, self.artifacts, self.scope = store, contracts, artifacts, scope
         self.approvals = LocalMetaApprovals(store, scope)
         self.proposer = Actor(PROPOSER_ID, scope, PROPOSER_PERMISSIONS, "service",
                               "local-meta-proposer")  # fmt: skip
+        # §3.11: opens leak-index records; holds no permission at all
+        self.leak_reader = Actor(LEAK_READER_ID, scope, frozenset(), "service",
+                                 "local-meta-leak-reader")  # fmt: skip
+        # per app: cell id -> installed composition ref (set by LocalMetaOps from its product)
+        self.installed_compositions: Callable[[], list[dict[str, dict[str, Any]]]] | None = None
         self.meta = MetaHarness(
             store,
             contracts,
             artifacts,
             approval_check=self.approvals.check,
             trusted_release_keys={RELEASE_KEY_ID: release_key},
+            leak_gate=self.leak_findings,
         )
         # No executor policy yet: an experiment cannot run until S4 pins a qualified executor.
         self.evaluation = EvaluationService(
@@ -148,4 +215,112 @@ class LocalMeta:
             artifacts,
             approval_check=self.approvals.check,
             executor_id=EXECUTOR_ID,
+            reference_validator=self.reference_validator,
         )
+
+    # -- leak gate (§10.4, §3.9) ---------------------------------------------------------------
+    def leak_index_refs(self, scope: Scope) -> list[dict[str, Any]]:
+        """The latest revision of every stored leak index of ``scope``."""
+        latest: dict[str, dict[str, Any]] = {}
+        for ref, _value in self.store.list_objects(scope, LEAK_INDEX_KIND):
+            if ref["id"] not in latest or ref["revision"] > latest[ref["id"]]["revision"]:
+                latest[ref["id"]] = ref
+        return [latest[k] for k in sorted(latest)]
+
+    def leak_findings(self, scope: Scope, proposal: dict[str, Any]) -> list[dict[str, Any]]:
+        """The ``leak_gate`` hook of ``MetaHarness.screen``: 3.0.0 findings (``LEAK_GATE``)."""
+        from ...meta_harness.leak_gate import LeakGate
+
+        if scope != self.scope:
+            raise RuntimeFault("SCOPE_MISMATCH", "The leak gate serves one scope")
+        refs = self.leak_index_refs(scope)
+        if not refs:
+            return []
+        subject = leak_subject(self.store, self.artifacts, scope, proposal)
+        findings: list[dict[str, Any]] = []
+        for ref in refs:
+            findings += LeakGate(self.leak_reader, self.store, ref).findings(scope, subject)
+        return findings
+
+    # -- the reference arm (§7.4) --------------------------------------------------------------
+    def reference_validator(
+        self, scope: Scope, plan: dict[str, Any], policy: dict[str, Any]
+    ) -> None:
+        """Hold REFERENCE_ARM unless the declared reference is a budget-matched best-of-n of the
+        baseline: pinnable for the baseline's cell, no other component and no other composition
+        field changed, and ``execution_strategy`` = ``best_of_n`` with the declared n (§7.4)."""
+        from ...meta_harness.components import ComponentService
+        from ...meta_harness.manifest import ManifestService
+        from . import releases
+
+        def refuse(why: str, details: object = None) -> Hold:
+            return Hold("REFERENCE_ARM", why, details=details)
+
+        arm = policy.get("reference_arm")
+        if not isinstance(arm, dict) or not isinstance(arm.get("composition_ref"), dict):
+            raise refuse("No reference arm is declared")
+        n = arm.get("n")
+        if type(n) is not int or not 1 <= n <= 3:
+            raise refuse("A best-of-n reference has 1 <= n <= 3 (IC-06)")
+        reference, baseline = arm["composition_ref"], plan["baseline_ref"]
+        if scope != self.scope:
+            raise refuse("The reference validator serves one scope")
+        if self.installed_compositions is None:
+            raise refuse("No installed compositions to pin the reference against")
+        cells = None
+        for compositions in self.installed_compositions():
+            base_cell = releases.pin_allowed(self.store, scope, compositions, baseline)
+            if base_cell is not None:
+                cells = (
+                    base_cell,
+                    releases.pin_allowed(self.store, scope, compositions, reference),
+                )
+                break
+        if cells is None:
+            raise refuse("The baseline is not a pinnable composition of an installed cell")
+        if cells[1] is None:
+            raise refuse("The reference is not pinnable")
+        if cells[1] != cells[0]:
+            raise refuse("The reference belongs to another cell", {"cells": list(cells)})
+        manifests = ManifestService(
+            self.store, scope, self.contracts, ComponentService(self.store, scope)
+        )
+        try:
+            base_manifest = manifests.of_composition(baseline)
+            ref_manifest = manifests.of_composition(reference)
+            base_value = self.store.get(scope, "harness-composition", baseline)
+            ref_value = self.store.get(scope, "harness-composition", reference)
+        except (RuntimeFault, KeyError, TypeError) as exc:
+            code = getattr(exc, "code", type(exc).__name__)
+            raise refuse("The compositions cannot be read", {"code": code}) from exc
+        other = sorted(
+            c.slot for c in manifests.diff(base_manifest, ref_manifest)
+            if c.slot not in REFERENCE_SLOTS
+        )  # fmt: skip
+        if other:
+            raise refuse("The reference changes other components", {"slots": other})
+        fields = sorted(
+            k for k in set(base_value) | set(ref_value)
+            if k not in IDENTITY_FIELDS | CARRIER_FIELDS and base_value.get(k) != ref_value.get(k)
+        )  # fmt: skip
+        if fields:
+            raise refuse("The reference changes other composition fields", {"fields": fields})
+        strategy_ref = ref_manifest.budget.get("execution_strategy")
+        try:
+            content = (
+                ComponentService(self.store, scope).get(strategy_ref)["content"]
+                if strategy_ref is not None
+                else None
+            )
+        except (RuntimeFault, KeyError, TypeError) as exc:
+            raise refuse("The reference's execution strategy cannot be read") from exc
+        params = (content or {}).get("params") or {}
+        if (
+            not isinstance(content, dict)
+            or content.get("enabled") != ["best_of_n"]
+            or (params.get("best_of_n") or {}).get("n") != n
+        ):
+            raise refuse(
+                "The reference's execution strategy is not best_of_n with the declared n",
+                {"n": n},
+            )
