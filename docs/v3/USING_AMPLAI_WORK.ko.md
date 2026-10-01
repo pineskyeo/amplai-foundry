@@ -146,6 +146,56 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - API 환산 비용은 "API 로 썼다면 이만큼"이다. 구독 청구액이 아니다. 캐시 세부가 없는 옛 run 은 상한으로 표시된다.
 - `scripts/corpus_check.py --repeats 3` 은 과제 채점이 매번 같은지 본다.
 
+## 메타하네스 운영 (Work 033)
+
+위 `amplai meta propose`~`rollback` 은 구현자 prompt 하나를 시험하는 Work 030 흐름이다. Work 033 은 harness 를 cell(driver × model × effort)과 component manifest 로 나누고, calibration 과 단계별 실험(screening, focused, ablation, holdout), 야간 loop, dashboard 를 더했다. 설계는 `docs/v3/DEV03_OBSERVATORY_META.ko.md` §10 에 있다. IC-15~IC-21, IC-23~IC-29, IC-31, IC-32 는 잠정(provisional) 결정이고 IC-30 은 미결정이다. IC-22 는 `interfaces.md` §0 결정이며 확정 여부는 확인 필요다. 야간 loop 를 켜기 전에 운영자가 확인해야 한다.
+
+### 별도 meta deployment
+
+- 메타하네스 명령은 서버와 다른 deployment 에서 돌린다. store 의 소유자는 하나뿐이다. 서버를 쓰는 중에 같은 store 를 열지 않는다.
+- **`--config` 를 받는 모든 `amplai meta` 명령에 meta deployment 의 `--config` 를 붙인다.** `meta corpus check` 와 `meta corpus import-work030` 에는 `--config` 가 없다. 두 명령은 설정을 읽지 않고, `--corpus` 를 생략하면 checkout 의 `specs/033-harness-taxonomy/corpus` 를 쓴다(`runtime/meta_commands/corpus.py:57,127`, `runtime/meta_commands/__init__.py:83-90`). 다른 corpus 를 쓰려면 `--corpus <corpus v2 root>` 를 준다. `--config` 를 생략하면 기본값은 지금 돌고 있는 서버의 `~/.amplai/local/local.json` 이다. `meta nightly …` 와 `meta quota` 는 기본값이 `~/.amplai/meta/local.json` 이다(`--help` 로 확인). 야간 명령에 서버 설정을 주면 `NIGHT_DEPLOYMENT` 로 거절한다.
+- 아래 예에서 `M=~/.amplai/meta/local.json`, `A=.venv/bin/amplai` 로 쓴다. deployment 만드는 순서(저장소, worker image, credential 사본, qualification, `ops local-init`)는 `specs/033-harness-taxonomy/runs/pilot-runbook.md` §1 이다.
+- cell 의 model 은 qualification report 가 있어야 한다. report 가 없으면 `DRIVER_UNQUALIFIED` 이다.
+
+### 명령 순서
+
+옵션의 정확한 이름은 `amplai meta <명령> --help` 로 확인한다. 표의 옵션은 주요한 것만 적었다.
+
+| 순서 | 명령 | 하는 일 |
+|---|---|---|
+| 1 | `$A ops local-cell add --config $M --driver codex-cli --model … --effort …` / `list` | cell 을 등록한다. 문서에 없는 effort 는 `EFFORT_UNSUPPORTED` 로 거절한다 |
+| 2 | `$A ops local-cell probe CELL --config $M` (task environment 마다 `--environment ID`) | effort probe turn 을 한 번 돌려 기록한다. probe 가 없는 effort cell 은 설치되지 않는다(`EFFORT_UNPROBED`). docker 와 driver credential 이 필요하다 |
+| 3 | `$A meta corpus check --repeats 3 --corpus …` | 모든 과제의 공정성(base 실패, reference 통과)을 본다 |
+| 4 | `$A meta corpus import-work030 --source <Work 030 corpus> --corpus <corpus v2 root>` 후 `$A meta corpus freeze --set main --holdout-use-limit N --config $M` (`--set regression` 도) | Work 030 과제를 regression 과제로 들이고 set 을 동결한다. `--source` 와 `--corpus` 는 둘 다 선택이다(`--source` 는 repository 의 `specs/030-meta-harness-live/corpus` 가 기본값이다) |
+| 5 | `$A meta evaluator status --config $M` / `propose-change` / `qualify-change` / `approve-change` / `requalify` | evaluator version 을 본다. 바꾸려면 change 를 올려 단독으로 qualification 하고 사람이 승인한다 |
+| 6 | `$A meta calibrate --config $M --cells A,B --max-repeats 5 --max-trials N --max-tokens N --max-wall-seconds N --per-trial-tokens N --basis … --evidence … --parallel 2` | cell 의 과제별 통과율을 측정한다. 이 명령이 executor 자격(`per_trial_tokens`, `basis`, `evidence`)도 저장한다. 결과는 `amplai meta calibration show PLAN --config $M` |
+| 7 | `$A meta proposer run --cell C --config $M` | proposer 가 component 후보와 예측을 초안해 draft 로 저장한다 |
+| 8 | `$A meta review ID --outcome pass --note … --config $M` (class B 만) / `$A meta search ID --cell C --max-tokens N --max-wall-seconds N --per-trial-tokens N --basis … --evidence … --config $M` | search 가 계획하고 gate 없는 단계(screening)를 돌린 뒤 focused gate 에서 멈춘다. 상태는 `amplai meta stages ID --config $M`. 예측 채점은 `amplai meta proposer score ID` |
+| 9 | `$A meta approve-stage ID --stage focused --config $M` (또는 `--queue [--digest D]`) | focused 를 이 프로세스에서 승인하고 돌린다. `--queue` 는 밤이 대기열에 올린 실험을 정확한 digest 로 승인만 하고 실행하지 않는다. 통과하면 ablation 이 자동으로 돌고 holdout gate 에서 멈춘다 |
+| 10 | `$A meta approve-stage ID --stage holdout --config $M` | holdout 을 돌린다. 한 번 쓴다 |
+| 11 | `$A meta approve-canary ID --tasks a,b --max-trial-tokens N --config $M` → `run-canary ID --config $M` → `promote ID --config $M` | corpus v2 proposal 의 canary 과제는 development 나 validation 과제만이다. 플래그 없는 `run-canary` 는 저장된 executor 자격을 쓴다(IC-29, provisional). 실패하면 canary 가 멈추고 release 는 그대로이며 `reject` 가 정상 결과다. 되돌리기는 `rollback ID` |
+| 12 | `$A meta nightly approve --nights N --budget-trials B --max-tokens N --max-wall-seconds N --config $M` | 야간 standing approval 을 발급한다(최대 7밤) |
+| 13 | `$A meta nightly print-agent --config $M` 의 출력을 `~/Library/LaunchAgents/` 에 복사하고 `launchctl bootstrap gui/$(id -u) <파일>` | launchd 로 매일 밤 돌린다. 자동 설치는 없다. 수동 실행은 `$A meta nightly run --config $M` (`--dry-run` 이면 trial 을 돌리지 않는다) |
+| 14 | `$A meta nightly status --config $M` / `$A meta nightly revoke --config $M` | 그 밤의 상태와 standing approval 을 본다 / 철회한다(도는 밤은 다음 trial guard 에서 멈춘다) |
+| 15 | `$A meta dashboard --out ~/.amplai/meta/dashboard --config $M` | 저장된 record 로 정적 HTML 을 쓴다(읽기 전용). approvals 페이지에 대기 중인 승인이 있다 |
+| 16 | `$A meta quota --since YYYY-MM-DD --config $M` | pilot 밤의 quota 관측, 여유, 제안 B 를 본다 |
+| | `$A meta reconcile ID --stage S` 또는 `--allocation A --tokens N --cost N --receipt F --config $M` | 끊긴 stage 실험이나 unknown 할당을 정리한다 |
+
+보조 명령: `meta component list|show|add`, `meta decider fit|show|regret|decisions`, `meta judge list|label|qualify`, `meta trace list|show`, `meta proposer dream|sweep`, `meta evaluator quality|reject-change`, `meta status|abort|report ID`.
+
+### 사람 운영자만 하는 일
+
+- **credential 사본 만들기**(Codex home, Claude token 파일). agent 는 복사하지 않는다(D-091).
+- 사람 승인이 들어가는 명령: `calibrate`, `search` 의 screen, `review`, `approve-stage`(`--queue` 포함), `approve-canary`, `run-canary`, `promote`, `rollback`, `reconcile`, `nightly approve`, `nightly revoke`, `evaluator propose-change|qualify-change|approve-change|requalify`, `corpus freeze`. 이 중 canary 네 명령은 사람이 아니면 `APPROVAL_HUMAN` 으로 거절한다. Claude Code 안에서는 프롬프트에 `! <명령>` 으로 운영자가 직접 친다. agent 가 사람 승인을 대신 쓰지 않는다.
+- 야간 신원(`amplai-meta-nightly`)은 standing approval 이 허락한 development split 의 exploratory 실험, calibration, drift 점검만 돌린다. focused, holdout, canary, promote 는 하지 않는다. focused 는 낮에 `approve-stage --queue` 로 승인한 것만 다음 밤에 돈다. holdout 은 사람이 직접 돌린다.
+- proposer 는 `proposer run` 으로 제안만 한다. 검토, 승인, 실행, promote 는 못 한다.
+- agent 가 해도 되는 일: 승인 없는 준비(저장소와 image 만들기, 자격 측정, cell probe), 제안자 실행, dashboard, 결과 읽기. 이 구분은 pilot runbook 의 "원칙" 절을 따른다.
+- 한계(IC-30 미결정): draft 의 screen 에는 사람의 review 권한이 필요해서, 밤에는 낮에 운영자가 screen 한 제안만 screening 과 ablation 을 돈다.
+
+### Pilot
+
+실제 pilot(cell 4개 calibration, 제안 한 바퀴를 holdout 과 canary 까지, 3일 밤)의 절차와 끝났다고 보는 기준은 `specs/033-harness-taxonomy/runs/pilot-runbook.md` 에 있다. trial 당 token 상한, TB2 image 용량, quota 신호의 기록 방식은 확인 필요이고 pilot 에서 답한다. 그 전에 이 문서의 수치를 근거로 예산을 정하지 않는다.
+
 ## 보장과 한계
 
 - 사용자 checkout(현재 branch, index, 커밋 안 한 파일)과 `main` 은 어떤 경우에도 쓰지 않는다. branch 는

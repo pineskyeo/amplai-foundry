@@ -108,12 +108,12 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
 
 <div class="wrap">
 <header class="top">
-  <div class="eyebrow">Work 033 · amplai-foundry · 2026-10-01 23:45 KST 기준</div>
+  <div class="eyebrow">Work 033 · amplai-foundry · 2026-10-02 01:00 KST 기준</div>
   <h1>AMPLAI Meta-Harness</h1>
   <p class="lede">하네스(에이전트를 감싸는 실행 방식: 지시문, 실행 전략, 컨텍스트, 검증, 예산)를 부품으로 쪼개고, 모델×추론강도 칸(cell)마다 부품 조합을 실험으로 비교해, <strong>측정으로 이긴 조합만 사람이 승인해 배포하는</strong> 자가개선 시스템이다.</p>
   <div class="chips">
-    <span class="chip ok">코드 S1–S15·S7b 완료, PR 8건 merge</span>
-    <span class="chip info">canary v2 경로 보강 중</span>
+    <span class="chip ok">코드 완료, PR 9건 merge</span>
+    <span class="chip info">문서 갱신 PR 진행 중</span>
     <span class="chip warn">실제 파일럿(S16) 미실행</span>
     <span class="chip gate">운영자 결정 4건 대기</span>
   </div>
@@ -140,7 +140,7 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
 <section id="status">
   <div class="section-head"><div class="eyebrow">Status</div><h2>Where It Stands</h2></div>
   <div class="kpis">
-    <div class="kpi"><span class="v">8</span><span class="k">merge 된 PR (#46–#53)</span></div>
+    <div class="kpi"><span class="v">9</span><span class="k">merge 된 PR (#46–#54)</span></div>
     <div class="kpi"><span class="v">6,813</span><span class="k">통과한 test (PR #52 CI, 3.11·3.12)</span></div>
     <div class="kpi"><span class="v">91</span><span class="k">평가 과제 (자체 71 + 회귀 20)</span></div>
     <div class="kpi"><span class="v">10</span><span class="k">실행 전략</span></div>
@@ -165,7 +165,6 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
         <li><strong>실제 개선 증거.</strong> 파일럿(S16)을 돌려야 생긴다. 지금까지의 test 는 가짜 드라이버와 scripted 실행으로 동작을 증명한 것이다.</li>
         <li>Terminal-Bench 2.0 과제 채택: docker 로 과제별 reference 를 돌려 보는 admission 이 필요하고, 과제의 test 실행 명령은 아직 확인 필요(§14 Q7)다.</li>
         <li>split 고정: 자체 과제만으로는 validation 이 13개라 기준(24) 미달. TB2 채택 뒤 고정한다.</li>
-        <li>v2 제안의 canary·promote 경로와 TB2 이미지 안의 추론강도 측정: 지금 고치는 중이다.</li>
       </ul>
     </div>
   </div>
@@ -422,6 +421,7 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
         <tr><td class="mono">#51</td><td>레이어별 판단기·judge, trace·제안자, 평가 품질</td><td class="num">10-01 17:18</td><td class="num">+23,211 / −186</td></tr>
         <tr><td class="mono">#52</td><td>야간 루프, 대시보드, vote 와 follow-up 복구</td><td class="num">10-01 22:25</td><td class="num">+16,218 / −276</td></tr>
         <tr><td class="mono">#53</td><td>TB2 과제별 환경 sibling, 앱별 calibration</td><td class="num">10-01 23:39</td><td class="num">+2,792 / −96</td></tr>
+        <tr><td class="mono">#54</td><td>v2 제안의 canary·promote, 과제 환경별 추론강도 probe, 파일럿 runbook, 이 보고서</td><td class="num">10-02 00:56</td><td class="num">+1,909 / −59</td></tr>
       </tbody>
     </table>
   </div>
@@ -438,6 +438,7 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
         <li>TB2 admission, split 고정</li>
         <li>calibration → 제안자 실행 → screening → focused → holdout → canary → promote 또는 reject 한 바퀴</li>
         <li>야간 루프 3일(밤마다 약 150 trial), quota 측정으로 다음 예산 B 결정</li>
+        <li>절차: <code>specs/033-harness-taxonomy/runs/pilot-runbook.md</code>, 명령 설명: <code>docs/v3/USING_AMPLAI_WORK.ko.md</code></li>
       </ul>
     </div>
     <div class="panel">
