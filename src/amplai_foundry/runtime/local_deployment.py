@@ -71,6 +71,7 @@ from .execution.product import (
     AppConfig,
     LocalExecutionService,
     OperatorDecisions,
+    TaskEnvironment,
     VerifierCommand,
     app_capabilities,
 )
@@ -109,7 +110,10 @@ class VerifierConfig(BaseModel):
 
 
 class EnvironmentEntry(BaseModel):
-    """A task environment of an app (IC-12, §12.2); read by S7b, accepted from S4 on."""
+    """A task environment of an app (IC-12, §12.2, §10.5 step 6): the task image's container
+    profile and, per driver id, its ``container_qualify.py`` report in that image. Each installed
+    cell of the app whose driver has a report here gets its records and port in the task image
+    (Work 033 S7b, ``LocalProductDeployment._task_environments``)."""
 
     model_config = ConfigDict(extra="forbid")
     environment_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
@@ -131,7 +135,14 @@ class AppEntry(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     base_branch: str = "main"
     remote: str = "origin"
-    environments: list[EnvironmentEntry] = Field(default_factory=list)  # S7b wires them
+    environments: list[EnvironmentEntry] = Field(default_factory=list)  # IC-12 (S7b)
+
+    @model_validator(mode="after")
+    def _environments(self) -> AppEntry:
+        ids = [e.environment_id for e in self.environments]
+        if len(set(ids)) != len(ids) or "app" in ids:
+            raise ValueError(f"{self.app_id}: each task environment id once, never 'app'")
+        return self
 
     def driver_report(self, driver_id: str) -> str | None:
         """The app's own qualification report for a driver (the legacy entries)."""
@@ -418,6 +429,9 @@ class LocalProductDeployment:
         token = claude_token(self.local(cfg.claude.token_file)) if cfg.claude else None
         registered: set[str] = set()
         per_app: dict[str, tuple[dict[str, Any], dict[str, Any], list[Cell]]] = {}
+        per_app_envs: dict[str, list[TaskEnvironment]] = {}
+        # task environments or cells an app's environment did not install, with the reason (IC-12)
+        self.environment_skips: list[dict[str, Any]] = []
         cells = CellInstaller(self.store, self.scope)
         recorded: set[str] = set()  # cells whose harness-cell record this boot wrote
         # configured cells an app did not install, with the reason (read by operators and tests)
@@ -487,6 +501,10 @@ class LocalProductDeployment:
             register(codex_refs, lambda i=inputs: build_codex_port(i, root / "journal", credential))
             agent_profile = container_profile(inputs)
             drivers = {"codex-cli": codex_refs}
+            # IC-12 (S7b): each installed cell with the inputs it was installed from
+            installed_inputs: dict[str, tuple[Cell, CodexProfileInputs]] = {
+                "codex-cli": (legacy_cell("codex-cli", inputs, entry.app_id), inputs),
+            }
             planners: dict[str, Any] = {
                 "codex-cli": CodexPlanner(
                     ContainerSandbox(agent_profile),
@@ -512,6 +530,9 @@ class LocalProductDeployment:
                     claude_refs, lambda c=claude: build_claude_port(c, root / "journal", token)
                 )
                 drivers["claude-cli"] = claude_refs
+                installed_inputs["claude-cli"] = (
+                    legacy_cell("claude-cli", claude, entry.app_id), claude,
+                )  # fmt: skip
                 planners["claude-cli"] = ClaudePlanner(
                     ContainerSandbox(container_profile(claude)), token, root / "plans",
                     model=cfg.claude.model,
@@ -538,6 +559,9 @@ class LocalProductDeployment:
                     ),
                 )
                 drivers["opencode-server"] = opencode_refs
+                installed_inputs["opencode-server"] = (
+                    legacy_cell("opencode-server", opencode, entry.app_id), opencode,
+                )  # fmt: skip
             app_cells: list[Cell] = []
             for cell_entry in cfg.cells:
                 # Work 033 S4: the configured cells in this app's image, each with the model's
@@ -575,6 +599,7 @@ class LocalProductDeployment:
                 register(refs, lambda ci=cell_inputs: self._port(cfg, ci, root, credential, token))
                 drivers[cell.cell_id] = refs
                 app_cells.append(cell)
+                installed_inputs[cell.cell_id] = (cell, cell_inputs)
                 effort = None if cell.effort == LEGACY_EFFORT else cell.effort
                 sandbox = ContainerSandbox(container_profile(cell_inputs))
                 if cell.driver_id == "codex-cli":
@@ -599,6 +624,12 @@ class LocalProductDeployment:
                 )
             )
             per_app[entry.app_id] = (drivers, planners, app_cells)
+            per_app_envs[entry.app_id] = self._task_environments(
+                entry, installed_inputs, cells,
+                lambda refs, ei: register(
+                    refs, lambda e=ei: self._port(cfg, e, root, credential, token)
+                ),
+            )  # fmt: skip
             if first_codex is None:
                 first_codex, first_planner = codex_refs, planners["codex-cli"]
         assert first_codex is not None
@@ -666,6 +697,7 @@ class LocalProductDeployment:
                 driver_refs=drivers,
                 planners=planners,
                 cells=app_cells,
+                environments=per_app_envs[entry.app_id],
             )
         # Work 033 S9 (§3.6): the execution strategies with their read-only turns, one per cell
         self.service.strategies = StrategyRunner(
@@ -684,6 +716,81 @@ class LocalProductDeployment:
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
+
+    def _task_environments(
+        self,
+        entry: AppEntry,
+        installed: dict[str, tuple[Cell, CodexProfileInputs]],
+        cells: CellInstaller,
+        register: Callable[[dict[str, Any], CodexProfileInputs], None],
+    ) -> list[TaskEnvironment]:
+        """IC-12 (Work 033 S7b, §10.5 step 6, §12.2): per configured task environment of the
+        app, each installed cell's records in the task image (``CellInstaller.profile``: the
+        environment, qualification, driver and model records of that image, no ``harness-cell``
+        record) and its port, and the app's suite verifier running in the task image with
+        network none. A cell whose driver has no report for the environment, or whose records
+        cannot be installed there (``DRIVER_UNQUALIFIED``, ``EFFORT_UNPROBED``: an effort cell
+        is probed in one image, §2.4), is skipped with the reason in ``environment_skips``; an
+        environment no cell qualifies in is skipped as a whole (its trials then hold
+        ENVIRONMENT_UNQUALIFIED before any claim)."""
+        out: list[TaskEnvironment] = []
+        caps = app_capabilities(entry.app_id)
+        for env in entry.environments:
+            profile_path = self.local(env.container_profile)
+            env_drivers: dict[str, dict[str, Any]] = {}
+            for cell_id, (cell, base_inputs) in installed.items():
+                report = env.qualification_reports.get(cell.driver_id)
+                skip = {"app": entry.app_id, "environment_id": env.environment_id,
+                        "cell_id": cell_id}  # fmt: skip
+                if report is None:
+                    self.environment_skips.append(
+                        {**skip, "code": None, "reason": "no qualification report for this driver"}
+                    )
+                    continue
+                env_inputs = replace(
+                    base_inputs, container_profile=profile_path,
+                    qualification_report=self.local(report),
+                )  # fmt: skip
+                found = latest_probe(self.store, self.scope, cell.cell_id)
+                try:
+                    refs, _measured = cells.profile(
+                        cell, env_inputs, caps, probe=found[1] if found is not None else None
+                    )
+                except Hold as exc:
+                    self.environment_skips.append(
+                        {**skip, "code": exc.code, "reason": str(exc)[:300]}
+                    )
+                    continue
+                register(refs, env_inputs)
+                env_drivers[cell_id] = refs
+            if not env_drivers:
+                self.environment_skips.append({
+                    "app": entry.app_id, "environment_id": env.environment_id, "cell_id": None,
+                    "code": "ENVIRONMENT_UNQUALIFIED", "reason": "no cell is qualified in it",
+                })  # fmt: skip
+                continue
+            # the verifier runs in the task image with network none (as ``verify_sandboxes``)
+            c = json.loads(profile_path.read_text())
+            sandbox = ContainerSandbox(
+                ContainerProfile(
+                    c["image"], uid=c["uid"], gid=c["gid"], memory=c["memory"], cpus=c["cpus"],
+                    pids=c["pids"], network="none",
+                )
+            )  # fmt: skip
+            out.append(
+                TaskEnvironment(
+                    env.environment_id,
+                    next(iter(env_drivers.values()))["environment"],
+                    env_drivers,
+                    SuiteVerifier(
+                        [(v.id, list(v.argv), v.timeout_seconds) for v in entry.verifiers],
+                        workspaces=self.workspaces,
+                        scope=self.scope,
+                        sandbox=sandbox,
+                    ),
+                )
+            )
+        return out
 
     def _trace_sink(self, cfg: LocalConfig) -> Callable[[str, dict[str, Any]], None] | None:
         """The coordinator's trace sink (Work 033 S13, §9.1-§9.3): admits a run's sanitized

@@ -31,6 +31,90 @@ POINTER_KIND, POINTER_ID = "release-pointer", "active"
 CLASS_A_FIXED = ("driver_profile_ref", "model_profile_ref", "sandbox_profile_ref")
 # a candidate derived from composition X is named X__<suffix>; only it may replace X
 CANDIDATE_SEP = "__"
+# IC-12 (Work 033 S7b): the environment sibling of installed composition X in task environment E
+# is named X:env-<env12>[__<suffix>]. interfaces.md §3.2 writes "<installed id>@env-<env12>", but
+# "@" is outside the record id pattern ($defs.id, ^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$), so ":"
+# separates it; "." is not used because model slugs contain it (codex.py model ids).
+ENV_SEP = ":env-"
+APP_ENVIRONMENT = "app"  # a corpus task's environment when it runs in its app's own image (§10.2)
+
+
+def env12(environment_id: str) -> str:
+    """The 12 hex digits naming a task environment in sibling ids (digest of its id)."""
+    return digest(environment_id)[7:19]
+
+
+def env_composition_id(installed_id: str, environment_id: str) -> str:
+    """The id of the installed environment sibling of composition ``installed_id`` (§3.2)."""
+    return installed_id + ENV_SEP + env12(environment_id)
+
+
+def env_suite_id(app_id: str, tag: str) -> str:
+    """The id of app ``app_id``'s suite verifier profile in the task environment whose env12 is
+    ``tag`` (``LocalExecutionService.install``, §10.5 step 6)."""
+    return f"{app_id}-suite{ENV_SEP}{tag}"
+
+
+def latest(store: Store, scope: Scope, kind: str, object_id: str) -> dict[str, Any] | None:
+    """The newest stored revision ref of ``object_id`` (None when there is none)."""
+    refs = [r for r, _ in store.list_objects(scope, kind) if r["id"] == object_id]
+    return max(refs, key=lambda r: r["revision"]) if refs else None
+
+
+def env_installed(
+    store: Store, scope: Scope, installed_id: str, tag: str, environment_ref: dict[str, Any]
+) -> bool:
+    """Whether the app of installed composition ``installed_id`` installed the task environment
+    ``tag`` (env12) in ``environment_ref`` (IC-12, §10.5 step 6).
+
+    A ``harness-composition`` record named ``<installed id>:env-<tag>`` is no such proof: any
+    writer of compositions can put one (``manifest.put_composition`` applies the profile checks
+    only). The proof is the app's newest ``app-binding`` revision, which only
+    ``GoalService.apps.register`` writes (permission ``app.register``,
+    ``runtime/goals/service.py:27-44``) and which ``LocalExecutionService.install`` writes with
+    every task environment and its suite verifier profile (§10.5 step 6): it must list
+    ``environment_ref`` in ``environment_refs`` and the suite profile ``<app>-suite:env-<tag>``
+    whose ``environment_ref`` it is. The app is the one whose id plus ``-`` begins
+    ``installed_id`` (``LocalExecutionService._composition_id``)."""
+    newest: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+    for ref, binding in store.list_objects(scope, "app-binding"):
+        app_id = str(binding.get("app_id", ""))
+        if not app_id or not installed_id.startswith(app_id + "-"):
+            continue
+        if app_id not in newest or ref["revision"] > newest[app_id][0]["revision"]:
+            newest[app_id] = (ref, binding)
+    for app_id, (_, binding) in newest.items():
+        if environment_ref not in (binding.get("environment_refs") or []):
+            continue
+        for profile_ref in binding.get("verifier_profile_refs") or []:
+            if profile_ref.get("id") != env_suite_id(app_id, tag):
+                continue
+            profile = store.get(scope, "verifier-profile", profile_ref)
+            if profile.get("environment_ref") == environment_ref:
+                return True
+    return False
+
+
+def installed_env_of(
+    store: Store, scope: Scope, installed_id: str, value: dict[str, Any]
+) -> dict[str, Any] | None:
+    """The installed environment composition (latest revision) whose sibling ``value`` is, or
+    None. ``value`` is named ``<installed_id>:env-<env12>[__<suffix>]``; the composition of that
+    name counts only when the app installed its task environment in its sandbox
+    (``env_installed``), so a record merely named like it is no installed one."""
+    name = str(value.get("composition_id", ""))
+    if not name.startswith(installed_id + ENV_SEP):
+        return None
+    tag = name[len(installed_id + ENV_SEP) :].split(CANDIDATE_SEP, 1)[0]
+    if len(tag) != 12 or any(c not in "0123456789abcdef" for c in tag):
+        return None
+    ref = latest(store, scope, "harness-composition", installed_id + ENV_SEP + tag)
+    if ref is None:
+        return None
+    found: dict[str, Any] = store.get(scope, "harness-composition", ref)
+    if not env_installed(store, scope, installed_id, tag, found["sandbox_profile_ref"]):
+        return None
+    return found
 
 
 def build(
@@ -178,8 +262,13 @@ def pin_allowed(
     A candidate is named ``<installed id>__<suffix>`` and keeps the driver, model and sandbox
     profiles of the composition it derives from. With one installed composition per cell this
     also admits a cell sibling (``ManifestService.cell_sibling``: the cell's installed id plus
-    the source suffix, the cell's own profiles). IC-12 environment siblings arrive with S7b.
-    Anything else is None.
+    the source suffix, the cell's own profiles).
+
+    IC-12 (Work 033 S7b): an environment sibling ``<installed id>:env-<env12>[__<suffix>]`` is
+    admitted for the cell when the installed environment composition of that name exists (the
+    product installs it from the task environment's qualified records, and the app's newest
+    app-binding lists that environment and its suite profile, ``env_installed``) and the sibling
+    keeps its driver, model and sandbox profiles. Anything else is None.
     """
     try:
         value = store.get(scope, "harness-composition", ref)
@@ -192,6 +281,9 @@ def pin_allowed(
         if value["composition_id"].startswith(base["composition_id"] + CANDIDATE_SEP) and all(
             value[k] == base[k] for k in CLASS_A_FIXED
         ):
+            return driver_id
+        env = installed_env_of(store, scope, base["composition_id"], value)
+        if env is not None and all(value[k] == env[k] for k in CLASS_A_FIXED):
             return driver_id
     return None
 

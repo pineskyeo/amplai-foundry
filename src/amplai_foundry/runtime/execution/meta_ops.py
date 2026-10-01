@@ -20,6 +20,13 @@ and runs a calibration; ``derived_proposal`` creates an IC-19 (A) leave-one-out 
 (``--app``) when given, else the one installed app its ``main`` set names (several: Hold
 TARGET_UNKNOWN, name one with ``--app``). ``reconcile`` (IC-18, provisional) is the human
 operator's path for an interrupted stage experiment or an unresolved allocation of a root.
+
+Work 033 S7b (IC-12; clarification after the S10/S13/S14 fix wave, "Open (S7b)"): ``--app`` may
+also name the app of task-environment tasks (``amplai-tb2``); without it the app stays the one of
+the ``app``-environment tasks. A calibration covers the cases of one app: its plan records
+``app`` (the app id and the corpus bases that name it) and ``case_ids`` are that app's cases of
+the calibrated splits, which ``CalibrationService`` recomputes from the frozen case payloads
+(``SAMPLING_CHANGED`` per app).
 """
 
 from __future__ import annotations
@@ -124,11 +131,22 @@ class LocalMetaOps:
         if self._app_id is not None:
             if self._app_id not in self.dep.service.apps:
                 raise Hold("TARGET_UNKNOWN", "Not an installed app", details=[self._app_id])
-            if isinstance(corpus, CorpusV2) and self._app_id not in named:
+            # IC-12 (S7b): an explicit app may also be the app of task-environment tasks
+            # (``amplai-tb2``), which run on its environment siblings
+            every = (
+                {
+                    str(corpus.bases.get(t.base_id, {}).get("app_id"))
+                    for t in corpus.tasks
+                    if t.set == MAIN_SET
+                }
+                if isinstance(corpus, CorpusV2)
+                else set()
+            )
+            if isinstance(corpus, CorpusV2) and self._app_id not in every:
                 raise Hold(
                     "TARGET_UNKNOWN",
-                    "No main-set app-environment task of the corpus names this app",
-                    details={"app": self._app_id, "named": sorted(named)},
+                    "No main-set task of the corpus names this app",
+                    details={"app": self._app_id, "named": sorted(every)},
                 )
             return self._app_id
         if isinstance(corpus, local_corpus.Corpus):
@@ -148,22 +166,18 @@ class LocalMetaOps:
             )
         return installed[0]
 
-    def app_case_ids(self) -> frozenset[str] | None:
-        """The case ids the stages may select (``--app`` selects the app): the main-set tasks of
-        the loaded corpus v2 whose base names ``self.app``. None for the Work 030 corpus (one
-        app: every case). A main set naming two apps keeps the other app's tasks out, so a stage
-        trial never runs another app's task under this app's cell (the executor takes the app
-        from the task's base, ``LocalTrialExecutor._spec``). Calibration still pins every
-        development and validation case (``CalibrationService._cases``, §8.2)."""
+    def app_case_ids(self, app_id: str | None = None) -> frozenset[str] | None:
+        """The case ids the stages may select: the main-set tasks of the loaded corpus v2 whose
+        base names ``app_id`` (default: ``self.app``, which ``--app`` selects; a stage plan
+        passes its recorded app, S7b). None for the Work 030 corpus (one app: every case). A
+        main set naming two apps keeps the other app's tasks out, so a stage trial never runs
+        another app's task under this app's cell (the executor takes the app from the task's
+        base, ``LocalTrialExecutor._spec``). Calibration selects the same app's cases
+        (``calibrate``, S7b)."""
         corpus = self.corpus
         if not isinstance(corpus, CorpusV2):
             return None
-        app_id = self.app.config.app_id
-        return frozenset(
-            t.task_id
-            for t in corpus.tasks
-            if t.set == MAIN_SET and corpus.bases.get(t.base_id, {}).get("app_id") == app_id
-        )
+        return set_case_ids(corpus, app_id or self.app.config.app_id, MAIN_SET)
 
     @property
     def components(self) -> ComponentService:
@@ -1130,10 +1144,19 @@ class LocalMetaOps:
             )
 
     def latest_summary(
-        self, corpus_ref: dict[str, Any], cell_id: str, version_ref: dict[str, Any]
+        self,
+        corpus_ref: dict[str, Any],
+        cell_id: str,
+        version_ref: dict[str, Any],
+        *,
+        app_id: str | None = None,
     ) -> dict[str, Any] | None:
         """The newest calibration summary of ``corpus_ref`` with a row for ``cell_id`` that pins
-        ``version_ref`` (by ``summarized_at``, then id)."""
+        ``version_ref`` (by ``summarized_at``, then id).
+
+        ``app_id`` (S7b): only a summary whose calibration plan names that app or names no app
+        (a plan without ``app`` covers every case of its splits, so that app's cases too); a
+        plan of another app calibrated only that app's cases on that app's compositions."""
         found = []
         for ref, value in self.store.list_objects(self.scope, "calibration-summary"):
             if value.get("evaluator_version_ref") != version_ref or cell_id not in (
@@ -1141,8 +1164,11 @@ class LocalMetaOps:
             ):
                 continue
             plan = self.store.get(self.scope, "calibration-plan", value["plan_ref"])
-            if plan.get("corpus_ref") == corpus_ref:
-                found.append((str(value.get("summarized_at")), ref["id"], ref))
+            if plan.get("corpus_ref") != corpus_ref:
+                continue
+            if app_id is not None and "app" in plan and plan["app"].get("app_id") != app_id:
+                continue
+            found.append((str(value.get("summarized_at")), ref["id"], ref))
         return max(found, key=lambda row: row[:2])[2] if found else None
 
     def stage_runner(
@@ -1182,7 +1208,11 @@ class LocalMetaOps:
             if current is None:
                 raise Hold("EVALUATOR_UNQUALIFIED", "No evaluator version matches the running code")
             version_ref = current
-            found = self.latest_summary(refs["corpus_ref"], cell_id, version_ref)
+            # S7b: the summary of the app the stage plan records (``StageRunner.plan`` plans
+            # ``self.app``), never a newer calibration of another app's cases
+            found = self.latest_summary(
+                refs["corpus_ref"], cell_id, version_ref, app_id=self.app.config.app_id
+            )
             if found is None:
                 raise Hold(
                     "NO_INFORMATIVE_TASKS",
@@ -1303,7 +1333,20 @@ class LocalMetaOps:
             )
         refs = self.frozen_corpus(corpus=loaded)
         corpus = self.store.get(self.scope, "eval-corpus", refs["corpus_ref"])
-        case_ids = [c["case_id"] for c in corpus["cases"] if c["split"] in calibration.SPLITS]
+        # S7b: the calibrated app's cases only (the bench app or amplai-tb2), recorded in the
+        # plan as the app and its bases, so CalibrationService recomputes them (SAMPLING_CHANGED)
+        app_id = app.config.app_id
+        own = set_case_ids(loaded, app_id, corpus_set)
+        case_ids = [
+            c["case_id"]
+            for c in corpus["cases"]
+            if c["split"] in calibration.SPLITS and c["case_id"] in own
+        ]
+        if not case_ids:
+            raise Hold(
+                "TARGET_UNKNOWN", "The frozen corpus has no development or validation case of "
+                "this app", details={"app": app_id, "set": corpus_set},
+            )  # fmt: skip
         present = {c["split"] for c in corpus["cases"] if c["case_id"] in set(case_ids)}
         # the trials run the loaded tasks: they must be the frozen ones (freeze and run follow
         # in this call on this loaded corpus)
@@ -1327,6 +1370,12 @@ class LocalMetaOps:
             if corpus_set == MAIN_SET
             else [x for x in calibration.SPLITS if x in present],
             "case_ids": case_ids,
+            "app": {
+                "app_id": app_id,
+                "base_ids": sorted(
+                    b for b, base in loaded.bases.items() if base.get("app_id") == app_id
+                ),
+            },
             "initial_repeats": 1,
             "adaptive": {
                 "max_repeats": max_repeats,
@@ -1433,6 +1482,15 @@ class LocalMetaOps:
                 f"The candidate is {head['state']}; this gate needs {' or '.join(states)}",
             )
         return head
+
+
+def set_case_ids(corpus: CorpusV2, app_id: str, set_name: str) -> frozenset[str]:
+    """The tasks of one set of a loaded corpus v2 whose base names ``app_id`` (S7b)."""
+    return frozenset(
+        t.task_id
+        for t in corpus.tasks
+        if t.set == set_name and corpus.bases.get(t.base_id, {}).get("app_id") == app_id
+    )
 
 
 # -- IC-29 (provisional): the stored executor qualification ---------------------------------------

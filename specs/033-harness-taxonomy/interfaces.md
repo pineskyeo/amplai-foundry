@@ -2964,3 +2964,48 @@ explicit confirmation before the nightly loop is activated.
   `candidate_results` (not a trial-row field); a failed or interrupted queued stage ends its `stage-queue` head
   `failed` `{failure, failed_at}`; a nightly issuer is refused the holdout before anything is built and never resumes a
   frozen holdout; a candidate launched without a recorded handle still counts as a turn.
+
+## Provisional Operator Decisions IC-31, IC-32 And Clarifications After S7b (2026-10-01)
+
+S7b changes three shapes this spec fixes: the `calibration-plan` (§2.8, §8.2), the `stage-plan` (§2.9) and the
+environment sibling id (§3.2). They were not put to the operator before implementation. They are implemented with the
+option below and marked provisional, like IC-15 … IC-29; neither IC-31 nor IC-32 changes a permission or a class C
+surface, and the final report lists IC-31 and IC-32 for explicit confirmation before the nightly loop is activated.
+
+| IC | Provisional choice | Rejected alternative (why) |
+|---|---|---|
+| IC-31 | **One app per calibration plan and per stage plan.** `calibration-plan` gains the optional field `"app": {"app_id": str, "base_ids": [str]}` (`base_ids` non-empty and distinct: the corpus bases whose `app_id` it is; `calibration.py:94,183-202`). With `app`, `case_ids` are every case of the plan's splits whose frozen case payload (`base_id`, `corpus_v2.py:667`, read with operator trust) names one of `base_ids`, in corpus order; `CalibrationService` recomputes them and holds `SAMPLING_CHANGED` on any difference (`calibration.py:441-469`). A plan without `app` keeps every case of its splits (§8.2, unchanged). `LocalMetaOps.calibrate` always writes `app` and holds `TARGET_UNKNOWN` when the app has no development or validation case (`meta_ops.py:1336-1378`). `stage-plan` gains the optional field `"app_id": str`, written at plan time from `--app` (`stages.py:177,284-285,955`); every stage selects that app's main-set cases and runs on that app whatever `--app` names later (`stages.py:816-835,1549`); a plan written before S7b has no `app_id` and keeps reading `--app` (the S11 rule). Stage planning takes the newest calibration summary whose plan names the planned app or no app (`meta_ops.py:1146-1172,1212-1215`). | (a) one calibration over every app's cases (§8.2 as written): the plan's `composition_refs` are one app's installed compositions (`meta_ops.py:1323-1324,1366`) and the trial executor holds `COMPOSITION_PIN` for a task whose base names another app (`local_executor.py:303-308`, `trial_metrics.cell_of`), so the bench app's and `amplai-tb2`'s cases cannot share one plan. (b) keep the stage plan app-less (S11): its `environment_digests` pin the task environments of one app (`stages.py:979-1015`), so the plan must name the app its pins belong to. |
+| IC-32 | **Environment sibling ids use `:env-`**, not §3.2's `@env-`: the installed environment composition is `<installed id>:env-<env12>`, a sibling is that id plus the source's `__<suffix>` (an installed composition whose kept fields differ from the environment composition's gets `__sibling-<12 hex>`, the cell-sibling rule, `manifest.py:210-213`, `product.py:2035-2036`); the per-environment suite verifier profile is `<app>-suite:env-<env12>`; `env12` is the first 12 hex digits of `identity.digest(environment_id)` (`releases.py:34-55`). Forced: `@` is outside `$defs.id` (`contracts/schemas/common.schema.json:8`), which `composition_id` and every ref id use (`harness-composition.schema.json:11-12`). | allow `@` in `$defs.id` (a change to the frozen schemas in `contracts/`); `.env-` (installed ids carry model slugs, `product.py:665-671`, which may contain `.`, `cells.py:61,79-81`) |
+
+- **Closes the S11 note "Open (S7b)"** (Clarifications After The S10/S13/S14 Fix Wave, "Stages"): calibration
+  selects one app's cases (IC-31). That note's sentence "the stage plan does not store the app, so a different `--app`
+  later holds `SAMPLING_CHANGED`" now holds only for stage plans written before S7b. `--app` may also name the app of
+  task-environment tasks (`amplai-tb2`); without it the app stays the one of the `app`-environment tasks
+  (`meta_ops.py:114-167`).
+- **`environment_digests`** (§2.9): for each task environment of the planned app's main-set cases that the app
+  installed, `digest(probe(environment record))` with the evaluation service's probe (`local_executor.py:1041-1053`,
+  the freeze rule of `EvaluationService`). The environments come from the frozen `corpus-task-index` rows (no case
+  payload is read, so no holdout payload), else from the loaded tasks (`stages.py:979-1015`); values must be
+  `sha256:` strings (`stages.py:294-297`). A task environment the app did not install is not pinned; its trials hold
+  `ENVIRONMENT_UNQUALIFIED` before any claim. The pins are on the trial executor only while a stage experiment runs
+  (`stages.py:1017-1032`); with pins in force a task environment they do not name counts as drifted. Calibration runs
+  without pins, so a calibration has no task-environment drift check (`local_executor.py:253,276-278,356-361`).
+- **Drift receipt** (§2.10, §10.5 step 6): nothing runs; `success` null, `goal_id` null, `goal_reason`
+  `"environment_drift"`, measured zero usage, `executed_composition_ref` = the arm composition, `environment_binding` =
+  `{environment_id, manifest_digest}` with `manifest_digest` the digest of the four carrier refs (§2.3)
+  (`local_executor.py:363-437,1036-1038`). The stage record, and the ablation stage for a variant, gets the guard
+  finding `task_environment_drift` (`stages.py:1699-1700,1815-1818`).
+- **TB2 grading stays open** (§14 Q7): a verified `tb2_tests` trial is reported `success` null with detail
+  "tb2_tests: not graded" until the TB2 test entry command is known (`local_executor.py:466-470`). §10.5 step 6
+  "grading by the task tests in the task image" is not implemented, so no TB2 trial answers anything about a
+  candidate yet.
+- **Per-environment verifier and app binding** (§10.5 step 6): the suite profile `<app>-suite:env-<env12>` is the
+  app's suite profile with the task environment's `environment_ref` (`product.py:566-575`); its runner runs the app's
+  configured `apps[].verifiers` commands in the task image with network none (`local_deployment.py:720-793`), so the
+  §10.5 smoke command is whatever the operator configures as the `amplai-tb2` verifier. The app-binding lists every
+  task environment and its suite profile (`product.py:594-612`). `releases.pin_allowed` admits an environment sibling
+  only when the app's newest app-binding lists that environment and suite profile (`releases.py:64-95`): a record
+  merely named `<installed id>:env-<tag>` is no proof, since any composition writer can put one.
+- **Known limit (open)**: `MODEL_TOKEN` admits `:` (`cells.py:61`). `releases.installed_env_of` anchors on
+  `<installed id>:env-`, but `manifest.env_sibling` and `manifest.environment_of` split an id at its first `:env-`
+  (`manifest.py:172,222-227`), so a cell whose model id contains `:env-` would be misread as a sibling.
