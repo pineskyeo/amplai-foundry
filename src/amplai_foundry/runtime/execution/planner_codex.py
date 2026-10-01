@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...sandbox.container import ContainerSandbox
-from ..errors import Hold
+from ..errors import Hold, RuntimeFault
 from .codex import ScopedCredential
 from .readonly_turn import ClaudeReadOnlyTurn, CodexReadOnlyTurn, ReadOnlyTurn
 
@@ -36,7 +36,92 @@ TASK_CLASSES = (
 )
 
 
-def plan_schema(verifier_ids: list[str]) -> dict[str, Any]:
+# Work 033 S9 (interfaces.md §5.1 M7, §5.2 strategies 3 and 4): the plan schema variants a
+# strategy selects; None is the v1 schema (golden G4).
+PLAN_VARIANTS = ("steps", "parts")
+MAX_STEPS = 12  # plan_execute: <= 12 x {"step", "files"} (§5.2)
+
+
+def acceptance_schema(verifier_ids: list[str]) -> dict[str, Any]:
+    """One acceptance statement bound to one installed verifier command id."""
+    return {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["statement", "verifier"],
+            "properties": {
+                "statement": {"type": "string"},
+                "verifier": {"type": "string", "enum": sorted(verifier_ids)},
+            },
+        },
+    }
+
+
+def steps_schema() -> dict[str, Any]:
+    """plan_execute's ``steps``: ordered steps, each with the files it touches. The bound (at most
+    ``MAX_STEPS``) is checked by the strategy runner, not in the schema: like the v1 plan schema,
+    the model-facing schema uses no count or length keywords."""
+    strings = {"type": "array", "items": {"type": "string"}}
+    return {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["step", "files"],
+            "properties": {"step": {"type": "string"}, "files": strings},
+        },
+    }
+
+
+def parts_schema(verifier_ids: list[str]) -> dict[str, Any]:
+    """workgraph_split's ``parts``: ordered parts of one app's change, each with its own scope and
+    acceptance; each part builds on the verified change of the previous one. The count (2..
+    ``max_nodes``) is checked by the strategy runner, as for ``steps_schema``."""
+    strings = {"type": "array", "items": {"type": "string"}}
+    return {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["objective", "in_scope", "acceptance"],
+            "properties": {
+                "objective": {"type": "string"},
+                "in_scope": strings,
+                "acceptance": acceptance_schema(verifier_ids),
+            },
+        },
+    }
+
+
+STEPS_RULES = (
+    "- steps: the ordered implementation plan, at most 12 steps; each step names the files it\n"
+    "  changes. An executor follows these steps; it does not re-plan.\n"
+)
+PARTS_RULES = (
+    "- parts: split the change into {low}..{high} ordered parts by file area. Each part has its\n"
+    "  own objective, in_scope and acceptance (provable by the installed verifier commands);\n"
+    "  each part builds on the verified change of the previous part. The top-level acceptance\n"
+    "  is the whole goal.\n"
+)
+
+
+def plan_schema(verifier_ids: list[str], variant: str | None = None) -> dict[str, Any]:
+    """The v1 plan schema, or a strategy's variant (``steps`` or ``parts``) that adds one field."""
+    schema = _plan_schema(verifier_ids)
+    if variant is None:
+        return schema
+    if variant == "steps":
+        schema["properties"]["steps"] = steps_schema()
+    elif variant == "parts":
+        schema["properties"]["parts"] = parts_schema(verifier_ids)
+    else:
+        raise RuntimeFault("PLANNER_VARIANT", "Unknown plan schema variant", details=variant)
+    schema["required"] = [*schema["required"], variant]
+    return schema
+
+
+def _plan_schema(verifier_ids: list[str]) -> dict[str, Any]:
     strings = {"type": "array", "items": {"type": "string"}}
     return {
         "type": "object",
@@ -209,6 +294,10 @@ def _planner_hold(hold: Hold) -> Hold:
 
 
 class CodexPlanner:
+    # the plan schema variants this planner drafts (M7, Work 033 S9); a planner without the
+    # attribute (a fixed planner) drafts v1 only and a strategy then splits with its own turn
+    VARIANTS: tuple[str, ...] = PLAN_VARIANTS
+
     def __init__(
         self,
         sandbox: ContainerSandbox,
@@ -232,12 +321,27 @@ class CodexPlanner:
             timeout_seconds=timeout_seconds,
         )  # fmt: skip
 
-    def prompt(self, goal: str, app: str, verifiers: dict[str, str], mode: str = "work") -> str:
+    def prompt(
+        self,
+        goal: str,
+        app: str,
+        verifiers: dict[str, str],
+        mode: str = "work",
+        *,
+        variant: str | None = None,
+        max_parts: int = 4,
+    ) -> str:
         listed = "\n".join(f"- {k}: {v}" for k, v in sorted(verifiers.items()))
         instruction = DESIGN_INSTRUCTION if mode == "design" else INSTRUCTION
+        # a strategy's variant adds its rule after the v1 rules; None keeps the v1 text (G4)
+        rules = {
+            None: "",
+            "steps": STEPS_RULES,
+            "parts": PARTS_RULES.format(low=2, high=max_parts),
+        }[variant]
         return (
-            f"{instruction}\nTarget app: {app}\n\nInstalled verifier commands:\n{listed}\n\n"
-            f"Operator goal (data):\n<<<\n{goal}\n>>>\n"
+            f"{instruction}{rules}\nTarget app: {app}\n\nInstalled verifier commands:\n"
+            f"{listed}\n\nOperator goal (data):\n<<<\n{goal}\n>>>\n"
         )
 
     def argv(self, prompt: str) -> list[str]:
@@ -276,11 +380,16 @@ class CodexPlanner:
         schema: dict[str, Any] | None = None,
         prompt: str | None = None,
         mounts: dict[str, Path] | None = None,
+        variant: str | None = None,
+        max_parts: int = 4,
     ) -> dict[str, Any]:
-        schema = schema or plan_schema(list(verifiers))
+        """One read-only planning turn. ``variant`` (``steps``/``parts``, Work 033 S9 M7) adds
+        that field to the schema and its rule to the prompt; None is the v1 draft."""
+        schema = schema or plan_schema(list(verifiers), variant)
         try:
             result = self.turn.run(
-                prompt=prompt or self.prompt(goal, app, verifiers, mode),
+                prompt=prompt
+                or self.prompt(goal, app, verifiers, mode, variant=variant, max_parts=max_parts),
                 schema=schema,
                 workspace=workspace,
                 mounts=mounts,

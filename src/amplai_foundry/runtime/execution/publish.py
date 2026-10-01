@@ -34,6 +34,45 @@ from .product import PORT, LocalExecutionService
 KIND = "publication"
 
 
+def terminal_nodes(
+    graph: dict[str, Any], node_apps: dict[str, str] | None = None
+) -> dict[str, dict[str, Any]]:
+    """The last node of each app in dependency order (Work 033 S9, interfaces.md §3.3), keyed by
+    app in first-node order.
+
+    A strategy that splits one app's change (M5) leaves a chain (``node-<app>.s<k>``) or parts and
+    an integration node (``.p<k>``, ``.int``); the last node's verified change is cumulative from
+    the base commit, so it is the app's whole change. ``node_apps`` maps node ids to apps (the plan
+    record's); without it a node id is ``node-<app>``."""
+    nodes = graph["nodes"]
+    by_id = {n["node_id"]: n for n in nodes}
+    names = node_apps or {}
+
+    def app_of(node: dict[str, Any]) -> str:
+        node_id = node["node_id"]
+        return names.get(node_id) or node_id[len("node-") :]
+
+    # depth-first topological order (the compiler refuses cycles, validate_graph)
+    order: list[str] = []
+    seen: set[str] = set()
+
+    def visit(node_id: str) -> None:
+        if node_id in seen or node_id not in by_id:
+            return
+        seen.add(node_id)
+        for dep in by_id[node_id].get("depends_on") or []:
+            visit(dep)
+        order.append(node_id)
+
+    for node in nodes:
+        visit(node["node_id"])
+    last: dict[str, dict[str, Any]] = {}
+    for node_id in order:
+        last[app_of(by_id[node_id])] = by_id[node_id]
+    first = list(dict.fromkeys(app_of(n) for n in nodes))
+    return {app: last[app] for app in first}
+
+
 def _run(
     args: list[str], *, cwd: Path, env: dict[str, str] | None = None, input: bytes | None = None
 ) -> subprocess.CompletedProcess[bytes]:
@@ -121,16 +160,18 @@ class GitPublisher:
     # -- publish -------------------------------------------------------------------------------
     def __call__(self, goal_id: str) -> dict[str, Any]:
         plan, decision = self._authorized(goal_id)
-        nodes = self.store.get(self.scope, "workgraph", plan["graph_ref"])["nodes"]
+        graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
+        # the last node of each app (Work 033 S9): its change holds every part of that app
+        terminal = terminal_nodes(graph, plan.get("node_apps"))
         safe = re.sub(r"[^A-Za-z0-9._-]", "-", goal_id)
-        if len(nodes) == 1:
+        if len(terminal) == 1:
+            node = next(iter(terminal.values()))
             return self._publish(
-                goal_id, plan, decision, nodes[0], plan["app"], goal_id, "amplai/" + safe, []
+                goal_id, plan, decision, node, plan["app"], goal_id, "amplai/" + safe, []
             )
         # one draft PR per app (D-081), linked both ways
         published: dict[str, dict[str, Any]] = {}
-        for node in nodes:
-            app = node["node_id"][len("node-") :]
+        for app, node in terminal.items():
             earlier = [v["pr_url"] for v in published.values() if v.get("pr_url")]
             published[app] = self._publish(
                 goal_id, plan, decision, node, app, f"{goal_id}:{app}",
@@ -204,7 +245,9 @@ class GitPublisher:
         self._save(record_id, "pushed", value)
         if value["mode"] == "draft_pr" and not value.get("pr_url"):
             draft = plan["draft"]
-            body = self._body(plan, draft, value, node=node if multi else None, earlier=earlier)
+            body = self._body(
+                plan, draft, value, node=node if multi else None, earlier=earlier, app=app_id
+            )
             prefix = "[AMPLAI design] " if plan.get("mode") == "design" else "[AMPLAI] "
             suffix = f" ({app_id})" if multi else ""
             value["pr_url"] = self.pr_creator(
@@ -287,6 +330,7 @@ class GitPublisher:
         *,
         node: dict[str, Any] | None = None,
         earlier: list[str] | None = None,
+        app: str | None = None,
     ) -> str:
         if node is not None:  # one app of a multi-app goal: its own acceptance and base
             mapping = plan.get("acceptance_map") or {}
@@ -294,7 +338,7 @@ class GitPublisher:
                 f"- {mapping[ac]['statement']} (`{mapping[ac]['verifier']}`)"
                 for ac in node["acceptance_ids"]
             )
-            app = node["node_id"][len("node-") :]
+            app = app or node["node_id"][len("node-") :]
             base_commit = (plan.get("base_commits") or {}).get(app, plan["base_commit"])
             head = f"{draft['objective']}\n\nThis PR: {node['objective']} ({app})"
         else:

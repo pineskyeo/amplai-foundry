@@ -26,7 +26,7 @@ from typing import Any, Literal
 from ...sandbox.git_workspace import CHANGE_MEDIA, GitWorkspaceManager
 from ...verification.runtime.design_check import DESIGN_ROOT, DesignDocumentCheck
 from ..contracts.authority import Actor
-from ..contracts.identity import digest, new_id, now
+from ..contracts.identity import ID, digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from . import context_assembly, policies, prompts, releases
@@ -59,6 +59,13 @@ DESIGN_CHECK_DESCRIPTION = (
     "Sources; at least 3 path:line citations that resolve in the repository"
 )
 PORT = "change"
+# the composition fields that carry the manifest (interfaces.md §2.3); a cell sibling keeps them
+CARRIER_FIELDS = (
+    "prompt_bundle_ref",
+    "context_policy_ref",
+    "budget_policy_ref",
+    "router_policy_ref",
+)
 
 
 @dataclass(frozen=True)
@@ -332,6 +339,28 @@ class LocalExecutionService:
         self.apps: dict[str, InstalledApp] = {}
         self._base_checks: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
+        # Work 033 S9: the execution strategies (interfaces.md §3.6); the deployment sets one with
+        # its read-only turn factory, else strategy_runner() builds one without auxiliary turns
+        self.strategies: Any = None
+
+    def strategy_runner(self) -> Any:
+        """The ``StrategyRunner`` of this service (Work 033 S9). Without a configured one, the
+        runner has no read-only turns: an auxiliary turn holds TURN_FAILED (``AUX_BUDGET`` first
+        when the cap is reached)."""
+        if self.strategies is None:
+            from .integration_queue import IntegrationQueue
+            from .strategy_runner import StrategyRunner
+
+            def no_turns(cell_id: str) -> Any:
+                raise Hold(
+                    "TURN_FAILED", "No read-only turn is configured for this cell",
+                    details={"cell_id": cell_id},
+                )  # fmt: skip
+
+            self.strategies = StrategyRunner(
+                self, no_turns, IntegrationQueue(self.workspaces, self.scope)
+            )
+        return self.strategies
 
     @property
     def scope(self) -> Scope:
@@ -714,6 +743,14 @@ class LocalExecutionService:
         )
         planning = self.select_composition(installed, pin=composition, role="planner")
         planner = planner or self._planner(installed, planning["cell_id"] or planning["driver_id"])
+        runner = self.strategy_runner()
+        planner_cell = planning["cell_id"] or planning["driver_id"]
+        target_apps = [t.config.app_id for t in targets]
+        # M7 (Work 033 S9): a strategy that needs a plan schema variant has the planner draft it
+        variant, variant_args = self._plan_variant(
+            runner, installed, composition, mode=mode, apps=target_apps,
+            trial=trial is not None, planner=planner, planner_cell=planner_cell,
+        )  # fmt: skip
         workspaces = {
             a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
         }
@@ -727,8 +764,9 @@ class LocalExecutionService:
                 )  # fmt: skip
             else:
                 drafted = planner.draft(
-                    intent["text"], app.app_id, verifiers, workspaces[app.app_id], mode=mode
-                )
+                    intent["text"], app.app_id, verifiers, workspaces[app.app_id], mode=mode,
+                    **variant_args,
+                )  # fmt: skip
             # before the discard: the base facts env_bootstrap may show (D-096)
             repo_facts = {
                 a: self._repo_facts(self.apps[a].config, w) for a, w in workspaces.items()
@@ -818,11 +856,20 @@ class LocalExecutionService:
         # selected before compiling: the composition's budget policy sets the root and node
         # budgets (interfaces.md §2.3, IC-21)
         chosen = self.select_composition(installed, draft.get("task_class"), pin=composition)
+        budget = self._budget_policy(chosen["ref"])
+        # Work 033 S9 (§3.6, §4.1 row product.py:647-654): the strategy, then its work items
+        strategy, items, node_apps, extra = self._strategy_items(
+            runner, goal_id, installed, chosen, budget, draft, items, base=base, mode=mode,
+            apps=target_apps, trial=trial is not None, planner=planner,
+            planner_cell=planner_cell, drafted=variant, verifier_ids=list(verifiers),
+        )  # fmt: skip
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
-            mode=mode, items=items, policy_ref=policy_ref,
-            budget=self._budget_policy(chosen["ref"]), trial_scope=trial is not None,
+            mode=mode, items=items, policy_ref=policy_ref, budget=budget,
+            trial_scope=trial is not None,
+            node_attempts=self._node_attempts(runner, strategy, budget),
         )  # fmt: skip
+        record.update(strategy=strategy, work_items=items, node_apps=node_apps, **extra)
         record["acceptance_map"] = acceptance_map
         record["composition"] = chosen
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
@@ -895,13 +942,18 @@ class LocalExecutionService:
         revision = previous["revision"] + 1
         # as in plan: the selected composition's budget policy sets the node budgets
         chosen = self.select_composition(installed, draft.get("task_class"), pin=pin)
+        budget = self._budget_policy(chosen["ref"])
+        # Work 033 S9: the replan drafts one item per app (v1 schema), so a strategy that splits
+        # one app's change (M5/M7) does not carry over; that revision runs on the v1 prior
+        strategy = self._replanned_strategy(plan, chosen)
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
             previous["context_bundle_ref"], installed, draft, mode=mode, items=items,
             policy_ref=previous["policy_ref"], revision=revision,
             previous_graph_ref=plan["graph_ref"], replan_reason=reason[:4000],
-            budget=self._budget_policy(chosen["ref"]),
+            budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
+            node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
         )  # fmt: skip
         record = {
             **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
@@ -915,6 +967,8 @@ class LocalExecutionService:
             "contract_ref": contract_ref,
             "graph_ref": graph_ref,
             "revision": revision,
+            **({"strategy": strategy} if strategy is not None else {}),
+            "node_apps": {"node-" + i["app"]: i["app"] for i in items},
             "replan": {
                 "reason": reason,
                 "steering_id": steering_id,
@@ -932,6 +986,242 @@ class LocalExecutionService:
         }  # fmt: skip
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
         return record
+
+    # -- strategies (Work 033 S9, interfaces.md §3.6, §5) -------------------------------------
+    def _plan_variant(
+        self,
+        runner: Any,
+        installed: InstalledApp,
+        composition: dict[str, Any] | None,
+        *,
+        mode: str,
+        apps: list[str],
+        trial: bool,
+        planner: Any,
+        planner_cell: str,
+    ) -> tuple[str | None, dict[str, Any]]:
+        """The plan schema variant (M7) the planner drafts, and its draft arguments.
+
+        Only a one-app work goal whose planner drafts variants (``planner.VARIANTS``) can: the
+        strategy is read from the composition selected without a task class (the draft's class
+        may select another one; ``_strategy_items`` then asks one more turn or falls back).
+        Without a variant the planner is called exactly as before S9."""
+        if len(apps) != 1 or mode != "work" or not getattr(planner, "VARIANTS", ()):
+            return None, {}
+        try:
+            provisional = self.select_composition(installed, pin=composition)
+            budget = self._budget_policy(provisional["ref"])
+        except (Hold, RuntimeFault):
+            return None, {}  # held again after the draft, at the same point as before S9
+        early = runner.choose(
+            installed=installed, composition=provisional, budget=budget, mode=mode, apps=apps,
+            trial=trial, planner=planner, planner_cell=planner_cell,
+        )  # fmt: skip
+        variant = early.get("variant")
+        if not variant:
+            return None, {}
+        params = early.get("params") or {}
+        return variant, {"variant": variant, "max_parts": int(params.get("max_nodes", 4))}
+
+    def _strategy_items(
+        self,
+        runner: Any,
+        goal_id: str,
+        installed: InstalledApp,
+        chosen: dict[str, Any],
+        budget: policies.BudgetPolicy,
+        draft: dict[str, Any],
+        items: list[dict[str, Any]],
+        *,
+        base: dict[str, Any],
+        mode: str,
+        apps: list[str],
+        trial: bool,
+        planner: Any,
+        planner_cell: str,
+        drafted: str | None,
+        verifier_ids: list[str],
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, str], dict[str, Any]]:
+        """The plan record's ``strategy``, the work items, ``node_apps`` and the strategy's plan
+        fields (``plan_steps``, ``aux_usage``, ``aux_overrun``).
+
+        A plan-time auxiliary turn that cannot run (``AUX_BUDGET``, ``TURN_*``) refuses a trial's
+        strategy (the loop holds it before any claim) and puts a real goal on the v1 prior."""
+        from .strategy_runner import PRIOR, AuxLedger, PlanContext, StrategyChoice
+
+        strategy: dict[str, Any] = runner.choose(
+            installed=installed, composition=chosen, budget=budget, mode=mode, apps=apps,
+            trial=trial, planner=planner, planner_cell=planner_cell, after_draft=True,
+            drafted=drafted,
+        )  # fmt: skip
+        ledger = AuxLedger(int(strategy["aux_cap"]))
+        default: tuple[list[dict[str, Any]], dict[str, str]] = (
+            items, {"node-" + i["app"]: i["app"] for i in items}
+        )  # fmt: skip
+        steps: list[dict[str, Any]] = []
+        if strategy.get("refused"):
+            new_items, node_apps = default
+        else:
+            context = PlanContext(goal_id, base, trial, ledger, verifier_ids)
+            choice = StrategyChoice.of({"strategy": strategy})
+            try:
+                new_items, node_apps = runner.items(draft, choice, apps[0], context=context)
+                steps = runner.steps(draft, choice, context=context)
+            except (Hold, RuntimeFault) as exc:
+                new_items, node_apps = default
+                why = f"{strategy['strategy']}: {exc.code}: {exc.message}"[:600]
+                if trial:
+                    strategy["refused"] = why
+                else:
+                    cell = strategy["roles"].get("executor", "")
+                    strategy.update(
+                        strategy=PRIOR, params={}, used_prior=True, variant=None,
+                        cascade=[cell], eligibility={**strategy["eligibility"], "plan": why},
+                    )  # fmt: skip
+        extra: dict[str, Any] = {"aux_usage": ledger.entries, "aux_overrun": ledger.overrun}
+        if steps:
+            extra["plan_steps"] = steps
+        return strategy, new_items, node_apps, extra
+
+    def _node_attempts(
+        self, runner: Any, strategy: dict[str, Any] | None, budget: policies.BudgetPolicy
+    ) -> int | None:
+        """A strategy's own node attempt count (``single`` 1, ``best_of_n`` n), else None."""
+        if not isinstance(strategy, dict):
+            return None
+        from .strategy_runner import StrategyChoice
+
+        root = policies.root_budget(self.budget.wire(), budget.limits)
+        value: int | None = runner.node_attempts(StrategyChoice.of({"strategy": strategy}), root)
+        return value
+
+    @staticmethod
+    def _replanned_strategy(plan: dict[str, Any], chosen: dict[str, Any]) -> dict[str, Any] | None:
+        """A replanned revision's strategy: unchanged, except that one splitting one app's change
+        (workgraph_split, orchestrator, plan_execute) falls back to the v1 prior."""
+        from .strategy_runner import ONE_APP, PRIOR
+
+        strategy = plan.get("strategy")
+        if not isinstance(strategy, dict):
+            return None
+        if strategy.get("strategy") not in ONE_APP:
+            return strategy
+        cell = chosen.get("cell_id") or chosen.get("driver_id") or ""
+        return {
+            **strategy, "strategy": PRIOR, "params": {}, "used_prior": True, "variant": None,
+            "cascade": [cell],
+            "eligibility": {**(strategy.get("eligibility") or {}),
+                            "replan": "a replan drafts one work item per app"},
+        }  # fmt: skip
+
+    def escalate(self, goal_id: str, *, to_cell: str, reason: str) -> dict[str, Any]:
+        """M6 cascade escalation (IC-05, interfaces.md §3.3): revision + 1 with the same draft
+        and work items, pinned to the cell sibling of the goal's composition on ``to_cell``.
+
+        The goal failed its attempts on its cell (the loop ended it ``escalation_pending``); the
+        new revision waits for approval like a replan: a production goal needs the operator, a
+        trial is approved by its experiment's operator identity (``LocalTrialExecutor``).
+        Hold ESCALATION_STATE outside ``escalation_pending``, ESCALATION_LIMIT past the cascade's
+        ``max_escalations``, CELL_UNKNOWN for a cell the app has not installed."""
+        scope = self.scope
+        plan = self.plan_record(goal_id)
+        if plan.get("status") != "escalation_pending":
+            raise Hold(
+                "ESCALATION_STATE", "Only a goal that failed its attempts on its cell escalates",
+                details=plan.get("status"),
+            )  # fmt: skip
+        strategy = dict(plan.get("strategy") or {})
+        done = list(plan.get("escalations") or [])
+        limit = int((strategy.get("params") or {}).get("max_escalations", 1))
+        if strategy.get("strategy") != "cascade" or len(done) >= limit:
+            raise Hold(
+                "ESCALATION_LIMIT", "No escalation is left for this goal",
+                details={"strategy": strategy.get("strategy"), "done": len(done), "limit": limit},
+            )  # fmt: skip
+        installed = self.apps[plan["app"]]
+        if to_cell not in installed.compositions:
+            raise Hold("CELL_UNKNOWN", "The cell is not installed for this app", details=to_cell)
+        was = plan["composition"]
+        sibling = self._cell_sibling(installed, was["ref"], to_cell)
+        previous = self.store.get(scope, "goal-contract", plan["contract_ref"])
+        intent = self.store.get(scope, "intent-envelope", previous["intent_ref"])
+        chosen = self.select_composition(installed, was.get("task_class"), pin=sibling)
+        budget = self._budget_policy(chosen["ref"])
+        revision = previous["revision"] + 1
+        contract_ref, graph_ref, acceptance_map = self._compile(
+            goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
+            previous["context_bundle_ref"], installed, plan["draft"],
+            mode=plan.get("mode", "work"), items=plan["work_items"],
+            policy_ref=previous["policy_ref"], revision=revision,
+            previous_graph_ref=plan["graph_ref"],
+            replan_reason=f"escalation to {to_cell}: {reason}"[:4000], budget=budget,
+            trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
+            node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
+        )  # fmt: skip
+        entry = {
+            "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason[:600],
+            "previous_contract_ref": plan["contract_ref"],
+            "previous_graph_ref": plan["graph_ref"], "at": now(),
+        }  # fmt: skip
+        roles = {**(strategy.get("roles") or {}), "executor": to_cell, "reviewer": to_cell}
+        record = {
+            **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
+                                                          "approved_at", "finished_at"}},
+            "composition": chosen,
+            "contract_ref": contract_ref,
+            "graph_ref": graph_ref,
+            "acceptance_map": acceptance_map,
+            "revision": revision,
+            "strategy": {**strategy, "roles": roles},
+            "escalation": entry,
+            "escalations": [*done, entry],
+            "previous_attempts": [
+                *(plan.get("previous_attempts") or []),
+                *(plan.get("attempts") or []),
+            ],
+            "attempts": [],
+            "status": "awaiting_approval",
+            "reason": None,
+            "updated_at": now(),
+        }  # fmt: skip
+        self._save_plan(
+            goal_id, record,
+            ("approval.requested", {"contract_ref": contract_ref, "escalation": to_cell}),
+        )  # fmt: skip
+        return record
+
+    def _cell_sibling(
+        self, installed: InstalledApp, composition_ref: dict[str, Any], cell_id: str
+    ) -> dict[str, Any]:
+        """The goal composition's carriers on ``cell_id``'s installed composition (IC-05).
+
+        The rule of ``ManifestService.cell_sibling`` (interfaces.md §3.2), which
+        ``meta_harness/manifest.py`` does not provide yet: the same four carrier refs on the
+        installed composition of the cell, id = that composition's id plus the source's candidate
+        suffix. A source whose carriers equal the target's gives the target itself.
+        ``pin_allowed`` admits the result (id prefix and the cell's own profiles)."""
+        target_ref = installed.compositions.get(cell_id)
+        if target_ref is None:
+            raise Hold("CELL_UNKNOWN", "The cell is not installed for this app", details=cell_id)
+        source = self.store.get(self.scope, "harness-composition", composition_ref)
+        target = self.store.get(self.scope, "harness-composition", target_ref)
+        if all(source[k] == target[k] for k in CARRIER_FIELDS):
+            return target_ref
+        source_cell = releases.pin_allowed(
+            self.store, self.scope, installed.compositions, composition_ref
+        )
+        if source_cell is None:
+            raise Hold("CELL_UNKNOWN", "The goal composition is not one of this app's cells")
+        base = self.store.get(
+            self.scope, "harness-composition", installed.compositions[source_cell]
+        )
+        suffix = source["composition_id"][len(base["composition_id"]) :]
+        if not suffix:  # an installed composition whose carriers differ from the target's
+            carriers = {k: source[k] for k in CARRIER_FIELDS}
+            suffix = releases.CANDIDATE_SEP + "sibling-" + digest(carriers)[7:19]
+        name = target["composition_id"] + suffix
+        value = {**target, **{k: source[k] for k in CARRIER_FIELDS}, "composition_id": name}
+        return self._put_composition(name, value)
 
     def base_check(self, installed: InstalledApp, base_value: dict[str, Any]) -> dict[str, Any]:
         """Run the app suite on the untouched base (cached per commit).
@@ -1012,8 +1302,14 @@ class LocalExecutionService:
         replan_reason: str | None = None,
         budget: policies.BudgetPolicy | None = None,
         trial_scope: bool = False,
+        node_attempts: int | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
         """Deterministic contract + graph: one node per work item (a one-app goal is one).
+
+        Work 033 S9 (M5): items from ``StrategyRunner.items`` carry ``node_id``
+        (``node-<app>.s<k>`` / ``.p<k>`` / ``.int``) and ``after_nodes``; only those may name one
+        app twice. ``node_attempts`` is a strategy's own attempt count (``single`` 1,
+        ``best_of_n`` n); None keeps the attempt policy's.
 
         ``budget`` is the goal composition's budget policy (v1 without one): the root keeps
         min(limits, deployment ceiling) per field; each node takes the attempt policy's attempts
@@ -1035,7 +1331,27 @@ class LocalExecutionService:
         design = mode == "design"
         evidence = "design-verification" if design else "command-verification"
         apps = [item["app"] for item in items]
-        if len(set(apps)) != len(apps) or any(a not in self.apps for a in apps):
+        named = [item.get("node_id") for item in items]
+        if any(named):
+            # same-app items exist only as a strategy's nodes (§4.1 row product.py:849-852)
+            ids = [str(n) for n in named if n]
+            if (
+                len(ids) != len(items)
+                or len(set(ids)) != len(ids)
+                or any(a not in self.apps for a in apps)
+                or any(
+                    not ID.fullmatch(n) or not n.startswith(f"node-{item['app']}.")
+                    for n, item in zip(ids, items, strict=True)
+                )
+            ):
+                raise Hold("PLANNING_TARGET", "Strategy work items need distinct node ids")
+            earlier = [set(ids[:i]) for i in range(len(ids))]
+            if any(
+                d not in earlier[i] for i, item in enumerate(items)
+                for d in item.get("after_nodes") or []
+            ):  # fmt: skip
+                raise Hold("PLANNING_ORDER", "A part can only come after an earlier part")
+        elif len(set(apps)) != len(apps) or any(a not in self.apps for a in apps):
             raise Hold("PLANNING_TARGET", "Work items must name distinct installed apps")
         if any(b not in apps or b == item["app"] for item in items for b in item["after"]):
             raise Hold("PLANNING_ORDER", "A work item can only come after another item's app")
@@ -1190,29 +1506,36 @@ class LocalExecutionService:
             contract,
             expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
         )
+        attempt_policy = (
+            budget.attempt_policy
+            if node_attempts is None
+            else {**budget.attempt_policy, "max_attempts": node_attempts}
+        )
         nodes = []
         for item, ids in zip(items, node_acceptance, strict=True):
             target = self.apps[item["app"]]
             a = target.config.app_id
+            depends = list(item.get("after_nodes") or []) or ["node-" + b for b in item["after"]]
             nodes.append(
                 {
-                    "node_id": "node-" + a,
+                    "node_id": item.get("node_id") or "node-" + a,
                     "work_id": new_id("work-" + a),
                     "target_ref": target.binding_ref,
                     "objective": item["objective"],
                     "strategy": "bounded_loop",
-                    "depends_on": ["node-" + b for b in item["after"]],
+                    "depends_on": depends,
                     "join": "all_required",
-                    # the downstream agent sees the verified upstream change (D-081)
+                    # the downstream agent sees the verified upstream change (D-081); a same-app
+                    # producer's change is the downstream node's base instead (M5, the loop)
                     "consumes": [
                         {
-                            "name": "upstream-" + b,
-                            "from_node": "node-" + b,
+                            "name": "upstream-" + d[len("node-") :],
+                            "from_node": d,
                             "external_ref": None,
                             "media_type": CHANGE_MEDIA,
                             "output_name": PORT,
                         }
-                        for b in item["after"]
+                        for d in depends
                     ],
                     "produces": [{"name": PORT, "media_type": CHANGE_MEDIA, "required": True}],
                     "acceptance_ids": ids,
@@ -1224,9 +1547,7 @@ class LocalExecutionService:
                             "mode": "exclusive_write",
                         }
                     ],
-                    "budget": policies.node_budget(
-                        root, budget.attempt_policy, budget.limits, len(items)
-                    ),
+                    "budget": policies.node_budget(root, attempt_policy, budget.limits, len(items)),
                 }
             )
         graph = {
@@ -1239,7 +1560,9 @@ class LocalExecutionService:
             "replan_reason": replan_reason,
             "nodes": nodes,
             "global_verification_ref": (
-                installed.global_ref if len(items) == 1 else self._global_for(apps)
+                installed.global_ref
+                if len(set(apps)) == 1
+                else self._global_for(list(dict.fromkeys(apps)))
             ),
             "compiler_version": "amplai-local-1",
             "created_at": t,

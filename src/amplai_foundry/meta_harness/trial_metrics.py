@@ -21,6 +21,13 @@ did, hack-guard signals); ``record`` stores them as a ``trial-metrics`` record; 
 per-strategy breakdown per arm; ``guards`` compares the arms' guard signals at screening. The run
 helpers below are also what the trial executor counts safety failures and unknown effects from
 (§8.3, IC-18).
+
+Work 033 S9: what the strategy did (escalations, reviewer rounds, fix requests, best-of-n first
+pass, sub-agents, integration conflicts, re-verifications, executor turns) comes from the plan
+record's ``strategy_metrics`` (``StrategyRunner.metrics``), counted over every revision of the goal,
+so an escalated trial counts the attempts, runs and cells of both revisions. ``turns`` is the
+number of executor turns AMPLAI dispatched (first turns and follow-ups); provider-internal turns
+are not recorded (``provider_turns`` null until §14 Q14).
 """
 
 from __future__ import annotations
@@ -61,6 +68,12 @@ REASONING_FIELD = {"codex": "reasoning_output_tokens"}
 # Unknown-effect states of an effect head (runtime/execution/service.py:976-985).
 OPEN_EFFECT_STATES = ("dispatched", "unknown")
 SECRET_CODE = "SECRET_DETECTED"  # runtime/evidence/cas.py:82-87
+# What a trial-metrics row takes from the strategy's own record (``StrategyRunner.metrics``, the
+# plan record's ``strategy_metrics``, Work 033 S9), counted over every revision of the goal.
+STRATEGY_FIELDS = (
+    "turns", "escalations", "reviewer_rounds", "fix_requests", "best_of_n_first_pass",
+    "sub_agents", "integration_conflicts", "re_verifications",
+)  # fmt: skip
 
 
 def diff_stats(patch: bytes) -> dict[str, Any]:
@@ -167,8 +180,9 @@ def open_effects(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[str
 
 def strategy_of(service: LocalExecutionService, composition_ref: dict[str, Any]) -> str | None:
     """The execution strategy a composition declares first (``execution_strategy.enabled[0]``;
-    v1: ``repair_loop``). S8's loop runs the v1 strategy only and holds any other before a claim
-    (``loop._policies``), so for S8 trials this is the strategy that ran or was refused."""
+    v1: ``repair_loop``). A trial runs exactly that strategy or is held before any claim
+    (``StrategyRunner.choose``, ``loop._policies``), so for a trial this is the strategy that ran
+    or was refused."""
     from ..runtime.execution import policies
 
     try:
@@ -365,10 +379,12 @@ class TrialMetrics:
             "strategy": receipt.get("strategy"),
             "wall_seconds": round(elapsed / 1000, 3) if elapsed is not None else None,
             "cells_used": [cell] if cell else [],
-            # provider turn counts are not kept in the run records (Claude num_turns, §14 Q14)
-            "turns": None,
-            # S8: the loop runs the v1 repair loop only (loop._policies refuses other
-            # strategies), so none of these mechanisms ran; S9 records them
+            # ``turns``: the executor turns AMPLAI dispatched (first turns and follow-ups, every
+            # revision; ``strategy_metrics``). Provider-internal turns (Claude ``num_turns``) are
+            # not kept in the run records, so ``provider_turns`` stays null until §14 Q14.
+            "turns": 0,
+            "provider_turns": None,
+            # no goal ran: no strategy mechanism ran either
             "escalations": 0,
             "reviewer_rounds": 0,
             "fix_requests": 0,
@@ -390,8 +406,11 @@ class TrialMetrics:
                 "guards": self._guards(ask_back, None, facts["verified_hidden_fail"]),
             }  # fmt: skip
         plan = self.service.plan_record(goal_id)
-        attempts = plan.get("attempts") or []
-        change = next((a["change"] for a in reversed(attempts) if a.get("change")), None)
+        last = plan.get("attempts") or []  # the last revision's attempts (its change is graded)
+        # every revision's attempts: an escalated trial (M6, Work 033 S9) ran earlier revisions
+        attempts = [*(plan.get("previous_attempts") or []), *last]
+        change = next((a["change"] for a in reversed(last) if a.get("change")), None)
+        strategy = self._strategy_metrics(plan)
         facts["attempts"] = len(attempts)
         facts["diff"] = self._diff(change) if change else None
         facts["api_cost"] = self._cost(plan, attempts, planner if real_planner else None)
@@ -411,17 +430,47 @@ class TrialMetrics:
             v2.update(cell_id=cell, cells_used=[cell] if cell else [])
         if composition_ref and not v2["strategy"]:
             v2["strategy"] = strategy_of(self.service, composition_ref)
+        # what the strategy did, over every revision (plan.md §8.1; S9 ``strategy_metrics``)
+        v2.update({k: strategy[k] for k in STRATEGY_FIELDS})
+        cells = [str(c) for c in strategy.get("cells_used") or [] if c]
+        if cells:
+            v2["cells_used"] = sorted({*cells, *v2["cells_used"]})
         return {
             **facts,
             **v2,
-            "tokens": self._tokens(facts, attempts, runs, planner if real_planner else None),
+            "tokens": self._tokens(
+                facts, attempts, runs, planner if real_planner else None, plan.get("aux_usage")
+            ),
             "verification_seconds": self._verification_seconds(runs),
-            # processes started for the goal's dispatches, plus the real planner's turn
-            "agent_calls": started + (1 if real_planner else 0),
+            # processes started for the goal's dispatches (every revision), the follow-up turns
+            # resumed in them (M3), the auxiliary read-only turns that ran (M2/M7, a turn that
+            # never started excluded) and the real planner's turn
+            "agent_calls": started
+            + int(strategy.get("followups") or 0)
+            + int(strategy.get("aux_turns") or 0)
+            + (1 if real_planner else 0),
             "attempts_used": len(attempts),
             "nodes": graph_nodes,
             "guards": self._guards(ask_back, facts["diff"], facts["verified_hidden_fail"]),
         }
+
+    def _strategy_metrics(self, plan: dict[str, Any]) -> dict[str, Any]:
+        """The plan record's ``strategy_metrics`` (written by the loop when the goal finished,
+        Work 033 S9), else the same computation over the stored plan (a goal the loop never
+        finished, e.g. one closed at plan time, or a record from before S9)."""
+        stored = plan.get("strategy_metrics")
+        attempts = [*(plan.get("previous_attempts") or []), *(plan.get("attempts") or [])]
+        if (
+            isinstance(stored, dict)
+            and all(k in stored for k in STRATEGY_FIELDS)
+            # written for this revision: an escalation after the loop finished a revision, or a
+            # revision the executor closed without the loop finishing it, leaves it behind
+            and stored.get("escalations") == len(plan.get("escalations") or [])
+            and stored.get("attempts_used") == len(attempts)
+        ):
+            return stored
+        computed: dict[str, Any] = self.service.strategy_runner().metrics(plan)
+        return computed
 
     @staticmethod
     def _guards(ask_back: bool, diff: dict[str, Any] | None, vhf: bool) -> dict[str, Any]:
@@ -475,12 +524,16 @@ class TrialMetrics:
         attempts: list[dict[str, Any]],
         runs: dict[str, dict[str, Any]],
         planner: dict[str, Any] | None,
+        aux: list[dict[str, Any]] | None = None,
     ) -> dict[str, int | None]:
         """Input and output as the trial counted them; cached input and reasoning summed over
-        the attempts' runs (and the real planner's turn) when every part reports them."""
+        the attempts' runs, the real planner's turn and the auxiliary read-only turns that ran
+        (``aux_usage``, Work 033 S9) when every part reports them."""
         cached: int | None = 0
         reasoning: int | None = 0
         parts = 0
+        turns = [{"usage": (planner or {}).get("usage")}] if planner is not None else []
+        turns += self._aux_ran({"aux_usage": aux})  # a turn that never started spent nothing
         for attempt in attempts:
             run = runs.get(attempt.get("run_id") or "")
             detail = self._detail((run or {}).get("usage") or {}) if run else None
@@ -491,10 +544,12 @@ class TrialMetrics:
             r = fields.get(REASONING_FIELD.get(str(provider), ""))
             cached = cached + c if cached is not None and type(c) is int else None
             reasoning = reasoning + r if reasoning is not None and type(r) is int else None
-        if planner is not None:
-            usage = planner.get("usage") or {}
+        for turn in turns:
+            reported = turn.get("usage")
+            usage: dict[str, Any] = reported if isinstance(reported, dict) else {}
             parts += 1
-            # a planner turn reports the provider's own usage keys (readonly_turn.py)
+            # a read-only turn (planner, reviewer, investigator, lead) reports the provider's own
+            # usage keys (readonly_turn.py)
             c = next((usage[k] for k in CACHED_FIELD.values() if type(usage.get(k)) is int), None)
             r = next(
                 (usage[k] for k in REASONING_FIELD.values() if type(usage.get(k)) is int), None
@@ -535,6 +590,16 @@ class TrialMetrics:
         planner: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         model = (plan.get("composition") or {}).get("model")
+        if plan.get("previous_attempts"):
+            # an earlier revision ran (an escalation, M6, Work 033 S9, or a replan) and may have
+            # run on another cell; the plan record keeps only the last revision's model, so
+            # pricing every run at it could misprice them, and pricing the last revision alone
+            # would leave runs out
+            return {"status": "revisions_unpriced", "model": model}
+        if any(e.get("tokens") is None for e in self._aux_ran(plan)):
+            # an auxiliary turn may have spent tokens nobody counted: a run-only figure would look
+            # complete and is not
+            return {"status": "aux_unknown_usage", "model": model}
         day = str(plan.get("approved_at") or "")[:10] or datetime.now().date().isoformat()
         total, notes, upper, statuses = 0, set(), False, set()
         priced: list[tuple[str, dict[str, Any] | None, dict[str, Any]]] = []
@@ -547,6 +612,13 @@ class TrialMetrics:
             # totals only, so it is priced as an upper bound
             planned_model = (plan.get("planned_with") or {}).get("model") or model
             priced.append((str(planned_model), None, planner.get("usage") or {}))
+        for entry in self._aux_ran(plan):
+            # an auxiliary read-only turn (§5.3 ``aux_usage``, Work 033 S9), at its cell's model;
+            # like the planner's it reports totals only, so it is priced as an upper bound
+            aux_model = self._cell_model(plan, entry.get("cell_id"))
+            if aux_model is None:
+                return {"status": "aux_unpriced", "model": model}
+            priced.append((aux_model, None, entry.get("usage") or {}))
         for one_model, detail, usage in priced:
             one = pricing.estimate(one_model, day, detail=detail, usage=usage, tables=self.tables)
             statuses.add(one["status"])
@@ -566,6 +638,34 @@ class TrialMetrics:
             "notes": sorted(notes),
             "upper_bound": upper,
         }
+
+    @staticmethod
+    def _aux_ran(plan: dict[str, Any]) -> list[dict[str, Any]]:
+        """The plan's auxiliary read-only turns that started (``aux_usage``); a turn that never
+        started (``tokens`` 0, no usage; ``strategy_runner.AuxLedger``) spent nothing."""
+        return [
+            e for e in plan.get("aux_usage") or []
+            if isinstance(e, dict) and not (e.get("tokens") == 0 and e.get("usage") is None)
+        ]  # fmt: skip
+
+    def _cell_model(self, plan: dict[str, Any], cell_id: Any) -> str | None:
+        """The provider model of an installed cell (its ``harness-cell`` record); the goal's own
+        cell is the plan's composition model. None when the cell cannot be resolved."""
+        from ..runtime.execution.cells import CELL_KIND, CellInstaller
+
+        if not isinstance(cell_id, str) or not cell_id:
+            return None
+        composition = plan.get("composition") or {}
+        if cell_id == composition.get("cell_id") and composition.get("model"):
+            return str(composition["model"])
+        try:
+            ref = CellInstaller(self.store, self.scope).registry()["cells"].get(cell_id)
+            if ref is None:
+                return None
+            model = self.store.get(self.scope, CELL_KIND, ref).get("provider_model_id")
+        except (Hold, RuntimeFault, KeyError, TypeError):
+            return None
+        return str(model) if model else None
 
     # -- the stored record ---------------------------------------------------------------------
     def record(self, trial_ref: dict[str, Any]) -> dict[str, Any]:
