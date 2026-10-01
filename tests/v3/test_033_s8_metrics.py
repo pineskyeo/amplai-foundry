@@ -529,6 +529,70 @@ def test_auxiliary_turns_count_as_agent_calls_and_in_the_token_classes(world: Wo
     assert (summed["cached_input"], summed["reasoning"]) == (8, 2)
 
 
+def test_vote_candidates_beyond_the_runs_own_turn_count_as_agent_calls(world: World) -> None:
+    """S9b (§5.1 M4, "Clarifications ... S9b"): a vote trial's ``agent_calls`` counts every
+    candidate turn. Candidates 1..k-1 are their own processes without a worker-execution row, so
+    the row adds the strategy record's ``candidate_turns`` to the started executions."""
+    obs = world.run("bug-01-value")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    base = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    voted = [{**a, "candidates": 3, "selected": 1} for a in plan["attempts"]]
+    world.rig.service._save_plan(
+        goal,
+        {k: v for k, v in {**plan, "attempts": voted}.items() if k != "strategy_metrics"},
+    )
+    out = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    assert out["agent_calls"] == base["agent_calls"] + 2  # candidates 1 and 2 of the attempt
+    assert out["turns"] == base["turns"] + 2  # as the strategy record counts executor turns
+    # a candidate generation the 80 % stop cut to the run's own turn adds nothing
+    single = [{**a, "candidates": 1, "selected": 0} for a in plan["attempts"]]
+    world.rig.service._save_plan(
+        goal,
+        {k: v for k, v in {**plan, "attempts": single}.items() if k != "strategy_metrics"},
+    )
+    again = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    assert again["agent_calls"] == base["agent_calls"] and again["turns"] == base["turns"]
+    # the stored strategy record is what the row reads when it is current
+    world.rig.service._save_plan(
+        goal, {**plan, "strategy_metrics": {**plan["strategy_metrics"], "candidate_turns": 1}}
+    )
+    stored_row = metrics_of(world).trial(trial_dict(world, obs, "bug-01-value"))
+    assert stored_row["agent_calls"] == base["agent_calls"] + 1
+
+
+def test_a_vote_trial_row_records_its_candidates_and_the_selected_index(world: World) -> None:
+    """§5.2 row 10: vote records ``candidates`` and the selected index in the §2.10 row; another
+    strategy's row carries 0 / 0 / null, and a stored row from before S9b stays valid."""
+    obs = world.run("bug-01-value", split="validation")
+    goal = world.receipt(obs)["goal_id"]
+    plan = world.rig.service.plan_record(goal)
+    trial = trial_dict(world, obs, "bug-01-value", experiment_ref=experiment(world))
+    plain = metrics_of(world).trial(trial)
+    assert (plain["candidates"], plain["candidate_turns"], plain["vote_selected"]) == (0, 0, None)
+    voted = [{**a, "candidates": 3, "selected": 2} for a in plan["attempts"]]
+    world.rig.service._save_plan(
+        goal,
+        {k: v for k, v in {**plan, "attempts": voted}.items() if k != "strategy_metrics"},
+    )
+    out = metrics_of(world).trial(trial)
+    assert (out["candidates"], out["candidate_turns"], out["vote_selected"]) == (3, 2, 2)
+    value = world.store.get(
+        world.scope, trial_metrics.KIND, metrics_of(world).record(stored(world, trial))
+    )
+    validate_record(value)
+    assert (value["candidates"], value["candidate_turns"], value["vote_selected"]) == (3, 2, 2)
+    # a row written before S9b has none of the vote fields and is still a valid row
+    old = {k: v for k, v in value.items() if k not in trial_metrics.VOTE_FIELDS}
+    validate_record(old)
+    validate_record(
+        {**valid_record(), "candidates": 0, "candidate_turns": 0, "vote_selected": None}
+    )
+    for bad in ({"candidates": -1}, {"vote_selected": 1.5}, {"candidate_turns": None}):
+        with pytest.raises(RuntimeFault):
+            validate_record({**valid_record(), **bad})
+
+
 def test_a_goal_with_an_earlier_revision_is_not_priced_at_the_last_model(world: World) -> None:
     obs = world.run("bug-01-value")
     goal = world.receipt(obs)["goal_id"]

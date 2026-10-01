@@ -13,7 +13,12 @@ Where each mechanism lives:
   (``Hold AUX_BUDGET``, IC-21).
 - M3 follow-up turns: ``ReviewHooks`` given to the worker, which resumes the bound session as
   ``<dispatch_id>-f<k>`` (``worker.py``).
-- M4 candidates: not built. ``vote`` stays held until §14 Q16 is answered (see ``HELD``).
+- M4 candidates (S9b, after §14 Q16): ``VoteHooks`` given to the worker, which runs k candidate
+  turns one after another from the same base (candidate 0 is the run's own turn, candidates
+  1..k-1 ``<dispatch_id>-c<i>`` in scratch workspaces with their own, never bound sessions);
+  the host fast checks (the app's quick verifiers, network none) of ``VoteHooks.evaluate``
+  decide (``VoteHooks.select``) and the winner's tree is the run's change before
+  ``output_ready``. ``vote`` has one attempt; its suite runs once on the selected change.
 - M5 several nodes of one app: ``items`` (chain ``.s<k>``, parts ``.p<k>`` and ``.int``) and the
   node bases of ``before_attempt`` (a same-app producer's verified change is the base; the
   integration node's base is ``IntegrationQueue.merge``).
@@ -62,7 +67,7 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
@@ -89,10 +94,9 @@ AUX_BUDGET = "AUX_BUDGET"  # IC-21 hold code (interfaces.md §3.14)
 ONE_APP = frozenset({"workgraph_split", "plan_execute", "orchestrator"})  # same-app items (M5/M7)
 DESIGN_STRATEGIES = frozenset({"single", "repair_loop"})  # a design goal writes one document
 VARIANT_OF = {"workgraph_split": "parts", "plan_execute": "steps"}  # M7 plan schema variants
-# Held, not built: §14 Q16 (b) asks how SessionStore, runtime.start, steering pause and effect
-# reconciliation treat candidate sessions that are not bound to the run; S9 builds M4 only after
-# that check, so vote is refused before any claim.
-HELD = {"vote": "vote (M4 candidates held until §14 Q16 is answered)"}
+# Strategies refused before any claim whatever the goal (none since S9b settled §14 Q16 and built
+# M4: ``vote`` runs; the mapping stays for a strategy a later slice must hold).
+HELD: dict[str, str] = {}
 QUESTIONS = {
     "files_to_change": "Which files must change to reach the objective, and where exactly?",
     "tests_to_run": "Which existing tests and commands exercise the behaviour this goal changes?",
@@ -108,6 +112,7 @@ UPSTREAM_PATCH = 60_000  # loop.UPSTREAM_PATCH: characters of a patch shown in a
 PART_NODE = re.compile(r"\.p[0-9]+$")  # node-<app>.p<k> (orchestrator part)
 INTEGRATION_NODE = re.compile(r"\.int$")  # node-<app>.int (orchestrator integration)
 TEXT = 4000  # contract text bound (product._clean_draft)
+FILE_HEADER = b"diff --git "  # the first line of each file of a git patch
 
 STRINGS = {"type": "array", "items": {"type": "string"}}
 # Model-facing schemas use no count or length keywords (as the v1 plan schema); the bounds of
@@ -325,6 +330,20 @@ def node_app(plan: dict[str, Any], node: dict[str, Any] | None) -> str:
     return app if app in (plan.get("bases") or {plan["app"]: None}) else str(plan["app"])
 
 
+def changed_lines(patch: bytes) -> int:
+    """Added + removed lines of a git patch, inside its hunks only (the ``---``/``+++`` file
+    headers excluded): a vote candidate's diff size (§5.2 strategy 10, "smallest diff")."""
+    count, in_hunk = 0, False
+    for line in patch.splitlines():
+        if line.startswith(FILE_HEADER):
+            in_hunk = False
+        elif line.startswith(b"@@"):
+            in_hunk = True
+        elif in_hunk and line[:1] in {b"+", b"-"}:
+            count += 1
+    return count
+
+
 def _text(value: Any) -> str:
     return str(value).strip()[:TEXT] if isinstance(value, str) else ""
 
@@ -398,8 +417,8 @@ class StrategyRunner:
         }
         strategy = declared
         if why is not None:
-            # a trial runs its declared strategy or nothing; a held strategy (vote) is held for
-            # every goal rather than replaced
+            # a trial runs its declared strategy or nothing; a strategy in HELD (none since S9b)
+            # is held for every goal rather than replaced
             if trial or declared in HELD:
                 record["refused"] = f"{declared}: {why}"  # held before any claim (loop)
             else:
@@ -427,6 +446,13 @@ class StrategyRunner:
         if variant is None:
             return False
         return drafted == variant if after_draft else variant in variants
+
+    def _quick(self, app: str, installed: InstalledApp) -> bool:
+        """The app has quick verifiers (vote's host fast checks)."""
+        if app == installed.config.app_id:
+            return bool(installed.config.quick_verifiers)
+        other = (getattr(self.service, "apps", None) or {}).get(app)
+        return bool(other is not None and other.config.quick_verifiers)
 
     def _ineligible(
         self,
@@ -459,6 +485,14 @@ class StrategyRunner:
             steps = params.get("steps") or []
             if any(s not in QUESTIONS for s in steps) or len(set(steps)) != len(steps):
                 return "parallel_readonly.steps are distinct ids of " + ", ".join(QUESTIONS)
+        if strategy == "vote":
+            # §5.2 strategy 10: the host fast checks (the app's quick verifiers) pick the
+            # candidate; without any, nothing but the diff size would decide
+            missing = [
+                a for a in apps or [installed.config.app_id] if not self._quick(a, installed)
+            ]
+            if missing:
+                return "vote needs quick_verifiers (its host fast checks) on " + ", ".join(missing)
         # IC-21: with a cap of 0 no auxiliary turn ever starts (§5.3, real goals and trials
         # alike), so a strategy that needs one cannot run: a real goal treats it as ineligible
         # (the v1 prior runs) and a trial is refused before any claim, never run as the plain
@@ -563,6 +597,8 @@ class StrategyRunner:
             return 1
         if choice.strategy == "best_of_n":
             return min(int(choice.params.get("n", 2)), int(root["max_attempts"]))
+        if choice.strategy == "vote":  # k candidates inside one attempt, the suite once (§5.2)
+            return 1
         return None
 
     def _parts(self, raw: Any, low: int, high: int) -> list[dict[str, Any]]:
@@ -893,6 +929,8 @@ class StrategyRunner:
                 or choice.roles.get("executor", ""),
                 max_rounds=int(choice.params.get("max_rounds", 1)),
             )  # fmt: skip
+        elif choice.strategy == "vote":
+            hooks = VoteHooks(self, app, k=int(choice.params.get("k", 2)))
         return AttemptSpec(base, feedback, hooks, options, tuple(sections))
 
     def _attempt_policy(self, plan: dict[str, Any]) -> dict[str, Any]:
@@ -1040,7 +1078,8 @@ class StrategyRunner:
             self._traces.pop(goal_id, None)  # S13: captured turns no run admitted
 
     def refusal(self, plan: dict[str, Any], budget: policies.BudgetPolicy) -> str | None:
-        """Why the loop must hold the goal before any claim, or None (§5; ``vote`` per Q16)."""
+        """Why the loop must hold the goal before any claim, or None (§5; ``HELD`` is empty since
+        S9b settled §14 Q16, so ``vote`` runs)."""
         record = plan.get("strategy")
         if not isinstance(record, dict):
             if budget.execution_strategy != policies.V1["execution_strategy"]:
@@ -1151,6 +1190,9 @@ class StrategyRunner:
         choice = StrategyChoice.of(plan)
         attempts = [*(plan.get("previous_attempts") or []), *(plan.get("attempts") or [])]
         followups = sum(int(a.get("followups") or 0) for a in attempts)
+        # vote (M4, S9b): candidate turns of an attempt beyond its own first turn
+        candidates = sum(int(a.get("candidates") or 0) for a in attempts)
+        candidate_turns = sum(max(int(a.get("candidates") or 0) - 1, 0) for a in attempts)
         # an auxiliary entry whose turn never started (no turn for the cell) spent nothing
         ran_aux = [
             e for e in plan.get("aux_usage") or []
@@ -1196,13 +1238,16 @@ class StrategyRunner:
         return {
             "strategy": choice.strategy,
             "cells_used": sorted(c for c in cells if c),
-            "agent_calls": len(attempts) + followups + len(ran_aux) + planner,
-            "turns": len(attempts) + followups,
+            "agent_calls": len(attempts) + followups + candidate_turns + len(ran_aux) + planner,
+            "turns": len(attempts) + followups + candidate_turns,
             "attempts_used": len(attempts),
             "escalations": len(plan.get("escalations") or []),
             "reviewer_rounds": len(reviews),
             "fix_requests": sum(len(r.get("requests") or []) for r in fix_rounds),
             "followups": followups,
+            "candidates": candidates,
+            "candidate_turns": candidate_turns,
+            "vote_selected": [a.get("selected") for a in attempts if a.get("candidates")],
             "best_of_n_first_pass": first_pass,
             "nodes": nodes,
             "sub_agents": sum(1 for n in node_ids if PART_NODE.search(n)),
@@ -1289,3 +1334,70 @@ class ReviewHooks:
 
     def select(self, candidates: list[CandidateResult]) -> int:
         return 0
+
+
+# -- M4 hooks -------------------------------------------------------------------------------------
+class VoteHooks:
+    """vote (§5.2 strategy 10, M4, S9b): the worker runs ``candidates`` turns from the same base
+    one after another (``worker.py``). After each, ``evaluate`` runs the app's quick verifiers on
+    the candidate's change (base + patch, a fresh copy in the app's verify sandbox with network
+    none), each check on its own (a suite stops at its first failing command); ``select`` picks
+    the most passing checks, then the smallest diff (``changed_lines``), then the lowest index.
+    The checks never give a verdict: the suite after ``output_ready`` stays the only
+    verification. No follow-up turns."""
+
+    max_followups = 0
+
+    def __init__(self, runner: StrategyRunner, app: str, *, k: int) -> None:
+        if type(k) is not int or not 2 <= k <= 3:
+            raise RuntimeFault("COMPONENT_CONTENT", "vote.k is 2..3 (IC-06)")
+        config = runner.service.apps[app].config
+        checks = tuple(str(c) for c in config.quick_verifiers)
+        if not checks:
+            raise RuntimeFault("COMPONENT_CONTENT", "vote needs the app's quick_verifiers")
+        self.runner, self.app, self.candidates, self.checks = runner, config, k, checks
+        self.results: list[dict[str, Any]] = []  # what each evaluated candidate's checks gave
+        self.selected: int | None = None
+        self._lock = threading.Lock()
+
+    def spec_digest(self) -> str:
+        return digest({"strategy": "vote", "k": self.candidates, "checks": list(self.checks)})
+
+    def after_turn(self, *, workspace: Path, turn: int, receipt: dict[str, Any]) -> str | None:
+        return None
+
+    def evaluate(self, *, workspace: Path, index: int, receipt: dict[str, Any]) -> CandidateResult:
+        """The host fast checks of one candidate's workspace as it is now."""
+        service = self.runner.service
+        workspaces, scope = service.workspaces, service.scope
+        snapshot = workspaces.snapshot(scope, Path(workspace))
+        value = json.loads(workspaces.artifacts.read(scope, snapshot))
+        patch = workspaces.artifacts.read(scope, value["patch"])
+        raw = canonical({
+            "format": "amplai.change.v1",
+            "base": {k: value[k] for k in ("repo", "commit", "tree")},
+            "patch": value["patch"],
+            "patch_bytes": len(patch),
+        })  # fmt: skip
+        checks: dict[str, bool] = {}
+        for verifier in self.app.verifiers:
+            if verifier.id in self.checks:
+                suite = service.verifier_factory(replace(self.app, verifiers=(verifier,)))
+                checks[verifier.id] = suite(raw).outcome == "pass"
+        result = CandidateResult(index, changed_lines(patch), checks, receipt.get("usage"))
+        with self._lock:
+            self.results.append(
+                {"index": index, "patch_lines": result.patch_lines, "fast_checks": dict(checks)}
+            )
+        return result
+
+    def select(self, candidates: list[CandidateResult]) -> int:
+        """Most passing checks, then the smallest diff, then the lowest index (§5.2)."""
+        if not candidates:
+            raise RuntimeFault("WORKER_HOOKS", "A vote needs an evaluated candidate")
+        best = min(
+            candidates,
+            key=lambda c: (-sum(1 for ok in c.fast_checks.values() if ok), c.patch_lines, c.index),
+        )
+        self.selected = best.index
+        return best.index

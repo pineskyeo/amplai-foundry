@@ -227,6 +227,8 @@ class NightlyEntry(BaseModel):
     drift_tasks: list[str] = Field(default_factory=list)
     pilot_nights: int = Field(default=3, ge=0)
     keep_operator_share: float = Field(default=0.5, ge=0, le=1)
+    # clarification after S12: a night ends at min(stop_at, start + max_hours)
+    max_hours: float = Field(default=8.0, gt=0, le=24)
 
     @model_validator(mode="after")
     def _shares(self) -> NightlyEntry:

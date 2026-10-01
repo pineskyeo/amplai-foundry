@@ -24,6 +24,10 @@ Work 033 S8 (interfaces.md §8.3, §8.4, IC-03, IC-18):
 - ``safety_failures`` and ``unknown_effects`` are counted from the goal's runs
   (``counters_source: run_records_v1``), never constants.
 - ``self.trials`` is guarded by a lock; the executor is called from parallel trial threads (§8.4).
+
+Work 033 S12 (IC-17, provisional): the operator may be the nightly service identity
+``amplai-meta-nightly`` (``meta_local.nightly_actor``); ``LocalExecutionService.approve`` accepts
+it for trial goals only.
 """
 
 from __future__ import annotations
@@ -45,6 +49,7 @@ from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.execution import policies
 from ..runtime.execution.loop import ExecutionLoop
+from ..runtime.execution.meta_local import NIGHTLY_EXCLUDED, NIGHTLY_ID
 from ..runtime.execution.product import LocalExecutionService, TrialContext
 from ..runtime.goals.service import GoalService
 from . import corpus_v2, local_corpus, trial_metrics
@@ -237,8 +242,13 @@ class LocalTrialExecutor:
         ``environment_digests`` are the stage plan's task-environment pins (S7b)."""
         if loop.publisher is not None:
             raise Hold("TRIAL_PUBLISH", "A trial loop must not publish")
-        if operator.kind != "human":
+        # IC-17 (S12, provisional): the nightly service identity runs trials too; its goal
+        # approvals are refused by ``approve`` for anything but a trial goal
+        nightly = operator.kind == "service" and operator.subject_id == NIGHTLY_ID
+        if operator.kind != "human" and not nightly:
             raise Hold("TRIAL_OPERATOR", "Trials run under the operator's approved experiment")
+        if nightly and operator.permissions & NIGHTLY_EXCLUDED:
+            raise Hold("TRIAL_OPERATOR", "Not the nightly identity: it holds excluded permissions")
         self.service, self.loop, self.goals = service, loop, goals
         self.operator, self.corpus, self.busy = operator, corpus, busy
         self.manifests, self.traces = manifests, traces

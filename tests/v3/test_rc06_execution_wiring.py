@@ -138,6 +138,101 @@ def test_credential_is_seeded_per_dispatch_written_back_and_removed(tmp_path: Pa
     assert (home / AUTH).read_text() == '{"tokens": "new"}'
 
 
+class _JournalDriver(_Driver):
+    """A driver that keeps the session journal as ``CliDriver`` does: ``prepare`` and ``resume``
+    write the dispatch's ``native_home`` before anything could spawn; a resume reuses the
+    checkpoint's home (``agent_drivers/cli.py`` ``resume``)."""
+
+    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path, **kw: Any) -> Any:
+        did = dispatch["dispatch_id"]
+        self.journal.create(did, {"prompt": prompt})
+        self.journal.update(did, native_home=str(kw["native_home"]))
+        return {"dispatch_id": did}
+
+    def resume(
+        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: Any, **kw: Any
+    ) -> str:
+        home = Path(checkpoint["native_home"])
+        return str(self.prepare(dispatch, prompt, workspace, native_home=home)["dispatch_id"])
+
+    def cancel(self, handle: str) -> dict[str, Any]:
+        self.journal.read(handle)
+        return {"process_stopped": True}
+
+    def destroy(self, handle: str) -> None:
+        self.journal.read(handle)
+
+
+def _scoped(tmp_path: Path) -> Path:
+    home = tmp_path / "scoped"
+    (home / ".codex").mkdir(parents=True)
+    (home / AUTH).write_text('{"tokens": "old"}')
+    return home
+
+
+def test_a_restarted_port_releases_a_follow_up_and_a_steering_resume_by_the_journal_home(
+    tmp_path: Path,
+) -> None:
+    """Work 033 S9b, §5.1 M3 rule 2: a follow-up ``<did>-f<k>`` and a steering ``resume-<digest>``
+    run in the bound turn's home. A port built after a worker restart did not seed them, so it
+    releases the home their driver journal names (refreshed token written back), never a
+    guessed ``native_root/<handle>``."""
+    home = _scoped(tmp_path)
+    first = SeededCodexPort(_JournalDriver(tmp_path), home)  # type: ignore[arg-type]
+    first.prepare({"dispatch_id": "d-1"}, "task", tmp_path)
+    native = first.driver.native_root
+    bound = native / "d-1"
+    first.collect("d-1")
+    assert not (bound / AUTH).exists()  # released between turns
+    checkpoint = {"native_home": str(bound)}
+    steering = "resume-" + "a" * 32
+    for handle, stop in (("d-1-f1", "cancel"), (steering, "destroy")):
+        first.resume({"dispatch_id": handle}, "more", tmp_path, checkpoint)
+        assert (bound / AUTH).is_file()  # leased for the resumed turn
+        (bound / AUTH).write_text('{"tokens": "' + handle + '"}')  # the CLI refreshed it
+        # the worker restarts: a new driver and port over the same journal and scoped copy
+        restarted = SeededCodexPort(_JournalDriver(tmp_path), home)  # type: ignore[arg-type]
+        assert restarted._resumed == {}
+        getattr(restarted, stop)(handle)
+        assert not (bound / AUTH).exists(), handle  # nothing at rest in the bound home
+        assert (home / AUTH).read_text() == '{"tokens": "' + handle + '"}'  # written back
+        assert not (native / handle).exists()  # no guessed home was touched or created
+
+
+def test_a_port_never_releases_a_home_its_journal_does_not_name(tmp_path: Path) -> None:
+    home = _scoped(tmp_path)
+    driver = _JournalDriver(tmp_path)
+    port = SeededCodexPort(driver, home)  # type: ignore[arg-type]
+    # a credential file in native_root/<handle> for a handle that has no journal stays put
+    guessed = driver.native_root / "no-journal" / AUTH
+    guessed.parent.mkdir(parents=True)
+    guessed.write_text('{"tokens": "elsewhere"}')
+    port._release("no-journal")
+    assert guessed.read_text() == '{"tokens": "elsewhere"}'
+    # a journal whose native_home lies outside the driver's native root is not followed
+    outside = tmp_path / "outside"
+    (outside / ".codex").mkdir(parents=True)
+    (outside / AUTH).write_text('{"tokens": "outside"}')
+    driver.journal.create("d-2", {"prompt": "x"})
+    driver.journal.update("d-2", native_home=str(outside))
+    SeededCodexPort(_JournalDriver(tmp_path), home)._release("d-2")  # type: ignore[arg-type]
+    assert (outside / AUTH).is_file() and (home / AUTH).read_text() == '{"tokens": "old"}'
+
+
+def test_a_failed_prepare_leaves_no_credential_at_rest(tmp_path: Path) -> None:
+    home = _scoped(tmp_path)
+
+    class Refusing(_JournalDriver):
+        def prepare(self, dispatch: dict[str, Any], *a: Any, **kw: Any) -> Any:
+            raise Hold("DRIVER_UNQUALIFIED", "refused before the journal")
+
+    driver = Refusing(tmp_path)
+    port = SeededCodexPort(driver, home)  # type: ignore[arg-type]
+    with pytest.raises(Hold):
+        port.prepare({"dispatch_id": "d-3"}, "task", tmp_path)
+    assert not (driver.native_root / "d-3" / AUTH).exists()
+
+
 def test_the_real_codex_home_is_never_accepted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

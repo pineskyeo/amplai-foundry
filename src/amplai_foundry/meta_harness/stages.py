@@ -66,7 +66,7 @@ import contextlib
 import copy
 import json
 import math
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from statistics import mean
 from typing import TYPE_CHECKING, Any
@@ -83,6 +83,7 @@ from ..runtime.storage.store import Scope, Store
 from .manifest import BUDGET, CONTEXT, DECIDERS, ROUTER, Manifest, ManifestService
 
 if TYPE_CHECKING:
+    from ..runtime.contracts.authority import Actor
     from ..runtime.execution.meta_ops import LocalMetaOps
     from .leak_gate import LeakGate
     from .trial_metrics import TrialMetrics
@@ -93,6 +94,12 @@ STAGE_ORDER = ("screening", "focused", "ablation", "holdout")
 TEMPLATES = ("default_v1",)
 PLAN_KIND, RUN_KIND, CACHE_KIND = "stage-plan", "stage-run", "observation-cache"
 LOCK_KIND = "stage-lock"  # one runner per proposal root (not a §2.9 kind; reported)
+# IC-10: a focused experiment built at the end of a night for the operator's ``--queue`` approval
+# (head ``stagequeue-<proposal_id>-<stage>``; not a §2.9 kind; reported)
+QUEUE_KIND = "stage-queue"
+QUEUE_STATES = ("queued", "approved", "running", "ran", "failed", "superseded")
+QUEUED_STAGES = ("focused",)  # holdout stays an in-process operator run (IC-10)
+SCREENING_FAILED = "SCREENING_FAILED"  # a night's failed screening, left for the operator
 PLAN_SCHEMA = "amplai.stage-plan.v1"
 STATES = (
     "pending", "waiting_approval", "frozen", "running", "passed", "failed", "inconclusive",
@@ -346,6 +353,10 @@ def update_stage(store: Store, scope: Scope, proposal_id: str, stage: str, **fie
         validate_stage_run(data)
         store.cas(db, scope, RUN_KIND, "stagerun-" + proposal_id, head["row_version"],
                   f"{stage}:{data['stages'][stage]['state']}", data)  # fmt: skip
+    if fields.get("state") == "aborted":
+        # a queued stage that aborted (its run faulted, or ``amplai meta reconcile`` ended it after
+        # a crash) is never left ``running`` in its queue head
+        settle_queue(store, scope, proposal_id, stage, failure={"code": "STAGE_ABORTED"})
 
 
 def lock_root(store: Store, scope: Scope, proposal_id: str) -> str:
@@ -536,6 +547,144 @@ def stage_findings(store: Store, scope: Scope, proposal_id: str) -> dict[str, li
     }
 
 
+def queue_head(
+    store: Store, scope: Scope, proposal_id: str, stage: str = "focused"
+) -> dict[str, Any] | None:
+    """The ``stage-queue`` head of one proposal's stage (IC-10), or None."""
+    try:
+        return dict(store.head(scope, QUEUE_KIND, f"stagequeue-{proposal_id}-{stage}"))
+    except RuntimeFault as exc:
+        if exc.code != "NOT_FOUND":
+            raise
+        return None
+
+
+def queued_stages(store: Store, scope: Scope, *states: str) -> list[dict[str, Any]]:
+    """Every queue head in one of ``states`` (all when none is named), oldest first:
+    ``{"queue_id", "state", **data}``."""
+    out = []
+    for head_id, state, data in heads_of(store, scope, QUEUE_KIND):
+        if not states or state in states:
+            out.append({"queue_id": head_id, "state": state, **data})
+    return out
+
+
+def _queue_item(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "proposal_id": data["proposal_id"],
+        "stage": data["stage"],
+        "queue_id": f"stagequeue-{data['proposal_id']}-{data['stage']}",
+        "subject_digest": data["subject_digest"],
+        "experiment_id": data["experiment"]["experiment_id"],
+    }
+
+
+def _queue_write(
+    store: Store,
+    scope: Scope,
+    proposal_id: str,
+    stage: str,
+    state: str,
+    data: dict[str, Any],
+    *,
+    row: int | None = None,
+) -> int:
+    """Write the queue head (CAS on ``row``; a new or superseded head is rewritten from its
+    current row). Returns the new row version."""
+    if state not in QUEUE_STATES:
+        raise RuntimeFault("STAGE_QUEUE", "Unknown queue state", details=[state])
+    head_id = f"stagequeue-{proposal_id}-{stage}"
+    with store.tx() as db:
+        if row is None:
+            try:
+                row = int(store.head(scope, QUEUE_KIND, head_id, db=db)["row_version"])
+            except RuntimeFault as exc:
+                if exc.code != "NOT_FOUND":
+                    raise
+                row = 0
+        version: int = store.cas(db, scope, QUEUE_KIND, head_id, row, state, data)
+    return version
+
+
+def settle_queue(
+    store: Store,
+    scope: Scope,
+    proposal_id: str,
+    stage: str,
+    *,
+    failure: dict[str, Any] | None = None,
+    report_ref: Ref | None = None,
+) -> str | None:
+    """End a ``running`` queue head (IC-10 queue shape, interfaces.md "Clarifications After S12,
+    S15 And S9b": states ... ran / failed ...): ``failed`` with ``failure`` (``{code, ...}``, the
+    reason) when one is given, else ``ran`` with ``report_ref``. A head in another state (or none)
+    is left as it is. Returns the state written, or None."""
+    head_id = f"stagequeue-{proposal_id}-{stage}"
+    with store.tx() as db:
+        try:
+            head = store.head(scope, QUEUE_KIND, head_id, db=db)
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            return None
+        if head["state"] != "running":
+            return None
+        data = copy.deepcopy(head["data"])
+        if failure is not None:
+            state = "failed"
+            data.update(failure=dict(failure), failed_at=now())
+        else:
+            state = "ran"
+            data.update(report_ref=report_ref, ran_at=now())
+        store.cas(db, scope, QUEUE_KIND, head_id, head["row_version"], state, data)
+    return state
+
+
+def heads_of(store: Store, scope: Scope, kind: str) -> list[tuple[str, str, dict[str, Any]]]:
+    """(id, state, data) of every head of ``kind`` in ``scope``, by id (a read; the store has no
+    list of heads by kind, so this reads its ``heads`` table as the dashboard reader does)."""
+    with store._lock:
+        rows = store.conn.execute(
+            "SELECT id,state,data FROM heads WHERE tenant=? AND project=? AND kind=? ORDER BY id",
+            (*scope.keys(), kind),
+        ).fetchall()
+    return [(r["id"], r["state"], json.loads(r["data"])) for r in rows]
+
+
+@dataclass(frozen=True)
+class ApprovalIssuer:
+    """Who freezes and runs a ``StageRunner``'s stage experiments and how each one's exact
+    approval is issued (IC-10 mechanics, clarification after S12).
+
+    - ``operator_issuer``: the human operator; ``LocalMetaApprovals.issue`` of the experiment's
+      exact digest. Its runner screens drafts, rejects a failed screening and holds every gate.
+    - ``standing_issuer``: the nightly identity; ``LocalMetaApprovals.issue_standing`` (derived,
+      plan-bound: exploratory development experiments only, so a confirmatory or holdout plan is
+      refused there with Hold STANDING_APPROVAL). Its runner never screens, reviews, rejects or
+      runs an operator gate: a failed screening is recorded (``SCREENING_FAILED`` finding) and
+      left for the operator."""
+
+    actor: Actor
+    issue: Callable[[dict[str, Any]], Ref]
+    human: bool
+
+
+def operator_issuer(ops: LocalMetaOps) -> ApprovalIssuer:
+    """The human operator's issuer (the S11 path)."""
+    operator, approvals = ops.operator, ops.local.approvals
+
+    def issue(plan: dict[str, Any]) -> Ref:
+        return dict(approvals.issue(operator, "experiment.execute", digest(plan)))
+
+    return ApprovalIssuer(operator, issue, True)
+
+
+def standing_issuer(nightly: Actor, derive: Callable[[dict[str, Any]], Ref]) -> ApprovalIssuer:
+    """The nightly identity's issuer: ``derive`` is ``NightlyRunner.derive`` (``issue_standing``
+    under the night's standing approval)."""
+    return ApprovalIssuer(nightly, derive, False)
+
+
 class StageRunner:
     def __init__(
         self,
@@ -547,9 +696,11 @@ class StageRunner:
         metrics: TrialMetrics,
         leak_gate: LeakGate,
         parallel: int,
+        issuer: ApprovalIssuer | None = None,
     ) -> None:
         """``corpus`` = the corpus v2 freeze result (``corpus_ref``, ``task_index_ref``,
-        ``leak_index_ref``); ``parallel`` = the trial concurrency (1..4, §8.4)."""
+        ``leak_index_ref``); ``parallel`` = the trial concurrency (1..4, §8.4); ``issuer`` =
+        who freezes and runs the stage experiments (default: the human operator)."""
         if type(parallel) is not int or not 1 <= parallel <= 4:
             raise RuntimeFault("EVAL_PARALLEL", "parallel is an integer from 1 to 4")
         if not _is_ref(corpus.get("corpus_ref")):
@@ -559,6 +710,9 @@ class StageRunner:
         self.metrics, self.leak_gate, self.parallel = metrics, leak_gate, parallel
         self.store, self.scope = ops.store, ops.scope
         self.local, self.operator = ops.local, ops.operator
+        self.issuer = issuer if issuer is not None else operator_issuer(ops)
+        # who freezes, runs and reads the stage experiments (the operator or the nightly identity)
+        self.actor = self.issuer.actor
         self.artifacts = ops.dep.artifacts
         self.cases = CorpusService(self.store, self.artifacts)
         # why the last ``advance`` stopped before an operator gate (None: it did not)
@@ -641,7 +795,8 @@ class StageRunner:
         """The frozen cases of ``split`` that are main-set tasks of the selected app
         (``LocalMetaOps.app_case_ids``; ``--app`` selects the app)."""
         own = self.ops.app_case_ids()
-        cases = self.cases.select(self.operator, corpus_ref, split, purpose="frozen_experiment")
+        # the nightly identity has no corpus.holdout.evaluate: it never selects holdout cases
+        cases = self.cases.select(self.actor, corpus_ref, split, purpose="frozen_experiment")
         return [c for c in cases if own is None or c["case_id"] in own]
 
     # -- plan -----------------------------------------------------------------------------------
@@ -689,9 +844,16 @@ class StageRunner:
         if not isinstance(row, dict):
             raise Hold("NO_INFORMATIVE_TASKS", "The calibration summary has no row for the cell")
         corpus_ref = self.corpus["corpus_ref"]
-        # Hold CORPUS_CHANGED: the tasks loaded now are the frozen ones (every case)
-        self.ops.check_corpus(corpus_ref)
         corpus = self.store.get(self.scope, "eval-corpus", corpus_ref)
+        # Hold CORPUS_CHANGED: the tasks loaded now are the frozen ones (every case; a nightly
+        # runner checks the development and validation cases only and never builds a holdout
+        # case payload: the operator's holdout gate checks its cases at its freeze)
+        self.ops.check_corpus(
+            corpus_ref,
+            None
+            if self.issuer.human
+            else [c["case_id"] for c in corpus["cases"] if c["split"] != "holdout"],
+        )
         own = self.ops.app_case_ids()  # the selected app's main-set tasks, as ``_select``
         holdout_tasks = sum(
             1
@@ -796,10 +958,15 @@ class StageRunner:
         self._check_evaluator(plan)
         # a gating stage left "running" before its first dispatch resumes (no trial ran)
         self._resume_frozen(proposal_id, plan)
+        self._settle_orphan_queue(proposal_id)
         head = self._evolution(proposal_id)
         if head["state"] == "draft":
             if _needs_review(head):
                 return self.status(proposal_id)  # class B: the operator's review first
+            if not self.issuer.human:
+                # the screen gate needs harness.review, which the nightly identity never holds
+                self.last_stop = {"stage": "screening", "code": "OPERATOR_SCREEN"}
+                return self.status(proposal_id)
             # screen gate: protected surfaces, LEAK_GATE (MetaHarness.screen); a refusal stops here
             self.local.meta.screen(self.operator, proposal_id)
             head = self._evolution(proposal_id)
@@ -841,8 +1008,13 @@ class StageRunner:
         Hold SEARCH_BUSY while another runner holds the proposal."""
         if stage not in OPERATOR_GATES:
             raise Hold("META_STATE", "Only the focused and holdout stages have an operator gate")
+        self._human_only()
         with stage_lock(self.store, self.scope, proposal_id):
             return self._approve_stage(proposal_id, stage)
+
+    def _human_only(self) -> None:
+        if not self.issuer.human:
+            raise Hold("APPROVAL_HUMAN", "An operator gate is the human operator's (IC-10)")
 
     def _approve_stage(self, proposal_id: str, stage: str) -> StageStep:
         _plan_ref, plan = self._plan(proposal_id)
@@ -857,11 +1029,202 @@ class StageRunner:
         if stage == "holdout":  # IC-24: Hold NOT_A_REMOVAL for a sweep that is no removal
             check_removal(self.store, self.scope, self.artifacts, proposal_id)
         entry = next(s for s in plan["stages"] if s["stage"] == stage)
+        self._supersede(proposal_id, stage)  # a queued build of this stage is not the one run
         if not self._stage(proposal_id, plan, entry):
             stop = self.last_stop or {}
             raise Hold(str(stop.get("code") or "META_TOKEN_BUDGET"),
                        "The root budget cannot cover this stage", details=stop)  # fmt: skip
         return next(s for s in self.status(proposal_id) if s.stage == stage)
+
+    # -- IC-10: a stage frozen at night, approved by the operator, run the next night -------------
+    def queue_stage(self, proposal_id: str, stage: str = "focused") -> dict[str, Any] | None:
+        """Build the exact experiment of the ``focused`` stage of a candidate whose screening
+        passed and that waits at the focused gate, without any approval (a confirmatory approval
+        is the human operator's, IC-10), and keep it in the ``stage-queue`` head
+        ``stagequeue-<proposal_id>-<stage>`` (state ``queued``) for ``approve_queued``. Returns
+        the queue item ``{proposal_id, stage, queue_id, subject_digest, experiment_id}``, the
+        existing one when it is still queued or approved, or None when the root budget cannot
+        cover the stage (``last_stop``). Hold META_STATE when the candidate is not there."""
+        if stage not in QUEUED_STAGES:
+            raise Hold("META_STATE", "Only the focused stage is queued (holdout stays in-process)")
+        with stage_lock(self.store, self.scope, proposal_id):
+            existing = queue_head(self.store, self.scope, proposal_id, stage)
+            if existing is not None and existing["state"] in ("queued", "approved"):
+                return _queue_item(existing["data"])
+            _plan_ref, plan = self._plan(proposal_id)
+            self._check_evaluator(plan)
+            self._at_gate(proposal_id, stage, "waiting_approval")
+            entry = next(s for s in plan["stages"] if s["stage"] == stage)
+            proposal, _head = self._proposal(proposal_id)
+            summary = resolve_ref(self.store, self.scope, plan["calibration_summary_ref"])[1]
+            rule_summary = summary if entry["case_rule"] == "informative_v1" else None
+            _cases, case_ids = self._case_ids(plan, entry, rule_summary)
+            reference, note = (None, "")
+            if entry["reference"] is not None:
+                reference, note = self._reference(proposal_id, proposal, entry)
+            arms = 3 if reference is not None else 2
+            stop = self._covers(proposal_id, plan, len(case_ids) * arms * entry["repeats"])
+            if stop is not None:
+                self.last_stop = {"stage": stage, **stop}
+                return None
+            experiment, _cases, _ids = self._build(
+                proposal_id, proposal, plan, entry, reference=reference, note=note
+            )
+            data = {
+                "proposal_id": proposal_id,
+                "stage": stage,
+                "experiment": experiment,
+                "subject_digest": digest(experiment),
+                "trials": len(case_ids) * arms * entry["repeats"],
+                "queued_by": self.actor.wire(),
+                "queued_at": now(),
+                "approval_ref": None,
+                "approved_by": None,
+                "experiment_ref": None,
+                "report_ref": None,
+            }
+            _queue_write(self.store, self.scope, proposal_id, stage, "queued", data)
+            return _queue_item(data)
+
+    def approve_queued(
+        self, proposal_id: str, stage: str = "focused", *, subject_digest: str | None = None
+    ) -> StageStep:
+        """``amplai meta approve-stage P --stage focused --queue``: the human operator's approval
+        of the exact queued experiment (``issue`` of its digest; ``subject_digest``, when given,
+        must be that digest) and its freeze; nothing runs. The stage turns ``frozen`` and waits
+        for the next night's confirmation phase (or an operator's ``run_queued``). Hold
+        APPROVAL_HUMAN for another issuer, META_STATE without a queued build, QUEUE_DIGEST for
+        another digest, CORPUS_CHANGED when its tasks changed since."""
+        self._human_only()
+        with stage_lock(self.store, self.scope, proposal_id):
+            head = queue_head(self.store, self.scope, proposal_id, stage)
+            if head is None or head["state"] != "queued":
+                raise Hold("META_STATE", f"No queued {stage} stage of this proposal",
+                           details={"queue": head["state"] if head else None})  # fmt: skip
+            data = copy.deepcopy(head["data"])
+            experiment = data["experiment"]
+            if digest(experiment) != data["subject_digest"]:
+                raise Hold("QUEUE_DIGEST", "The queued experiment changed since it was queued")
+            if subject_digest is not None and subject_digest != data["subject_digest"]:
+                raise Hold("QUEUE_DIGEST", "The named digest is not the queued experiment's",
+                           details={"queued": data["subject_digest"]})  # fmt: skip
+            _plan_ref, plan = self._plan(proposal_id)
+            self._check_evaluator(plan)
+            self._at_gate(proposal_id, stage, "waiting_approval")
+            sampling = resolve_ref(self.store, self.scope, experiment["sampling_plan_ref"])[1]
+            self.ops.check_corpus(experiment["corpus_ref"], list(sampling["case_ids"]))
+            stop = self._covers(proposal_id, plan, int(data["trials"]))
+            if stop is not None:
+                raise Hold(str(stop["code"]), "The root budget cannot cover this stage",
+                           details={"stage": stage, **stop})  # fmt: skip
+            approval_ref = self.issuer.issue(experiment)
+            frozen = {**experiment, "approval_ref": approval_ref}
+            ref = self.local.evaluation.freeze(self.actor, frozen)
+            self._update(proposal_id, stage, state="frozen", experiment_ref=ref)
+            _queue_write(self.store, self.scope, proposal_id, stage, "approved",
+                         {**data, "approval_ref": approval_ref, "approved_by": self.actor.wire(),
+                          "experiment_ref": ref, "approved_at": now()},
+                         row=head["row_version"])  # fmt: skip
+        return next(s for s in self.status(proposal_id) if s.stage == stage)
+
+    def run_queued(self, proposal_id: str, stage: str = "focused") -> StageStep:
+        """Run a queued stage the operator approved (state ``frozen``, its experiment head still
+        ``frozen``), as this runner's actor; the approval is the operator's, re-checked at every
+        trial guard. Holds META_STATE otherwise; SEARCH_BUSY while another runner holds the
+        proposal."""
+        with stage_lock(self.store, self.scope, proposal_id):
+            head = queue_head(self.store, self.scope, proposal_id, stage)
+            if head is None or head["state"] != "approved":
+                raise Hold("META_STATE", f"No approved queued {stage} stage of this proposal")
+            _plan_ref, plan = self._plan(proposal_id)
+            self._check_evaluator(plan)
+            current = self._at_gate(proposal_id, stage, "frozen")
+            ref = current["experiment_ref"]
+            if ref != head["data"]["experiment_ref"] or self._experiment_state(ref) != "frozen":
+                raise Hold("META_STATE", "The approved experiment is not frozen any more")
+            self._check_cases(ref)
+            entry = next(s for s in plan["stages"] if s["stage"] == stage)
+            data = copy.deepcopy(head["data"])
+            _queue_write(self.store, self.scope, proposal_id, stage, "running", data,
+                         row=head["row_version"])  # fmt: skip
+            try:
+                self._update(proposal_id, stage, state="running")
+                cases = self._select(plan["corpus_ref"], entry["split"])
+                self._run_stage(proposal_id, plan, entry, ref, cases)
+            except Exception as exc:
+                # never left ``running``: the queued run ended with this reason (a process stop
+                # that runs no handler is settled by the next ``advance`` or reconcile)
+                settle_queue(self.store, self.scope, proposal_id, stage, failure={
+                    "code": _code(exc), "message": str(exc)[:300],
+                    "stage_state": self._stage_state(proposal_id, stage)["state"],
+                })  # fmt: skip
+                raise
+            current = self._stage_state(proposal_id, stage)
+            if current["state"] == "aborted":  # an aborted run report (no exception)
+                settle_queue(self.store, self.scope, proposal_id, stage,
+                             failure={"code": "STAGE_ABORTED"})  # fmt: skip
+            else:
+                settle_queue(self.store, self.scope, proposal_id, stage,
+                             report_ref=current["report_ref"])  # fmt: skip
+        return next(s for s in self.status(proposal_id) if s.stage == stage)
+
+    def _settle_orphan_queue(self, proposal_id: str) -> None:
+        """A queue head found ``running`` while this runner holds the proposal's stage lock was
+        left by a runner that stopped without a handler (a crash): it becomes ``ran`` when its
+        stage ended with a verdict (e.g. resumed by ``_resume_frozen``), else ``failed`` with the
+        reason (``INTERRUPTED`` and the stage state; a stage with dispatched trials still needs
+        ``amplai meta reconcile``)."""
+        for stage in QUEUED_STAGES:
+            head = queue_head(self.store, self.scope, proposal_id, stage)
+            if head is None or head["state"] != "running":
+                continue
+            current = self._stage_state(proposal_id, stage)
+            if current["state"] in ("passed", "failed", "inconclusive", "skipped"):
+                settle_queue(self.store, self.scope, proposal_id, stage,
+                             report_ref=current["report_ref"])  # fmt: skip
+            else:
+                settle_queue(self.store, self.scope, proposal_id, stage, failure={
+                    "code": "INTERRUPTED", "stage_state": current["state"],
+                })  # fmt: skip
+
+    def _at_gate(self, proposal_id: str, stage: str, state: str) -> dict[str, Any]:
+        """The stage entry when the candidate is screened and the stage is in ``state``."""
+        if self._evolution(proposal_id)["state"] != "screened":
+            raise Hold("META_STATE", "The candidate is not screened")
+        current = self._stage_state(proposal_id, stage)
+        if current["state"] != state:
+            raise Hold("META_STATE", f"The {stage} stage is {current['state']}",
+                       details={"stage": stage, "state": current["state"]})  # fmt: skip
+        return current
+
+    def _supersede(self, proposal_id: str, stage: str) -> None:
+        head = queue_head(self.store, self.scope, proposal_id, stage)
+        if head is not None and head["state"] == "queued":
+            _queue_write(self.store, self.scope, proposal_id, stage, "superseded",
+                         dict(head["data"]), row=head["row_version"])  # fmt: skip
+
+    def pending_trials(self, proposal_id: str) -> int:
+        """The most trials the next ``advance`` dispatches before it stops (0 when it stops at a
+        gate first): the next pending auto stage's cases x arms x repeats; for the ablation,
+        every planned variant (2 arms each). Used by the nightly guard before ``advance``."""
+        found = self._plan_or_none(proposal_id)
+        if found is None:
+            return 0
+        _ref, plan = found
+        summary = resolve_ref(self.store, self.scope, plan["calibration_summary_ref"])[1]
+        for entry in plan["stages"]:
+            state = self._stage_state(proposal_id, entry["stage"])["state"]
+            if state in ("passed", "skipped"):
+                continue
+            if entry["gate"] == "operator" or state not in ("pending", "running"):
+                return 0
+            rule_summary = summary if entry["case_rule"] == "informative_v1" else None
+            _cases, ids = self._case_ids(plan, entry, rule_summary)
+            repeats = int(entry["repeats"])
+            if entry["stage"] == "ablation":
+                return len(plan["ablation_components"]) * len(ids) * 2 * repeats
+            return len(ids) * len(entry["arms"]) * repeats
+        return 0
 
     # -- running one stage ----------------------------------------------------------------------
     def _update(self, proposal_id: str, stage: str, **fields: Any) -> None:
@@ -1021,7 +1384,26 @@ class StageRunner:
         reference: tuple[Ref, int] | None = None,
         note: str = "",
     ) -> tuple[Ref, dict[str, Any], list[dict[str, Any]], list[str]]:
-        """Build, approve (operator, exact digest) and freeze one stage experiment."""
+        """Build, approve (the issuer, exact digest) and freeze one stage experiment."""
+        experiment, cases, case_ids = self._build(
+            proposal_id, proposal, plan, entry, reference=reference, note=note
+        )
+        experiment["approval_ref"] = self.issuer.issue(experiment)
+        ref = self.local.evaluation.freeze(self.actor, experiment)
+        return ref, experiment, cases, case_ids
+
+    def _build(
+        self,
+        proposal_id: str,
+        proposal: dict[str, Any],
+        plan: dict[str, Any],
+        entry: dict[str, Any],
+        *,
+        reference: tuple[Ref, int] | None = None,
+        note: str = "",
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
+        """One stage experiment, not yet approved or frozen (its analysis, sampling and holdout
+        policy records are written)."""
         head = self._evolution(proposal_id)
         summary = resolve_ref(self.store, self.scope, plan["calibration_summary_ref"])[1]
         rule_summary = summary if entry["case_rule"] == "informative_v1" else None
@@ -1075,11 +1457,7 @@ class StageRunner:
             "budget": dict(plan["root_budget"]),  # one root budget per proposal (IC-16)
             "frozen_at": now(),
         }
-        experiment["approval_ref"] = self.local.approvals.issue(
-            self.operator, "experiment.execute", digest(experiment)
-        )
-        ref = self.local.evaluation.freeze(self.operator, experiment)
-        return ref, experiment, cases, case_ids
+        return experiment, cases, case_ids
 
     def _check_cases(self, experiment_ref: Ref) -> None:
         """Before running a stage experiment frozen by an earlier process: every case of its
@@ -1100,6 +1478,10 @@ class StageRunner:
         """Freeze and run screening, focused or holdout; False when the root budget cannot
         cover it (nothing frozen, ``last_stop`` set)."""
         name = entry["stage"]
+        if name == "holdout":
+            # IC-10: holdout stays an in-process operator run; refused before any reference,
+            # sampling plan, experiment or approval is built for it
+            self._human_only()
         proposal, _head = self._proposal(proposal_id)
         summary = resolve_ref(self.store, self.scope, plan["calibration_summary_ref"])[1]
         rule_summary = summary if entry["case_rule"] == "informative_v1" else None
@@ -1135,7 +1517,8 @@ class StageRunner:
         or dispatches any trial), so no trial ran and nothing is replayed. The candidate must be
         where that stage left it (``screened``; ``offline_running`` for the holdout, whose
         ``start_offline`` precedes the stage turning ``running``). A stage whose experiment left
-        ``frozen`` (trials may have been dispatched) stays for ``amplai meta reconcile``."""
+        ``frozen`` (trials may have been dispatched) stays for ``amplai meta reconcile``. Only the
+        human operator's runner resumes the holdout (IC-10)."""
         for entry in plan["stages"]:
             name = entry["stage"]
             if name == "ablation":  # the ablation resumes on its own (``_ablation``)
@@ -1144,6 +1527,10 @@ class StageRunner:
             ref = current["experiment_ref"]
             if current["state"] != "running" or ref is None:
                 continue
+            if name == "holdout" and not self.issuer.human:
+                # IC-10: holdout stays an in-process operator run; the nightly identity never
+                # resumes it (left for the operator's advance or ``amplai meta reconcile``)
+                return
             if self._experiment_state(ref) != "frozen":
                 return
             expected = "offline_running" if name == "holdout" else "screened"
@@ -1167,10 +1554,13 @@ class StageRunner:
         name = entry["stage"]
         try:
             report_ref = self.local.evaluation.run(
-                self.operator, experiment_ref, self.ops.executor, split=entry["split"],
+                self.actor, experiment_ref, self.ops.executor, split=entry["split"],
                 parallel=self.parallel,
             )  # fmt: skip
         except RuntimeFault as exc:
+            # a queued stage's head ends ``failed`` with the fault's code (no-op otherwise)
+            settle_queue(self.store, self.scope, proposal_id, name,
+                         failure={"code": exc.code, "stage_state": "aborted"})  # fmt: skip
             self._update(proposal_id, name, state="aborted")
             self.last_stop = {"stage": name, "code": exc.code}
             raise
@@ -1182,9 +1572,14 @@ class StageRunner:
         if name == "screening":
             state, reasons = self._screening_gate(report, analysis, entry)
             findings = [r for r in reasons if r.startswith("HACK_GUARD")]
-            if state == "failed":
+            if state == "failed" and self.issuer.human:
                 self.local.meta.reject(self.operator, proposal_id,
                                        "screening: " + "; ".join(reasons))  # fmt: skip
+            elif state == "failed":
+                # IC-10: recorded and left for the operator (``amplai meta reject``); the nightly
+                # identity never rejects or reviews
+                findings.append(f"{SCREENING_FAILED}: " + "; ".join(reasons))
+                self.last_stop = {"stage": name, "code": SCREENING_FAILED, "reasons": reasons}
             elif state == "aborted":
                 self.last_stop = {"stage": name, "reasons": reasons}
         else:
@@ -1486,7 +1881,7 @@ class StageRunner:
                 return self._derived_report(derived_id, ended, cases)
         self._check_cases(experiment_ref)
         report_ref = self.local.evaluation.run(
-            self.operator, experiment_ref, self.ops.executor, split=entry["split"],
+            self.actor, experiment_ref, self.ops.executor, split=entry["split"],
             parallel=self.parallel,
         )  # fmt: skip
         return self._derived_report(derived_id, report_ref, cases)

@@ -20,17 +20,15 @@ Covered (M3 rules of §5.1):
    ``hooks.spec_digest()`` (a replay with other hooks conflicts);
 5. usage of follow-ups is summed only after §14 Q4: the last receipt only for a Codex session.
 
-§14 Q16 (read the recovery, steering and session code paths before M3 recovery and M4): what the
-code does today is pinned here with fake ports. (a) A worker execution interrupted inside a
-follow-up is held (``EXECUTION_RECONCILE``) and never re-sent; there is no recovery. (b) Vote
-candidates (M4) are refused (``COMPONENT_CONTENT``) because the paths that would see an unbound
-candidate session cannot be shown to treat it correctly: ``runtime.start`` binds one session per
-run, ``stop_and_snapshot`` and ``abort`` need exactly one durable execution per run, and steering
-checkpoints the *last* handle of that one execution. A pause while candidate i runs (simulated
-with the port, as the §5.1 M4 rules describe a candidate) either stops candidate 0's finished turn
-and leaves candidate i running (candidate journals beside the head, the §5.1 layout) or names
-candidate i's unbound session and its scratch workspace (candidate i as the run's handle, the
-follow-up layout). Q16 is therefore not settled and ``vote`` stays held.
+§14 Q16, answered in S9b ("Clarifications After S12, S15 And S9b"; the full answer and its
+fake-port tests are ``tests/v3/test_033_s9b_q16.py``): (a) a worker execution interrupted inside a
+follow-up is recovered from the follow-up's driver journal, never sent twice (pinned here for the
+case this file always had: the process was started, so it is observed or collected); a first turn
+interrupted before any follow-up is still held (``EXECUTION_RECONCILE``). (b) Hooks asking for
+candidates go to the vote path (M4): hooks that are not a vote (no ``evaluate``) are refused
+(``WORKER_HOOKS``) before anything starts. The tests below that pin what a candidate dispatch
+would do *outside* that path (through ``execute``, or as a second worker-execution row of the
+run) keep showing why candidates run as journals listed in the head, never as rows.
 """
 
 from __future__ import annotations
@@ -617,13 +615,18 @@ def test_other_drivers_sum_the_turns_of_a_run() -> None:
 
 
 # =========================================================================================
-# §14 Q16 (a): an execution interrupted inside a follow-up is held, never re-sent
+# §14 Q16 (a): an execution interrupted inside a follow-up is recovered, never re-sent
 # =========================================================================================
 class Crash(BaseException):
     """What a dead process leaves: no handler of ``execute`` (``except Exception``) runs."""
 
 
-def test_an_execution_interrupted_inside_a_follow_up_is_held_and_never_re_sent(s: Setup) -> None:
+def test_an_execution_interrupted_inside_a_follow_up_is_recovered_and_never_re_sent(
+    s: Setup,
+) -> None:
+    """§14 Q16 (a) as answered in S9b: the follow-up's process was started before the worker
+    died, so its driver journal exists (not ``prepared``): the replay observes or collects it and
+    the attempt goes on to ``output_ready``; the message is never sent a second time."""
     _goal, dispatch, base = s.claimed()
     did = dispatch["dispatch_id"]
     port = s.coordinator.registry.resolve(
@@ -644,18 +647,27 @@ def test_an_execution_interrupted_inside_a_follow_up_is_held_and_never_re_sent(s
     head = s.head(did)
     assert head["state"] == "observing" and head["data"]["followup_dispatch_id"] == did + "-f1"
     assert [e["dispatch_id"] for e in head["data"]["followups"]] == [did + "-f1"]
-    assert s.driver.journal.read(did + "-f1")["state"] in {"running", "completed", "starting"}
-    sent = len(s.turns.calls)
+    journal = s.driver.journal.read(did + "-f1")["state"]
+    assert journal in {"running", "completed", "starting"}
+    sent = [c["name"] for c in s.turns.calls]
+    assert sent == [did, did + "-f1"]
     port.resume = original
-    # M3 rule 4 / §14 Q16 (a): the same request is held for reconciliation, not replayed
-    with pytest.raises(Hold) as again:
-        s.execute(dispatch, base, Hooks(["more"]))
-    assert again.value.code == "EXECUTION_RECONCILE"
-    assert len(s.turns.calls) == sent  # no turn and no follow-up was sent a second time
-    # and the run did not reach output_ready: nothing was collected from the interrupted turn
+    # M3 rule 4 / §14 Q16 (a): the same request recovers the follow-up instead of replaying it
+    result = s.execute(dispatch, base, Hooks(["more"]))
+    assert result["status"] == "verifying"
+    assert [c["name"] for c in s.turns.calls] == sent  # the message was sent exactly once
+    done = s.head(did)
+    assert done["state"] == "verifying"
+    (recovery,) = done["data"]["recoveries"]
+    assert recovery["dispatch_id"] == did + "-f1"
+    assert recovery["action"] in {"observed", "collected"}  # never "resent": a turn had started
+    (entry,) = done["data"]["followups"]
+    assert entry["prompt_digest"] == digest("more") and entry["receipt_digest"] is not None
     run = s.d.store.head(s.d.scope, "run", dispatch["run_id"])
-    assert run["state"] != "output_ready"
-    assert s.head(did)["state"] == "observing"  # still held for reconciliation
+    assert run["state"] != "running"  # output_ready was reported once, from the recovered turn
+    # a replay of the finished execution returns its stored result and sends nothing
+    assert s.execute(dispatch, base, Hooks(["more"])) == result
+    assert [c["name"] for c in s.turns.calls] == sent
 
 
 def test_a_first_turn_interrupted_before_any_follow_up_is_held_the_same_way(s: Setup) -> None:
@@ -711,18 +723,21 @@ def test_a_crash_inside_a_follow_up_leaves_a_process_the_abort_path_can_stop(s: 
 
 
 # =========================================================================================
-# §14 Q16 (b): candidates (M4) are refused; what the code would do with an unbound session
+# §14 Q16 (b): candidates (M4) only through vote hooks; what an unbound session would meet
 # =========================================================================================
 @pytest.mark.parametrize("candidates", [2, 3, 0])
 def test_hooks_asking_for_candidates_are_refused_before_anything_starts(
     s: Setup, candidates: int
 ) -> None:
+    """Since S9b ``vote`` runs, but only with vote hooks (``evaluate`` and ``select``, 1..3
+    candidates, no follow-ups): these hooks ask for 2, 3 or 0 candidates without being a vote,
+    so the worker refuses them (``WORKER_HOOKS``) before any row, workspace or process exists."""
     _goal, dispatch, base = s.claimed()
     hooks = Hooks([])
     hooks.candidates = candidates
     with pytest.raises(RuntimeFault) as refused:
         s.execute(dispatch, base, hooks)
-    assert refused.value.code == "COMPONENT_CONTENT" and "Q16" in refused.value.message
+    assert refused.value.code == "WORKER_HOOKS" and "Q16" not in refused.value.message
     assert s.turns.calls == []
     with pytest.raises(RuntimeFault) as no_head:
         s.head(dispatch["dispatch_id"])

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AMPLAI nightly meta-harness runner (Work 033 S12, interfaces.md §8.9).
+  Filled by `amplai meta nightly print-agent`; never installed automatically.
+  The operator copies the filled file to ~/Library/LaunchAgents/ and runs
+  `launchctl bootstrap gui/$(id -u) <file>`. The night does nothing until the human operator has
+  issued a standing approval (`amplai meta nightly approve`, IC-17, provisional).
+  Open (reported, not decided): the trial executor's qualification is pinned in memory per
+  command, so a night started by this agent stops at preflight (QUALIFIED_EXECUTOR_REQUIRED)
+  until the operator decides where an unattended night takes it from.
+  Placeholders (in double braces): LABEL, AMPLAI, CONFIG, LOG_DIR, PATH.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{LABEL}}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{AMPLAI}}</string>
+    <string>meta</string>
+    <string>nightly</string>
+    <string>run</string>
+    <string>--config</string>
+    <string>{{CONFIG}}</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>1</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>{{LOG_DIR}}/meta-nightly.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_DIR}}/meta-nightly.err.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>{{PATH}}</string>
+  </dict>
+</dict>
+</plist>
