@@ -179,9 +179,32 @@ class InstalledApp:
     driver_refs: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)  # by cell id
     planners: dict[str, Any] = field(default_factory=dict)  # cell id -> planner
     cells: dict[str, Cell] = field(default_factory=dict)  # the non-legacy cells (Work 033 S4)
+    # IC-12 (Work 033 S7b, §3.3): task environment -> cell id -> installed environment
+    # composition; task environment -> verifier id -> its per-environment verifier profile
+    env_compositions: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
+    env_verifier_refs: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class TaskEnvironment:
+    """One task environment of an app (IC-12, §10.5 step 6, §12.2 ``apps[].environments``).
+
+    ``environment_ref`` is the qualified ``environment`` record of the task image;
+    ``driver_refs`` holds, per installed cell of the app qualified in that image, the records
+    ``install_codex_profile`` (or ``CellInstaller.profile``) wrote for it (``model``, ``driver``,
+    ``environment``, ``qualification``), each naming ``environment_ref``. ``verifier`` is the
+    runner of this environment's suite profile (the app's verifier commands in the task image).
+    """
+
+    environment_id: str
+    environment_ref: dict[str, Any]
+    driver_refs: dict[str, dict[str, dict[str, Any]]]
+    verifier: Any
 
 
 PLANNER_MODES = ("fixed", "real")
+# a task environment id (§12.2 ``apps[].environments[].environment_id``)
+ENVIRONMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 # IC-23: the domain a trial's L1/L2 decisions read (a corpus v2 domain, or "unknown")
 UNKNOWN_DOMAIN = "unknown"
 DOMAIN = re.compile(r"[a-z0-9_]{1,64}")
@@ -397,12 +420,23 @@ class LocalExecutionService:
         driver_refs: dict[str, dict[str, dict[str, Any]]] | None = None,
         planners: dict[str, Any] | None = None,
         cells: list[Cell] | None = None,
+        environments: list[TaskEnvironment] | None = None,
     ) -> InstalledApp:
         """Install ``app`` with one composition per cell (Work 033 S4, §2.4).
 
         ``driver_refs`` and ``planners`` are keyed by cell id; a legacy key is a driver id
         (IC-07) and needs no ``Cell``, every other key names one of ``cells`` (Hold
         CELL_UNKNOWN otherwise).
+
+        ``environments`` (IC-12, Work 033 S7b, §10.5 step 6): per task environment, one installed
+        environment composition per qualified cell (``<installed id>:env-<env12>``: the cell's
+        installed composition with the environment's sandbox, driver, model and qualification
+        refs) and one suite verifier profile in that environment (``<app>-suite:env-<env12>``).
+        The app-binding then lists every task environment and its verifier profile, so goal
+        validation accepts a contract bound to it (``runtime/goals/validation.py:40-60``); an
+        app-binding that changes gets a new registry revision (``_register_app``). Hold
+        ENVIRONMENT_UNQUALIFIED for records of another environment, CELL_UNKNOWN for a cell the
+        app does not install.
         """
         scope, a = self.scope, app.app_id
         caps = app_capabilities(a)
@@ -413,6 +447,8 @@ class LocalExecutionService:
             raise Hold(
                 "CELL_UNKNOWN", "Every non-legacy driver ref needs its cell", details=unknown
             )
+        task_envs = list(environments or [])
+        self._check_environments(task_envs, drivers)
         env_ref = (drivers.get("codex-cli") or self.codex)["environment"]
         invariant_ref = self._put(
             "invariant-registry",
@@ -501,29 +537,67 @@ class LocalExecutionService:
         carriers = self._baseline_carriers(a, prompt_ref, route_order)
         router_ref = carriers["router_policy_ref"]
         compositions = {}
+        values: dict[str, dict[str, Any]] = {}
         for cell_id, refs in drivers.items():
             name = self._composition_id(a, cell_id, known.get(cell_id))
-            compositions[cell_id] = self._put_composition(
-                name,
+            values[cell_id] = {
+                "schema_version": "3.0.0",
+                "composition_id": name,
+                "model_profile_ref": refs["model"],
+                "driver_profile_ref": refs["driver"],
+                "sandbox_profile_ref": refs["environment"],
+                "pack_refs": [],
+                "prompt_bundle_ref": prompt_ref,
+                "router_policy_ref": router_ref,
+                "context_policy_ref": carriers["context_policy_ref"],
+                # the protected record stays the verification policy (class C, §2.3)
+                "verification_policy_ref": policy_ref,
+                "budget_policy_ref": carriers["budget_policy_ref"],
+                "protocol_major": 3,
+                "qualification_ref": refs["qualification"],
+                "created_at": "2026-09-28T00:00:00Z",
+            }
+            compositions[cell_id] = self._put_composition(name, values[cell_id])
+        composition_ref = compositions.get("codex-cli") or next(iter(compositions.values()))
+        # IC-12 (S7b): per task environment its compositions and its suite verifier profile
+        env_compositions: dict[str, dict[str, dict[str, Any]]] = {}
+        env_verifier_refs: dict[str, dict[str, dict[str, Any]]] = {}
+        for task_env in task_envs:
+            tag = releases.env12(task_env.environment_id)
+            env_suite = self._put(
+                "verifier-profile",
+                releases.env_suite_id(a, tag),
                 {
-                    "schema_version": "3.0.0",
-                    "composition_id": name,
-                    "model_profile_ref": refs["model"],
-                    "driver_profile_ref": refs["driver"],
-                    "sandbox_profile_ref": refs["environment"],
-                    "pack_refs": [],
-                    "prompt_bundle_ref": prompt_ref,
-                    "router_policy_ref": router_ref,
-                    "context_policy_ref": carriers["context_policy_ref"],
-                    # the protected record stays the verification policy (class C, §2.3)
-                    "verification_policy_ref": policy_ref,
-                    "budget_policy_ref": carriers["budget_policy_ref"],
-                    "protocol_major": 3,
-                    "qualification_ref": refs["qualification"],
-                    "created_at": "2026-09-28T00:00:00Z",
+                    **profile,
+                    "profile_id": releases.env_suite_id(a, tag),
+                    "environment_ref": task_env.environment_ref,
                 },
             )
-        composition_ref = compositions.get("codex-cli") or next(iter(compositions.values()))
+            if digest(env_suite) not in self.verification.runners:
+                self.verification.register(env_suite, task_env.verifier)
+            env_verifier_refs[task_env.environment_id] = {v.id: env_suite for v in app.verifiers}
+            env_compositions[task_env.environment_id] = {}
+            for cell_id, refs in task_env.driver_refs.items():
+                name = releases.env_composition_id(values[cell_id]["composition_id"],
+                                                   task_env.environment_id)  # fmt: skip
+                env_compositions[task_env.environment_id][cell_id] = self._put_composition(
+                    name,
+                    {
+                        **values[cell_id],
+                        "composition_id": name,
+                        "model_profile_ref": refs["model"],
+                        "driver_profile_ref": refs["driver"],
+                        "sandbox_profile_ref": refs["environment"],
+                        "qualification_ref": refs["qualification"],
+                    },
+                )
+        env_refs = [env_ref]
+        for task_env in task_envs:
+            if task_env.environment_ref not in env_refs:
+                env_refs.append(task_env.environment_ref)
+        env_suites = [
+            next(iter(refs.values())) for refs in env_verifier_refs.values() if refs
+        ]  # one suite profile per environment
         binding = {
             "schema_version": "3.0.0",
             "app_id": a,
@@ -532,9 +606,10 @@ class LocalExecutionService:
             "aliases": sorted({a, *app.aliases}),
             "owner_subject_id": self.actors.service.subject_id,
             "allowed_roots": [str(self.workspaces.root)],
-            "environment_refs": [env_ref],
+            # IC-12: the app image, then every task environment (S7b); unchanged without one
+            "environment_refs": env_refs,
             "invariant_refs": [invariant_ref],
-            "verifier_profile_refs": [suite_ref, design_ref],
+            "verifier_profile_refs": [suite_ref, design_ref, *env_suites],
             "data_classification": "internal",
             "requested_capabilities_ceiling": caps,
             "registry_revision": 1,
@@ -545,9 +620,46 @@ class LocalExecutionService:
             composition_ref, caps, compositions, router_ref, design_ref,
             dict(drivers), dict(planners or {}),
             {k: c for k, c in known.items() if k in drivers},
+            env_compositions, env_verifier_refs,
         )  # fmt: skip
         self.apps[a] = installed
         return installed
+
+    @staticmethod
+    def _check_environments(
+        environments: list[TaskEnvironment], drivers: dict[str, dict[str, Any]]
+    ) -> None:
+        """Every task environment once, never ``app``; its records name its own environment
+        (Hold ENVIRONMENT_UNQUALIFIED) and only cells the app installs (Hold CELL_UNKNOWN)."""
+        seen: set[str] = set()
+        for task_env in environments:
+            env_id = task_env.environment_id
+            if (
+                not isinstance(env_id, str)
+                or ENVIRONMENT_ID.fullmatch(env_id) is None
+                or env_id == releases.APP_ENVIRONMENT
+                or env_id in seen
+            ):
+                raise RuntimeFault(
+                    "ENVIRONMENT_ID", "Each task environment id once, never 'app'", details=env_id
+                )
+            seen.add(env_id)
+            unknown = sorted(c for c in task_env.driver_refs if c not in drivers)
+            if unknown:
+                raise Hold(
+                    "CELL_UNKNOWN", "A task environment names a cell the app does not install",
+                    details={"environment_id": env_id, "cells": unknown},
+                )  # fmt: skip
+            other = sorted(
+                c for c, refs in task_env.driver_refs.items()
+                if refs.get("environment") != task_env.environment_ref
+            )  # fmt: skip
+            if other:
+                raise Hold(
+                    "ENVIRONMENT_UNQUALIFIED",
+                    "A cell's records of a task environment name another environment",
+                    details={"environment_id": env_id, "cells": other},
+                )
 
     @staticmethod
     def _composition_id(app_id: str, cell_id: str, cell: Cell | None) -> str:
@@ -751,7 +863,14 @@ class LocalExecutionService:
         base_value = self._base(base)
         # a design goal changes documents only: the app suite on the base says nothing about it
         base_checks = (
-            {a: self.base_check(self.apps[a], self._base(b)) for a, b in bases.items()}
+            {
+                a: self.base_check(
+                    self.apps[a],
+                    self._base(b),
+                    environment_id=trial.environment_id if trial is not None else None,
+                )
+                for a, b in bases.items()
+            }
             if mode == "work"
             else {}
         )
@@ -935,6 +1054,7 @@ class LocalExecutionService:
             mode=mode, items=items, policy_ref=policy_ref, budget=budget,
             trial_scope=trial is not None,
             node_attempts=self._node_attempts(runner, strategy, budget),
+            environment_id=trial.environment_id if trial is not None else None,  # IC-12
         )  # fmt: skip
         record.update(strategy=strategy, work_items=items, node_apps=node_apps, **extra)
         record["acceptance_map"] = acceptance_map
@@ -1028,6 +1148,7 @@ class LocalExecutionService:
             budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
             node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
+            environment_id=(plan.get("trial") or {}).get("environment_id"),  # IC-12 (S7b)
         )  # fmt: skip
         record = {
             **{k: v for k, v in plan.items() if k not in {"decision_ref", "grant_ref",
@@ -1827,6 +1948,10 @@ class LocalExecutionService:
             raise Hold("CELL_UNKNOWN", "The cell is not installed for this app", details=to_cell)
         was = plan["composition"]
         sibling = self._cell_sibling(installed, was["ref"], to_cell)
+        environment_id = (plan.get("trial") or {}).get("environment_id")
+        if environment_id not in (None, releases.APP_ENVIRONMENT):
+            # IC-12 (S7b): a task-environment trial escalates within its task environment
+            sibling = self.env_sibling(installed, sibling, str(environment_id))
         previous = self.store.get(scope, "goal-contract", plan["contract_ref"])
         intent = self.store.get(scope, "intent-envelope", previous["intent_ref"])
         chosen = self.select_composition(installed, was.get("task_class"), pin=sibling)
@@ -1841,6 +1966,7 @@ class LocalExecutionService:
             replan_reason=f"escalation to {to_cell}: {reason}"[:4000], budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
             node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
+            environment_id=(plan.get("trial") or {}).get("environment_id"),  # IC-12 (S7b)
         )  # fmt: skip
         entry = {
             "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason[:600],
@@ -1900,6 +2026,11 @@ class LocalExecutionService:
             self.scope, "harness-composition", installed.compositions[source_cell]
         )
         suffix = source["composition_id"][len(base["composition_id"]) :]
+        if suffix.startswith(releases.ENV_SEP):
+            # IC-12 (S7b): an environment sibling keeps its candidate suffix only; the caller
+            # places the cell sibling in the task environment again (``escalate``)
+            rest = suffix[len(releases.ENV_SEP) :]
+            suffix = rest[len(rest.split(releases.CANDIDATE_SEP, 1)[0]) :]
         if not suffix:  # an installed composition whose carriers differ from the target's
             carriers = {k: source[k] for k in CARRIER_FIELDS}
             suffix = releases.CANDIDATE_SEP + "sibling-" + digest(carriers)[7:19]
@@ -1907,16 +2038,81 @@ class LocalExecutionService:
         value = {**target, **{k: source[k] for k in CARRIER_FIELDS}, "composition_id": name}
         return self._put_composition(name, value)
 
-    def base_check(self, installed: InstalledApp, base_value: dict[str, Any]) -> dict[str, Any]:
+    # -- IC-12 task environments (Work 033 S7b, §3.2, §10.5 step 6) ----------------------------
+    def env_sibling(
+        self, installed: InstalledApp, composition_ref: dict[str, Any], environment_id: str
+    ) -> dict[str, Any]:
+        """The environment sibling of ``composition_ref`` (an installed composition of the app
+        or its candidate) in task environment ``environment_id``: the rule of
+        ``ManifestService.env_sibling`` with the app's installed compositions, written by this
+        service. Hold ENVIRONMENT_UNQUALIFIED when the app has not installed the environment or
+        has no qualified composition of the cell there (the missing pair), CELL_UNKNOWN for a
+        composition of no installed cell."""
+        from ...meta_harness import manifest
+
+        if environment_id not in installed.env_verifier_refs:
+            raise Hold(
+                "ENVIRONMENT_UNQUALIFIED", "The app has not installed this task environment",
+                details={"app": installed.config.app_id, "environment_id": environment_id},
+            )  # fmt: skip
+        return manifest.env_sibling(
+            self.store, self.scope, self.runtime.contracts, composition_ref, environment_id,
+            installed=installed.compositions,
+        )  # fmt: skip
+
+    def environment_ref(self, installed: InstalledApp, environment_id: str | None) -> Any:
+        """The ``environment`` record a goal of ``installed`` runs and verifies in: the app's
+        own (``_environment``) for ``app`` or None, else the task environment's (the
+        environment ref of its suite verifier profile). Hold ENVIRONMENT_UNQUALIFIED for a task
+        environment the app has not installed."""
+        if environment_id in (None, releases.APP_ENVIRONMENT):
+            return self._environment(installed)
+        refs = installed.env_verifier_refs.get(str(environment_id))
+        if not refs:
+            raise Hold(
+                "ENVIRONMENT_UNQUALIFIED", "The app has not installed this task environment",
+                details={"app": installed.config.app_id, "environment_id": environment_id},
+            )  # fmt: skip
+        profile = self.store.get(self.scope, "verifier-profile", next(iter(refs.values())))
+        return profile["environment_ref"]
+
+    def _verifier_refs(
+        self, installed: InstalledApp, environment_id: str | None
+    ) -> dict[str, dict[str, Any]]:
+        """The verifier profiles by verifier id in the goal's environment (IC-12)."""
+        if environment_id in (None, releases.APP_ENVIRONMENT):
+            return installed.verifier_refs
+        refs = installed.env_verifier_refs.get(str(environment_id))
+        if not refs:
+            raise Hold(
+                "ENVIRONMENT_UNQUALIFIED", "The app has not installed this task environment",
+                details={"app": installed.config.app_id, "environment_id": environment_id},
+            )  # fmt: skip
+        return refs
+
+    def base_check(
+        self,
+        installed: InstalledApp,
+        base_value: dict[str, Any],
+        *,
+        environment_id: str | None = None,
+    ) -> dict[str, Any]:
         """Run the app suite on the untouched base (cached per commit).
 
         A red base is shown to the operator before approval, not a block: "fix this failing
         test" legitimately starts red, but otherwise nothing could ever verify (found by the
         first real run, where the base failed in a copy without .git).
+
+        ``environment_id`` (IC-12, S7b): a task-environment trial checks its base with that
+        environment's suite (the task image), cached per commit and environment.
         """
         commit = base_value["commit"]
-        if commit in self._base_checks:
-            return self._base_checks[commit]
+        task_env = environment_id not in (None, releases.APP_ENVIRONMENT)
+        key = (
+            commit + releases.ENV_SEP + releases.env12(str(environment_id)) if task_env else commit
+        )
+        if key in self._base_checks:
+            return self._base_checks[key]
         empty = self.workspaces.artifacts.admit(self.scope, b"", "text/x-diff")
         change = {
             "format": "amplai.change.v1",
@@ -1926,7 +2122,7 @@ class LocalExecutionService:
         }
         from ..contracts.identity import canonical
 
-        suite = installed.verifier_refs[installed.config.verifiers[0].id]
+        suite = self._verifier_refs(installed, environment_id)[installed.config.verifiers[0].id]
         observation = self.verification.runners[digest(suite)](canonical(change))
         commands = observation.details.get("commands") or []
         result = {
@@ -1941,7 +2137,7 @@ class LocalExecutionService:
                 + (observation.details.get("stderr_tail") or "")
             )[-1500:],
         }
-        self._base_checks[commit] = result
+        self._base_checks[key] = result
         return result
 
     def _base(self, base: dict[str, Any]) -> dict[str, Any]:
@@ -1987,6 +2183,7 @@ class LocalExecutionService:
         budget: policies.BudgetPolicy | None = None,
         trial_scope: bool = False,
         node_attempts: int | None = None,
+        environment_id: str | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, dict[str, str]]]:
         """Deterministic contract + graph: one node per work item (a one-app goal is one).
 
@@ -2001,6 +2198,11 @@ class LocalExecutionService:
 
         ``trial_scope``: the nodes of an experiment trial goal claim the per-trial write resource
         (IC-03); the requested capabilities stay those of the app (``sandbox:<app>``).
+
+        ``environment_id`` (IC-12, S7b): a trial's task environment binds every acceptance to that
+        environment's verifier profile and environment record, so the plan binding, the verifier
+        profile and the run (its environment sibling's sandbox) name one environment
+        (``verification/runtime/service.py:309-313``); None or ``app`` keeps the app's own.
         """
         scope, service = self.scope, self.actors.service
         policy_ref = policy_ref or installed.policy_ref
@@ -2045,7 +2247,11 @@ class LocalExecutionService:
         acceptance_map: dict[str, dict[str, str]] = {}
         for item in items:
             target = self.apps[item["app"]]
-            refs = {DESIGN_CHECK: target.design_ref} if design else target.verifier_refs
+            refs = (
+                {DESIGN_CHECK: target.design_ref}
+                if design
+                else self._verifier_refs(target, environment_id)
+            )
             if not item["acceptance"] or any(a["verifier"] not in refs for a in item["acceptance"]):
                 raise Hold("PLANNING_VERIFIER", "Every acceptance needs one installed verifier")
             ids = []
@@ -2074,7 +2280,7 @@ class LocalExecutionService:
                         "acceptance_id": ac,
                         "verifier_ref": vref,
                         "subject_selector": PORT,
-                        "environment_ref": self._environment(target),
+                        "environment_ref": self.environment_ref(target, environment_id),
                         "required_evidence_types": [evidence],
                         "decision_rule": rule,
                         "independent_review": True,

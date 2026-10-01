@@ -15,10 +15,18 @@ reads the cell's v1 composition; the cell's variants are run in the same slots (
 index) so §6.5 table fitting sees paired data, and are not part of the summary.
 
 `select_cases` is the pure stage-subset rule `EvaluationService` recomputes (IC-15).
+
+Work 033 S7b (clarification after the S10/S13/S14 fix wave, "Open (S7b)"): a plan may name one
+app, `"app": {"app_id": str, "base_ids": [str]}` (the corpus bases whose app it is). Its
+`case_ids` are then every case of its splits whose frozen case payload (§2.7, operator trust)
+names one of those bases, in corpus order (`SAMPLING_CHANGED` otherwise), so the bench app and
+`amplai-tb2` are calibrated separately on their own compositions. A plan without `app` keeps
+every case of its splits (unchanged).
 """
 
 from __future__ import annotations
 
+import json
 import math
 import time
 from collections.abc import Callable
@@ -82,6 +90,8 @@ PLAN_FIELDS = frozenset(
         "frozen_at",
     }
 )
+# S7b: the app whose cases a plan calibrates (absent: every case of the splits)
+OPTIONAL_PLAN_FIELDS = frozenset({"app"})
 BUDGET_FIELDS = frozenset(
     {
         "max_wall_seconds",
@@ -172,8 +182,24 @@ def validate_budget(budget: Any) -> None:
 
 def validate_calibration_plan(plan: dict[str, Any]) -> None:
     """§2.0: validated before `put` (shape of §2.8)."""
-    if not isinstance(plan, dict) or set(plan) != PLAN_FIELDS or plan["schema"] != PLAN_SCHEMA:
+    if (
+        not isinstance(plan, dict)
+        or not PLAN_FIELDS <= set(plan) <= PLAN_FIELDS | OPTIONAL_PLAN_FIELDS
+        or plan["schema"] != PLAN_SCHEMA
+    ):
         raise RuntimeFault("CALIBRATION_PLAN", "A calibration plan has exactly the §2.8 fields")
+    app = plan.get("app")
+    if "app" in plan and not (
+        isinstance(app, dict)
+        and set(app) == {"app_id", "base_ids"}
+        and isinstance(app["app_id"], str)
+        and bool(app["app_id"])
+        and isinstance(app["base_ids"], list)
+        and bool(app["base_ids"])
+        and all(isinstance(b, str) and b for b in app["base_ids"])
+        and len(set(app["base_ids"])) == len(app["base_ids"])
+    ):
+        raise RuntimeFault("CALIBRATION_PLAN", "app names one app id and its corpus bases")
     cells, refs = plan["cells"], plan["composition_refs"]
     adaptive, splits = plan["adaptive"], plan["splits"]
     ok = (
@@ -413,19 +439,34 @@ class CalibrationService:
                 raise
 
     def _cases(self, actor: Actor, plan: dict[str, Any]) -> list[dict[str, Any]]:
-        """Every case of the plan's splits in corpus order (§8.2); the split ACL applies."""
+        """Every case of the plan's splits in corpus order (§8.2), of the plan's app when it
+        names one (S7b); the split ACL applies."""
         selected: dict[str, dict[str, Any]] = {}
         for split in plan["splits"]:
             for case in self.corpus.select(actor, plan["corpus_ref"], split, purpose="calibration"):
                 selected[case["case_id"]] = case
         corpus = self.store.get(actor.scope, "eval-corpus", plan["corpus_ref"])
         cases = [selected[c["case_id"]] for c in corpus["cases"] if c["case_id"] in selected]
+        app = plan.get("app")
+        if app is not None:
+            cases = [c for c in cases if self._base_of(actor, c) in set(app["base_ids"])]
         if not cases or plan["case_ids"] != [c["case_id"] for c in cases]:
             raise Hold(
                 "SAMPLING_CHANGED",
-                "Pin every case of the calibrated splits in corpus order",
+                "Pin every case of the calibrated splits (of the plan's app) in corpus order",
             )
         return cases
+
+    def _base_of(self, actor: Actor, case: dict[str, Any]) -> str | None:
+        """The ``base_id`` of a frozen case payload (§2.7); None when it names none."""
+        try:
+            payload = json.loads(
+                self.artifacts.read(actor.scope, case["artifact_ref"], trusted=True)
+            )
+        except (ValueError, TypeError, KeyError):
+            return None
+        base = payload.get("base_id") if isinstance(payload, dict) else None
+        return base if isinstance(base, str) else None
 
     def _validate_executor(self, scope: Scope) -> ExecutorPolicy:
         policy = self.executor_policy

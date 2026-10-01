@@ -28,6 +28,21 @@ Work 033 S8 (interfaces.md §8.3, §8.4, IC-03, IC-18):
 Work 033 S12 (IC-17, provisional): the operator may be the nightly service identity
 ``amplai-meta-nightly`` (``meta_local.nightly_actor``); ``LocalExecutionService.approve`` accepts
 it for trial goals only.
+
+Work 033 S7b (IC-12, interfaces.md §10.5 step 6, §2.10): a task whose ``environment`` is a task
+environment (a Terminal-Bench 2.0 task) runs on the arm composition's environment sibling
+(``LocalExecutionService.env_sibling``: same manifest, the task image's environment, driver and
+model records) and verifies with that environment's verifier profile, so the run's, the driver's
+and the verifier's environment are one. A task environment the app has not installed, or one
+without a qualified composition of the arm's cell (the missing pair), holds
+ENVIRONMENT_UNQUALIFIED before any goal is submitted. With ``environment_digests`` (the stage
+plan's pins) the executor first recomputes the task environment's digest with the evaluation
+service's probe (``task_environment_digest``); on a mismatch, or a task environment the plan did
+not pin, it runs nothing and returns ``success`` None with receipt ``environment_drift`` true, so
+the task counts as missing. The receipt's ``environment_binding`` names the task environment and
+the manifest digest (§2.3: the digest of the four carrier refs). ``tb2_tests`` grading needs the
+TB2 test entry command, which is 확인 필요 (§14 Q7): a verified TB2 run is reported ``success``
+None, never graded by a guessed command.
 """
 
 from __future__ import annotations
@@ -47,7 +62,7 @@ from ..runtime.contracts.authority import Actor
 from ..runtime.contracts.identity import canonical, digest, digest_bytes, new_id
 from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
-from ..runtime.execution import policies
+from ..runtime.execution import policies, releases
 from ..runtime.execution.loop import ExecutionLoop
 from ..runtime.execution.meta_local import NIGHTLY_EXCLUDED, NIGHTLY_ID
 from ..runtime.execution.product import LocalExecutionService, TrialContext
@@ -236,10 +251,15 @@ class LocalTrialExecutor:
         traces: Any | None = None,  # TraceService (S13, meta_harness/traces.py)
         cells: dict[str, Cell] | None = None,
         environment_digests: dict[str, str] | None = None,
+        environment_probe: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> None:
         """``busy`` (optional) tells whether a non-trial goal is running; a trial waits for it
         (TRIAL_BUSY). ``traces`` turns trace capture on for trial goals (S13);
-        ``environment_digests`` are the stage plan's task-environment pins (S7b)."""
+        ``environment_digests`` are the stage plan's task-environment pins (S7b; None: no drift
+        check, as for calibration; a dict, possibly empty, means the pins are in force and a
+        task environment it does not name is drifted); ``environment_probe`` is the evaluation
+        service's probe (``EvaluationService.environment_probe``; None digests the record
+        itself, as that service does)."""
         if loop.publisher is not None:
             raise Hold("TRIAL_PUBLISH", "A trial loop must not publish")
         # IC-17 (S12, provisional): the nightly service identity runs trials too; its goal
@@ -253,7 +273,10 @@ class LocalTrialExecutor:
         self.operator, self.corpus, self.busy = operator, corpus, busy
         self.manifests, self.traces = manifests, traces
         self.cells = dict(cells or {})
-        self.environment_digests = dict(environment_digests or {})
+        self.environment_digests: dict[str, str] | None = (
+            dict(environment_digests) if environment_digests is not None else None
+        )
+        self.environment_probe = environment_probe
         self.planner = TrialPlanner(corpus, behaviour_verifier)
         self.store, self.scope = service.store, service.scope
         self.artifacts = service.workspaces.artifacts
@@ -269,13 +292,12 @@ class LocalTrialExecutor:
         if self.busy is not None and self.busy():
             raise Hold("TRIAL_BUSY", "Another goal is running; a trial waits for it")
         spec = self._spec(case)
-        if spec.grading == "tb2_tests" or spec.environment_id != "app":
-            # IC-12: a task environment runs on its composition's environment sibling (S7b)
+        task_env = spec.environment_id != releases.APP_ENVIRONMENT
+        if spec.grading == "tb2_tests" and not task_env:
             raise Hold(
-                "TRIAL_ENVIRONMENT",
-                "Task-environment trials run on environment siblings (S7b)",
+                "TRIAL_ENVIRONMENT", "A tb2_tests task runs in its task environment (§10.5)",
                 details={"environment_id": spec.environment_id, "grading": spec.grading},
-            )
+            )  # fmt: skip
         if spec.app_id not in self.service.apps:
             raise Hold("TARGET_UNKNOWN", "Not an installed app", details=[spec.app_id])
         cell_id = trial_metrics.cell_of(self.service, spec.app_id, composition_ref)
@@ -284,6 +306,20 @@ class LocalTrialExecutor:
                 "COMPOSITION_PIN",
                 "A pinned composition must be an installed one or its class-A candidate",
             )
+        executed, binding = composition_ref, None
+        if task_env:
+            # IC-12 (S7b): the task environment's sibling, checked before any goal exists
+            installed = self.service.apps[spec.app_id]
+            self.service.environment_ref(installed, spec.environment_id)  # Hold: not installed
+            binding = {
+                "environment_id": spec.environment_id,
+                "manifest_digest": manifest_digest(
+                    self.store.get(self.scope, "harness-composition", composition_ref)
+                ),
+            }
+            if self._drifted(installed, spec.environment_id):
+                return self._drift(composition_ref, case, repeat, mode, spec, cell_id, binding)
+            executed = self.service.env_sibling(installed, composition_ref, spec.environment_id)
         subject, arm, bound = self._bind(composition_ref, case, repeat)
         try:
             context = TrialContext(
@@ -297,12 +333,108 @@ class LocalTrialExecutor:
                 environment_id=spec.environment_id,
                 domain=self._domain(spec),
             )
-            record = self._run_goal(composition_ref, spec, context)
+            record = self._run_goal(executed, spec, context)
         finally:
             if bound is not None:
                 with self._lock:
                     self._bound.discard(bound)
-        return self._observe(composition_ref, case, repeat, mode, spec, context, record)
+        return self._observe(
+            composition_ref, case, repeat, mode, spec, context, record,
+            executed=executed, binding=binding,
+        )  # fmt: skip
+
+    # -- IC-12 task environments: drift (S7b, §10.5 step 6) ------------------------------------
+    def task_environment_digest(self, installed: Any, environment_id: str) -> str:
+        """The digest the stage plan pins for a task environment (§2.9 ``environment_digests``):
+        ``digest(probe(record))`` of its environment record, the rule
+        ``EvaluationService.freeze`` applies to the experiment's ``environment_ref``."""
+        return task_environment_digest(
+            self.store, self.scope, self.service.environment_ref(installed, environment_id),
+            self.environment_probe,
+        )  # fmt: skip
+
+    def _drifted(self, installed: Any, environment_id: str) -> bool:
+        """With stage pins: the task environment is not pinned, or its digest differs now."""
+        if self.environment_digests is None:
+            return False
+        pinned = self.environment_digests.get(environment_id)
+        return pinned is None or pinned != self.task_environment_digest(installed, environment_id)
+
+    def _drift(
+        self,
+        composition_ref: dict[str, Any],
+        case: dict[str, Any],
+        repeat: int,
+        mode: str,
+        spec: _Spec,
+        cell_id: str,
+        binding: dict[str, Any],
+    ) -> TrialObservation:
+        """Nothing runs: ``success`` None, receipt ``environment_drift`` true, no usage (§10.5)."""
+        composition = self.store.get(self.scope, "harness-composition", composition_ref)
+        snapshot, effort = self._snapshot(composition)
+        strategy = trial_metrics.strategy_of(self.service, composition_ref) or ""
+        usage: dict[str, Any] = {
+            "input_tokens": 0, "output_tokens": 0, "cost_microunits": 0,
+            "usage_status": "measured",
+        }  # fmt: skip
+        task = spec.task
+        receipt = {
+            "task_id": task.task_id,
+            "repeat": repeat,
+            "composition_ref": composition_ref,
+            "mode": mode,
+            "success": None,
+            "safety_failures": 0,
+            "unknown_effects": 0,
+            **usage,
+            "scope": self.scope.wire(),
+            "goal_id": None,
+            "goal_status": None,
+            "goal_reason": "environment_drift",
+            "corpus_id": self.corpus.corpus_id,
+            "base_commit": spec.base_commit,
+            "executed_composition_ref": composition_ref,  # nothing ran in a sibling
+            "escalation_chain": [],
+            "environment_binding": binding,
+            "environment_drift": True,
+            "cell_id": cell_id,
+            "strategy": strategy,
+            "grading": spec.grading,
+            "planner": {"mode": "fixed", "questions": 0, "usage": None},
+            "counters_source": COUNTERS_SOURCE,
+            "decisions": [],
+            "trace_ref": None,
+            "cache_key": self._cache_key(
+                composition, {**snapshot, "reasoning_profile": effort}, spec, case, strategy,
+                repeat,
+            ),
+            "corpus_version": spec.corpus_version,
+            "split": spec.split,
+            "harness_sha": self.harness_sha,
+            "model_snapshot": snapshot,
+        }  # fmt: skip
+        proof: dict[str, Any] = {
+            "task_id": task.task_id,
+            "goal_id": None,
+            "attempts": [],
+            "environment_drift": {
+                "environment_id": binding["environment_id"],
+                "pinned": (self.environment_digests or {}).get(binding["environment_id"]),
+            },
+        }
+        receipt_ref = self.artifacts.admit(
+            self.scope, canonical(receipt), "application/json", trust="verifier"
+        )
+        proof_ref = self.artifacts.admit(
+            self.scope, canonical(proof), "application/json", trust="verifier"
+        )
+        with self._lock:
+            self.trials.append({"task_id": task.task_id, "repeat": repeat, **receipt})
+        return TrialObservation(
+            None, (receipt_ref, proof_ref), cost_microunits=0, input_tokens=0, output_tokens=0,
+            usage_status="measured",
+        )  # fmt: skip
 
     def _observe(
         self,
@@ -313,7 +445,11 @@ class LocalTrialExecutor:
         spec: _Spec,
         context: TrialContext,
         record: dict[str, Any],
+        *,
+        executed: dict[str, Any] | None = None,
+        binding: dict[str, Any] | None = None,
     ) -> TrialObservation:
+        executed = executed or composition_ref  # IC-12: the environment sibling that ran
         status = record.get("status")
         if record["ran"] and status == "cancelled":
             raise Hold("TRIAL_CANCELLED", "The trial goal was cancelled")
@@ -327,6 +463,11 @@ class LocalTrialExecutor:
                 success, detail = outcome.success, {"detail": outcome.detail}
             else:
                 success = None  # the planner asked back on a task graded by hidden tests
+        elif status == "verified" and spec.grading == "tb2_tests":
+            # §10.5: graded by the task tests in the task image, whose entry command is 확인 필요
+            # (§14 Q7); not graded by a guessed command, so no answer about the candidate
+            success = None
+            detail = {"detail": "tb2_tests: not graded (TB2 test entry command, §14 Q7)"}
         elif status == "verified":
             outcome = self._judge(spec, record, questions)
             detail = {
@@ -349,10 +490,12 @@ class LocalTrialExecutor:
         ]
         # §8.3: runs + planner + the strategy's auxiliary read-only turns (every revision)
         usage = self._usage(ran, plan.get("planner_usage"), real=real, aux=plan.get("aux_usage"))
-        composition = self.store.get(self.scope, "harness-composition", composition_ref)
+        # the snapshot and cache key of what ran: the arm composition, or its environment sibling
+        # (the task image's driver and model records, IC-12)
+        composition = self.store.get(self.scope, "harness-composition", executed)
         snapshot, effort = self._snapshot(composition)
         strategy = trial_metrics.strategy_of(self.service, composition_ref) or ""
-        chain = self._escalation_chain(plan, composition_ref)
+        chain = self._escalation_chain(plan, executed)
         task = spec.task
         receipt = {
             "task_id": task.task_id,
@@ -373,9 +516,10 @@ class LocalTrialExecutor:
             # receipt v2 (interfaces.md §2.10), descriptive. After an escalation (M6) the graded
             # revision ran on the cell sibling of the arm composition; the receipt then names it
             # only together with the chain of every revision's cell and composition
-            "executed_composition_ref": chain[-1]["composition_ref"] if chain else composition_ref,
+            "executed_composition_ref": chain[-1]["composition_ref"] if chain else executed,
             "escalation_chain": chain,
-            "environment_binding": None,  # the app environment (S7b binds task environments)
+            # IC-12 (S7b): the task environment and manifest it ran in; None in the app's own
+            "environment_binding": binding,
             "environment_drift": False,
             "cell_id": context.cell_id,
             "strategy": strategy,
@@ -887,6 +1031,24 @@ class LocalTrialExecutor:
                 "repeat_slot": repeat,
             }
         )
+
+
+def manifest_digest(composition: dict[str, Any]) -> str:
+    """§2.3: the digest of the four carrier refs (``harness-manifest.manifest_digest``)."""
+    return digest({k: composition.get(k) for k in CARRIER_FIELDS})
+
+
+def task_environment_digest(
+    store: Any,
+    scope: Any,
+    environment_ref: dict[str, Any],
+    probe: Callable[[dict[str, Any]], dict[str, Any]] | None,
+) -> str:
+    """``digest(probe(env))`` of an environment record (``digest(env)`` without a probe): the
+    rule ``EvaluationService`` applies at freeze and before each dispatch
+    (``evaluation/service.py:492-493,605-608``), applied to a task environment (§10.5)."""
+    _kind, environment = resolve_ref(store, scope, environment_ref)
+    return digest(probe(environment) if probe is not None else environment)
 
 
 def summary(trials: list[dict[str, Any]]) -> list[dict[str, Any]]:

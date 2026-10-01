@@ -904,11 +904,17 @@ def test_a_dispatching_trial_of_another_arm_composition_is_not_used(world: World
 
 # -- trials that cannot run: Hold codes -----------------------------------------------------------
 def test_a_task_environment_is_held_for_the_environment_sibling(world: World) -> None:
+    # S7b (IC-12, §10.5 step 6): a task environment runs on its environment sibling; one the app
+    # has not installed holds ENVIRONMENT_UNQUALIFIED before any goal. TRIAL_ENVIRONMENT now holds
+    # only a tb2_tests task in the app environment; tests/e2e/test_033_s7b_env_sibling.py covers
+    # both and the sibling runs
+    goals_before = len(world.store.list_objects(world.scope, "goal-contract"))
     with pytest.raises(Hold) as held:
         world.run("bug-02-env")
-    assert held.value.code == "TRIAL_ENVIRONMENT"
+    assert held.value.code == "ENVIRONMENT_UNQUALIFIED"
     assert held.value.details["environment_id"] == "env-x"
     assert world.container.prompts == []
+    assert len(world.store.list_objects(world.scope, "goal-contract")) == goals_before
 
 
 def test_a_base_whose_app_is_not_installed_is_held(world: World) -> None:

@@ -24,9 +24,9 @@ from ..runtime.contracts.authority import Actor
 from ..runtime.contracts.identity import digest
 from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
-from ..runtime.execution import policies, prompts
+from ..runtime.execution import policies, prompts, releases
 from ..runtime.execution.codex import put_record
-from ..runtime.execution.releases import CANDIDATE_SEP
+from ..runtime.execution.releases import CANDIDATE_SEP, ENV_SEP
 from ..runtime.storage.store import Scope, Store
 from .components import KINDS, ComponentService
 from .composition import CompositionService
@@ -98,6 +98,133 @@ class ComponentChange:
 def _change(slot: str, before: Ref | None, after: Ref | None) -> ComponentChange:
     kind = slot_kind(slot)
     return ComponentChange(slot, kind, before, after, KINDS[kind].surface_class)
+
+
+# -- IC-12 environment siblings (Work 033 S7b, interfaces.md §3.2, §10.5 step 6) ---------------
+CARRIER_FIELDS = (
+    "prompt_bundle_ref", "context_policy_ref", "budget_policy_ref", "router_policy_ref",
+)  # fmt: skip
+# what a sibling keeps from its source composition (§3.2: same carriers, pack_refs,
+# verification_policy_ref) and what it takes from the task environment's installed composition
+SIBLING_KEEPS = (*CARRIER_FIELDS, "pack_refs", "verification_policy_ref")
+ENVIRONMENT_FIELDS = (*releases.CLASS_A_FIXED, "qualification_ref")
+
+
+def _unqualified(why: str, details: object = None) -> Hold:
+    return Hold("ENVIRONMENT_UNQUALIFIED", why, details=details)
+
+
+def put_composition(
+    store: Store, scope: Scope, contracts: Any, name: str, value: dict[str, Any]
+) -> Ref:
+    """Write a composition whose ``revision`` field is the store revision it is written at; the
+    latest one when nothing else changed (the rule of ``LocalExecutionService._put_composition``).
+
+    The profile checks of ``CompositionService.register`` apply first (Hold COMPOSITION_DRIVER,
+    MODEL_VERSION_POLICY, COMPOSITION_UNQUALIFIED); the schema is validated by ``put_record``."""
+    model = store.get(scope, "model-profile", value["model_profile_ref"])
+    driver = store.get(scope, "driver-capabilities", value["driver_profile_ref"])
+    if model["driver_profile_ref"] != value["driver_profile_ref"]:
+        raise Hold("COMPOSITION_DRIVER", "Model is qualified for a different driver")
+    if model["model_version_policy"] != "pinned":
+        raise Hold(
+            "MODEL_VERSION_POLICY", "Autonomous composition requires a pinned model snapshot"
+        )
+    if not model["enabled"] or driver["maturity"] != "qualified":
+        raise Hold(
+            "COMPOSITION_UNQUALIFIED", "Composition contains a disabled model or unqualified driver"
+        )
+    kind = "harness-composition"
+    last = releases.latest(store, scope, kind, name)
+    if last and digest({**value, "revision": last["revision"]}) == last["digest"]:
+        return last
+    revision = last["revision"] + 1 if last else 1
+    return put_record(store, scope, contracts, kind, name, {**value, "revision": revision})
+
+
+def env_sibling(
+    store: Store,
+    scope: Scope,
+    contracts: Any,
+    composition_ref: Ref,
+    environment_id: str,
+    *,
+    installed: dict[str, Ref] | None = None,
+) -> Ref:
+    """IC-12: the composition ``composition_ref`` in task environment ``environment_id``.
+
+    The sibling keeps the source's carriers, ``pack_refs`` and ``verification_policy_ref`` and
+    takes the sandbox, driver, model and qualification refs of the installed environment
+    composition ``<installed id>:env-<env12>`` (written by ``LocalExecutionService.install`` from
+    the environment's qualified records); its model must have the source's ``provider_model_id``
+    and ``reasoning_profile``. Its id is that environment composition's id plus the source's
+    candidate suffix (``__<suffix>``); a source whose kept fields equal the environment
+    composition's gives that composition itself.
+
+    ``installed`` (cell id -> installed ref) resolves the source's installed composition through
+    ``releases.pin_allowed``; without it the installed id is the source id before its first
+    ``__``, and the source must keep that composition's driver, model and sandbox profiles.
+    Hold CELL_UNKNOWN when the source is no installed composition or class-A candidate of one,
+    ENVIRONMENT_UNQUALIFIED when the environment has no installed composition for that cell, when
+    the models differ, or when the source is already a sibling of another environment."""
+    source = store.get(scope, "harness-composition", composition_ref)
+    name = str(source["composition_id"])
+    if ENV_SEP in name:
+        tag = name.split(ENV_SEP, 1)[1].split(CANDIDATE_SEP, 1)[0]
+        if tag == releases.env12(environment_id):
+            return composition_ref
+        raise _unqualified(
+            "The composition is already the sibling of another task environment",
+            {"composition_id": name, "environment_id": environment_id},
+        )
+    if installed is not None:
+        cell = releases.pin_allowed(store, scope, installed, composition_ref)
+        if cell is None:
+            raise Hold("CELL_UNKNOWN", "The composition is not one of this app's cells")
+        base = store.get(scope, "harness-composition", installed[cell])
+    else:
+        base_ref = releases.latest(
+            store, scope, "harness-composition", name.split(CANDIDATE_SEP, 1)[0]
+        )
+        base = store.get(scope, "harness-composition", base_ref) if base_ref else {}
+        if not base or any(base.get(k) != source[k] for k in releases.CLASS_A_FIXED):
+            raise Hold("CELL_UNKNOWN", "The composition is no installed one or its candidate")
+    env_id = releases.env_composition_id(base["composition_id"], environment_id)
+    env_ref = releases.latest(store, scope, "harness-composition", env_id)
+    if env_ref is None:
+        raise _unqualified(
+            "The task environment has no qualified composition of this cell",
+            {"environment_id": environment_id, "installed": base["composition_id"]},
+        )
+    env = store.get(scope, "harness-composition", env_ref)
+    model = store.get(scope, "model-profile", source["model_profile_ref"])
+    env_model = store.get(scope, "model-profile", env["model_profile_ref"])
+    for key in ("provider_model_id", "reasoning_profile"):
+        if model.get(key) != env_model.get(key):
+            raise _unqualified(
+                "The task environment qualified another model or effort for this cell",
+                {"field": key, "composition": model.get(key), "environment": env_model.get(key)},
+            )
+    if all(source[k] == env[k] for k in SIBLING_KEEPS):
+        return env_ref
+    suffix = name[len(base["composition_id"]) :]
+    if not suffix:  # the installed composition, whose kept fields differ from the env one's
+        suffix = CANDIDATE_SEP + "sibling-" + digest({k: source[k] for k in SIBLING_KEEPS})[7:19]
+    sibling = env["composition_id"] + suffix
+    value = {
+        **source,
+        **{k: env[k] for k in ENVIRONMENT_FIELDS},
+        "composition_id": sibling,
+    }
+    return put_composition(store, scope, contracts, sibling, value)
+
+
+def environment_of(store: Store, scope: Scope, composition_ref: Ref) -> str | None:
+    """The env12 tag of an environment sibling (None for an app-environment composition)."""
+    name = str(store.get(scope, "harness-composition", composition_ref)["composition_id"])
+    if ENV_SEP not in name:
+        return None
+    return name.split(ENV_SEP, 1)[1].split(CANDIDATE_SEP, 1)[0]
 
 
 class ManifestService:
@@ -268,6 +395,15 @@ class ManifestService:
             "composition_id": base["composition_id"] + (CANDIDATE_SEP + suffix if suffix else ""),
         }
         return CompositionService(self.store, self.contracts).register(actor, value)
+
+    def env_sibling(self, actor: Actor, composition_ref: Ref, environment_id: str) -> Ref:
+        """IC-12 (§3.2): the environment sibling of ``composition_ref`` in task environment
+        ``environment_id`` (module ``env_sibling``; Hold CELL_UNKNOWN | ENVIRONMENT_UNQUALIFIED).
+        The actor needs ``harness.propose`` or ``runtime.admin`` as for ``write``. The trial
+        path builds siblings through ``LocalExecutionService.env_sibling`` (the service actor,
+        the app's installed compositions), which applies the same rule."""
+        self._authorize(actor)
+        return env_sibling(self.store, self.scope, self.contracts, composition_ref, environment_id)
 
     def _authorize(self, actor: Actor) -> None:
         if actor.scope != self.scope:

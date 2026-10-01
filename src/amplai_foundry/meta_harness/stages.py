@@ -53,11 +53,22 @@ IC-01, IC-02, IC-09, IC-16, IC-19 (A, provisional), IC-20 (provisional).
   experiment ever substitutes a cached trial (its trials are its own,
   ``MetaHarness._report``).
 
+- IC-12 (Work 033 S7b, §2.9, §10.5 step 6): the plan records its app (``app_id``: ``--app`` at
+  plan time; a plan written before S7b has none and keeps reading ``--app``) and every stage
+  selects that app's main-set cases, so the IC-15 recomputation (``SAMPLING_CHANGED``) holds per
+  app whatever ``--app`` names later. ``environment_digests`` pins, per task environment of the
+  app's tasks that the app has installed, the digest of its environment record under the
+  evaluation service's probe (``local_executor.task_environment_digest``); every stage run gives
+  them (and that probe) to the trial executor, which runs nothing for a drifted task environment
+  (``success`` None, receipt ``environment_drift``). A stage whose report holds such a trial gets
+  the guard finding ``task_environment_drift`` (``TASK_ENVIRONMENT_DRIFT``); the report's own
+  ``environment_drift`` reason stays tied to the experiment's single ``environment_ref``.
+
 Not decided by the contract and therefore not done here (reported): the per-experiment
-``max_trial_tokens`` (§5.3; absent, so the qualified executor's ceiling applies), the IC-12 task
-environment pins (``environment_digests`` stays empty until S7b), and the proposal's
-``experiment_plan_ref`` (the proposal is written before the operator gives the root budget, so it
-names a draft record that carries the stage-plan id; see ``LocalMetaOps.propose_components``).
+``max_trial_tokens`` (§5.3; absent, so the qualified executor's ceiling applies), and the
+proposal's ``experiment_plan_ref`` (the proposal is written before the operator gives the root
+budget, so it names a draft record that carries the stage-plan id; see
+``LocalMetaOps.propose_components``).
 """
 
 from __future__ import annotations
@@ -80,11 +91,13 @@ from ..runtime.contracts.identity import digest, new_id, now
 from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.storage.store import Scope, Store
+from .local_executor import task_environment_digest
 from .manifest import BUDGET, CONTEXT, DECIDERS, ROUTER, Manifest, ManifestService
 
 if TYPE_CHECKING:
     from ..runtime.contracts.authority import Actor
     from ..runtime.execution.meta_ops import LocalMetaOps
+    from ..runtime.execution.product import InstalledApp
     from .leak_gate import LeakGate
     from .trial_metrics import TrialMetrics
 
@@ -114,6 +127,8 @@ ABLATION_FINDING = "ABLATION"
 SCORE_FINDING = "PREDICTION_SCORE"
 ARCHIVE_FINDING = "ELITE_ARCHIVE"
 SCORED_STAGES = ("screening", "focused", "holdout")  # §9.6
+# §10.5 step 6 (S7b): the stage record's reason when a trial ran into a drifted task environment
+TASK_ENVIRONMENT_DRIFT = "task_environment_drift"
 VERDICT_STAGES = ("focused", "holdout")  # §9.9: operator-only lineage verdicts
 # IC-24 (provisional): a removal-sweep proposal's change artifact names this origin
 REMOVAL_ORIGIN = "removal_sweep"
@@ -158,6 +173,8 @@ PLAN_FIELDS = frozenset(
         "ablation_components", "created_at",
     }
 )  # fmt: skip
+# IC-12 (S7b): the app the plan's stages select from; a plan written before S7b has none
+OPTIONAL_PLAN_FIELDS = frozenset({"app_id"})
 ALL_SLOTS = ("prompt_bundle_ref", *CONTEXT, *BUDGET, *ROUTER)
 
 
@@ -264,7 +281,8 @@ def validate_stage_plan(value: Any) -> None:
     """The §2.9 ``stage-plan`` shape (validated before ``put``, §2.0); RuntimeFault STAGE_PLAN."""
     ok = (
         isinstance(value, dict)
-        and set(value) == PLAN_FIELDS
+        and PLAN_FIELDS <= set(value) <= PLAN_FIELDS | OPTIONAL_PLAN_FIELDS
+        and ("app_id" not in value or (isinstance(value["app_id"], str) and bool(value["app_id"])))
         and value["schema"] == PLAN_SCHEMA
         and isinstance(value["proposal_id"], str)
         and isinstance(value["cell_id"], str)
@@ -273,6 +291,10 @@ def validate_stage_plan(value: Any) -> None:
             for k in ("corpus_ref", "calibration_summary_ref", "evaluator_version_ref")
         )
         and isinstance(value["environment_digests"], dict)
+        and all(
+            isinstance(k, str) and isinstance(v, str) and v.startswith("sha256:")
+            for k, v in value["environment_digests"].items()
+        )
         and isinstance(value["stages"], list)
         and [s.get("stage") for s in value["stages"] if isinstance(s, dict)] == list(STAGE_ORDER)
         and all(set(s) == STAGE_FIELDS for s in value["stages"])
@@ -791,10 +813,23 @@ class StageRunner:
             raise RuntimeFault("STAGE_PLAN", "The calibration summary is of another corpus")
         return summary
 
-    def _select(self, corpus_ref: Ref, split: str) -> list[dict[str, Any]]:
-        """The frozen cases of ``split`` that are main-set tasks of the selected app
-        (``LocalMetaOps.app_case_ids``; ``--app`` selects the app)."""
-        own = self.ops.app_case_ids()
+    def _app_of(self, plan: dict[str, Any] | None) -> InstalledApp:
+        """The app a plan's stages select from and run on (IC-12, S7b): the plan's ``app_id``;
+        ``--app`` (``LocalMetaOps.app``) for a plan without one or before planning."""
+        app_id = (plan or {}).get("app_id")
+        if app_id is None:
+            return self.ops.app
+        installed = self.ops.dep.service.apps.get(app_id)
+        if installed is None:
+            raise Hold("TARGET_UNKNOWN", "The stage plan's app is not installed", details=[app_id])
+        return installed
+
+    def _select(
+        self, corpus_ref: Ref, split: str, plan: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        """The frozen cases of ``split`` that are main-set tasks of the plan's app
+        (``LocalMetaOps.app_case_ids``; before planning ``--app`` selects the app)."""
+        own = self.ops.app_case_ids(self._app_of(plan).config.app_id if plan else None)
         # the nightly identity has no corpus.holdout.evaluate: it never selects holdout cases
         cases = self.cases.select(self.actor, corpus_ref, split, purpose="frozen_experiment")
         return [c for c in cases if own is None or c["case_id"] in own]
@@ -855,6 +890,7 @@ class StageRunner:
             else [c["case_id"] for c in corpus["cases"] if c["split"] != "holdout"],
         )
         own = self.ops.app_case_ids()  # the selected app's main-set tasks, as ``_select``
+        environment_digests = self._environment_digests(app, corpus_ref, own)
         holdout_tasks = sum(
             1
             for c in corpus["cases"]
@@ -915,7 +951,8 @@ class StageRunner:
             "calibration_summary_ref": self.summary_ref,
             "evaluator_version_ref": self.version_ref,
             "root_budget": dict(root_budget),
-            "environment_digests": {},  # IC-12 task environments: S7b
+            "environment_digests": environment_digests,  # IC-12 task environments (S7b)
+            "app_id": app.config.app_id,  # IC-12: the app every stage selects from (S7b)
             "stages": stages,
             "ablation_components": ablation,
             "created_at": now(),
@@ -938,6 +975,78 @@ class StageRunner:
             validate_stage_run(run)
             self.store.cas(db, self.scope, RUN_KIND, "stagerun-" + proposal_id, 0, "planned", run)
         return ref
+
+    def _environment_digests(
+        self, app: InstalledApp, corpus_ref: Ref, own: frozenset[str] | None
+    ) -> dict[str, str]:
+        """§2.9 ``environment_digests`` (IC-12, S7b): per task environment of the app's frozen
+        cases that the app has installed, the digest the trial executor recomputes before each
+        trial of it (``task_environment_digest`` with the evaluation service's probe). A task
+        environment the app has not installed is not pinned: its trials hold
+        ENVIRONMENT_UNQUALIFIED before any claim.
+
+        The environments come from the frozen ``corpus-task-index`` rows of ``corpus_ref``
+        (§2.7: ``environment_id`` per case), never from case payloads, so no holdout payload is
+        read here (the holdout ACL of ``CorpusService.select`` stays the only way to them);
+        without a task index the loaded corpus v2 tasks (checked against the frozen cases by
+        ``check_corpus``) are read."""
+        rows: list[tuple[str, Any]] = []
+        index_ref = self.corpus.get("task_index_ref")
+        index = self.store.get(self.scope, "corpus-task-index", index_ref) if index_ref else None
+        if isinstance(index, dict) and index.get("corpus_ref") == corpus_ref:
+            rows = [(r.get("case_id"), r.get("environment_id")) for r in index.get("tasks") or []]
+        else:
+            rows = [(t.task_id, t.environment_id) for t in getattr(self.ops.corpus, "tasks", ())]
+        named = sorted(
+            {
+                env_id
+                for case_id, env_id in rows
+                if (own is None or case_id in own) and isinstance(env_id, str) and env_id != "app"
+            }
+        )
+        service = self.ops.dep.service
+        probe = self.local.evaluation.environment_probe
+        return {
+            env_id: task_environment_digest(
+                self.store, self.scope, service.environment_ref(app, env_id), probe
+            )
+            for env_id in named
+            if env_id in app.env_verifier_refs
+        }
+
+    @contextlib.contextmanager
+    def _environment_pins(self, plan: dict[str, Any]) -> Iterator[None]:
+        """The plan's task-environment pins and the evaluation service's probe on the trial
+        executor while one stage experiment runs (§3.10, §10.5 step 6); restored afterwards.
+        An executor without pins (a stand-in) is left as it is."""
+        executor = self.ops.executor
+        if not hasattr(executor, "environment_digests"):
+            yield
+            return
+        before = (executor.environment_digests, getattr(executor, "environment_probe", None))
+        executor.environment_digests = dict(plan.get("environment_digests") or {})
+        executor.environment_probe = self.local.evaluation.environment_probe
+        try:
+            yield
+        finally:
+            executor.environment_digests, executor.environment_probe = before
+
+    def _environment_drift(self, report: dict[str, Any]) -> bool:
+        """Whether a trial of the report ran into a drifted task environment (receipt v2
+        ``environment_drift``, §2.10)."""
+        for ref in report.get("run_refs") or []:
+            trial = self.store.get(self.scope, "eval-trial", ref)
+            if not trial.get("artifact_refs"):
+                continue
+            try:
+                receipt = read_receipt(
+                    self.artifacts.read(self.scope, trial["artifact_refs"][0], trusted=True)
+                )
+            except (Hold, RuntimeFault, ValueError):
+                continue
+            if receipt.get("environment_drift") is True:
+                return True
+        return False
 
     # -- status ---------------------------------------------------------------------------------
     def status(self, proposal_id: str) -> list[StageStep]:
@@ -1233,7 +1342,7 @@ class StageRunner:
     def _case_ids(
         self, plan: dict[str, Any], entry: dict[str, Any], summary: dict[str, Any] | None
     ) -> tuple[list[dict[str, Any]], list[str]]:
-        cases = self._select(plan["corpus_ref"], entry["split"])
+        cases = self._select(plan["corpus_ref"], entry["split"], plan)
         ids = select_cases(
             cases, rule=entry["case_rule"], summary=summary, cell_id=plan["cell_id"],
             max_tasks=entry["max_tasks"], domain_of=lambda case: str(case["task_class"]),
@@ -1437,7 +1546,7 @@ class StageRunner:
             "holdout-policy", holdout_id, {"policy_id": holdout_id, "sealed": True, "max_uses": 1}
         )
         base = self.store.get(self.scope, "harness-composition", proposal["baseline_ref"])
-        app = self.ops.app
+        app = self._app_of(plan)
         experiment = {
             "schema_version": "3.0.0",
             "experiment_id": new_id("experiment"),
@@ -1537,7 +1646,7 @@ class StageRunner:
             if self._evolution(proposal_id)["state"] != expected:
                 return
             self._check_cases(ref)  # Hold CORPUS_CHANGED: frozen by an earlier process
-            cases = self._select(plan["corpus_ref"], entry["split"])
+            cases = self._select(plan["corpus_ref"], entry["split"], plan)
             self._run_stage(proposal_id, plan, entry, ref, cases)
             return
 
@@ -1553,10 +1662,11 @@ class StageRunner:
         never changing the stage's verdict)."""
         name = entry["stage"]
         try:
-            report_ref = self.local.evaluation.run(
-                self.actor, experiment_ref, self.ops.executor, split=entry["split"],
-                parallel=self.parallel,
-            )  # fmt: skip
+            with self._environment_pins(plan):
+                report_ref = self.local.evaluation.run(
+                    self.actor, experiment_ref, self.ops.executor, split=entry["split"],
+                    parallel=self.parallel,
+                )  # fmt: skip
         except RuntimeFault as exc:
             # a queued stage's head ends ``failed`` with the fault's code (no-op otherwise)
             settle_queue(self.store, self.scope, proposal_id, name,
@@ -1586,6 +1696,8 @@ class StageRunner:
             state = {"pass": "passed", "fail": "failed", "inconclusive": "inconclusive"}.get(
                 report["verdict"], "aborted"
             )
+        if self._environment_drift(report):
+            findings.append(TASK_ENVIRONMENT_DRIFT)  # §10.5 step 6 (S7b)
         self._update(proposal_id, name, state=state, report_ref=report_ref,
                      decision_class=decision, guard_findings=findings)  # fmt: skip
         rows = self._record(report, cases, exploratory=entry["purpose"] == "exploratory")
@@ -1700,6 +1812,10 @@ class StageRunner:
             if code is not None:
                 findings.append(f"{ABLATION_FINDING} {name}: {code}")
                 self._update(proposal_id, "ablation", guard_findings=list(findings))
+        # §10.5 step 6 (S7b): a variant that ran into a drifted task environment
+        if TASK_ENVIRONMENT_DRIFT not in findings and any(self._variant_drift(d) for d in derived):
+            findings.append(TASK_ENVIRONMENT_DRIFT)
+            self._update(proposal_id, "ablation", guard_findings=list(findings))
         # contributions are recorded per derived proposal; they never gate (§8.1)
         measured = any(self._variant_passed(d) for d in derived)
         self._update(proposal_id, "ablation", state="passed" if measured else "skipped")
@@ -1740,6 +1856,16 @@ class StageRunner:
     def _variant_passed(self, derived_id: str) -> bool:
         try:
             return bool(self._stage_state(derived_id, "ablation")["state"] == "passed")
+        except RuntimeFault:
+            return False
+
+    def _variant_drift(self, derived_id: str) -> bool:
+        """Whether the variant's recorded report holds a drifted task-environment trial."""
+        try:
+            report_ref = self._stage_state(derived_id, "ablation")["report_ref"]
+            if report_ref is None:
+                return False
+            return self._environment_drift(self.store.get(self.scope, "eval-report", report_ref))
         except RuntimeFault:
             return False
 
@@ -1875,15 +2001,16 @@ class StageRunner:
             # frozen by an earlier process: run it if it never started, read its report if it
             # ended before the stage-run head was updated; a dispatched one is never replayed
             # (EvaluationService.run holds EXPERIMENT_REPLAY; the operator reconciles it)
-            cases = self._select(plan["corpus_ref"], entry["split"])
+            cases = self._select(plan["corpus_ref"], entry["split"], plan)
             ended = self._evaluated(experiment_ref)
             if ended is not None:
                 return self._derived_report(derived_id, ended, cases)
         self._check_cases(experiment_ref)
-        report_ref = self.local.evaluation.run(
-            self.actor, experiment_ref, self.ops.executor, split=entry["split"],
-            parallel=self.parallel,
-        )  # fmt: skip
+        with self._environment_pins(plan):
+            report_ref = self.local.evaluation.run(
+                self.actor, experiment_ref, self.ops.executor, split=entry["split"],
+                parallel=self.parallel,
+            )  # fmt: skip
         return self._derived_report(derived_id, report_ref, cases)
 
     def _evaluated(self, experiment_ref: Ref) -> Ref | None:
