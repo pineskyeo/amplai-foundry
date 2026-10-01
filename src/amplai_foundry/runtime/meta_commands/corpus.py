@@ -29,6 +29,15 @@ from . import (
 )
 
 WORK030_CORPUS = REPO_ROOT / "specs" / "030-meta-harness-live" / "corpus"
+# check and import-work030 open no deployment, so no config is read: the §12.2 default applies
+CheckoutCorpusOption = Annotated[
+    Path | None,
+    typer.Option(
+        "--corpus",
+        help="the corpus v2 root (default: specs/033-harness-taxonomy/corpus of this checkout; "
+        "no config is read)",
+    ),
+]
 
 
 def register(meta: typer.Typer, guarded: Guarded) -> None:
@@ -44,7 +53,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         domain: Annotated[
             list[str] | None, typer.Option("--domain", help="only these domains")
         ] = None,
-        corpus: CorpusOption = None,
+        corpus: CheckoutCorpusOption = None,
     ) -> None:
         """Judge every task's fairness (base fails, reference passes)."""
 
@@ -117,7 +126,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         source: Annotated[Path, typer.Option("--source", help="the Work 030 corpus")] = (
             WORK030_CORPUS
         ),
-        corpus: CorpusOption = None,
+        corpus: CheckoutCorpusOption = None,
     ) -> None:
         """Copy the Work 030 tasks as regression tasks of the corpus v2."""
 

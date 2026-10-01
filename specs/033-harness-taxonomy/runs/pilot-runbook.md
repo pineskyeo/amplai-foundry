@@ -12,8 +12,10 @@
   Claude Code 안에서 실행하려면 프롬프트에 `! <명령>` 으로 운영자가 직접 친다.
 - **agent 가 해도 되는 일**: 승인이 없는 준비(저장소·이미지 만들기, 자격 측정, cell probe, 제안자 실행,
   대시보드, 결과 읽기).
-- **서버와 분리**: 모든 meta 명령에 `--config ~/.amplai/meta/local.json` 을 붙인다. 생략하면 기본값이
-  지금 돌고 있는 서버의 `~/.amplai/local/local.json` 이다. 야간 명령은 서버 설정을 거부한다(`NIGHT_DEPLOYMENT`).
+- **서버와 분리**: `--config` 를 받는 meta 명령에는 모두 `--config ~/.amplai/meta/local.json` 을 붙인다. 대부분은
+  생략하면 지금 돌고 있는 서버의 `~/.amplai/local/local.json` 이 기본값이다(`nightly`, `quota` 는 meta 설정이 기본값이고,
+  서버 설정을 거부한다: `NIGHT_DEPLOYMENT`). `meta corpus check` 와 `meta corpus import-work030` 은 `--config` 가 없어
+  `--corpus <corpus v2 root>` 를 직접 준다.
 - 아래에서 `M=~/.amplai/meta/local.json`, `A=.venv/bin/amplai` 로 쓴다. 경로는 amplai-foundry checkout 기준이다.
 
 ## 0. 먼저 정할 것 (운영자)
@@ -48,8 +50,8 @@
 
 ## 2. 과제 목록과 평가기 (운영자)
 
-1. `$A meta corpus check --repeats 3` — 모두 공정(fair)인지 다시 확인.
-2. `$A meta corpus import-work030` 후 `$A meta corpus freeze --set main --holdout-use-limit <n> --config $M`,
+1. `$A meta corpus check --repeats 3 --corpus specs/033-harness-taxonomy/corpus` — 모두 공정(fair)인지 다시 확인.
+2. `$A meta corpus import-work030 --corpus specs/033-harness-taxonomy/corpus` 후 `$A meta corpus freeze --set main --holdout-use-limit <n> --config $M`,
    `$A meta corpus freeze --set regression --holdout-use-limit <n> --config $M`.
 3. 평가기 버전: `$A meta evaluator propose-change ...` → `qualify-change` (Q-suite 를 돌려 code digest 에 묶음)
    → `approve-change` (사람만, `evaluator.approve`).
