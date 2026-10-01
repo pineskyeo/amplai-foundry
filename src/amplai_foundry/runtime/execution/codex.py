@@ -29,7 +29,7 @@ from ...agent_drivers.protocol import SessionJournal
 from ...sandbox.container import ContainerProfile, ContainerSandbox
 from ...sandbox.egress import EgressProfile, load_qualification
 from ..contracts.identity import now
-from ..errors import Hold
+from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from .cells import LEGACY_EFFORT, DispatchOptions, model_slug
 
@@ -134,6 +134,17 @@ class OptionsCliPort(CliPort):
 
 
 class SeededCodexPort(OptionsCliPort):
+    """Seeds the scoped credential into a dispatch's native home and releases it again.
+
+    A handle's home is the one this port seeded (``prepare``: ``native_root/<dispatch_id>``;
+    ``resume``: the paused session's ``checkpoint["native_home"]``, which a follow-up
+    ``<dispatch_id>-f<k>`` or a steering ``resume-<digest>`` shares with the turn it resumes).
+    A port built after a worker restart seeded nothing, so it releases by the handle's driver
+    journal, whose ``native_home`` ``CliDriver.prepare`` writes before any spawn
+    (``agent_drivers/cli.py`` ``prepare``), never by guessing ``native_root/<handle>`` (Work 033
+    S9b, §5.1 M3 rule 2: no credential at rest between turns).
+    """
+
     def __init__(self, driver: CodexCliDriver, credential_home: Path | ScopedCredential) -> None:
         super().__init__(driver)
         self.credential = (
@@ -141,11 +152,36 @@ class SeededCodexPort(OptionsCliPort):
             if isinstance(credential_home, ScopedCredential)
             else ScopedCredential(credential_home)
         )
-        self._resumed: dict[str, Path] = {}  # resumed handle -> the paused session's home
+        self._resumed: dict[str, Path] = {}  # handle -> the home this port seeded for it
 
     def _dispatch_home(self, dispatch_id: str) -> Path:
         self.driver.journal._path(dispatch_id)  # validate the id before joining a path
         return self.driver.native_root / dispatch_id
+
+    def _journal_home(self, handle: str) -> Path | None:
+        """The native home the handle's driver journal records, when it is a session home under
+        the driver's ``native_root`` (the rule of ``CliDriver._home``); None when there is no
+        journal or no such home."""
+        try:
+            value = self.driver.journal.read(handle).get("native_home")
+        except RuntimeFault:  # SESSION_NOT_FOUND, SESSION_ID, ...: nothing was prepared
+            return None
+        if not isinstance(value, str) or not value:
+            return None
+        home = Path(value)
+        if not home.is_absolute() or home.resolve() != home:
+            return None
+        if home.parent != self.driver.native_root:
+            return None
+        return home
+
+    def _idle(self, dispatch_id: str) -> bool:
+        """No process of the dispatch can be using its home: no journal, or still ``prepared``
+        (``CliDriver.start`` persists ``starting`` before it spawns)."""
+        try:
+            return self.driver.journal.read(dispatch_id).get("state") == "prepared"
+        except RuntimeFault as exc:
+            return exc.code == "SESSION_NOT_FOUND"
 
     def prepare(
         self,
@@ -155,13 +191,24 @@ class SeededCodexPort(OptionsCliPort):
         *,
         options: DispatchOptions | None = None,
     ) -> dict[str, Any]:
-        home = self._dispatch_home(dispatch["dispatch_id"])
+        did = dispatch["dispatch_id"]
+        home = self._dispatch_home(did)
         self.credential.seed(home)
-        return self.driver.prepare(dispatch, prompt, workspace, native_home=home, options=options)
+        try:
+            prepared = self.driver.prepare(
+                dispatch, prompt, workspace, native_home=home, options=options
+            )
+        except Exception:
+            if self._idle(did):  # never pull the credential from under a started process
+                self.credential.release(home)
+            raise
+        self._resumed[did] = home
+        return prepared
 
     def _release(self, handle: str) -> None:
-        home = self._resumed.pop(handle, None) or self._dispatch_home(handle)
-        self.credential.release(home)
+        home = self._resumed.pop(handle, None) or self._journal_home(handle)
+        if home is not None:
+            self.credential.release(home)
 
     def pause(self, handle: str) -> dict[str, Any]:
         result = self.driver.pause(handle)

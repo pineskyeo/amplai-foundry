@@ -45,7 +45,7 @@ from .meta_local import EXECUTOR_ID, RELEASE_KEY_ID
 if TYPE_CHECKING:
     from ...meta_harness.components import ComponentService
     from ...meta_harness.manifest import ManifestService
-    from ...meta_harness.stages import StageRunner
+    from ...meta_harness.stages import ApprovalIssuer, StageRunner
     from .product import InstalledApp
 
 EXPERIMENT_MODE = "sandbox_rerun"
@@ -59,6 +59,7 @@ PREDICTION_FIELDS = frozenset(
 STAGE_MAX_ATTEMPTS = 10
 # the corpus v2 set stages and calibration run on (§10.6: the regression set is its own corpus)
 MAIN_SET = "main"
+REGRESSION_SET = "regression"
 # the role prompt slot holds a prompt bundle (the carrier is the content, §2.2)
 PROMPT_SLOT = "prompt_bundle_ref"
 PROMPT_SOURCE = "meta-harness proposal"
@@ -91,6 +92,10 @@ class LocalMetaOps:
         self.local.installed_compositions = lambda: [
             dict(app.compositions) for app in service.apps.values()
         ]
+        # IC-29 (provisional): opened fresh (no qualification pinned in this process), the
+        # newest human operator's executor-qualification of the cell is pinned; none -> as today
+        if self.local.evaluation.executor_policy is None:
+            self.restore_qualification()
 
     # -- helpers -------------------------------------------------------------------------------
     @property
@@ -649,21 +654,49 @@ class LocalMetaOps:
         return {"experiment_ref": experiment_ref, "tasks": tasks}
 
     def qualify_executor(self, basis: str, evidence: list[str], per_trial_tokens: int) -> None:
-        """Pin the offline executor's qualification (the operator states what it rests on)."""
+        """Pin the offline executor's qualification (the operator states what it rests on).
+
+        IC-29 (provisional): the ``executor-qualification`` record keeps ``per_trial_tokens``,
+        ``basis``, ``evidence``, the cell (``self.driver``) and the qualifying actor, so a later
+        process rebuilds the qualification from it (``restore_qualification``)."""
+        if type(per_trial_tokens) is not int or per_trial_tokens < 0:
+            raise RuntimeFault("EXECUTOR_BUDGET", "--per-trial-tokens is a nonnegative integer")
+        qualification_id = new_id("executor-qualification")
         qualification = self._put(
             "executor-qualification",
-            new_id("executor-qualification"),
+            qualification_id,
             {
-                "qualification_id": new_id("executor-qualification"),
+                "qualification_id": qualification_id,
                 "status": "pass",
                 "executor_id": EXECUTOR_ID,
                 "scope_note": basis,
-                "evidence": evidence,
+                "evidence": list(evidence),
+                # IC-29: what a later process rebuilds the qualification from
+                "basis": basis,
+                "per_trial_tokens": per_trial_tokens,
+                "cell_id": self.driver,
+                "qualified_by": self.operator.wire(),
+                "qualified_at": now(),
             },
         )
         self.local.evaluation.executor_policy = ExecutorPolicy(
             frozenset({EXPERIMENT_MODE}), per_trial_tokens, 0, qualification
         )
+
+    def restore_qualification(self, cell_id: str | None = None) -> dict[str, Any] | None:
+        """IC-29 (provisional): pin the qualification of the newest ``executor-qualification``
+        record a **human operator** wrote for ``cell_id`` (default: this ops' cell) with
+        ``per_trial_tokens``, ``basis`` and ``evidence``; returns its ref, or None (nothing is
+        pinned then and the executor policy stays as it was). Records of a proposer or service
+        identity (the nightly one) and records without the IC-29 fields never qualify."""
+        found = qualification_record(self.store, self.scope, cell_id or self.driver)
+        if found is None:
+            return None
+        ref, value = found
+        self.local.evaluation.executor_policy = ExecutorPolicy(
+            frozenset({EXPERIMENT_MODE}), int(value["per_trial_tokens"]), 0, ref
+        )
+        return ref
 
     def run_experiment(self, proposal_id: str) -> dict[str, Any]:
         head = self._require(proposal_id, "experiment_approved")
@@ -976,12 +1009,48 @@ class LocalMetaOps:
             raise Hold("META_STATE", "Stages and calibration run on a corpus v2 (§10)")
         return self.corpus
 
-    def frozen_corpus(self, corpus_ref: dict[str, Any] | None = None) -> dict[str, Any]:
+    def set_corpus(self, set_name: str) -> CorpusV2:
+        """One set of the loaded corpus v2 as its own corpus (``corpus_v2.for_set``): the main
+        set keeps the loaded corpus (its id), the regression set is ``amplai-regression-v1``
+        (§10.6). Hold META_STATE when the loaded corpus has no task of that set."""
+        from ...meta_harness.corpus_v2 import for_set
+
+        corpus = self._corpus_v2()
+        if set_name == MAIN_SET:
+            return corpus
+        part = for_set(corpus, set_name)
+        if not part.tasks:
+            raise Hold("META_STATE", f"The loaded corpus has no {set_name} task",
+                       details={"set": set_name})  # fmt: skip
+        return part
+
+    def set_app(self, set_name: str) -> InstalledApp:
+        """The installed app the ``app``-environment tasks of one set name (the regression set
+        names the Work 030 demo app, §10.6). Hold TARGET_UNKNOWN for none or several."""
+        corpus = self.set_corpus(set_name)
+        named = {
+            str(corpus.bases.get(t.base_id, {}).get("app_id"))
+            for t in corpus.tasks
+            if t.environment_id == "app"
+        }
+        installed = sorted(named & set(self.dep.service.apps))
+        if len(installed) != 1:
+            raise Hold(
+                "TARGET_UNKNOWN",
+                f"The {set_name} set names no single installed app",
+                details={"installed": installed, "named": sorted(named)},
+            )
+        return self.dep.service.apps[installed[0]]
+
+    def frozen_corpus(
+        self, corpus_ref: dict[str, Any] | None = None, *, corpus: CorpusV2 | None = None
+    ) -> dict[str, Any]:
         """The frozen refs of this corpus v2 (``corpus_v2.freeze``): the latest task index of its
         version (or the one of ``corpus_ref``) and the leak index of the same corpus record.
         Hold CORPUS_CHANGED when the index of ``corpus_ref`` is of another version than the
-        corpus loaded now."""
-        corpus = self._corpus_v2()
+        corpus loaded now. ``corpus`` is one set of it (``set_corpus``; default: the loaded
+        corpus, whose id is the main set's)."""
+        corpus = corpus if corpus is not None else self._corpus_v2()
         rows = [
             (ref, value)
             for ref, value in self.store.list_objects(self.scope, "corpus-task-index")
@@ -1023,7 +1092,13 @@ class LocalMetaOps:
             "leak_index_ref": max(leaks, key=lambda r: r["revision"]),
         }
 
-    def check_corpus(self, corpus_ref: dict[str, Any], case_ids: list[str] | None = None) -> None:
+    def check_corpus(
+        self,
+        corpus_ref: dict[str, Any],
+        case_ids: list[str] | None = None,
+        *,
+        corpus: CorpusV2 | None = None,
+    ) -> None:
         """Hold CORPUS_CHANGED unless the corpus v2 loaded now is the frozen ``corpus_ref`` for
         ``case_ids`` (every case when None): its task index has the loaded version, and each case
         artifact is the §2.7 payload of the loaded task (``corpus_v2.case_payload``: contract
@@ -1033,8 +1108,8 @@ class LocalMetaOps:
         from ...meta_harness.corpus_v2 import case_payload
         from ...meta_harness.local_corpus import CorpusError
 
-        corpus = self._corpus_v2()
-        self.frozen_corpus(corpus_ref)  # the version of its task index
+        corpus = corpus if corpus is not None else self._corpus_v2()
+        self.frozen_corpus(corpus_ref, corpus=corpus)  # the version of its task index
         frozen = self.store.get(self.scope, "eval-corpus", corpus_ref)
         wanted = None if case_ids is None else set(case_ids)
         cases = [c for c in frozen["cases"] if wanted is None or c["case_id"] in wanted]
@@ -1071,11 +1146,18 @@ class LocalMetaOps:
         return max(found, key=lambda row: row[:2])[2] if found else None
 
     def stage_runner(
-        self, proposal_id: str, *, cell_id: str | None = None, parallel: int = 1
+        self,
+        proposal_id: str,
+        *,
+        cell_id: str | None = None,
+        parallel: int = 1,
+        issuer: ApprovalIssuer | None = None,
     ) -> StageRunner:
         """A ``StageRunner`` on the frozen corpus v2. A proposal with a stage plan keeps the
         corpus, calibration summary and evaluator version its plan pins; a new one takes the
-        evaluator version of the running code and the newest matching calibration summary."""
+        evaluator version of the running code and the newest matching calibration summary.
+        ``issuer`` (default: the human operator) freezes and runs its stage experiments (the
+        nightly runner passes ``stages.standing_issuer``)."""
         from ...evaluation import versions
         from ...meta_harness.leak_gate import LeakGate
         from ...meta_harness.stages import PLAN_KIND, StageRunner
@@ -1116,6 +1198,7 @@ class LocalMetaOps:
             metrics=TrialMetrics(self.dep.service),
             leak_gate=LeakGate(self.operator, self.store, refs["leak_index_ref"]),
             parallel=parallel,
+            issuer=issuer,
         )
 
     def search(
@@ -1142,9 +1225,28 @@ class LocalMetaOps:
             "findings": stage_findings(self.store, self.scope, proposal_id),
         }
 
-    def approve_stage(self, proposal_id: str, stage: str, *, parallel: int = 1) -> dict[str, Any]:
-        """The operator's ``focused``/``holdout`` gate (§8.1): freeze, approve, run, record."""
+    def approve_stage(
+        self,
+        proposal_id: str,
+        stage: str,
+        *,
+        parallel: int = 1,
+        queue: bool = False,
+        subject_digest: str | None = None,
+    ) -> dict[str, Any]:
+        """The operator's ``focused``/``holdout`` gate (§8.1): freeze, approve, run, record.
+
+        ``queue`` (IC-10, ``--queue``): approve the exact experiment a night queued for the
+        focused stage and freeze it; nothing runs here (the next night's confirmation phase runs
+        it). ``subject_digest`` (``--digest``), when given, must be the queued digest."""
         runner = self.stage_runner(proposal_id, parallel=parallel)
+        if queue:
+            if stage != "focused":
+                raise Hold("META_STATE", "Only the focused stage is queued (holdout stays here)")
+            step = runner.approve_queued(proposal_id, stage, subject_digest=subject_digest)
+            return {"proposal_id": proposal_id, "queued": True, **asdict(step)}
+        if subject_digest is not None:
+            raise RuntimeFault("LOCAL_INPUT", "--digest names a queued experiment (--queue)")
         step = runner.approve_stage(proposal_id, stage)
         return {"proposal_id": proposal_id, **asdict(step)}
 
@@ -1167,18 +1269,30 @@ class LocalMetaOps:
         parallel: int,
         max_tokens: int,
         max_wall_seconds: int,
+        corpus_set: str = MAIN_SET,
     ) -> dict[str, Any]:
         """Freeze, approve (the operator, exact digest) and run a calibration of ``cell_ids``
         on every development and validation case of the frozen corpus (§8.2). The installed
         composition of each cell is its v1 composition. ``max_trials`` bounds the worst case
-        (cells x cases x ``max_repeats``); a larger plan is refused before anything runs."""
+        (cells x cases x ``max_repeats``); a larger plan is refused before anything runs.
+
+        ``corpus_set`` ``"regression"`` calibrates the frozen regression set
+        (``amplai-regression-v1``, every case validation, §10.6) on the installed app its tasks
+        name: the drift baseline of the nightly runner is the human operator's newest such
+        calibration (clarification after S12: "the baseline is the operator's newest
+        calibration on the regression set")."""
         from ...evaluation import calibration
         from ...meta_harness.trial_metrics import TrialMetrics
 
         cells = list(cell_ids)
         if not cells or len(set(cells)) != len(cells):
             raise RuntimeFault("CALIBRATION_PLAN", "Name each cell once")
-        missing = [c for c in cells if c not in self.app.compositions]
+        if corpus_set not in (MAIN_SET, REGRESSION_SET):
+            raise RuntimeFault("CALIBRATION_PLAN", "The calibrated set is main or regression")
+        loaded = self.set_corpus(corpus_set)
+        app = self.app if corpus_set == MAIN_SET else self.set_app(corpus_set)
+        compositions = app.compositions
+        missing = [c for c in cells if c not in compositions]
         if missing:
             raise Hold("CELL_UNKNOWN", "Not an installed cell of the app", details=missing)
         policy = self.local.evaluation.executor_policy
@@ -1187,12 +1301,13 @@ class LocalMetaOps:
                 "QUALIFIED_EXECUTOR_REQUIRED",
                 "Register a server-side qualified bounded executor first",
             )
-        refs = self.frozen_corpus()
+        refs = self.frozen_corpus(corpus=loaded)
         corpus = self.store.get(self.scope, "eval-corpus", refs["corpus_ref"])
         case_ids = [c["case_id"] for c in corpus["cases"] if c["split"] in calibration.SPLITS]
+        present = {c["split"] for c in corpus["cases"] if c["case_id"] in set(case_ids)}
         # the trials run the loaded tasks: they must be the frozen ones (freeze and run follow
         # in this call on this loaded corpus)
-        self.check_corpus(refs["corpus_ref"], case_ids)
+        self.check_corpus(refs["corpus_ref"], case_ids, corpus=loaded)
         worst = len(cells) * len(case_ids) * max_repeats
         if type(max_trials) is not int or max_trials < 1 or worst > max_trials:
             raise RuntimeFault(
@@ -1205,9 +1320,12 @@ class LocalMetaOps:
             "schema": calibration.PLAN_SCHEMA,
             "scope": self.scope.wire(),
             "cells": cells,
-            "composition_refs": {c: [self.app.compositions[c]] for c in cells},
+            "composition_refs": {c: [compositions[c]] for c in cells},
             "corpus_ref": refs["corpus_ref"],
-            "splits": list(calibration.SPLITS),
+            # the main set keeps both splits; the regression set is all validation (§10.6)
+            "splits": list(calibration.SPLITS)
+            if corpus_set == MAIN_SET
+            else [x for x in calibration.SPLITS if x in present],
             "case_ids": case_ids,
             "initial_repeats": 1,
             "adaptive": {
@@ -1315,6 +1433,44 @@ class LocalMetaOps:
                 f"The candidate is {head['state']}; this gate needs {' or '.join(states)}",
             )
         return head
+
+
+# -- IC-29 (provisional): the stored executor qualification ---------------------------------------
+def qualification_record(
+    store: Any, scope: Any, cell_id: str
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """(ref, value) of the newest ``executor-qualification`` of ``cell_id`` that a human operator
+    wrote with the IC-29 fields (``per_trial_tokens`` a nonnegative integer, ``basis`` a
+    non-empty string, ``evidence`` a non-empty list of strings), ``status`` pass and this
+    executor; newest by ``qualified_at``, then id. None when there is none."""
+    from .meta_local import NIGHTLY_ID, PROPOSER_ID
+
+    found = []
+    for ref, value in store.list_objects(scope, "executor-qualification"):
+        by = value.get("qualified_by")
+        evidence = value.get("evidence")
+        tokens = value.get("per_trial_tokens")
+        if (
+            value.get("cell_id") != cell_id
+            or value.get("status") != "pass"
+            or value.get("executor_id") != EXECUTOR_ID
+            or not isinstance(by, dict)
+            or by.get("kind") != "human"
+            or by.get("subject_id") in (PROPOSER_ID, NIGHTLY_ID)
+            or type(tokens) is not int
+            or tokens < 0
+            or not isinstance(value.get("basis"), str)
+            or not value["basis"]
+            or not isinstance(evidence, list)
+            or not evidence
+            or not all(isinstance(e, str) for e in evidence)
+        ):
+            continue
+        found.append((str(value.get("qualified_at")), ref["id"], ref, value))
+    if not found:
+        return None
+    _at, _id, ref, value = max(found, key=lambda row: row[:2])
+    return dict(ref), dict(value)
 
 
 # -- IC-18 (provisional): the human operator's reconcile path -------------------------------------

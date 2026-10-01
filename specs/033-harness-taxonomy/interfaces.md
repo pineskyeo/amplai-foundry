@@ -2903,3 +2903,64 @@ explicit confirmation before the nightly loop is activated.
   Codex, the leased and post-run `auth.json` string values; with no known literal it keeps the pattern scan only (not
   failed closed, unlike a read-only Codex turn). Whether a real stream ever carries a credential literal is checked in
   the pilot (S16) through the `trace-drop` counts.
+
+## Provisional Operator Decision IC-29 And Clarifications After S12, S15 And S9b (2026-10-01)
+
+| IC | Provisional choice | Rejected alternative (why) |
+|---|---|---|
+| IC-29 | The `executor-qualification` record stores `per_trial_tokens`, `basis`, `evidence` and the qualifying human actor; any later process (the nightly runner, a launchd start) rebuilds the qualification from the newest such record of a human operator for the cell; none → the preflight stop as today | put the qualification into the standing nightly policy (every requalification would need a new standing approval); bake the arguments into the launchd plist (unaudited) |
+
+- **IC-10 mechanics**: screening and ablation (development, exploratory) run under the standing approval with
+  derived approvals (`issue_standing`, plan-bound) injected into `StageRunner` as its approval issuer; the human
+  `issue` path stays for the operator. A screening failure on a night is recorded and left for the operator to reject
+  (the nightly identity never rejects or reviews). At the end of a night, the focused (validation, confirmatory)
+  experiments of candidates that passed screening are frozen and listed on `approvals.html`; the operator approves one
+  with `amplai meta approve-stage P --stage focused --queue` (approval for the exact frozen digest, no run); the next
+  night's confirmation phase runs queued approved stages (the nightly identity never issues confirmatory approvals).
+  Holdout stays an in-process operator run (the nightly identity has no `corpus.holdout.evaluate`).
+- **Drift rule**: "outside the calibrated Wilson band" means the observed pass count k of n drift trials lies outside
+  the two-sided 99 % binomial prediction range at the ends of the calibrated 95 % Wilson interval
+  (k < Bin⁻¹(n, p_lo)(0.005) or k > Bin⁻¹(n, p_hi)(0.995)), so small n does not stop a night by chance. The baseline
+  is the operator's newest calibration on the regression set; a drift run never becomes the baseline
+  (`recalibration_pending` until an operator calibration newer than the drifted night exists).
+- **Night length**: a night ends at `min(stop_at, start + meta.nightly.max_hours)` (default 8).
+- **S12 choices accepted**: a budget stop is a normal end (`stopped: "budget"`); every other stop is
+  `Hold NIGHT_STOPPED {reason, run_ref, reconcile_pending}`; an interrupted phase is recorded `{phase, state:
+  "stopped", reason}`; `Hold NIGHT_DEPLOYMENT` refuses the server's config or runtime root; derived approvals cover
+  action `experiment.execute` only; the dashboard is written to `<runtime_root>/dashboard`. Quota signals stay 0 until
+  §14 Q5 is measured in the pilot.
+- **S9b (Q16 answered)**: (a) an interrupted follow-up is recovered from its driver journal — no journal or
+  `prepared`: the kept message is sent once under the same id after its digest check; `completed`: collected again
+  with the recorded receipt digest; running in an owned process: observed to its end; otherwise held with the reason
+  (`FOLLOWUP_RECOVERY`, `ORPHAN_SESSION`). Effects are tied to the run lease, so no effect repeats. (b) Candidates
+  1..k-1 (`<dispatch_id>-c<i>`) get no session row and never call `runtime.start`; the run's bound session stays
+  candidate 0's; a pause during candidate i stops it and drops the vote, the steer resumes candidate 0. `vote` has
+  one attempt, needs `quick_verifiers`, and is refused together with `fast_checks`. A vote trial's `agent_calls`
+  counts every candidate turn.
+- **S15 choices accepted**: `build_feed(source: Store | Path, scope, *, now_utc=None, nightly=None)` and
+  `write_site`/`render` replace the §3.13 signature (`corpus_root` is not needed: task ids and splits come from the
+  task index); tasks outside development are shown as `<split> task #N` and every record string is scrubbed of their
+  ids; best composition needs ≥ 4 development tasks (archive `MIN_N`).
+- **IC-10 queue shape**: before the operator's approval no `eval-experiment` exists (`EvaluationService.freeze`
+  checks the approval), so a queued confirmation is `{proposal_id, stage, queue_id, subject_digest, experiment_id}` in
+  a new head kind `stage-queue` (`stagequeue-<pid>-<stage>`, states queued / approved / running / ran / failed /
+  superseded). `approve-stage --queue [--digest]` is human-only and runs nothing; the next night's confirmation phase
+  runs it once, then the ablation under the standing approval, and stops at the holdout gate. Every trial guard of a
+  confirmation also re-checks the night's standing approval.
+- **Search limits on a night (until IC-30 is decided)**: a draft needs `MetaHarness.screen`, which needs
+  `harness.review` (`meta_harness/service.py:206-207`), a permission the nightly identity never holds (IC-17). A
+  night therefore screens and ablates only proposals the operator already screened; PB12 design rows run only where
+  they match a screened candidate (others are counted as unbuilt); successive halving re-ranks measured candidates
+  without new trials (the stage template runs screening once on ≤ 12 tasks); elite parents reach the search only
+  through the proposer ensemble.
+
+## Open Operator Decision IC-30 (Not Implemented)
+
+| IC | Options | Recommendation |
+|---|---|---|
+| IC-30 | (A) the nightly identity may run the **mechanical screen** (protected-surface check and leak gate) for **class A** drafts only, through a new permission `harness.screen`; class B drafts still wait for the operator's review receipt; confirmatory, holdout, canary and promotion stay human. A night can then draft → screen → screening → ablation → queue focused unattended. (B) keep today's rule: the operator screens drafts during the day and the night runs screened ones (one day of lag per candidate cycle). | (A): the screen is a deterministic check, not a judgement, and every gate that can change what users run stays human. It changes class C authority, so it is not implemented before the operator decides. |
+- **Cleanup notes**: `local.json` `meta.nightly.max_hours` (0 < h ≤ 24, default 8); the trial row carries optional
+  `candidates`, `candidate_turns`, `vote_selected`; vote fast-check results stay in the plan attempts'
+  `candidate_results` (not a trial-row field); a failed or interrupted queued stage ends its `stage-queue` head
+  `failed` `{failure, failed_at}`; a nightly issuer is refused the holdout before anything is built and never resumes a
+  frozen holdout; a candidate launched without a recorded handle still counts as a turn.

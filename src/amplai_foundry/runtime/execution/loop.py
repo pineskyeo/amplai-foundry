@@ -529,7 +529,7 @@ class ExecutionLoop:
                      "outcome": "driver_failed",
                      "reason": getattr(exc, "code", type(exc).__name__),
                      "seconds": round(self.clock() - started, 1),
-                     **self._turns(hooks)}
+                     **self._turns(hooks, dispatch)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 status = "cancelled" if goal_id in self._cancel else "held"
@@ -560,7 +560,8 @@ class ExecutionLoop:
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
                      "outcome": "verify_failed", "reason": code,
-                     "seconds": round(self.clock() - started, 1), **self._turns(hooks)}
+                     "seconds": round(self.clock() - started, 1),
+                     **self._turns(hooks, dispatch)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 return self._stop_goal(goal_id, "held", f"verification: {code}", attempts)
@@ -571,7 +572,8 @@ class ExecutionLoop:
                  "change": change, **({"steered": True} if steered else {}),
                  "verdicts": [{"acceptance": o["acceptance_id"], "outcome": o["outcome"],
                                "reason": o["reason"]} for o in observations],
-                 "seconds": round(self.clock() - started, 1), **self._turns(hooks)}
+                 "seconds": round(self.clock() - started, 1),
+                 **self._turns(hooks, dispatch)}
             )  # fmt: skip
             self._update(goal_id, attempts=attempts)
             self._discard(dispatch["run_id"])
@@ -632,9 +634,9 @@ class ExecutionLoop:
         return record
 
     # -- helpers ---------------------------------------------------------------------------------
-    @staticmethod
-    def _turns(hooks: Any) -> dict[str, Any]:
-        """The follow-up turns and reviewer rounds an attempt's hooks made (M3), for metrics."""
+    def _turns(self, hooks: Any, dispatch: dict[str, Any] | None = None) -> dict[str, Any]:
+        """The follow-up turns and reviewer rounds an attempt's hooks made (M3), and for a vote
+        (M4, S9b) its candidates as the worker recorded them, for metrics."""
         if hooks is None:
             return {}
         out: dict[str, Any] = {
@@ -643,7 +645,36 @@ class ExecutionLoop:
         }
         if isinstance(hooks, FastCheckHooks):  # what the L7 fast checks found (S10)
             out["fast_checks"] = list(hooks.results)
+        if getattr(hooks, "candidates", 1) != 1 and dispatch is not None:
+            out.update(self._candidates(dispatch["dispatch_id"]))
         return out
+
+    def _candidates(self, dispatch_id: str) -> dict[str, Any]:
+        """A vote attempt's candidates from its worker-execution head (``worker.py``, M4): the
+        candidate turns that ran (candidate 0 and every candidate whose process was launched:
+        a recorded handle, or ``launched`` / state ``starting`` recorded before ``port.start``
+        when the handle never came back, so ``agent_calls`` never undercounts a spawned turn),
+        the selected index, each candidate's state, diff size and fast-check results, and why no
+        further candidate started (``candidates_stopped``: 80 % of the node budget)."""
+        try:
+            data = self.store.head(self.scope, "worker-execution", dispatch_id)["data"]
+        except RuntimeFault:
+            return {"candidates": 0, "selected": None, "candidate_results": []}
+        entries = [e for e in data.get("candidates") or [] if isinstance(e, dict)]
+        ran = [
+            e for e in entries
+            if e.get("index") == 0 or e.get("handle") or e.get("launched") is True
+            or e.get("state") == "starting"
+        ]  # fmt: skip
+        return {
+            "candidates": len(ran),
+            "selected": data.get("selected"),
+            "candidate_results": [
+                {k: e.get(k) for k in ("index", "state", "patch_lines", "fast_checks", "error")}
+                for e in entries
+            ],
+            "candidates_stopped": data.get("candidates_stopped"),
+        }
 
     def _escalate(
         self, goal_id: str, attempts: list[dict[str, Any]], runner: Any
@@ -813,8 +844,8 @@ class ExecutionLoop:
         # the L4 decider is honoured since S10 (``_context_for``); its parts are checked below
         context_assembly.check_supported(replace(context, decider_l4=None))
         # driver_options (L5) are honoured since S8: resolve_options carries them to the port;
-        # the execution strategies since S9, except a strategy the plan refused or one held
-        # (vote, §14 Q16); fast checks (L7, M3) and the deciders L4-L8 since S10
+        # the execution strategies since S9 (vote since S9b, after §14 Q16), except a strategy
+        # the plan refused; fast checks (L7, M3) and the deciders L4-L8 since S10
         refused = self.service.strategy_runner().refusal(plan, budget)
         unsupported = [refused] if refused is not None else []
         unsupported += self._fast_check_refusals(plan, budget)
@@ -1130,8 +1161,11 @@ class ExecutionLoop:
             missing = [c for c in fast["checks"] if c not in quick]
             if missing:
                 problems.append(f"fast_checks: {', '.join(missing)} not quick verifiers of {app}")
-        if StrategyChoice.of(plan).strategy == "generator_reviewer":
+        strategy = StrategyChoice.of(plan).strategy
+        if strategy == "generator_reviewer":
             problems.append("fast_checks with generator_reviewer (one M3 hook per attempt)")
+        if strategy == "vote":  # S9b: the vote's own hook (M4) holds the attempt
+            problems.append("fast_checks with vote (one hook per attempt)")
         return problems
 
     def _own_route_order(

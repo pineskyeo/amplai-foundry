@@ -456,11 +456,7 @@ def held_before_any_claim(rig: Any, loop: Any, container: Any, goal: str, part: 
 @pytest.mark.parametrize(
     ("components", "part"),
     [
-        # S9 runs the strategies; vote stays held until §14 Q16 is answered
-        (
-            {"execution_strategy": {"enabled": ["vote"]}},
-            "vote: vote (M4 candidates held until §14 Q16 is answered)",
-        ),
+        # S9 runs the strategies, S9b vote as well (test_vote_is_honoured_and_runs_its_candidates)
         (
             {"retrieval": {"enabled": True}},
             "retrieval (method path_keyword_v1 is not specified yet)",
@@ -479,6 +475,43 @@ def test_a_component_the_loop_cannot_honour_is_held_before_any_claim(
     rig, loop, container, c = setup(deployment, tmp_path, "right")
     goal = pinned(rig, c.candidate(**components), "(unsupported) make value return 2")
     held_before_any_claim(rig, loop, container, goal, part)
+
+
+def test_vote_is_honoured_and_runs_its_candidates(deployment: Any, tmp_path: Path) -> None:
+    """S9b (§14 Q16 settled, §5.1 M4): a vote composition is no longer held before the claim. Its
+    one attempt runs k candidate turns from the same base (the run's own turn, then
+    ``<dispatch_id>-c1`` in a scratch workspace), the app's quick verifier picks one, and the
+    suite verifies the selected change once.
+
+    The rc06 stand-in names one session per mode for every process; a real ``codex exec`` starts
+    a new thread, so the candidate's process gets its own session id here (a candidate naming
+    the run's bound session is held, SESSION_REBIND)."""
+    rig, loop, container, c = setup(deployment, tmp_path, "right")
+    command = container.command
+
+    def own_session(argv: list[str], workspace: Path, run_name: str, **kw: Any) -> list[str]:
+        cmd: list[str] = command(argv, workspace, run_name, **kw)
+        if re.search(r"-c[0-9]$", run_name):
+            cmd[2] = cmd[2].replace('"thread_" + mode', repr("thread_" + run_name))
+        return cmd
+
+    container.command = own_session
+    composition = c.candidate(
+        execution_strategy={"enabled": ["vote"], "params": {"vote": {"k": 2}}}
+    )
+    goal = pinned(rig, composition, "(vote) make value return 2")
+    plan = rig.service.plan_record(goal)
+    assert plan["strategy"]["strategy"] == "vote" and plan["strategy"]["refused"] is None
+    loop._policies(plan)  # honoured: nothing is refused
+    record = loop.run_goal(goal)
+    assert record["status"] in {"verified", "published"}
+    (attempt,) = record["attempts"]
+    assert attempt["outcome"] == "pass" and attempt["candidates"] == 2
+    assert attempt["selected"] in {0, 1}
+    assert [r["state"] for r in attempt["candidate_results"]] == ["collected", "released"]
+    assert len(container.prompts) == 2  # two candidate turns, no follow-up
+    metrics = rig.service.plan_record(goal)["strategy_metrics"]
+    assert (metrics["candidates"], metrics["candidate_turns"], metrics["turns"]) == (2, 1, 2)
 
 
 def refused_at_plan(rig: Any, container: Any, composition: Any, part: str) -> None:

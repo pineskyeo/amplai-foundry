@@ -5,6 +5,10 @@ interfaces.md §8.1, §12.1, IC-18).
 IC-16) and runs the stages without an operator gate; it stops at every gate: the class-B review,
 ``approve-stage focused`` and ``approve-stage holdout``. ``approve-stage`` freezes, approves (the
 operator, the exact digest) and runs that stage in this process. None of them chains a gate.
+``approve-stage P --stage focused --queue`` (IC-10) approves the exact focused experiment a night
+queued (``--digest`` may name it) and freezes it; nothing runs: the next night's confirmation phase
+runs it. Without ``--per-trial-tokens``/``--basis``/``--evidence`` a run uses the qualification of
+the operator's newest IC-29 record for the cell (``LocalMetaOps.restore_qualification``).
 ``--app`` names the installed app when the corpus main set names several.
 
 ``reconcile`` (IC-18, provisional) is the human operator's path for a stage experiment left
@@ -114,21 +118,49 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
     def approve_stage(
         proposal_id: str,
         stage: Annotated[str, typer.Option("--stage", help="focused or holdout")],
-        per_trial_tokens: PerTrialOption,
-        basis: BasisOption,
-        evidence: EvidenceOption,
+        per_trial_tokens: Annotated[
+            int | None,
+            typer.Option("--per-trial-tokens", help="the qualified per-trial token ceiling"),
+        ] = None,
+        basis: Annotated[
+            str | None, typer.Option("--basis", help="what the executor qualification rests on")
+        ] = None,
+        evidence: Annotated[list[str] | None, typer.Option("--evidence")] = None,
+        queue: Annotated[
+            bool,
+            typer.Option(
+                "--queue",
+                help="approve the focused experiment a night queued (exact digest); run nothing",
+            ),
+        ] = False,
+        digest: Annotated[
+            str | None, typer.Option("--digest", help="with --queue: the queued subject digest")
+        ] = None,
         parallel: ParallelOption = 1,
         config: ConfigOption = DEFAULT_CONFIG,
         corpus: CorpusOption = None,
         app: AppOption = None,
     ) -> None:
-        """Operator gate of a stage: freeze, approve and run it in this process."""
+        """Operator gate of a stage: freeze, approve and run it in this process (or, with
+        --queue, approve the experiment a night queued for the next night)."""
 
         def call() -> Any:
+            given = [per_trial_tokens is not None, basis is not None, bool(evidence)]
+            if queue and any(given):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--queue runs nothing: it takes no executor qualification"
+                )
+            if any(given) and not all(given):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--per-trial-tokens, --basis and --evidence go together"
+                )
             with opened_v2(config, corpus, app=app) as ops:
                 workers = capped_parallel(ops.dep, parallel)
-                qualify(ops, per_trial_tokens, basis, evidence)
-                return ops.approve_stage(proposal_id, stage, parallel=workers)
+                if all(given):
+                    assert per_trial_tokens is not None and basis is not None
+                    qualify(ops, per_trial_tokens, basis, list(evidence or []))
+                return ops.approve_stage(proposal_id, stage, parallel=workers, queue=queue,
+                                         subject_digest=digest)  # fmt: skip
 
         guarded(call)
 

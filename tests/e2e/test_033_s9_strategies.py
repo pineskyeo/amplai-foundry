@@ -17,10 +17,10 @@ What each case proves, per strategy: the strategy runs claim -> attempt -> prote
 to a published goal (or fails by the suite), the §5.2 records are in the plan record, and
 `strategy_metrics` (what `plan.md` §8.1 asks of a trial) counts what the strategy did.
 
-`vote` (M4) is held, not enabled: §14 Q16 (b) asks how `SessionStore`, `runtime.start`, steering
-pause and effect reconciliation treat unbound candidate sessions and S9 builds M4 only after that
-answer; the tests pin the hold (`COMPONENT_CONTENT`, before any claim) so an accidental enablement
-fails here.
+`vote` (M4) runs since S9b answered §14 Q16 ("Clarifications After S12, S15 And S9b"); its end
+to end cases are `tests/e2e/test_033_s9b_vote.py`. Here the former hold is pinned inverted: no
+strategy is held, a vote goal is claimed, and a vote the app cannot run (no quick verifiers) is
+still never run degraded in a trial.
 """
 
 from __future__ import annotations
@@ -1381,36 +1381,49 @@ def test_a_stale_strategy_record_is_recomputed_from_the_plan(
 
 
 # ===========================================================================================
-# 10. vote (M4): held until §14 Q16 (b) is answered
+# 10. vote (M4): no longer held since S9b (§14 Q16 answered)
 # ===========================================================================================
-def test_vote_is_held_before_any_claim_and_never_replaced_by_the_prior(
+def test_vote_is_no_longer_held_and_a_trial_is_never_run_as_the_prior(
     deployment: Any, tmp_path: Path
 ) -> None:
-    assert set(HELD) == {"vote"}
+    """Inverted S9 hold (S9b): ``HELD`` is empty, a vote goal on an app with quick verifiers is
+    planned as ``vote`` and claimed (one attempt, candidates inside it), and the protective part
+    of the former test stays: a vote trial the app cannot run is refused before any claim, never
+    replaced by the prior under the vote's name."""
+    assert HELD == {}
     w = make_world(deployment, tmp_path)
-    for composition in (
-        w.comps.strategy("vote", {"k": 2}),
-        # the first enabled strategy is the declared one: held, not skipped for a later prior
+    composition = w.comps.strategy("vote", {"k": 2})
+    # without quick verifiers (this world's app) a trial of vote is refused before any claim ...
+    trial = w.approved(composition, trial=trial_context())
+    refused = w.record(trial)["strategy"]["refused"]
+    assert refused.startswith("vote: vote needs quick_verifiers") and "M4" not in refused
+    assert w.loop.run_goal(trial)["status"] == "held" and w.agents.prompts == []
+    # ... while a real goal records the ineligibility and runs the v1 prior
+    real = w.record(w.approved(composition))
+    assert real["strategy"]["declared"] == "vote" and real["strategy"]["used_prior"] is True
+    assert real["strategy"]["strategy"] == PRIOR and real["strategy"]["refused"] is None
+    # with the app's quick verifiers, vote is planned and claimed: nothing holds it any more
+    config = w.service.apps["app"].config
+    w.service.install(
+        AppConfig("app", w.rig.repo, config.verifiers, quick_verifiers=(VERIFIER,))
+    )  # fmt: skip
+    for voting in (
+        composition,
+        # the first enabled strategy is the declared one, and it runs
         w.comps.candidate(
             execution_strategy={"enabled": ["vote", "repair_loop"], "params": {"vote": {"k": 3}}}
         ),
     ):
-        goal = w.approved(composition)
+        goal = w.approved(voting)
         plan = w.record(goal)
-        assert plan["strategy"]["declared"] == "vote" and plan["strategy"]["used_prior"] is False
-        assert plan["strategy"]["refused"].startswith("vote: vote (M4 candidates held")
-        with pytest.raises(RuntimeFault) as refused:
-            w.loop._policies(plan)
-        assert refused.value.code == "COMPONENT_CONTENT" and len(refused.value.details) == 1
+        assert plan["strategy"]["declared"] == plan["strategy"]["strategy"] == "vote"
+        assert plan["strategy"]["used_prior"] is False and plan["strategy"]["refused"] is None
+        _context, budget = w.loop._policies(plan)  # raised COMPONENT_CONTENT while vote was held
+        assert w.runner.refusal(plan, budget) is None
         record = w.loop.run_goal(goal)
-        assert record["status"] == "held" and record["attempts"] == []
-        assert "COMPONENT_CONTENT" in record["reason"] and "vote" in record["reason"]
-        assert w.rig.d.store.head(w.rig.d.scope, "goal", goal)["state"] == "failed"
-    assert w.agents.prompts == [] and w.turns.calls == [] and w.rig.published == []
-    # a trial of vote is refused the same way
-    trial = w.approved(w.comps.strategy("vote", {"k": 2}), trial=trial_context())
-    assert w.record(trial)["strategy"]["refused"].startswith("vote: ")
-    assert w.loop.run_goal(trial)["status"] == "held" and w.agents.prompts == []
+        assert record["status"] != "held" and len(record["attempts"]) == 1  # vote: one attempt
+        assert record["attempts"][0]["candidates"] >= 1
+    assert w.agents.prompts  # a claim happened and the run's own turn ran
 
 
 def test_a_later_enabled_vote_does_not_hold_the_declared_strategy(
@@ -1996,7 +2009,7 @@ def test_choose_records_the_declared_strategy_params_roles_and_cascade(
     )
 
 
-def test_node_attempts_are_fixed_only_by_single_and_best_of_n(
+def test_node_attempts_are_fixed_only_by_single_best_of_n_and_vote(
     deployment: Any, tmp_path: Path
 ) -> None:
     from amplai_foundry.runtime.execution.strategy_runner import StrategyChoice
@@ -2014,8 +2027,10 @@ def test_node_attempts_are_fixed_only_by_single_and_best_of_n(
         )
         == 2
     )
+    # vote (S9b): k candidates inside one attempt, the suite once (§5.2 strategy 10)
+    assert attempts("vote", k=3) == 1 and attempts("vote", k=2) == 1
     for other in ("repair_loop", "workgraph_split", "plan_execute", "cascade", "orchestrator",
-                  "generator_reviewer", "parallel_readonly", "vote"):  # fmt: skip
+                  "generator_reviewer", "parallel_readonly"):  # fmt: skip
         assert attempts(other) is None
 
 
@@ -2033,7 +2048,9 @@ def test_a_plan_recorded_before_s9_runs_the_v1_loop_and_holds_a_non_v1_strategy(
     assert w.runner.refusal(old, other) == "execution_strategy (planned before S9)"
     refused = {**old, "strategy": {"strategy": "single", "refused": "single: a reason"}}
     assert w.runner.refusal(refused, other) == "single: a reason"
-    assert w.runner.refusal({**old, "strategy": {"strategy": "vote"}}, other) == HELD["vote"]
+    # no strategy is held since S9b: a recorded vote is not refused here (eligibility was
+    # decided when it was planned)
+    assert w.runner.refusal({**old, "strategy": {"strategy": "vote"}}, other) is None
     assert w.runner.refusal({**old, "strategy": {"strategy": "mystery"}}, other) == (
         "unknown strategy"
     )

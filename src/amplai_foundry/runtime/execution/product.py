@@ -2360,9 +2360,22 @@ class LocalExecutionService:
     # -- approve / revoke --------------------------------------------------------------------
     def approve(self, operator: Actor, goal_id: str, *, hours: int = 2) -> dict[str, Any]:
         operator.require("execution.approve")
-        if operator.kind != "human" or operator.scope != self.scope:
+        # IC-17 (Work 033 S12, provisional): the nightly service identity approves the trial
+        # goals of the experiments it runs under its standing approval, and nothing else
+        from .meta_local import NIGHTLY_EXCLUDED, NIGHTLY_ID
+
+        nightly = (
+            operator.kind == "service"
+            and operator.subject_id == NIGHTLY_ID
+            and not operator.permissions & NIGHTLY_EXCLUDED
+        )
+        if (operator.kind != "human" and not nightly) or operator.scope != self.scope:
             raise RuntimeFault("APPROVER_KIND", "Only an authenticated human operator approves")
         plan = self.plan_record(goal_id)
+        if nightly and not plan.get("trial"):
+            raise RuntimeFault(
+                "APPROVER_KIND", "The nightly identity approves experiment trial goals only"
+            )
         if plan.get("status") != "awaiting_approval":
             raise Hold(
                 "PLAN_NOT_READY",

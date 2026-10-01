@@ -73,7 +73,23 @@ SECRET_CODE = "SECRET_DETECTED"  # runtime/evidence/cas.py:82-87
 STRATEGY_FIELDS = (
     "turns", "escalations", "reviewer_rounds", "fix_requests", "best_of_n_first_pass",
     "sub_agents", "integration_conflicts", "re_verifications",
+    # vote (§5.2 row 10, M4, S9b): candidates run, the turns beyond each attempt's own turn and
+    # the selected candidate index; optional in the record (rows written before S9b lack them)
+    "candidates", "candidate_turns", "vote_selected",
 )  # fmt: skip
+VOTE_FIELDS = ("candidates", "candidate_turns", "vote_selected")
+
+
+def _vote_fields(strategy: dict[str, Any]) -> dict[str, Any]:
+    """The vote fields of a trial row from the strategy's metrics: ``vote_selected`` there is
+    one index per voting attempt (``StrategyRunner.metrics``); the row keeps the last one (the
+    graded revision's attempt; vote has one attempt per revision, S9b) or null."""
+    selected = [s for s in strategy.get("vote_selected") or [] if isinstance(s, int)]
+    return {
+        "candidates": int(strategy.get("candidates") or 0),
+        "candidate_turns": int(strategy.get("candidate_turns") or 0),
+        "vote_selected": selected[-1] if selected else None,
+    }
 
 
 def diff_stats(patch: bytes) -> dict[str, Any]:
@@ -280,6 +296,10 @@ RECORD_SCHEMA: dict[str, Any] = {
         "sub_agents": _COUNT,
         "integration_conflicts": _COUNT,
         "re_verifications": _COUNT,
+        # optional (§5.2 row 10): 0 / 0 / null for a strategy other than vote
+        "candidates": _COUNT,
+        "candidate_turns": _COUNT,
+        "vote_selected": _OPT_COUNT,
         "guards": {
             "type": "object",
             "additionalProperties": False,
@@ -392,6 +412,9 @@ class TrialMetrics:
             "sub_agents": 0,
             "integration_conflicts": 0,
             "re_verifications": 0,
+            "candidates": 0,
+            "candidate_turns": 0,
+            "vote_selected": None,
             "phase": "calibration" if calibration else "stage",
             "fidelity": None,
         }
@@ -431,7 +454,8 @@ class TrialMetrics:
         if composition_ref and not v2["strategy"]:
             v2["strategy"] = strategy_of(self.service, composition_ref)
         # what the strategy did, over every revision (plan.md §8.1; S9 ``strategy_metrics``)
-        v2.update({k: strategy[k] for k in STRATEGY_FIELDS})
+        v2.update({k: strategy[k] for k in STRATEGY_FIELDS if k not in VOTE_FIELDS})
+        v2.update(_vote_fields(strategy))
         cells = [str(c) for c in strategy.get("cells_used") or [] if c]
         if cells:
             v2["cells_used"] = sorted({*cells, *v2["cells_used"]})
@@ -443,10 +467,13 @@ class TrialMetrics:
             ),
             "verification_seconds": self._verification_seconds(runs),
             # processes started for the goal's dispatches (every revision), the follow-up turns
-            # resumed in them (M3), the auxiliary read-only turns that ran (M2/M7, a turn that
-            # never started excluded) and the real planner's turn
+            # resumed in them (M3), the vote candidates beyond each attempt's own turn (M4: a
+            # candidate ``<dispatch_id>-c<i>`` is its own process with no execution row, S9b;
+            # ``strategy_metrics.candidate_turns``), the auxiliary read-only turns that ran
+            # (M2/M7, a turn that never started excluded) and the real planner's turn
             "agent_calls": started
             + int(strategy.get("followups") or 0)
+            + int(strategy.get("candidate_turns") or 0)
             + int(strategy.get("aux_turns") or 0)
             + (1 if real_planner else 0),
             "attempts_used": len(attempts),
@@ -682,6 +709,7 @@ class TrialMetrics:
             "scope": self.scope.wire(),
             "trial_ref": {k: trial_ref[k] for k in ("id", "revision", "digest")},
             **{k: row[k] for k in RECORD_SCHEMA["required"] if k in row},
+            **{k: row[k] for k in VOTE_FIELDS if k in row},
             "task_id": trial["task_id"],
             "domain": row["domain"] or "",
             "cell_id": row["cell_id"] or "",

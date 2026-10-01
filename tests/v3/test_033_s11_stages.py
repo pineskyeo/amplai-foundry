@@ -2709,3 +2709,256 @@ def test_a_resumed_stage_still_checks_the_loaded_corpus(
     assert error.details["cases"] == [case_id]
     assert w.executor.calls == []
     assert experiment_state(w, frozen) == "frozen"
+
+
+# ==================================================================================================
+# IC-10 mechanics (clarification after S12): the approval issuer and the queued focused stage
+# ==================================================================================================
+def nightly_runner(w: World, derive: Any = None) -> StageRunner:
+    """A runner whose approvals the nightly identity derives (``derive``; none is needed for the
+    refusals below)."""
+    from amplai_foundry.runtime.execution.meta_local import nightly_actor
+
+    def never(plan: dict[str, Any]) -> dict[str, Any]:
+        raise AssertionError("no approval may be derived here")
+
+    return StageRunner(
+        w.ops, w.refs, calibration_summary_ref=w.summary_ref,
+        evaluator_version_ref=w.version_ref, metrics=TrialMetrics(w.dep.service),
+        leak_gate=LeakGate(w.operator, w.store, w.refs["leak_index_ref"]), parallel=1,
+        issuer=stages.standing_issuer(nightly_actor(w.scope), derive or never),
+    )  # fmt: skip
+
+
+def test_the_default_issuer_is_the_human_operators(w: World) -> None:
+    runner = w.runner()
+    assert runner.issuer.human and runner.actor == w.ops.operator
+
+
+def test_a_nightly_runner_never_screens_a_draft(w: World) -> None:
+    pid = w.propose("a2")
+    runner = nightly_runner(w)
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    steps = runner.advance(pid)
+    assert w.state(pid) == "draft" and w.executor.calls == []
+    assert runner.last_stop == {"stage": "screening", "code": "OPERATOR_SCREEN"}
+    assert w.step(steps, "screening").state == "pending"
+
+
+def test_a_queued_focused_stage_is_built_once_without_approval_and_superseded_by_a_gate(
+    w: World,
+) -> None:
+    pid = w.propose("a2")
+    w.script(pid)
+    runner = w.runner()
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    runner.advance(pid)
+    approvals = len(w.objects("meta-approval"))
+    item = runner.queue_stage(pid, "focused")
+    assert item is not None and item["proposal_id"] == pid
+    assert runner.queue_stage(pid, "focused") == item  # idempotent while queued
+    assert len(w.objects("meta-approval")) == approvals  # no approval was issued
+    head = stages.queue_head(w.store, w.scope, pid)
+    assert head is not None and head["state"] == "queued"
+    hold("META_STATE", runner.run_queued, pid, "focused")  # not approved yet
+    # the operator's in-process gate runs a fresh experiment; the queued build is superseded
+    assert runner.approve_stage(pid, "focused").state == "passed"
+    head = stages.queue_head(w.store, w.scope, pid)
+    assert head is not None and head["state"] == "superseded"
+    hold("META_STATE", runner.approve_queued, pid, "focused")
+    hold("META_STATE", runner.queue_stage, pid, "focused")  # the gate is not waiting any more
+
+
+def test_an_approved_queued_stage_runs_once_as_the_operator_too(w: World) -> None:
+    pid = w.propose("a2")
+    w.script(pid)
+    runner = w.runner()
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    runner.advance(pid)
+    runner.queue_stage(pid, "focused")
+    calls = len(w.executor.calls)
+    step = runner.approve_queued(pid, "focused")
+    assert step.state == "frozen" and len(w.executor.calls) == calls
+    hold("META_STATE", runner.approve_stage, pid, "focused")  # frozen: not waiting
+    assert runner.run_queued(pid, "focused").state == "passed"
+    head = stages.queue_head(w.store, w.scope, pid)
+    assert head is not None and head["state"] == "ran"
+    hold("META_STATE", runner.run_queued, pid, "focused")  # ran once
+
+
+def test_pending_trials_is_the_next_auto_stage_and_zero_at_a_gate(w: World) -> None:
+    pid = w.propose("a2")
+    w.script(pid)
+    runner = w.runner()
+    assert runner.pending_trials(pid) == 0  # no plan yet
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    assert runner.pending_trials(pid) == 12 * 2  # screening: 12 tasks x 2 arms x 1 repeat
+    runner.advance(pid)
+    assert runner.pending_trials(pid) == 0  # the focused gate
+    runner.approve_stage(pid, "focused")
+    assert runner.pending_trials(pid) == 2 * 12 * 2  # ablation: 2 variants x 12 x 2 arms
+
+
+# -- a queued stage is never left ``running`` in its queue head (states ... ran / failed ...) --
+def approved_queue(w: World) -> tuple[str, StageRunner]:
+    pid = w.propose("a2")
+    w.script(pid)
+    runner = w.runner()
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    runner.advance(pid)
+    runner.queue_stage(pid, "focused")
+    runner.approve_queued(pid, "focused")
+    return pid, runner
+
+
+def queue_state(w: World, pid: str) -> tuple[str, dict[str, Any]]:
+    head = stages.queue_head(w.store, w.scope, pid)
+    assert head is not None
+    return str(head["state"]), dict(head["data"])
+
+
+def test_a_queued_stage_whose_run_faults_ends_failed_with_the_fault(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+
+    def down(*_: Any, **__: Any) -> Any:
+        raise RuntimeFault("EXECUTOR_DOWN", "the executor is gone")
+
+    monkeypatch.setattr(w.local.evaluation, "run", down)
+    fault("EXECUTOR_DOWN", runner.run_queued, pid, "focused")
+    state, data = queue_state(w, pid)
+    assert state == "failed" and data["failure"]["code"] == "EXECUTOR_DOWN"
+    assert data["failure"]["stage_state"] == "aborted" and data["failed_at"]
+    assert w.stage_run(pid)["data"]["stages"]["focused"]["state"] == "aborted"
+    hold("META_STATE", runner.run_queued, pid, "focused")  # a failed queue item never re-runs
+
+
+def test_a_queued_stage_whose_run_raises_anything_else_ends_failed_too(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+
+    def broken(*_: Any, **__: Any) -> Any:
+        raise ValueError("a bug")
+
+    monkeypatch.setattr(runner, "_select", broken)
+    with pytest.raises(ValueError):
+        runner.run_queued(pid, "focused")
+    state, data = queue_state(w, pid)
+    assert state == "failed" and data["failure"]["code"] == "ValueError"
+    assert data["failure"]["stage_state"] == "running"
+
+
+def test_a_queued_stage_whose_run_report_aborts_ends_failed(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+    real = runner._run_stage
+
+    def aborting(proposal_id: str, plan: Any, entry: Any, ref: Any, cases: Any) -> None:
+        real(proposal_id, plan, entry, ref, cases)
+        runner._update(proposal_id, entry["stage"], state="aborted")  # an aborted run report
+
+    monkeypatch.setattr(runner, "_run_stage", aborting)
+    assert runner.run_queued(pid, "focused").state == "aborted"
+    state, data = queue_state(w, pid)
+    assert state == "failed" and data["failure"]["code"] == "STAGE_ABORTED"
+
+
+def test_a_crash_inside_a_queued_stage_is_settled_failed_by_the_next_advance(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+    stop_in_first_trial(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.run_queued(pid, "focused")
+    monkeypatch.undo()
+    assert queue_state(w, pid)[0] == "running"  # a process stop runs no handler
+    calls = len(w.executor.calls)
+    w.runner().advance(pid)  # the next process
+    state, data = queue_state(w, pid)
+    assert state == "failed"
+    assert data["failure"] == {"code": "INTERRUPTED", "stage_state": "running"}
+    assert len(w.executor.calls) == calls  # nothing replayed
+    w.store.epoch += 1
+    assert w.ops.reconcile(pid, stage="focused")["state"] == "aborted"
+    assert queue_state(w, pid)[0] == "failed"
+
+
+def test_a_reconcile_after_a_crash_inside_a_queued_stage_ends_it_failed(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+    stop_in_first_trial(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.run_queued(pid, "focused")
+    monkeypatch.undo()
+    w.store.epoch += 1
+    assert w.ops.reconcile(pid, stage="focused")["state"] == "aborted"
+    state, data = queue_state(w, pid)
+    assert state == "failed" and data["failure"]["code"] == "STAGE_ABORTED"
+
+
+def test_a_queued_stage_stopped_before_its_first_dispatch_resumes_and_ends_ran(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = approved_queue(w)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.run_queued(pid, "focused")
+    monkeypatch.undo()
+    assert queue_state(w, pid)[0] == "running"
+    steps = w.runner().advance(pid)
+    assert states(steps)["focused"] == "passed"
+    state, data = queue_state(w, pid)
+    focused = w.stage_run(pid)["data"]["stages"]["focused"]
+    assert state == "ran" and focused["report_ref"] is not None
+    assert data["report_ref"] == focused["report_ref"]
+
+
+def test_a_nightly_issuer_is_refused_the_holdout_before_anything_is_built(w: World) -> None:
+    pid, _runner, _derived = through_ablation(w)
+    night = nightly_runner(w)
+    plan = night._plan(pid)[1]
+    entry = next(s for s in plan["stages"] if s["stage"] == "holdout")
+    kinds = ("analysis-plan", "sampling-plan", "eval-experiment", "meta-approval", "stage-run")
+    before = {k: len(w.objects(k)) for k in kinds}
+    hold("APPROVAL_HUMAN", night._stage, pid, plan, entry)
+    assert {k: len(w.objects(k)) for k in kinds} == before  # no record written
+    assert w.stage_run(pid)["data"]["stages"]["holdout"]["state"] == "waiting_approval"
+    assert w.state(pid) == "screened"
+
+
+def test_a_nightly_advance_never_resumes_a_frozen_holdout(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # IC-10: the resume path (``_resume_frozen``) runs no holdout under the nightly identity
+    pid, runner, _derived = through_ablation(w)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.approve_stage(pid, "holdout")
+    monkeypatch.undo()
+    holdout = w.stage_run(pid)["data"]["stages"]["holdout"]
+    assert holdout["state"] == "running" and w.state(pid) == "offline_running"
+    assert experiment_state(w, holdout["experiment_ref"]) == "frozen"
+    calls = len(w.executor.calls)
+
+    def no_evaluate(*_: Any, **__: Any) -> Any:
+        raise AssertionError("the nightly identity never evaluates the holdout")
+
+    def no_run(*_: Any, **__: Any) -> Any:
+        raise AssertionError("the nightly identity never runs the holdout")
+
+    monkeypatch.setattr(w.local.meta, "evaluate", no_evaluate)
+    monkeypatch.setattr(w.local.evaluation, "run", no_run)
+    steps = nightly_runner(w).advance(pid)
+    assert states(steps)["holdout"] == "running"
+    assert len(w.executor.calls) == calls
+    assert experiment_state(w, holdout["experiment_ref"]) == "frozen"
+    assert w.state(pid) == "offline_running"
+    monkeypatch.undo()
+    # left for the operator: the human runner's advance resumes and evaluates it
+    steps = w.runner().advance(pid)
+    assert states(steps)["holdout"] == "passed"
+    assert w.state(pid) == "offline_evaluated"

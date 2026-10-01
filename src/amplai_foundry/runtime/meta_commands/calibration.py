@@ -4,6 +4,8 @@
 ``calibrate`` freezes a calibration plan of the named cells over every development and validation
 case of the frozen corpus v2, issues the operator approval for its exact digest and runs it here
 (``CalibrationService``); ``--max-trials`` bounds its worst case (cells x cases x max repeats).
+``--set regression`` calibrates the frozen regression set (``amplai-regression-v1``, §10.6) on the
+installed app its tasks name: the nightly drift baseline is the operator's newest such calibration.
 """
 
 from __future__ import annotations
@@ -43,6 +45,10 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         config: ConfigOption = DEFAULT_CONFIG,
         corpus: CorpusOption = None,
         app: AppOption = None,
+        corpus_set: Annotated[
+            str,
+            typer.Option("--set", help="main (default) or regression (the nightly drift baseline)"),
+        ] = "main",
     ) -> None:
         """Freeze, approve and run a calibration of the cells."""
 
@@ -54,6 +60,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
                 return ops.calibrate(
                     names, max_repeats=max_repeats, max_trials=max_trials, parallel=workers,
                     max_tokens=max_tokens, max_wall_seconds=max_wall_seconds,
+                    corpus_set=corpus_set,
                 )  # fmt: skip
 
         guarded(call)
