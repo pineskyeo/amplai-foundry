@@ -21,6 +21,14 @@ and runs a calibration; ``derived_proposal`` creates an IC-19 (A) leave-one-out 
 TARGET_UNKNOWN, name one with ``--app``). ``reconcile`` (IC-18, provisional) is the human
 operator's path for an interrupted stage experiment or an unresolved allocation of a root.
 
+Work 033 (AC-11): the canary gates serve a corpus v2 proposal, one with a stage plan
+(``stage_plan``). ``approve_canary`` then also needs its passed holdout stage bound to the evolution
+head (Hold EVAL_NOT_PASSING) and canary tasks that are development or validation tasks of the
+plan's app in the plan's frozen corpus (Hold CANARY_TASKS; a holdout task never is one);
+``run_canary`` runs each as its frozen case under the plan's task-environment pins. Canary
+approval, canary run, promotion and rollback are the human operator's (Hold APPROVAL_HUMAN before
+anything is written). A Work 030 proposal keeps the Work 030 rules.
+
 Work 033 S7b (IC-12; clarification after the S10/S13/S14 fix wave, "Open (S7b)"): ``--app`` may
 also name the app of task-environment tasks (``amplai-tb2``); without it the app stays the one of
 the ``app``-environment tasks. A calibration covers the cases of one app: its plan records
@@ -31,7 +39,9 @@ the calibrated splits, which ``CalibrationService`` recomputes from the frozen c
 
 from __future__ import annotations
 
+import contextlib
 import json
+from collections.abc import Iterator
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal
@@ -70,6 +80,8 @@ REGRESSION_SET = "regression"
 # the role prompt slot holds a prompt bundle (the carrier is the content, §2.2)
 PROMPT_SLOT = "prompt_bundle_ref"
 PROMPT_SOURCE = "meta-harness proposal"
+# the splits a corpus v2 proposal's canary tasks come from (a holdout task never is one)
+CANARY_SPLITS = ("development", "validation")
 
 
 class LocalMetaOps:
@@ -726,14 +738,162 @@ class LocalMetaOps:
         return ref
 
     # -- 4. the canary -------------------------------------------------------------------------
+    def _human_gate(self) -> None:
+        """Class C: canary approval, canary run, promotion and rollback are the human operator's
+        acts; any other identity (the nightly service, the proposer) is refused before anything
+        is written (Hold APPROVAL_HUMAN, as ``LocalMetaApprovals.issue``)."""
+        if self.operator.kind != "human":
+            raise Hold("APPROVAL_HUMAN", "Canary, promotion and rollback are the human operator's")
+
+    def _holdout_passed(self, proposal_id: str, head: dict[str, Any]) -> None:
+        """A corpus v2 proposal reaches a canary only through a passed holdout stage (IC-01):
+        the stage run's holdout is ``passed`` and its report is the one bound to the evolution
+        head with verdict ``pass``. Hold EVAL_NOT_PASSING otherwise (the code the evolution
+        machine gives a bound report that does not pass, ``MetaHarness._passing_report``)."""
+        from ...meta_harness.stages import RUN_KIND
+
+        run = self.store.head(self.scope, RUN_KIND, "stagerun-" + proposal_id)
+        holdout = (run["data"].get("stages") or {}).get("holdout") or {}
+        data = head["data"]
+        if (
+            holdout.get("state") != "passed"
+            or holdout.get("report_ref") is None
+            or holdout.get("report_ref") != data.get("report_ref")
+            or data.get("verdict") != "pass"
+        ):
+            raise Hold(
+                "EVAL_NOT_PASSING",
+                "A corpus v2 proposal reaches a canary only through a passed holdout stage",
+                details={"holdout": holdout.get("state"), "verdict": data.get("verdict")},
+            )
+
+    def _work030_change(self, proposal_id: str) -> None:
+        """A proposal without a stage plan reaches a canary on the Work 030 path only when its
+        change is a Work 030 change: a change artifact without ``component_changes`` (written
+        before Work 033) or the one ``propose`` writes (one ``role_prompt`` change and no
+        ``prediction_ref``, ``proposer_run_ref`` or ``origin``; ``propose --prompt-file``
+        delegates to ``propose_components``, interfaces.md §12.1). Any other component proposal
+        is a corpus v2 proposal, which reaches a canary only through its passed holdout stage
+        (IC-01): Hold EVAL_NOT_PASSING, as ``_holdout_passed``. An unreadable change artifact is
+        refused the same way."""
+        try:
+            change = json.loads(
+                self.dep.artifacts.read(self.scope, self._proposal(proposal_id)["change_artifact"])
+            )
+        except (RuntimeFault, KeyError, TypeError, ValueError):
+            change = None
+        if isinstance(change, dict):
+            changes = change.get("component_changes")
+            if changes is None:
+                return
+            if (
+                isinstance(changes, list)
+                and len(changes) == 1
+                and isinstance(changes[0], dict)
+                and changes[0].get("kind") == "role_prompt"
+                and all(change.get(k) is None for k in ("prediction_ref", "proposer_run_ref",
+                                                        "origin"))
+            ):  # fmt: skip
+                return
+        raise Hold(
+            "EVAL_NOT_PASSING",
+            "A corpus v2 proposal reaches a canary only through a passed holdout stage",
+            details={"holdout": None, "stage_plan": None},
+        )
+
+    def _canary_cases(self, plan: dict[str, Any], task_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """The frozen cases of a corpus v2 proposal's canary tasks, by task id.
+
+        Canary tasks are main-set tasks of the stage plan's app in the plan's frozen corpus from
+        the development or validation split, given once each; a holdout task is never a canary
+        task. Hold CANARY_TASKS otherwise (``holdout``, ``unknown`` and ``duplicate`` name the
+        offending ids the operator gave); Hold CORPUS_CHANGED when a task loaded now differs from
+        its frozen case (``check_corpus``): the canary trial is built from the loaded task."""
+        corpus = self.corpus
+        if not isinstance(corpus, CorpusV2):
+            raise Hold(
+                "META_STATE",
+                "A corpus v2 proposal's canary runs on the corpus v2 (amplai meta opens it)",
+            )
+        if not isinstance(task_ids, list) or not task_ids:
+            raise Hold("CANARY_TASKS", "Name at least one development or validation task")
+        frozen = {
+            c["case_id"]: c for c in self.store.get(self.scope, "eval-corpus", plan["corpus_ref"])[
+                "cases"]
+        }  # fmt: skip
+        own = self.app_case_ids(plan.get("app_id")) or frozenset()
+        loaded = {t.task_id: t.split for t in corpus.tasks}
+        holdout: list[str] = []
+        unknown: list[Any] = []
+        duplicate: list[str] = []
+        seen: set[str] = set()
+        for task in task_ids:
+            if not isinstance(task, str) or not task:
+                unknown.append(task)
+                continue
+            if task in seen:
+                duplicate.append(task)
+            seen.add(task)
+            case = frozen.get(task)
+            if "holdout" in (loaded.get(task), case and case.get("split")):
+                holdout.append(task)
+            elif case is None or task not in own or case.get("split") not in CANARY_SPLITS:
+                unknown.append(task)
+        if holdout or unknown or duplicate:
+            raise Hold(
+                "CANARY_TASKS",
+                "Canary tasks are development or validation tasks of the proposal's app, once "
+                "each; a holdout task is never a canary task",
+                details={"holdout": holdout, "unknown": unknown, "duplicate": duplicate},
+            )
+        self.check_corpus(plan["corpus_ref"], list(task_ids))
+        return {task: dict(frozen[task]) for task in task_ids}
+
+    @contextlib.contextmanager
+    def _environment_pins(self, plan: dict[str, Any]) -> Iterator[None]:
+        """The stage plan's task-environment pins and the evaluation service's probe on the trial
+        executor while the canary runs (IC-12, as ``StageRunner._environment_pins``): a drifted
+        task environment runs nothing (``success`` None), which the canary counts as uncertain.
+        An executor without pins (a stand-in) is left as it is."""
+        executor = self.executor
+        if not hasattr(executor, "environment_digests"):
+            yield
+            return
+        before = (executor.environment_digests, getattr(executor, "environment_probe", None))
+        executor.environment_digests = dict(plan.get("environment_digests") or {})
+        executor.environment_probe = self.local.evaluation.environment_probe
+        try:
+            yield
+        finally:
+            executor.environment_digests, executor.environment_probe = before
+
     def approve_canary(
         self, proposal_id: str, task_ids: list[str], *, max_trial_tokens: int
     ) -> dict[str, Any]:
+        """Approve a canary of ``task_ids`` (``run_canary`` starts it).
+
+        A corpus v2 proposal (it has a stage plan) additionally needs its passed holdout stage
+        (``_holdout_passed``) and canary tasks of its app's development or validation split
+        (``_canary_cases``); the target binding is the stage plan's app's. A Work 030 proposal
+        keeps the Work 030 rule (the tasks of its corpus, the app of that corpus); a component
+        proposal without a stage plan is refused (``_work030_change``)."""
+        self._human_gate()
         head = self._require(proposal_id, "offline_evaluated")
         self._removal_gate(proposal_id)
+        plan = stage_plan(self.store, self.scope, proposal_id)
+        if plan is None:
+            self._work030_change(proposal_id)
+            app = self.app
+        else:
+            self._not_derived(proposal_id)
+            self._holdout_passed(proposal_id, head)
+            self._canary_cases(plan, task_ids)
+            # IC-31: the app the stage plan recorded (a plan before S7b: ``--app``'s)
+            app_id = plan.get("app_id")
+            app = self.dep.service.apps[app_id] if app_id else self.app
         policy = canary_policy(
             task_ids=task_ids,
-            binding_ref=self.app.binding_ref,
+            binding_ref=app.binding_ref,
             fallback_release_ref=self._active_release(),
             policy_id=new_id("canary-policy"),
             max_trial_tokens=max_trial_tokens,
@@ -757,26 +917,50 @@ class LocalMetaOps:
         return {"policy_ref": policy_ref, "tasks": task_ids}
 
     def run_canary(self, proposal_id: str) -> dict[str, Any]:
-        """Start the approved canary and run its tasks in this process (one owner)."""
+        """Start the approved canary and run its tasks in this process (one owner).
+
+        Each task runs once on the candidate through the trial executor (mode ``canary``, a
+        trial goal that never publishes); all pass -> ``request_promotion``, else the evolution
+        machine's failure path (``canary_trial`` aborts the canary). A corpus v2 proposal's tasks
+        are rechecked (``_canary_cases``, before the canary starts) and run as their frozen cases
+        under the stage plan's task-environment pins."""
+        self._human_gate()
         head = self._require(proposal_id, "canary_approved")
+        policy = self.store.get(self.scope, "canary-policy", head["data"]["canary_policy_ref"])
+        plan = stage_plan(self.store, self.scope, proposal_id)
+        executor: Any = self.executor
+        pins: contextlib.AbstractContextManager[None] = contextlib.nullcontext()
+        if plan is None:
+            self._work030_change(proposal_id)
+        else:
+            cases = self._canary_cases(plan, list(policy["eligible_task_ids"]))
+
+            def frozen_case(
+                composition_ref: dict[str, Any], case: dict[str, Any], repeat: int, mode: str
+            ) -> Any:
+                # the frozen case (split, payload digest): the executor checks the loaded task
+                return self.executor(composition_ref, dict(cases[case["case_id"]]), repeat, mode)
+
+            executor = frozen_case
+            pins = self._environment_pins(plan)
         self.local.meta.start_canary(self.operator, proposal_id)
         proposal = self.store.get(
             self.scope, "harness-change-proposal", head["data"]["proposal_ref"]
         )
-        policy = self.store.get(self.scope, "canary-policy", head["data"]["canary_policy_ref"])
         execute = canary_execute(
-            self.executor,
+            executor,
             self.dep.artifacts,
             self.scope,
             candidate_ref=proposal["candidate_ref"],
             task_binding_refs=policy["task_binding_refs"],
         )
         outcomes = []
-        for task in policy["eligible_task_ids"]:
-            outcome = self.local.meta.canary_trial(self.operator, proposal_id, task, execute)
-            outcomes.append(outcome)
-            if outcome["state"] != "canary_running":
-                return {"state": outcome["state"], "outcomes": outcomes}
+        with pins:
+            for task in policy["eligible_task_ids"]:
+                outcome = self.local.meta.canary_trial(self.operator, proposal_id, task, execute)
+                outcomes.append(outcome)
+                if outcome["state"] != "canary_running":
+                    return {"state": outcome["state"], "outcomes": outcomes}
         return {
             "state": self.local.meta.request_promotion(self.operator, proposal_id),
             "outcomes": outcomes,
@@ -784,6 +968,10 @@ class LocalMetaOps:
 
     # -- 5. promote and rollback ---------------------------------------------------------------
     def promote(self, proposal_id: str) -> dict[str, Any]:
+        """Point the active release at the candidate: the cell's composition is the candidate
+        (and every other composition of the app gets the candidate's router when it changed,
+        ``_promoted``, §1.2). The same path for a Work 030 and a corpus v2 proposal."""
+        self._human_gate()
         head = self._require(proposal_id, "promotion_pending")
         proposal = self.store.get(
             self.scope, "harness-change-proposal", head["data"]["proposal_ref"]
@@ -869,6 +1057,7 @@ class LocalMetaOps:
 
     def rollback(self, proposal_id: str) -> dict[str, Any]:
         """Return the pointer to the release the promotion named (read from its recorded plan)."""
+        self._human_gate()
         head = self._require(proposal_id, "promoted")
         plan = head["data"]["promotion_plan"]
         baseline, candidate = plan["rollback_release_ref"], plan["candidate_release_ref"]
@@ -1482,6 +1671,21 @@ class LocalMetaOps:
                 f"The candidate is {head['state']}; this gate needs {' or '.join(states)}",
             )
         return head
+
+
+def stage_plan(store: Any, scope: Any, proposal_id: str) -> dict[str, Any] | None:
+    """The newest ``stage-plan`` record ``stageplan-<proposal_id>`` (§2.9), or None. A proposal
+    with a stage plan is a corpus v2 proposal (its holdout stage is the experiment bound to the
+    evolution machine, IC-01); a Work 030 proposal has none (``approve_experiment``)."""
+    from ...meta_harness.stages import PLAN_KIND
+
+    plans = [
+        (ref, value) for ref, value in store.list_objects(scope, PLAN_KIND)
+        if ref["id"] == "stageplan-" + proposal_id
+    ]  # fmt: skip
+    if not plans:
+        return None
+    return dict(max(plans, key=lambda row: row[0]["revision"])[1])
 
 
 def set_case_ids(corpus: CorpusV2, app_id: str, set_name: str) -> frozenset[str]:

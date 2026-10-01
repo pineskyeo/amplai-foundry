@@ -3009,3 +3009,22 @@ surface, and the final report lists IC-31 and IC-32 for explicit confirmation be
 - **Known limit (open)**: `MODEL_TOKEN` admits `:` (`cells.py:61`). `releases.installed_env_of` anchors on
   `<installed id>:env-`, but `manifest.env_sibling` and `manifest.environment_of` split an id at its first `:env-`
   (`manifest.py:172,222-227`), so a cell whose model id contains `:env-` would be misread as a sibling.
+
+## Clarifications After The Canary And Effort-Image Fixes (2026-10-02)
+
+- **Canary of a corpus v2 proposal** (AC-11): `approve-canary`, `run-canary`, `promote` and `rollback` open the
+  corpus v2 path when the proposal has a stage plan (`stageplan-<id>`; the change artifact alone cannot tell, since
+  Work 030 `propose` also goes through `propose_components`) and use the plan's cell and app; a different `--driver`
+  holds `CELL_UNKNOWN`, a different `--app` `TARGET_UNKNOWN`; Work 030 proposals keep their path and options.
+  Canary tasks are main-set tasks of the plan's app from the development or validation split only, each once
+  (`Hold CANARY_TASKS` lists holdout, unknown and duplicate ids); each runs as its frozen case (so `CORPUS_CHANGED`
+  applies) on the candidate, under the stage plan's environment pins. `approve-canary` also needs the stage-run
+  holdout `passed` and bound to the evolution head's report (`EVAL_NOT_PASSING`). All four gates refuse a non-human
+  operator first (`APPROVAL_HUMAN`). `run-canary` restores the IC-29 executor qualification when no flags are given.
+  A canary trial on a development task captures a trace like any development trial.
+- **Effort probes per task environment**: `amplai ops local-cell probe <cell> --environment <environment_id>` records
+  a probe keyed by (cell, environment) (`probe-` + digest([cell_id, environment_id])[7:31], record field
+  `environment_id`); the app-image probe is unchanged. A task environment installs an effort cell only with a passing
+  probe for that pair; skips name the environment (`EFFORT_UNPROBED`, or `EFFORT_REFUSED` for a refused probe); a
+  changed image or driver version needs a new probe. Limit: environment ids are unique per app only, so two apps
+  sharing an environment id would share its probes (open; TB2 ids are `tb2-<name>`).

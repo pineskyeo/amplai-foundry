@@ -890,16 +890,30 @@ def local_cell_list(
 def local_cell_probe(
     cell_id: Annotated[str, typer.Argument(help="a configured cell with an effort")],
     app_id: Annotated[str | None, typer.Option("--app")] = None,
+    environment_id: Annotated[
+        str | None,
+        typer.Option(
+            "--environment",
+            help="a task environment id (apps[].environments): probe in that task image",
+        ),
+    ] = None,
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
 ) -> None:
     """Run one read-only effort probe turn and record it (cell-effort-probe).
 
+    Without --environment the turn runs in the app image (as before); with it, in that task
+    environment's image, recorded per (cell, environment): an effort cell installs in a task
+    environment only with an accepted probe of that pair in its current image.
     Needs docker and the driver credentials; stop local-serve first (the store has one owner).
     "accepted" proves only that the provider completed a turn with the flag (§14 Q2).
     """
     from .local_deployment import probe_local_cell
 
-    guarded(lambda: probe_local_cell(config.expanduser(), cell_id, app_id=app_id))
+    guarded(
+        lambda: probe_local_cell(
+            config.expanduser(), cell_id, app_id=app_id, environment_id=environment_id
+        )
+    )
 
 
 LAUNCHD_LABEL = "ai.amplai.local-serve"

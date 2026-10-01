@@ -65,6 +65,8 @@ CELL_KIND = "harness-cell"
 REGISTRY_KIND, REGISTRY_ID = "cell-registry", "cells"
 PROBE_KIND = "cell-effort-probe"
 PROBE_OUTCOMES = ("accepted", "refused", "error")
+# a task environment id (IC-12, ``local_deployment.EnvironmentEntry.environment_id``)
+ENVIRONMENT_ID = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
 # One structured read-only turn on an empty scratch directory (IC-14): proves only that the
 # provider completed a turn with the flag (§2.4, §14 Q2).
 PROBE_PROMPT = 'Reply with the JSON object {"ok": true}. Do not read or change any file.'
@@ -425,6 +427,8 @@ PROBE_RECORD_SCHEMA: dict[str, Any] = {
         },
         "usage": {"type": ["object", "null"]},
         "checked_at": _STR,
+        # S7b: a probe in a task environment's image names it; an app-image probe has no key
+        "environment_id": {"type": "string", "pattern": ENVIRONMENT_ID},
     },
 }  # fmt: skip
 
@@ -448,8 +452,12 @@ def validate_probe_record(value: dict[str, Any]) -> None:
     _validate(PROBE_KIND, PROBE_RECORD_SCHEMA, value)
 
 
-def probe_id(cell_id: str) -> str:
-    return "probe-" + digest(cell_id)[7:31]
+def probe_id(cell_id: str, environment_id: str | None = None) -> str:
+    """``probe-<cell hash>`` for the app image (§2.4, unchanged); a task environment's probe is
+    keyed by (cell, environment): ``probe-<hash of [cell id, environment id]>`` (S7b)."""
+    if environment_id is None:
+        return "probe-" + digest(cell_id)[7:31]
+    return "probe-" + digest([cell_id, environment_id])[7:31]
 
 
 # -- probes -------------------------------------------------------------------------------------
@@ -462,11 +470,14 @@ def run_probe(
     driver_version: str,
     image: str,
     argv: list[str],
+    environment_id: str | None = None,
 ) -> dict[str, Any]:
     """One effort probe turn on an empty scratch directory (IC-14) → a ``cell-effort-probe``
     value. "accepted" = the provider completed a structured turn with the flag; a turn that did
     not complete is "refused" and anything else (timeout, output shape) "error". Whether the
-    effort was applied is not observable (확인 필요, §14 Q2), so ``effort_reported`` stays null."""
+    effort was applied is not observable (확인 필요, §14 Q2), so ``effort_reported`` stays null.
+    ``environment_id`` names the task environment whose image the turn ran in (S7b); None is the
+    app image and the value is exactly today's."""
     if cell.effort == LEGACY_EFFORT:
         raise Hold("EFFORT_UNSUPPORTED", "A provider-default cell has no effort to probe")
     if cell.driver_id == "opencode-server" or cell.effort not in EFFORT_SYNTAX[cell.driver_id]:
@@ -498,19 +509,32 @@ def run_probe(
         "usage": usage,
         "checked_at": now(),
     }
+    if environment_id is not None:
+        value["environment_id"] = environment_id
     validate_probe_record(value)
     return value
 
 
 def store_probe(store: Store, scope: Scope, value: dict[str, Any]) -> Ref:
-    """Write a probe as the next revision of ``probe-<cell hash>`` (the latest one counts)."""
+    """Write a probe as the next revision of its (cell, environment) id (the latest one counts);
+    an identical value is no new revision."""
     validate_probe_record(value)
-    return _put_latest(store, scope, PROBE_KIND, probe_id(value["cell_id"]), value)
+    object_id = probe_id(value["cell_id"], value.get("environment_id"))
+    return _put_latest(store, scope, PROBE_KIND, object_id, value)
 
 
-def latest_probe(store: Store, scope: Scope, cell_id: str) -> tuple[Ref, dict[str, Any]] | None:
+def latest_probe(
+    store: Store, scope: Scope, cell_id: str, environment_id: str | None = None
+) -> tuple[Ref, dict[str, Any]] | None:
+    """The latest probe of ``cell_id`` in the app image (``environment_id`` None) or in that task
+    environment's image. A probe of another environment never counts (S7b)."""
+    object_id = probe_id(cell_id, environment_id)
     rows = [
-        (r, v) for r, v in store.list_objects(scope, PROBE_KIND) if r["id"] == probe_id(cell_id)
+        (r, v)
+        for r, v in store.list_objects(scope, PROBE_KIND)
+        if r["id"] == object_id
+        and v.get("cell_id") == cell_id
+        and v.get("environment_id") == environment_id
     ]
     return max(rows, key=lambda row: row[0]["revision"]) if rows else None
 
