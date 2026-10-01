@@ -2780,3 +2780,18 @@ lists them for explicit confirmation before the nightly loop is activated.
 
 Split status (§10.2): own tasks alone give holdout 22 (≥ 16) and validation ≈ 13 (< 24); `splits.json` is written
 after Terminal-Bench 2.0 admission (S16), as S6-freeze foresees.
+
+## Clarifications After S2 And S8 (2026-10-01)
+
+- **E-process alpha is fixed per chain** (§7.6): every prior report of a chain must carry the same `alpha` as the new
+  plan, else `Hold SEQUENTIAL_RULE`. Ville's inequality P(sup e ≥ 1/α) ≤ α holds only for an α fixed in advance;
+  raising α after seeing accumulated evidence would break the always-valid guarantee (S2 review finding).
+- **Trial goals are guarded in the loop itself** (IC-03): `ExecutionLoop.next_goal` never returns a goal whose plan
+  carries `trial`, and a verified trial goal is never published even by a loop that has a publisher. The trial
+  executor's constructor check (no publisher) stays, but safety no longer depends on it.
+- **Options reach the worker from the loop** (S8): tests that prove the worker's `DISPATCH_OPTIONS_BINDING` guard force
+  options at the worker call instead of relying on the loop passing none.
+- S2 choices accepted as the contract: `service_code_digest` = sha256(service.py ‖ calibration.py),
+  `analysis_code_digest` = sha256(analysis.py ‖ sequential.py); calibration plan ids are content-addressed
+  (`calplan-<24 hex>`); a versioned plan without `case_rule` keeps full-split equality; `run(parallel=k)` above the cap
+  runs at the cap; `flaky_grading` needs a stored source (task-index field) before calibration can assign it (open).

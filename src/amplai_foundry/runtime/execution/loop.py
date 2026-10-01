@@ -30,6 +30,7 @@ from ..contracts.authority import Actor
 from ..contracts.identity import canonical, new_id, now
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
+from .cells import DispatchOptions, resolve_options
 from .product import PORT, LocalExecutionService
 from .steering import SteeringService
 
@@ -151,6 +152,9 @@ class ExecutionLoop:
         dispatch: dict[str, Any],
         prompt: str,
         base: dict[str, Any],
+        *,
+        options: DispatchOptions | None = None,
+        deadline_seconds: float | None = None,
     ) -> bool:
         """Run one attempt; take over whenever operator steering paused it. True if steered.
 
@@ -159,17 +163,24 @@ class ExecutionLoop:
         steered turn. A paused process is never left behind: when no steering request stands
         behind the pause, or the steering cannot be applied, the process is stopped (abort)
         before the attempt fails. A request that arrives as a turn ends is withdrawn.
+
+        ``options`` are the goal's resolved dispatch options and ``deadline_seconds`` the wall
+        budget left at the attempt's start; both go to every turn of the attempt as call
+        arguments (Work 033 S8), never into the shared coordinator.
         """
         worker = self.service.actors.worker
 
         def first() -> Any:
             return self.coordinator.execute(
                 worker, dispatch, prompt=prompt, base_snapshot=base,
-                output_paths={PORT: PATCH_BINDING},
+                output_paths={PORT: PATCH_BINDING}, options=options,
+                deadline_seconds=deadline_seconds,
             )  # fmt: skip
 
         def resumed() -> Any:
-            return self.coordinator.continue_resumed(worker, dispatch["run_id"])
+            return self.coordinator.continue_resumed(
+                worker, dispatch["run_id"], options=options, deadline_seconds=deadline_seconds
+            )
 
         turn, steered = first, False
         while True:
@@ -346,13 +357,18 @@ class ExecutionLoop:
                 self.tracker.sync()
 
     def next_goal(self) -> str | None:
+        """The oldest approved goal that is not a trial. Trial goals are run only by the trial
+        executor (IC-03); one left approved by a crash is closed there, never run here."""
         with self.store._lock:
             rows = self.store.conn.execute(
                 "SELECT id FROM heads WHERE tenant=? AND project=? AND kind='execution-plan' "
                 "AND state='approved' ORDER BY rowid",
                 self.scope.keys(),
             ).fetchall()
-        return rows[0]["id"] if rows else None
+        for row in rows:
+            if not self.service.plan_record(row["id"]).get("trial"):
+                return str(row["id"])
+        return None
 
     def run_goal(self, goal_id: str) -> dict[str, Any]:
         svc, worker, verifier = (
@@ -367,6 +383,11 @@ class ExecutionLoop:
             context, budget = self._policies(plan)
         except (Hold, RuntimeFault) as exc:
             reason = f"harness components: {exc.code}: {exc.message}"[:600]
+            return self._stop_goal(goal_id, "held", reason, [])
+        try:  # the activated profile's model and effort, the L5 driver options (S8)
+            options = self._options(goal_id, plan, budget)
+        except (Hold, RuntimeFault) as exc:
+            reason = f"dispatch options: {exc.code}: {exc.message}"[:600]
             return self._stop_goal(goal_id, "held", reason, [])
         attempt_policy = budget.attempt_policy  # M1: repair base and feedback (D-096)
         contract = self.store.get(self.scope, "goal-contract", plan["contract_ref"])
@@ -407,11 +428,13 @@ class ExecutionLoop:
                 self._discard(dispatch["run_id"])
                 reason = f"prompt: {getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]
                 return self._stop_goal(goal_id, "held", reason, attempts)
-            self.coordinator.max_seconds = max(1, int(remaining))
             try:
+                # the remaining wall budget is this call's deadline (S8): writing the shared
+                # coordinator.max_seconds raced once trials of one app run concurrently
                 steered = self._execute(
-                    goal_id, dispatch, prompt, repair.get(node["node_id"]) or bases[app]
-                )
+                    goal_id, dispatch, prompt, repair.get(node["node_id"]) or bases[app],
+                    options=options, deadline_seconds=max(1, int(remaining)),
+                )  # fmt: skip
             except _Replan as replan:
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "outcome": "replanned",
@@ -494,7 +517,9 @@ class ExecutionLoop:
                 detail += f" ({exc.details['reason']})"
             return self._stop_goal(goal_id, "failed", "goal verification: " + detail, attempts)
         record = self._finish(goal_id, "verified", attempts=attempts, verification=result)
-        if self.publisher is not None:
+        # A trial goal never publishes, whoever runs it (IC-03): the loop checks the plan itself
+        # instead of trusting that only the trial executor, built without a publisher, runs it.
+        if self.publisher is not None and not plan.get("trial"):
             try:
                 published = self.publisher(goal_id)
                 opened = (
@@ -639,12 +664,12 @@ class ExecutionLoop:
         budget = policies.budget_policy(self.store, self.scope, composition, ceiling=ceiling)
         policies.check_combination(context.feedback_form, budget.attempt_policy, budget.limits)
         context_assembly.check_supported(context)
+        # driver_options (L5) are honoured since S8: resolve_options carries them to the port
         unsupported = [
             name
             for name, on in (
                 ("execution_strategy (S9)",
                  budget.execution_strategy != policies.V1["execution_strategy"]),
-                ("driver_options (S4)", budget.driver_options is not None),
                 ("fast_checks (S9)", bool(budget.fast_checks and budget.fast_checks["enabled"])),
                 ("deciders L5-L8 (S10)", any(budget.deciders.values())),
             )
@@ -657,6 +682,21 @@ class ExecutionLoop:
                 details=unsupported,
             )  # fmt: skip
         return context, budget
+
+    def _options(
+        self, goal_id: str, plan: dict[str, Any], budget: policies.BudgetPolicy
+    ) -> DispatchOptions:
+        """The goal's dispatch options (Work 033 S8, interfaces.md §3.4): model and effort of the
+        activated profile, the budget policy's driver options, and the trace flag of a trial goal
+        (``plan["trial"]["capture_trace"]``; a real goal never captures, D-100). Resolved once
+        before any claim: an effort profile then runs with its effort instead of holding
+        DISPATCH_OPTIONS_BINDING, and the worker still checks the binding before preparing."""
+        profile = self.store.head(self.scope, "goal", goal_id)["data"]["profile"]
+        trial = plan.get("trial") or {}
+        return resolve_options(
+            self.store, self.scope, profile, budget,
+            capture_trace=trial.get("capture_trace") is True,
+        )  # fmt: skip
 
     def _router_unsupported(self, plan: dict[str, Any], composition: dict[str, Any]) -> list[str]:
         """Router-carrier parts of the goal composition that S3 does not honour (D-096, §2.3).

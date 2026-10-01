@@ -129,6 +129,16 @@ class WorkCoordinator:
                 )  # fmt: skip
         return None
 
+    def _limit(self, deadline_seconds: float | None) -> float:
+        """The wall limit of one call: its deadline when given, else ``max_seconds``."""
+        if deadline_seconds is None:
+            return self.max_seconds
+        if isinstance(deadline_seconds, bool) or not isinstance(deadline_seconds, int | float):
+            raise RuntimeFault("WORKER_LIMITS", "A call deadline is a number of seconds")
+        if not deadline_seconds > 0:
+            raise RuntimeFault("WORKER_LIMITS", "A call deadline must be positive")
+        return float(deadline_seconds)
+
     def _existing(self, worker: Actor, did: str, request_digest: str) -> dict[str, Any] | None:
         try:
             h = self._state(worker, did)
@@ -158,8 +168,17 @@ class WorkCoordinator:
         output_paths: dict[str, str],
         planning_receipt: dict[str, Any] | None = None,
         options: DispatchOptions | None = None,
+        deadline_seconds: float | None = None,
     ) -> dict[str, Any]:
+        """Run one admitted dispatch to evidence.
+
+        ``deadline_seconds`` bounds this call's native run in place of ``max_seconds`` (Work 033
+        S8, interfaces.md §3.4): the loop passes its remaining wall budget per call instead of
+        writing the shared ``max_seconds``, which raced once trials ran concurrently. The node
+        budget's ``max_wall_seconds`` still caps it.
+        """
         worker.require("worker.execute")
+        limit = self._limit(deadline_seconds)
         did = dispatch["dispatch_id"]
         scope = worker.scope
         request = {
@@ -249,7 +268,7 @@ class WorkCoordinator:
         sequence = 0
         last_heartbeat: float = 0
         start = time.monotonic()
-        timeout = min(self.max_seconds, dispatch["node"]["budget"]["max_wall_seconds"])
+        timeout = min(limit, dispatch["node"]["budget"]["max_wall_seconds"])
         try:
             self.store.assert_outside_tx()
             handle = port.start(prepared)
@@ -534,15 +553,22 @@ class WorkCoordinator:
         return usage
 
     def continue_resumed(
-        self, worker: Actor, run_id: str, *, options: DispatchOptions | None = None
+        self,
+        worker: Actor,
+        run_id: str,
+        *,
+        options: DispatchOptions | None = None,
+        deadline_seconds: float | None = None,
     ) -> dict[str, Any]:
         """Collect a resumed turn only after the controller commits the new lease.
 
         ``options``, when given, must be the options the run was dispatched with (the resumed
         turn already runs under them, ``resume_exact``); Hold DISPATCH_OPTIONS_BINDING otherwise.
+        ``deadline_seconds`` bounds the resumed turn as in ``execute`` (Work 033 S8).
         """
         from copy import deepcopy
 
+        limit = self._limit(deadline_seconds)
         did, h = self._run_execution(worker, run_id)
         data = h["data"]
         stored = DispatchOptions.from_wire(data["options"]) if data.get("options") else None
@@ -573,7 +599,7 @@ class WorkCoordinator:
         seq = 0
         try:
             while time.monotonic() - start < min(
-                self.max_seconds, dispatch["node"]["budget"]["max_wall_seconds"]
+                limit, dispatch["node"]["budget"]["max_wall_seconds"]
             ):
                 assert_execution_live(self.runtime, worker, dispatch)
                 if time.monotonic() - last >= 30:
