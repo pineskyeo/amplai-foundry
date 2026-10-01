@@ -81,13 +81,13 @@ contract_notes: dict[str, Any] = {
             "stays EXECUTION_RECONCILE."
         ),
         "evidence": [
-            (W, 390, "def _existing"),
-            (W, 413, "def _in_followup"),
-            (W, 589, "followup_dispatch_id=follow"),
-            (W, 828, "def _kept_message"),
-            (W, 863, "def _recover"),
-            (W, 923, "port.poll(follow_id)"),
-            (W, 935, 'journal in (None, "prepared")'),
+            (W, 399, "def _existing"),
+            (W, 422, "def _in_followup"),
+            (W, 598, "followup_dispatch_id=follow"),
+            (W, 837, "def _kept_message"),
+            (W, 872, "def _recover"),
+            (W, 932, "port.poll(follow_id)"),
+            (W, 944, 'journal in (None, "prepared")'),
             (CLI, 329, "ORPHAN_SESSION"),
             (CLI, 333, '"prepared"}, "starting"'),
             (CLI, 481, "ORPHAN_SESSION"),
@@ -115,15 +115,15 @@ contract_notes: dict[str, Any] = {
             "pause is taken over (VOTE_SELECTED)."
         ),
         "evidence": [
-            (W, 1061, "def _candidate("),
-            (W, 1018, "def _stop_candidates"),
-            (W, 1194, "def _apply_candidate"),
-            (W, 1454, "self.sessions.prepare("),
-            (W, 1485, "self.sessions.bind("),
-            (W, 1486, "self.runtime.start("),
-            (W, 1529, "def stop_and_snapshot"),
-            (W, 1570, "VOTE_SELECTED"),
-            (W, 1607, "def abort"),
+            (W, 1070, "def _candidate("),
+            (W, 1027, "def _stop_candidates"),
+            (W, 1203, "def _apply_candidate"),
+            (W, 1463, "self.sessions.prepare("),
+            (W, 1494, "self.sessions.bind("),
+            (W, 1495, "self.runtime.start("),
+            (W, 1538, "def stop_and_snapshot"),
+            (W, 1579, "VOTE_SELECTED"),
+            (W, 1616, "def abort"),
             ("src/amplai_foundry/runtime/execution/service.py", 682, "DISPATCH_BINDING"),
             ("src/amplai_foundry/tool_broker/native.py", 88, "session_handle"),
             ("src/amplai_foundry/runtime/execution/steering.py", 191, "session_handle"),
@@ -551,13 +551,18 @@ def test_recovery_goes_on_with_the_remaining_follow_up(s: Setup) -> None:
 def test_a_process_this_port_does_not_own_holds_orphan_session(s: Setup) -> None:
     dispatch, base, _ = interrupted(s, "after", Hooks(["more"]), sleep=30)
     did = dispatch["dispatch_id"]
+    # read the spawned turns while the driver still lists the follow-up, so names() waits until
+    # its process has logged (a loaded runner logs it later than the pop below)
+    sent = s.turns.names()
+    assert sent == [did, did + "-f1"]
     proc = s.driver.processes.pop(did + "-f1")  # a restarted worker owns no process
     s.cleanup.append(lambda: os.killpg(proc.pid, signal.SIGKILL))
-    sent = s.turns.names()
     with pytest.raises(Hold) as orphan:
         s.execute(dispatch, base, Hooks(["more"]))
     assert orphan.value.code == "ORPHAN_SESSION"
-    assert s.turns.names() == sent  # nothing was sent again
+    # nothing was sent again: no new follow-up process, and the log holds the same two turns
+    assert did + "-f1" not in s.driver.processes
+    assert s.turns.names() == sent
     head = s.head(did)
     assert head["state"] == "held" and head["data"]["hold_code"] == "ORPHAN_SESSION"
     assert head["data"]["driver_handle"] == did + "-f1"  # a later abort targets the follow-up

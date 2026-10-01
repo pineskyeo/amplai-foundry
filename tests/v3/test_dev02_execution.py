@@ -514,8 +514,15 @@ def test_dev02_elapsed_budgets_do_not_reset_at_resume_or_poll(deployment, ceilin
         execution_envelope(d.runtime, d.worker, x)
 
 
-def test_dev02_coordinator_pause_exact_resume_to_actual_verified_output(deployment):
-    """Controlled native protocol fixture; not a live provider qualification."""
+@pytest.mark.parametrize("controller_first", [False, True])
+def test_dev02_coordinator_pause_exact_resume_to_actual_verified_output(
+    deployment, controller_first
+):
+    """Controlled native protocol fixture; not a live provider qualification.
+
+    ``controller_first`` forces the order a loaded CI runner produced: the controller's
+    stop_and_snapshot records "paused" before the execute thread records its pause request; the
+    head must stay "paused" so resume_exact admits it."""
     import time
 
     from amplai_foundry.agent_drivers.ports import ZERO_USAGE
@@ -557,6 +564,21 @@ def test_dev02_coordinator_pause_exact_resume_to_actual_verified_output(deployme
     w, ws, _, _ = rig(d, p, port)
     x = d.runtime.claim(d.worker)
     ss = SteeringService(d.runtime)
+    if controller_first:
+        original_fail = w._fail
+
+        def late_fail(worker, did, port, handles, options, exc):
+            # The CI order: the execute thread saw the pause before the controller moved the
+            # fence (EXECUTION_PAUSED, not STALE_RUN) and recorded it after stop_and_snapshot
+            # had already set the head "paused"
+            for _ in range(500):
+                if d.store.head(d.scope, "worker-execution", did)["state"] == "paused":
+                    break
+                time.sleep(0.01)
+            paused = Hold("EXECUTION_PAUSED", "Goal no longer admits a new driver operation")
+            return original_fail(worker, did, port, handles, options, paused)
+
+        w._fail = late_fail
     with ThreadPoolExecutor(max_workers=1) as pool:
         future = pool.submit(execute, d, p, w, ws, x)
         # Pause only after the native session started: the run head can read "running" before

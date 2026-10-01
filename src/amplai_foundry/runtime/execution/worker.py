@@ -310,6 +310,15 @@ class WorkCoordinator:
             h = self.store.head(worker.scope, "worker-execution", did, db=db)
             if state == "held" and h["state"] in {"paused", "cancelled", "resuming"}:
                 return h
+            if state == "pause_requested" and h["state"] in {"paused", "cancelled", "resuming"}:
+                # The controller's stop_and_snapshot applied the pause before this thread
+                # recorded its request (a race a loaded runner shows): keep the controller's
+                # state, the one resume_exact admits, and add this thread's data (trace handles)
+                self.store.cas(
+                    db, worker.scope, "worker-execution", did, h["row_version"], h["state"],
+                    {**h["data"], **changes},
+                )  # fmt: skip
+                return None
             self.store.cas(
                 db,
                 worker.scope,

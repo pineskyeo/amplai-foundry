@@ -821,8 +821,9 @@ def test_a_pass_count_above_the_band_is_outside_it_too(env: Env) -> None:
 
 
 def test_a_perfect_drift_run_against_a_saturated_band_is_inside_it(env: Env) -> None:
-    """wilson(4, 4) has an upper bound of 1 - 1e-16 in floats; 5/5 is still inside it."""
-    assert wilson(4, 4, Z95)[1] < 1.0
+    """A saturated band (wilson(4, 4) rounds to 1 - 1e-16 on one platform and to 1.0 on
+    another) still holds a perfect drift run: 5/5 is inside it either way."""
+    assert wilson(4, 4, Z95)[1] >= 1.0 - 1e-12
     env.fake.snaps[CELL] = {"current": SNAP, "calibrated": SNAP, "band": {"passes": 4, "runs": 4}}
     env.fake.drift_batch = {"trials": 5, "passes": 5, "runs": 5}
     runner = env.ready()
