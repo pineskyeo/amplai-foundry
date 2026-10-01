@@ -611,8 +611,9 @@ class LocalProductDeployment:
                 details=[s for s in self.cell_skips if s["cell_id"] in stale],
             )  # fmt: skip
         self.coordinator = WorkCoordinator(
-            self.runtime, registry, self.workspaces, poll_seconds=2.0, max_seconds=1800
-        )
+            self.runtime, registry, self.workspaces, poll_seconds=2.0, max_seconds=1800,
+            trace_sink=self._trace_sink(cfg),
+        )  # fmt: skip
         integrations = [
             (i.id, list(i.argv), i.timeout_seconds, list(i.apps)) for i in cfg.integrations
         ]
@@ -681,6 +682,20 @@ class LocalProductDeployment:
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
+
+    def _trace_sink(self, cfg: LocalConfig) -> Callable[[str, dict[str, Any]], None] | None:
+        """The coordinator's trace sink (Work 033 S13, §9.1-§9.3): admits a run's sanitized
+        trace when the run's goal plan carries a trial with ``capture_trace`` (trial goals only,
+        D-100); ``meta.trace_capture`` false turns it off. ``self.service`` is read at call time
+        (it is built after the coordinator)."""
+        if cfg.meta is not None and not cfg.meta.trace_capture:
+            return None
+        from ..meta_harness.traces import trace_sink
+
+        return trace_sink(
+            self.store, self.scope, self.artifacts,
+            lambda goal_id: self.service.plan_record(goal_id),
+        )  # fmt: skip
 
     def _port(
         self,

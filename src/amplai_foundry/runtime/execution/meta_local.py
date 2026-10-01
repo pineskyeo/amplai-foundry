@@ -75,6 +75,9 @@ META_OPERATOR_PERMISSIONS = frozenset(
         # IC-18 (provisional): the human operator's reconcile path (``amplai meta reconcile``,
         # ``LocalMetaOps.reconcile``, which also refuses a non-human or proposer actor)
         "experiment.reconcile",
+        # IC-26 (provisional): evaluator changes and requalification (``evaluation/quality.py``,
+        # which also refuses a non-human or proposer actor)
+        "evaluator.approve",
     }
 )
 PROPOSER_PERMISSIONS = frozenset({"harness.propose"})
@@ -156,14 +159,29 @@ def leak_subject(
 ) -> dict[str, Any]:
     """What the leak gate scans for one proposal (§10.4): the proposal record, its change artifact
     and the content of every component the change brings in (``component_changes[].to``; a
-    prompt bundle's role lines). Values that cannot be read are scanned as absent: the screen's
-    own checks refuse an unreadable change artifact."""
-    subject: dict[str, Any] = {"proposal": proposal, "change_artifact": None, "components": []}
+    prompt bundle's role lines) and the ``proposal-prediction`` the change artifact names
+    (``prediction_ref``: development task ids only, §9.5, IC-11). Values that cannot be read are
+    scanned as absent: the screen's own checks refuse an unreadable change artifact."""
+    subject: dict[str, Any] = {
+        "proposal": proposal, "change_artifact": None, "components": [], "prediction": None,
+    }  # fmt: skip
     try:
         change = json.loads(artifacts.read(scope, proposal["change_artifact"]))
     except (RuntimeFault, KeyError, TypeError, ValueError):
         return subject
     subject["change_artifact"] = change
+    prediction_ref = change.get("prediction_ref") if isinstance(change, dict) else None
+    if isinstance(prediction_ref, dict):
+        try:
+            kind, prediction = resolve_ref(store, scope, prediction_ref)
+        except RuntimeFault:
+            kind, prediction = "", {}
+        if kind == "proposal-prediction":
+            subject["prediction"] = {
+                k: prediction.get(k)
+                for k in ("improve_task_ids", "regress_task_ids", "improve_buckets",
+                          "regress_buckets", "expected_delta", "risk")
+            }  # fmt: skip
     changes = change.get("component_changes") if isinstance(change, dict) else None
     for item in changes if isinstance(changes, list) else []:
         to = item.get("to") if isinstance(item, dict) else None

@@ -31,6 +31,17 @@ DriverOption = Annotated[str, typer.Option("--driver", help="the driver whose pr
 CorpusOption = Annotated[Path, typer.Option("--corpus", help="the demo-app task corpus")]
 
 
+def trial_traces(dep: Any) -> Any:
+    """The ``TraceService`` a trial executor captures with (Work 033 S13, §9.1): trial goals
+    capture unless ``meta.trace_capture`` is false (§12.2; absent ``meta`` keeps the default)."""
+    from ..meta_harness.traces import TraceService
+
+    meta = getattr(dep.config, "meta", None)
+    if meta is not None and not meta.trace_capture:
+        return None
+    return TraceService(dep.store, dep.scope, dep.artifacts)
+
+
 @contextmanager
 def opened(config: Path, driver: str, corpus_root: Path) -> Iterator[Any]:
     """The operator's meta gates on the deployment at ``config`` (closed afterwards)."""
@@ -44,7 +55,9 @@ def opened(config: Path, driver: str, corpus_root: Path) -> Iterator[Any]:
     try:
         corpus = local_corpus.load(Path(corpus_root).expanduser())
         loop = ExecutionLoop(dep.service, dep.coordinator, publisher=None)
-        executor = LocalTrialExecutor(dep.service, loop, dep.goals, dep.operator(), corpus)
+        executor = LocalTrialExecutor(
+            dep.service, loop, dep.goals, dep.operator(), corpus, traces=trial_traces(dep)
+        )
         yield LocalMetaOps(dep, corpus, executor, driver=driver)
     finally:
         dep.close()

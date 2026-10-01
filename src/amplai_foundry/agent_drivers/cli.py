@@ -26,6 +26,16 @@ if TYPE_CHECKING:
 
 ACTIVE = frozenset({"starting", "running", "cancelling", "unknown"})
 TERMINAL = frozenset({"completed", "failed", "cancelled", "paused"})
+# the credential a SeededCodexPort leases into a dispatch home (runtime/execution/codex.py AUTH)
+CODEX_AUTH = Path(".codex") / "auth.json"
+
+
+def _holds(value: Any, literals: frozenset[str] | set[str]) -> bool:
+    """IC-28: whether a string anywhere in ``value`` contains one of ``literals``
+    (``meta_harness/traces.py``, imported lazily: drivers depend on it only when capturing)."""
+    from amplai_foundry.meta_harness.traces import holds_credential
+
+    return holds_credential([value], literals)
 
 
 class CliDriver:
@@ -81,6 +91,15 @@ class CliDriver:
         self.max_seconds = max_seconds
         self.processes: dict[str, subprocess.Popen[bytes]] = {}
         self.threads: dict[str, threading.Thread] = {}
+        # Work 033 S13 (§9.1): the sanitized trace of each dispatch prepared with
+        # ``options.capture_trace`` (trial goals only), kept in memory until ``destroy``
+        self._traces: dict[str, Any] = {}
+        # IC-28 (provisional): a captured dispatch's own credential literals (its injected
+        # environment values; for Codex the leased auth.json as seeded and as left by the run),
+        # the Codex home they are read from, and the dispatches whose raw events held one
+        self._credentials: dict[str, set[str]] = {}
+        self._credential_homes: dict[str, Path] = {}
+        self._credential_hits: set[str] = set()
         self.native_root = journal.root / "native"
         self.native_root.mkdir(mode=0o700, exist_ok=True)
 
@@ -249,6 +268,9 @@ class CliDriver:
             raise Hold("WORKSPACE_PATH", "An isolated non-symlink workspace is required")
         opts = self._options(options)
         home = self._home(dispatch["dispatch_id"], native_home)
+        if opts is not None and opts.capture_trace:
+            self._trace_buffer(dispatch["dispatch_id"])
+            self._seeded_credentials(dispatch["dispatch_id"], home)
         args = self.argv(prompt, session=session, options=opts)
         command = self.sandbox.command(
             args,
@@ -373,8 +395,18 @@ class CliDriver:
         stderr_thread.start()
         seq = 0
 
+        buffer = self._traces.get(did)
+        literals = frozenset(self._credentials.get(did) or ())
+
         def observe(event: dict[str, Any]) -> None:
             nonlocal seq
+            if buffer is not None:
+                # §9.1: the raw event, before the normalizer; the sanitizer never raises here
+                buffer.add(event)
+                # IC-28: the raw event (also one the sanitizer drops, or text it cuts) checked
+                # for the dispatch's own credential literals
+                if literals and did not in self._credential_hits and _holds(event, literals):
+                    self._credential_hits.add(did)
             normalized = normalizer.accept(event)
             seq += 1
             self.journal.append(did, f"provider-{seq}", normalized)
@@ -392,6 +424,7 @@ class CliDriver:
             for event in decoder.feed(b"", final=True):
                 observe(event)
             code = process.wait()
+            self._left_credentials(did)  # IC-28: before the turn can be collected
             stderr_thread.join(timeout=1)
             stopped = self.sandbox.stopped(did) is True
             complete = (
@@ -555,10 +588,61 @@ class CliDriver:
             )
         )
 
+    def _trace_buffer(self, dispatch_id: str) -> Any:
+        """The dispatch's trace buffer (``meta_harness/traces.py``, imported lazily: drivers do
+        not depend on the meta-harness unless a trial captures). A duplicate prepare keeps it."""
+        from amplai_foundry.meta_harness.traces import TraceBuffer
+
+        return self._traces.setdefault(dispatch_id, TraceBuffer(self.provider))
+
+    def _seeded_credentials(self, dispatch_id: str, home: Path) -> None:
+        """IC-28: the captured dispatch's own credential literals at prepare: its injected
+        environment values (the Claude OAuth token or API key) of at least ``CREDENTIAL_MIN``
+        characters and, for Codex, the string values of the auth.json the port leased into its
+        home (``SeededCodexPort.prepare`` seeds before ``prepare``)."""
+        from amplai_foundry.meta_harness.traces import CREDENTIAL_MIN, read_credential_file
+
+        literals = {v for v in self.environment.values() if len(v) >= CREDENTIAL_MIN}
+        if self.provider == "codex":
+            self._credential_homes[dispatch_id] = home
+            literals |= read_credential_file(home / CODEX_AUTH)
+        self._credentials[dispatch_id] = self._credentials.get(dispatch_id, set()) | literals
+
+    def _left_credentials(self, did: str) -> None:
+        """IC-28: a Codex dispatch's auth.json as the run left it (a refresh rotates the
+        tokens), read after the process ended and before the port releases the lease."""
+        home = self._credential_homes.get(did)
+        if home is None:
+            return
+        from amplai_foundry.meta_harness.traces import read_credential_file
+
+        with contextlib.suppress(Exception):
+            left = read_credential_file(home / CODEX_AUTH)
+            self._credentials[did] = self._credentials.get(did, set()) | left
+
     def trace(self, handle: str) -> dict[str, Any] | None:
-        """The sanitized trace of a dispatch (S13, §9.1); no capture exists before S13."""
+        """The sanitized trace of a dispatch (Work 033 S13, §9.1): the snapshot of its buffer
+        (``trace-sanitizer-v1``), or None when it was not prepared with ``capture_trace``.
+
+        IC-28 (provisional, the read-only turn's rule, ``readonly_turn._trace``): when the raw
+        events held one of the dispatch's own credential literals as seeded, or a kept text holds
+        one of them as seeded or as left by the run, the snapshot keeps no item and counts a
+        sanitizer error, so admission writes ``trace-drop`` ``sanitizer_error`` and stores
+        nothing. A dispatch without any credential literal of at least ``CREDENTIAL_MIN``
+        characters is not checked (the executor is not failed closed, unlike a read-only Codex
+        turn)."""
         self.journal.read(handle)
-        return None
+        buffer = self._traces.get(handle)
+        if buffer is None:
+            return None
+        snapshot: dict[str, Any] = buffer.snapshot()
+        literals = self._credentials.get(handle) or set()
+        kept = [snapshot.get("items"), snapshot.get("result")]
+        if handle in self._credential_hits or (literals and _holds(kept, literals)):
+            from amplai_foundry.meta_harness.traces import withhold
+
+            withhold(snapshot)
+        return snapshot
 
     def collect(self, handle: str) -> dict[str, Any]:
         record = self.poll(handle)
@@ -584,6 +668,10 @@ class CliDriver:
             self.sandbox.destroy(handle)
         self.processes.pop(handle, None)
         self.threads.pop(handle, None)
+        self._traces.pop(handle, None)
+        self._credentials.pop(handle, None)
+        self._credential_homes.pop(handle, None)
+        self._credential_hits.discard(handle)
         # Native home is retained for explicit operator-governed retention, never put in a ZIP.
 
 

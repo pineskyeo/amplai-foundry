@@ -15,8 +15,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import re
 import subprocess
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -179,6 +182,9 @@ class InstalledApp:
 
 
 PLANNER_MODES = ("fixed", "real")
+# IC-23: the domain a trial's L1/L2 decisions read (a corpus v2 domain, or "unknown")
+UNKNOWN_DOMAIN = "unknown"
+DOMAIN = re.compile(r"[a-z0-9_]{1,64}")
 
 
 @dataclass(frozen=True)
@@ -189,6 +195,10 @@ class TrialContext:
     instead of ``sandbox:<app>`` (IC-03): trial goals never publish and work on their own
     workspace copy, so two trials of one app may run at once while published goals keep the one
     write claim per repository.
+
+    ``domain`` (IC-23, provisional) is the corpus case's domain, read by the trial's L1/L2
+    decisions (§6.1); ``"unknown"`` when the case gives none. A wire without it (a plan recorded
+    before IC-23) reads as ``"unknown"``.
     """
 
     subject: dict[str, str]  # {"experiment_id"|"calibration_plan_id", "trial_id"}
@@ -199,6 +209,7 @@ class TrialContext:
     planner_mode: Literal["fixed", "real"]
     environment_id: str  # "app" or a task environment id
     write_scope: Literal["trial"] = "trial"
+    domain: str = UNKNOWN_DOMAIN
 
     def __post_init__(self) -> None:
         bad = [
@@ -215,6 +226,8 @@ class TrialContext:
                 ("environment_id", isinstance(self.environment_id, str)
                  and bool(self.environment_id)),
                 ("write_scope", self.write_scope == "trial"),
+                ("domain", isinstance(self.domain, str)
+                 and DOMAIN.fullmatch(self.domain) is not None),
             )
             if not ok
         ]  # fmt: skip
@@ -231,6 +244,7 @@ class TrialContext:
             "planner_mode": self.planner_mode,
             "environment_id": self.environment_id,
             "write_scope": self.write_scope,
+            "domain": self.domain,
         }
 
 
@@ -238,6 +252,12 @@ def write_resource(app_id: str, goal_id: str, *, trial: bool) -> str:
     """The resource a node of ``goal_id`` claims exclusively (IC-03): ``sandbox:<app>`` for every
     goal that may publish, ``sandbox:<app>:trial:<goal_id>`` for an experiment trial goal."""
     return f"sandbox:{app_id}:trial:{goal_id}" if trial else "sandbox:" + app_id
+
+
+def _traces(planner: Any) -> bool:
+    """Whether a planner's turn can return its sanitized trace (``planner.TRACES``, §9.1); a
+    planner without it (a fixed or test planner) is called exactly as before."""
+    return getattr(planner, "TRACES", False) is True
 
 
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
@@ -742,6 +762,9 @@ class LocalExecutionService:
             else {v.id: v.description for v in app.verifiers}
         )
         planning = self.select_composition(installed, pin=composition, role="planner")
+        # Work 033 S10 (clarification after W0-W1): router parts the loop cannot honour are
+        # refused here, before the planner turn, not after an approval
+        router = self.refuse_router_parts(installed, composition or planning["ref"])
         planner = planner or self._planner(installed, planning["cell_id"] or planning["driver_id"])
         runner = self.strategy_runner()
         planner_cell = planning["cell_id"] or planning["driver_id"]
@@ -751,38 +774,30 @@ class LocalExecutionService:
             runner, installed, composition, mode=mode, apps=target_apps,
             trial=trial is not None, planner=planner, planner_cell=planner_cell,
         )  # fmt: skip
-        workspaces = {
-            a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
-        }
-        try:
-            if multi:
-                drafted = planner.draft_multi(
-                    intent["text"],
-                    {t.config.app_id: {v.id: v.description for v in t.config.verifiers}
-                     for t in targets},
-                    workspaces,
-                )  # fmt: skip
-            else:
-                drafted = planner.draft(
-                    intent["text"], app.app_id, verifiers, workspaces[app.app_id], mode=mode,
-                    **variant_args,
-                )  # fmt: skip
-            # before the discard: the base facts env_bootstrap may show (D-096)
-            repo_facts = {
-                a: self._repo_facts(self.apps[a].config, w) for a, w in workspaces.items()
-            }
-        finally:
-            for workspace in workspaces.values():
-                self.workspaces.discard(workspace)
-        draft = _clean_draft(drafted["draft"])
-        items = (
-            draft["work_items"]
-            if multi
-            else [
-                {"app": app.app_id, "objective": draft["objective"],
-                 "in_scope": draft["in_scope"], "acceptance": draft["acceptance"], "after": []}
-            ]
+        # Work 033 (§2.2 interpretation, §6.1 L1): the planner instruction and the contract form
+        # of the goal's router; one the planner cannot honour is refused before its turn
+        interpretation = dict(router.interpretation)
+        variant, draft_args = self._interpretation_args(
+            planner, interpretation, mode=mode, multi=multi, variant=variant,
+            variant_args=variant_args, planner_cell=planner_cell,
         )  # fmt: skip
+        # §9.1 (carrier rule, clarifications after the S10/S13/S14 fix wave): every plan-time
+        # read-only turn of a capturing trial (this draft, the L1 replan, the strategy runner's
+        # lead/split/steps turns) is a turn "planner" of one goal-level planner trace, admitted
+        # once at the end of plan(); a real goal and an uncaptured trial never ask for a trace
+        capturing = bool(trial is not None and trial.capture_trace)
+        capture = capturing and _traces(planner)  # a planner without TRACES is called as before
+        if capture:
+            draft_args["capture_trace"] = True
+        drafted, repo_facts = self._draft(
+            planner, intent["text"], targets, verifiers, bases, mode=mode, args=draft_args
+        )
+        first_trace = drafted.get("trace") if capture else None
+        planner_traces: list[dict[str, Any]] = (
+            [first_trace] if isinstance(first_trace, dict) else []
+        )
+        draft = _clean_draft(drafted["draft"])
+        items = self._draft_items(draft, app.app_id, multi=multi)
         record: dict[str, Any] = {
             "goal_id": goal_id,
             "scope": scope.wire(),
@@ -808,11 +823,49 @@ class LocalExecutionService:
             "base_check": base_check,
             "repo_facts": repo_facts,
             **({"trial": trial.wire()} if trial is not None else {}),
+            **({"interpretation": interpretation}
+               if interpretation != policies.V1["interpretation"] else {}),
             "created_at": now(),
-        }
-        if draft["questions"]:
+        }  # fmt: skip
+        # L1 (§6.1): after the draft and before the questions branch; the v1 prior asks back
+        # exactly when the planner listed questions (today's branch)
+        # a trial's decisions name its trial (§2.5); a goal's (or a subjectless trial's) the goal
+        subject = dict(trial.subject) if trial is not None and trial.subject else {}
+        subject = subject or {"goal_id": goal_id}
+        # IC-23: a trial's L1/L2 decisions read its corpus domain; a goal's read "unknown"
+        domain = trial.domain if trial is not None else UNKNOWN_DOMAIN
+        aux_entries: list[dict[str, Any]] = []
+        l1, aux_cap = self._decide_intake(
+            installed, router, composition or planning["ref"], draft, intent,
+            multi=multi, cell=trial.cell_id if trial is not None else planner_cell,
+            subject=subject, production=trial is None, aux_entries=aux_entries, domain=domain,
+            planner=planner, interpretation=interpretation,
+        )  # fmt: skip
+        record["decisions"] = [l1.record_ref]
+        asked = l1.option == "ask_back"
+        if l1.option == "replan_ask_first":
+            # one more planner turn with the ask_first instruction (§6.1), auxiliary (IC-21)
+            new, info, snapshot = self._replan_ask_first(
+                planner, intent["text"], targets, verifiers, bases, mode=mode, args=draft_args,
+                cap=aux_cap, aux_entries=aux_entries, cell=planner_cell, trial=trial is not None,
+            )  # fmt: skip
+            if capture and isinstance(snapshot, dict):
+                planner_traces.append(snapshot)
+            info["first_questions"] = len(draft["questions"])
+            if new is not None:
+                if not new["questions"] and not self._has_plan(new, multi=multi):
+                    raise Hold("PLANNER_OUTPUT", "The ask_first replan drafted no plan or question")
+                draft, items = new, self._draft_items(new, app.app_id, multi=multi)
+                record.update(draft=draft, work_items=items)
+            # a real goal whose replan turn could not run keeps its draft and the v1 rule
+            asked = bool(draft["questions"])
+            record["l1_replan"] = {**info, "outcome": "ask_back" if asked else "proceed"}
+        if aux_entries:
+            record["aux_usage"] = list(aux_entries)
+        if asked:
             record.update(status="needs_answers", contract_ref=None, graph_ref=None)
             self._save_plan(goal_id, record, ("question.asked", {"count": len(draft["questions"])}))
+            self._admit_planner_trace(goal_id, trial, planning["driver_id"], planner_traces)
             return record
         entries = []
         for a, b in bases.items():
@@ -857,12 +910,26 @@ class LocalExecutionService:
         # budgets (interfaces.md §2.3, IC-21)
         chosen = self.select_composition(installed, draft.get("task_class"), pin=composition)
         budget = self._budget_policy(chosen["ref"])
+        # Work 033 S10 (§6.1): the L2 strategy, the L3 executor cell and the L8 limits after the
+        # plan, before the items are built and the contract compiled
+        decided = self._decide_after_plan(
+            runner, installed, router, chosen, budget, draft, pinned=composition is not None,
+            mode=mode, apps=target_apps, trial=trial, planner=planner,
+            planner_cell=planner_cell, drafted=variant, subject=subject,
+        )  # fmt: skip
+        chosen, budget = decided["composition"], decided["budget"]
+        record["decisions"] = [*record["decisions"], *decided["decisions"]]
+        if decided["limits"] is not None:
+            record["decided_limits"] = decided["limits"]
         # Work 033 S9 (§3.6, §4.1 row product.py:647-654): the strategy, then its work items
         strategy, items, node_apps, extra = self._strategy_items(
             runner, goal_id, installed, chosen, budget, draft, items, base=base, mode=mode,
             apps=target_apps, trial=trial is not None, planner=planner,
             planner_cell=planner_cell, drafted=variant, verifier_ids=list(verifiers),
+            strategy=decided["strategy"], aux_entries=aux_entries, capture=capturing,
+            traces=planner_traces,
         )  # fmt: skip
+        self._check_contract_form(interpretation, strategy, trial=trial is not None)
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, resolution_ref, resolution, bundle_ref, installed, draft,
             mode=mode, items=items, policy_ref=policy_ref, budget=budget,
@@ -874,6 +941,9 @@ class LocalExecutionService:
         record["composition"] = chosen
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
         self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
+        # §9.1: once, after the plan is saved, with every plan-time snapshot in the order the turns
+        # ran (never raises: trace capture does not change the plan)
+        self._admit_planner_trace(goal_id, trial, planning["driver_id"], planner_traces)
         return record
 
     def replan(self, goal_id: str, reason: str, steering_id: str) -> dict[str, Any]:
@@ -905,29 +975,26 @@ class LocalExecutionService:
         pin = was["ref"] if was.get("pinned") else None
         planning = self.select_composition(installed, pin=pin, role="planner")
         planner = self._planner(installed, planning["cell_id"] or planning["driver_id"])
-        workspaces = {
-            a: self.workspaces.materialize(scope, new_id("plan-ws"), b) for a, b in bases.items()
-        }
-        try:
-            if len(targets) > 1:
-                drafted = planner.draft_multi(
-                    request,
-                    {t.config.app_id: {v.id: v.description for v in t.config.verifiers}
-                     for t in targets},
-                    workspaces,
-                )  # fmt: skip
-            else:
-                verifiers = (
-                    {DESIGN_CHECK: DESIGN_CHECK_DESCRIPTION}
-                    if mode == "design"
-                    else {v.id: v.description for v in app.verifiers}
-                )
-                drafted = planner.draft(
-                    request, app.app_id, verifiers, workspaces[app.app_id], mode=mode
-                )
-        finally:
-            for workspace in workspaces.values():
-                self.workspaces.discard(workspace)
+        # the goal's interpretation (§2.2) applies to its replan; a steps contract cannot: a
+        # replan drafts the v1 schema and S9 puts the revision on the v1 prior strategy
+        interpretation = dict(plan.get("interpretation") or policies.V1["interpretation"])
+        if interpretation.get("contract_form") == "steps":
+            raise RuntimeFault(
+                "COMPONENT_CONTENT", "The goal's interpretation cannot be honoured by a replan",
+                details=["interpretation contract_form steps (a replan drafts the v1 schema)"],
+            )  # fmt: skip
+        _variant, args = self._interpretation_args(
+            planner, interpretation, mode=mode, multi=len(targets) > 1, variant=None,
+            variant_args={}, planner_cell=planning["cell_id"] or planning["driver_id"],
+        )  # fmt: skip
+        verifiers = (
+            {DESIGN_CHECK: DESIGN_CHECK_DESCRIPTION}
+            if mode == "design"
+            else {v.id: v.description for v in app.verifiers}
+        )
+        drafted, _facts = self._draft(
+            planner, request, targets, verifiers, bases, mode=mode, args=args
+        )
         draft = _clean_draft(drafted["draft"])
         if draft["questions"]:
             raise Hold("REPLAN_QUESTIONS", "The replan needs answers", details=draft["questions"])
@@ -940,9 +1007,16 @@ class LocalExecutionService:
             ]
         )  # fmt: skip
         revision = previous["revision"] + 1
-        # as in plan: the selected composition's budget policy sets the node budgets
-        chosen = self.select_composition(installed, draft.get("task_class"), pin=pin)
-        budget = self._budget_policy(chosen["ref"])
+        # as in plan: the selected composition's budget policy sets the node budgets; a
+        # replan runs no decider, so an L3-decided composition and L8-decided limits are kept
+        # (Work 033 S10)
+        decided = was.get("decision_ref") if was.get("ref") else None
+        chosen = self.select_composition(
+            installed, draft.get("task_class"), pin=was["ref"] if decided else pin
+        )
+        if decided:
+            chosen = {**chosen, "pinned": False, "decision_ref": decided}
+        budget = self._decided_budget(plan, chosen["ref"])
         # Work 033 S9: the replan drafts one item per app (v1 schema), so a strategy that splits
         # one app's change (M5/M7) does not carry over; that revision runs on the v1 prior
         strategy = self._replanned_strategy(plan, chosen)
@@ -1041,20 +1115,31 @@ class LocalExecutionService:
         planner_cell: str,
         drafted: str | None,
         verifier_ids: list[str],
+        strategy: dict[str, Any] | None = None,
+        aux_entries: list[dict[str, Any]] | None = None,
+        capture: bool = False,
+        traces: list[dict[str, Any]] | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, str], dict[str, Any]]:
         """The plan record's ``strategy``, the work items, ``node_apps`` and the strategy's plan
         fields (``plan_steps``, ``aux_usage``, ``aux_overrun``).
 
+        ``strategy`` is the L2-decided record (Work 033 S10; chosen here without one) and
+        ``aux_entries`` the auxiliary turns the goal already ran (an L1 judge, IC-21).
+        ``capture`` (S13, §9.1: a trial whose context has ``capture_trace``) runs the plan-time
+        turns with ``capture_trace``; their snapshots are appended to ``traces`` in the order they
+        ran, also when a later turn failed (the planner trace keeps every turn that ran).
         A plan-time auxiliary turn that cannot run (``AUX_BUDGET``, ``TURN_*``) refuses a trial's
         strategy (the loop holds it before any claim) and puts a real goal on the v1 prior."""
         from .strategy_runner import PRIOR, AuxLedger, PlanContext, StrategyChoice
 
-        strategy: dict[str, Any] = runner.choose(
-            installed=installed, composition=chosen, budget=budget, mode=mode, apps=apps,
-            trial=trial, planner=planner, planner_cell=planner_cell, after_draft=True,
-            drafted=drafted,
-        )  # fmt: skip
-        ledger = AuxLedger(int(strategy["aux_cap"]))
+        if strategy is None:
+            strategy = runner.choose(
+                installed=installed, composition=chosen, budget=budget, mode=mode, apps=apps,
+                trial=trial, planner=planner, planner_cell=planner_cell, after_draft=True,
+                drafted=drafted,
+            )  # fmt: skip
+        assert strategy is not None
+        ledger = AuxLedger(int(strategy["aux_cap"]), aux_entries)
         default: tuple[list[dict[str, Any]], dict[str, str]] = (
             items, {"node-" + i["app"]: i["app"] for i in items}
         )  # fmt: skip
@@ -1062,7 +1147,7 @@ class LocalExecutionService:
         if strategy.get("refused"):
             new_items, node_apps = default
         else:
-            context = PlanContext(goal_id, base, trial, ledger, verifier_ids)
+            context = PlanContext(goal_id, base, trial, ledger, verifier_ids, capture=capture)
             choice = StrategyChoice.of({"strategy": strategy})
             try:
                 new_items, node_apps = runner.items(draft, choice, apps[0], context=context)
@@ -1078,6 +1163,9 @@ class LocalExecutionService:
                         strategy=PRIOR, params={}, used_prior=True, variant=None,
                         cascade=[cell], eligibility={**strategy["eligibility"], "plan": why},
                     )  # fmt: skip
+            finally:
+                if traces is not None:
+                    traces.extend(s for s in context.snapshots if isinstance(s, dict))
         extra: dict[str, Any] = {"aux_usage": ledger.entries, "aux_overrun": ledger.overrun}
         if steps:
             extra["plan_steps"] = steps
@@ -1114,6 +1202,602 @@ class LocalExecutionService:
                             "replan": "a replan drafts one work item per app"},
         }  # fmt: skip
 
+    # -- interpretation (Work 033, interfaces.md §2.2, §6.1 L1, §9.1) ----------------------------
+    @staticmethod
+    def _interpretation_args(
+        planner: Any,
+        interpretation: dict[str, Any],
+        *,
+        mode: str,
+        multi: bool,
+        variant: str | None,
+        variant_args: dict[str, Any],
+        planner_cell: str,
+    ) -> tuple[str | None, dict[str, Any]]:
+        """(the plan schema variant, the planner's draft arguments) for the goal's
+        ``interpretation``. v1 passes nothing new, so a planner is called exactly as before.
+        ``planner_instruction`` other than v1 needs a planner with that text
+        (``planner.INSTRUCTIONS``); ``contract_form`` "steps" is the S9 M7 ``steps`` schema
+        variant of a one-app work goal (it replaces a strategy's ``parts`` variant: a splitting
+        strategy then asks its own turn). RuntimeFault COMPONENT_CONTENT before the planner turn
+        when the planner cannot honour it."""
+        instruction = interpretation.get("planner_instruction", "v1")
+        form = interpretation.get("contract_form", "v1")
+        args = dict(variant_args)
+        parts = []
+        if instruction != "v1":
+            if instruction in tuple(getattr(planner, "INSTRUCTIONS", ()) or ()):
+                args["interpretation"] = instruction
+            else:
+                parts.append(
+                    f"interpretation planner_instruction {instruction} (the planner of "
+                    f"{planner_cell} has no text for it)"
+                )
+        if form == "steps":
+            if multi or mode != "work":
+                parts.append("interpretation contract_form steps (one-app work goals only)")
+            elif "steps" not in tuple(getattr(planner, "VARIANTS", ()) or ()):
+                parts.append(
+                    f"interpretation contract_form steps (the planner of {planner_cell} drafts "
+                    "no steps)"
+                )
+            else:
+                variant = "steps"
+                args = {**{k: v for k, v in args.items() if k != "max_parts"}, "variant": "steps"}
+        elif form != "v1":
+            parts.append(f"interpretation contract_form {form} (unknown)")
+        if parts:
+            raise RuntimeFault(
+                "COMPONENT_CONTENT", "The goal's interpretation cannot be honoured", details=parts
+            )
+        return variant, args
+
+    def _draft(
+        self,
+        planner: Any,
+        text: str,
+        targets: list[InstalledApp],
+        verifiers: dict[str, str],
+        bases: dict[str, dict[str, Any]],
+        *,
+        mode: str,
+        args: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """One planner turn on fresh base copies (discarded afterwards): the planner's reply and
+        the base facts env_bootstrap may show (D-096), read before the discard."""
+        workspaces = {
+            a: self.workspaces.materialize(self.scope, new_id("plan-ws"), b)
+            for a, b in bases.items()
+        }
+        try:
+            if len(targets) > 1:
+                drafted: dict[str, Any] = planner.draft_multi(
+                    text,
+                    {t.config.app_id: {v.id: v.description for v in t.config.verifiers}
+                     for t in targets},
+                    workspaces, **args,
+                )  # fmt: skip
+            else:
+                app_id = targets[0].config.app_id
+                drafted = planner.draft(
+                    text, app_id, verifiers, workspaces[app_id], mode=mode, **args
+                )
+            repo_facts = {
+                a: self._repo_facts(self.apps[a].config, w) for a, w in workspaces.items()
+            }
+        finally:
+            for workspace in workspaces.values():
+                self.workspaces.discard(workspace)
+        return drafted, repo_facts
+
+    @staticmethod
+    def _draft_items(draft: dict[str, Any], app_id: str, *, multi: bool) -> list[dict[str, Any]]:
+        """The draft as work items: its own (several apps) or the one item of a one-app goal."""
+        if multi:
+            items: list[dict[str, Any]] = draft["work_items"]
+            return items
+        return [
+            {"app": app_id, "objective": draft["objective"], "in_scope": draft["in_scope"],
+             "acceptance": draft["acceptance"], "after": []}
+        ]  # fmt: skip
+
+    @staticmethod
+    def _has_plan(draft: dict[str, Any], *, multi: bool) -> bool:
+        return bool(draft.get("work_items")) if multi else bool(draft.get("acceptance"))
+
+    def _replan_ask_first(
+        self,
+        planner: Any,
+        text: str,
+        targets: list[InstalledApp],
+        verifiers: dict[str, str],
+        bases: dict[str, dict[str, Any]],
+        *,
+        mode: str,
+        args: dict[str, Any],
+        cap: int,
+        aux_entries: list[dict[str, Any]],
+        cell: str,
+        trial: bool,
+    ) -> tuple[dict[str, Any] | None, dict[str, Any], dict[str, Any] | None]:
+        """L1 ``replan_ask_first`` (§6.1): one more planner turn with the ask_first instruction,
+        an auxiliary read-only turn counted against ``aux_max_tokens`` (IC-21, §5.3) and recorded
+        in ``aux_entries``. Returns (the cleaned new draft or None, the plan record's
+        ``l1_replan`` facts, the turn's trace snapshot or None).
+
+        A turn that cannot start (``AUX_BUDGET``) or fails holds a trial (never graded on a
+        draft it did not ask for) and leaves a real goal on its first draft (the v1 rule)."""
+        from .strategy_runner import AuxLedger, usage_tokens
+
+        ledger = AuxLedger(cap, aux_entries)
+        entry: dict[str, Any] = {
+            "role": "planner", "purpose": "L1 replan_ask_first", "cell_id": cell,
+            "node_id": None,
+            "prompt_digest": digest({"goal": text, "planner_instruction": "ask_first",
+                                     "variant": args.get("variant")}),
+            "at": now(),
+        }  # fmt: skip
+        try:
+            ledger.check("planner")
+        except Hold as exc:
+            if trial:
+                raise
+            return None, {"ran": False, "error": exc.code}, None
+        started = time.monotonic()
+        try:
+            drafted, _facts = self._draft(
+                planner, text, targets, verifiers, bases, mode=mode,
+                args={**args, "interpretation": "ask_first"},
+            )  # fmt: skip
+        except (Hold, RuntimeFault) as exc:  # it may have spent tokens: unknown usage
+            aux_entries.append({
+                **entry, "usage": None, "tokens": None,
+                "seconds": round(time.monotonic() - started, 1), "error": exc.code,
+            })  # fmt: skip
+            if trial:
+                raise
+            return None, {"ran": True, "error": exc.code}, None
+        usage = drafted.get("usage")
+        aux_entries.append({
+            **entry, "usage": usage, "tokens": usage_tokens(usage),
+            "seconds": drafted.get("seconds"), "error": None,
+        })  # fmt: skip
+        snapshot = drafted.get("trace")
+        return (
+            _clean_draft(drafted["draft"]),
+            {"ran": True, "error": None},
+            snapshot if isinstance(snapshot, dict) else None,
+        )
+
+    def _admit_planner_trace(
+        self,
+        goal_id: str,
+        trial: TrialContext | None,
+        driver_id: str,
+        snapshots: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """§9.1: every plan-time read-only turn of a capturing trial (planner draft, L1 replan,
+        the strategy runner's lead/split/steps turns), stored once as turns ``"planner"`` of the
+        goal-level trace ``trace-<goal_id>.planner`` (``TraceService.admit_turns``: sanitized,
+        ``restricted``, the proposer-only ACL). Never raises: trace capture does not change the
+        plan."""
+        if trial is None or not trial.capture_trace or not snapshots:
+            return None
+        from ...meta_harness.traces import TraceService
+
+        with contextlib.suppress(Exception):
+            service = TraceService(self.store, self.scope, self.workspaces.artifacts)
+            ref: dict[str, Any] | None = service.admit_turns(
+                goal_id=goal_id, trial=trial, driver_id=driver_id, turn="planner",
+                snapshots=snapshots,
+            )  # fmt: skip
+            return ref
+        return None
+
+    @staticmethod
+    def _check_contract_form(
+        interpretation: dict[str, Any], strategy: dict[str, Any], *, trial: bool
+    ) -> None:
+        """``contract_form`` "steps": the drafted steps reach the executor through the
+        ``plan_execute`` path (``plan_steps``, M7) only. Under another strategy a trial's
+        strategy is refused (the loop holds it before any claim) and a real goal is refused
+        here, before its contract is frozen (RuntimeFault COMPONENT_CONTENT)."""
+        if interpretation.get("contract_form") != "steps" or strategy.get("refused"):
+            return
+        if strategy.get("strategy") == "plan_execute":
+            return
+        why = (
+            f"interpretation contract_form steps: {strategy.get('strategy')} shows no steps to "
+            "the executor (plan_execute only)"
+        )
+        if trial:
+            strategy["refused"] = why
+            return
+        raise RuntimeFault(
+            "COMPONENT_CONTENT", "The goal's interpretation cannot be honoured", details=[why]
+        )
+
+    # -- per-layer deciders (Work 033 S10, interfaces.md §6) ------------------------------------
+    def router_refusals(self, router: policies.RouterPolicy) -> list[str]:
+        """Router parts no slice honours (the loop's and the plan's refusal): an interpretation
+        value the planner has no text for (the known ones, ``policies`` ``interpretation``, are
+        honoured at plan time since the interpretation fix), route-policy roles (L3 decides the
+        executor cell only), and L1-L3 deciders whose parts cannot run (``deciders.check``)."""
+        from ...meta_harness import deciders
+        from .planner_codex import PLANNER_INSTRUCTIONS
+
+        parts = []
+        instruction = router.interpretation.get("planner_instruction")
+        if instruction not in PLANNER_INSTRUCTIONS:
+            parts.append(f"interpretation planner_instruction {instruction} (no planner text)")
+        if router.interpretation.get("contract_form") not in ("v1", "steps"):
+            parts.append(
+                f"interpretation contract_form {router.interpretation.get('contract_form')}"
+            )
+        if router.roles:
+            parts.append("route_policy roles (L3 decides the executor cell only)")
+        for layer in policies.ROUTER_DECIDERS:
+            parts += deciders.check(self.store, self.scope, layer, router.deciders[layer])
+        return parts
+
+    def refuse_router_parts(
+        self, installed: InstalledApp, composition_ref: dict[str, Any]
+    ) -> policies.RouterPolicy:
+        """The router of the goal's composition; RuntimeFault COMPONENT_CONTENT (before the
+        planner turn) when it carries parts nobody honours, or a route order other than the one
+        selection reads (``releases.router_ref``: the app's effective router)."""
+        composition = self.store.get(self.scope, "harness-composition", composition_ref)
+        router = policies.router_policy(self.store, self.scope, composition["router_policy_ref"])
+        parts = self.router_refusals(router)
+        selection = releases.router_ref(self.store, self.scope, installed)
+        if composition["router_policy_ref"] != selection and (
+            router.order != policies.router_policy(self.store, self.scope, selection).order
+        ):
+            parts.append("route_policy order of the composition (selection reads the app router)")
+        if router.interpretation.get("contract_form") == "steps":
+            # the steps reach the executor through plan_execute only (``_check_contract_form``)
+            enabled = self._budget_policy(composition_ref).execution_strategy.get("enabled") or []
+            if "plan_execute" not in enabled:
+                parts.append(
+                    "interpretation contract_form steps (plan_execute is not an enabled "
+                    "strategy; steps reach the executor through it only)"
+                )
+        if parts:
+            raise RuntimeFault(
+                "COMPONENT_CONTENT", "The goal's router carries parts that cannot be honoured",
+                details=parts,
+            )  # fmt: skip
+        return router
+
+    def _router_decider(
+        self, router: policies.RouterPolicy, layer: str
+    ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+        """(content, component ref) of the router's decider of ``layer`` (L1-L3)."""
+        content = router.deciders.get(layer)
+        if content is None:
+            return None, None
+        value = self.store.get(self.scope, "router-policy", router.ref)
+        ref = (value.get("deciders") or {}).get(layer)
+        return content, ref
+
+    def _judges_for(
+        self, installed: InstalledApp, content: dict[str, Any] | None
+    ) -> tuple[Any, Any]:
+        """(JudgeService, choose_judge) for a decider naming an LLM-cell judge; (None, None)
+        without one. The cell's read-only turn is the strategy runner's (its planner's turn);
+        its data classes are its model profile's (§6.6)."""
+        if content is None or content.get("judge") is None:
+            return None, None
+        from ...meta_harness.judges import JudgeService, LlmCellJudge, qualified_chooser
+
+        judge = policies.component_content(
+            self.store, self.scope, content["judge"], "judge_model", "judge"
+        )
+        if judge["judge"] != "llm_cell" or judge.get("cell") not in installed.compositions:
+            return None, None
+        cell = str(judge["cell"])
+        try:
+            turn = self.strategy_runner().turns(cell)
+        except (Hold, RuntimeFault):
+            return None, None
+        composition = self.store.get(
+            self.scope, "harness-composition", installed.compositions[cell]
+        )
+        model = self.store.get(self.scope, "model-profile", composition["model_profile_ref"])
+        connector = LlmCellJudge(
+            turn, data_classes_allowed=frozenset(model.get("data_classes_allowed") or []),
+            scratch_root=self.workspaces.root,
+        )  # fmt: skip
+        service = JudgeService(self.store, self.scope, workspace_root=self.workspaces.root)
+        return service, qualified_chooser(self.store, self.scope, [connector], allowed=judge)
+
+    def _decide_intake(
+        self,
+        installed: InstalledApp,
+        router: policies.RouterPolicy,
+        composition_ref: dict[str, Any],
+        draft: dict[str, Any],
+        intent: dict[str, Any],
+        *,
+        multi: bool,
+        cell: str,
+        subject: dict[str, str],
+        production: bool,
+        aux_entries: list[dict[str, Any]],
+        domain: str = UNKNOWN_DOMAIN,
+        planner: Any = None,
+        interpretation: dict[str, Any] | None = None,
+    ) -> tuple[Any, int]:
+        """L1 (§6.1): proceed, ask back (the planner's questions → ``needs_answers``) or one more
+        planner turn asking first. The prior is today's: ask back exactly when there are
+        questions. Returns the decision and the goal's auxiliary-turn cap (``aux_max_tokens``).
+
+        ``replan_ask_first`` is eligible when the planner has the ask_first text
+        (``planner.INSTRUCTIONS``), the draft was not already made with it, and an auxiliary turn
+        can start under the composition's ``aux_max_tokens`` (IC-21: none at the v1 cap 0).
+        ``domain`` is the trial's corpus domain (IC-23), ``"unknown"`` for a goal."""
+        from ...meta_harness import deciders
+        from ...meta_harness.judges import JudgeState
+        from .strategy_runner import AuxLedger
+
+        content, ref = self._router_decider(router, "L1")
+        questions = draft.get("questions") or []
+        has_plan = self._has_plan(draft, multi=multi)
+        ineligible: dict[str, str] = {}
+        if not has_plan:
+            ineligible["proceed"] = "the draft has nothing to compile"
+        if not questions:
+            ineligible["ask_back"] = "the planner asked nothing"
+        judges, choose = self._judges_for(installed, content)
+        instruction = (interpretation or {}).get("planner_instruction", "v1")
+        replan_why = ""
+        if instruction == "ask_first":
+            replan_why = "the draft already used the ask_first instruction"
+        elif "ask_first" not in tuple(getattr(planner, "INSTRUCTIONS", ()) or ()):
+            replan_why = "the planner has no ask_first text"
+        # a judge turn and the replan turn are auxiliary (IC-21): the composition's aux cap
+        cap = 0
+        if judges is not None:
+            cap = int(self._budget_policy(composition_ref).limits.get("aux_max_tokens", 0))
+        elif not replan_why:
+            try:
+                cap = int(self._budget_policy(composition_ref).limits.get("aux_max_tokens", 0))
+            except (Hold, RuntimeFault) as exc:  # held again after the plan, at the same point
+                replan_why = f"the composition's limits cannot be read ({exc.code})"
+        if not replan_why:
+            try:
+                AuxLedger(cap, aux_entries).check("planner")
+            except Hold as exc:
+                replan_why = f"{exc.code}: limits.aux_max_tokens {cap} (IC-21)"
+        if replan_why:
+            ineligible["replan_ask_first"] = replan_why
+        ledger = AuxLedger(cap)
+        features = deciders.intake_features(draft, domain=domain)
+        ctx = deciders.DecisionContext(
+            layer="L1", cell_id=cell, features=features,
+            options=deciders.OPTIONS["L1"], prior="ask_back" if questions else "proceed",
+            subject=subject, production=production, ineligible=ineligible,
+            judge_state=JudgeState(text=str(intent.get("text") or ""), data_class="internal")
+            if judges is not None else None,
+        )  # fmt: skip
+        decision = deciders.Decider.of(
+            self.store, self.scope, content, ref=ref, judges=judges, choose_judge=choose,
+            aux=ledger,
+        ).decide(ctx)  # fmt: skip
+        aux_entries.extend(ledger.entries)
+        return decision, cap
+
+    def _only(
+        self, runner: Any, strategy: str, budget: policies.BudgetPolicy, **choose: Any
+    ) -> dict[str, Any]:
+        """``runner.choose`` as if ``strategy`` were the only enabled one (its params kept)."""
+        from dataclasses import replace
+
+        params = (budget.execution_strategy.get("params") or {}).get(strategy)
+        only = replace(
+            budget,
+            execution_strategy={
+                "enabled": [strategy], "params": {strategy: params} if params else {},
+            },
+        )  # fmt: skip
+        record: dict[str, Any] = runner.choose(budget=only, **choose)
+        return record
+
+    def _decide_after_plan(
+        self,
+        runner: Any,
+        installed: InstalledApp,
+        router: policies.RouterPolicy,
+        chosen: dict[str, Any],
+        budget: policies.BudgetPolicy,
+        draft: dict[str, Any],
+        *,
+        pinned: bool,
+        mode: str,
+        apps: list[str],
+        trial: TrialContext | None,
+        planner: Any,
+        planner_cell: str,
+        drafted: str | None,
+        subject: dict[str, str],
+    ) -> dict[str, Any]:
+        """L2, L3 and L8 after the plan (§6.1). Without a decider each takes its prior, which is
+        the manifest as written: the S9 strategy rule, the router order's first eligible cell,
+        the composition's limits. A decided strategy keeps the plan record's S9 fields; a decided
+        cell other than the router's is recorded on the composition (``decision_ref``, IC-22);
+        decided limits replace the composition's for the contract (``decided_limits``)."""
+        from ...meta_harness import deciders
+
+        task_class = draft.get("task_class")
+        cell = str(chosen.get("cell_id") or chosen["driver_id"])
+        decision_cell = trial.cell_id if trial is not None else cell
+        production = trial is None
+        kw: dict[str, Any] = {
+            "installed": installed, "mode": mode, "apps": apps, "trial": trial is not None,
+            "planner": planner, "planner_cell": planner_cell, "after_draft": True,
+            "drafted": drafted,
+        }  # fmt: skip
+        refs: list[dict[str, Any]] = []
+
+        # IC-23: a trial's decisions read its corpus domain; a goal's read "unknown"
+        domain = trial.domain if trial is not None else UNKNOWN_DOMAIN
+
+        def features(layer: str, strategy: str | None) -> dict[str, Any]:
+            return deciders.after_plan_features(
+                layer, draft, domain=domain, apps=len(apps), strategy=strategy
+            )
+
+        # -- L2: the execution strategy among the enabled ones
+        base: dict[str, Any] = runner.choose(composition=chosen, budget=budget, **kw)
+        content, ref = self._router_decider(router, "L2")
+        enabled = [str(s) for s in base["enabled"]]
+        eligibility = dict(base["eligibility"])
+        for strategy in enabled:
+            if strategy not in eligibility:
+                one = self._only(runner, strategy, budget, composition=chosen, **kw)
+                eligibility[strategy] = one["eligibility"][strategy]
+        l2 = deciders.Decider.of(self.store, self.scope, content, ref=ref).decide(
+            deciders.DecisionContext(
+                layer="L2", cell_id=decision_cell, features=features("L2", None),
+                options=tuple(enabled), prior=str(base["strategy"]), subject=subject,
+                production=production,
+                ineligible={s: str(why) for s, why in eligibility.items() if why},
+            )
+        )  # fmt: skip
+        refs.append(l2.record_ref)
+        strategy_record = base
+        if content is not None:
+            if l2.option != base["strategy"]:
+                strategy_record = self._only(runner, l2.option, budget, composition=chosen, **kw)
+                strategy_record.update(enabled=enabled, declared=base["declared"])
+            strategy_record["eligibility"] = {**eligibility, **strategy_record["eligibility"]}
+            strategy_record["decision_ref"] = l2.record_ref
+        # -- L3: the executor cell (a pinned composition keeps its cell)
+        content, ref = self._router_decider(router, "L3")
+        available = releases.effective(self.store, self.scope, installed.compositions)
+        ineligible: dict[str, str] = {}
+        if pinned:
+            cells = [cell]
+        else:
+            order = router.order.get(task_class or "*") or router.order["*"]
+            cells = [c for c in order if c in available]
+            ineligible = self._cell_reasons(installed, [available[c] for c in cells], cells)
+        if strategy_record.get("strategy") == "cascade":
+            first = (strategy_record.get("cascade") or [cell])[0]
+            for c in cells:
+                if c != first:
+                    ineligible.setdefault(c, f"cascade starts on {first}")
+        l3 = deciders.Decider.of(self.store, self.scope, content, ref=ref).decide(
+            deciders.DecisionContext(
+                layer="L3", cell_id=decision_cell,
+                features=features("L3", strategy_record.get("strategy")), options=tuple(cells),
+                prior=cell, subject=subject, production=production, ineligible=ineligible,
+            )
+        )  # fmt: skip
+        refs.append(l3.record_ref)
+        if content is not None:
+            if l3.option != cell:
+                chosen = {
+                    **self.select_composition(installed, task_class, pin=available[l3.option]),
+                    "pinned": False,
+                }
+                budget = self._budget_policy(chosen["ref"])
+                # the strategy's roles and cascade follow the executor cell
+                again = self._only(
+                    runner, str(strategy_record["strategy"]), budget, composition=chosen, **kw
+                )
+                keep = ("enabled", "declared", "decision_ref", "used_prior", "refused")
+                strategy_record = {
+                    **again, **{k: strategy_record.get(k) for k in keep},
+                    "eligibility": {**strategy_record["eligibility"], **again["eligibility"]},
+                }  # fmt: skip
+            chosen = {**chosen, "decision_ref": l3.record_ref}
+        # -- L8: the limits among the decider's limits versions
+        content, ref = budget.deciders.get("L8"), budget.refs.get("L8")
+        manifest_ref = budget.refs.get("limits")
+        prior = deciders.option_id(manifest_ref) if manifest_ref else "contract_defaults"
+        candidates: dict[str, dict[str, Any]] = {}
+        why_not: dict[str, str] = {}
+        for option_ref in (content or {}).get("options") or []:
+            label = deciders.option_id(option_ref)
+            limits = policies.component_content(
+                self.store, self.scope, option_ref, "limits", "limits"
+            )
+            candidates[label] = limits
+            reason = self._limits_reason(limits, budget, strategy_record)
+            if reason:
+                why_not[label] = reason
+        l8 = deciders.Decider.of(self.store, self.scope, content, ref=ref).decide(
+            deciders.DecisionContext(
+                layer="L8", cell_id=decision_cell,
+                features=features("L8", strategy_record.get("strategy")),
+                options=tuple(candidates) or (prior,), prior=prior, subject=subject,
+                production=production, ineligible=why_not,
+            )
+        )  # fmt: skip
+        refs.append(l8.record_ref)
+        decided_limits = None
+        if content is not None and l8.option != prior and l8.option in candidates:
+            from dataclasses import replace
+
+            budget = replace(budget, limits=candidates[l8.option])
+            strategy_record["aux_cap"] = int(budget.limits["aux_max_tokens"])
+            decided_limits = {"option": l8.option, "limits": candidates[l8.option]}
+        return {
+            "composition": chosen, "budget": budget, "strategy": strategy_record,
+            "decisions": refs, "limits": decided_limits,
+        }  # fmt: skip
+
+    def _cell_reasons(
+        self, installed: InstalledApp, refs: list[dict[str, Any]], cells: list[str]
+    ) -> dict[str, str]:
+        """Why each candidate cell is not eligible (the selection's own checks)."""
+        from ...meta_harness.composition import CompositionService
+
+        rows = CompositionService(self.store, self.runtime.contracts).explain(
+            self.scope, refs, classification="internal",
+            required_actions={c["action"] for c in installed.capabilities},
+        )  # fmt: skip
+        return {
+            cell: "; ".join(row["reasons"]) or "not eligible"
+            for cell, row in zip(cells, rows, strict=True)
+            if not row["eligible"]
+        }
+
+    def _limits_reason(
+        self,
+        limits: dict[str, Any],
+        budget: policies.BudgetPolicy,
+        strategy: dict[str, Any],
+    ) -> str:
+        """Why an L8 limits version cannot run this goal, or "" (§2.3, IC-21)."""
+        from .strategy_runner import AUX_STRATEGIES, VARIANT_OF
+
+        ceiling = self.budget.wire()
+        above = [f for f in policies.LIMIT_FIELDS if limits[f] > ceiling[f]]
+        if above:
+            return "above the deployment budget: " + ", ".join(above)
+        if budget.attempt_policy["max_attempts"] > limits["max_attempts"]:
+            return "attempt_policy.max_attempts exceeds limits.max_attempts"
+        name = strategy.get("strategy")
+        needs_aux = name in AUX_STRATEGIES or (name in VARIANT_OF and not strategy.get("variant"))
+        if needs_aux and not strategy.get("refused") and int(limits["aux_max_tokens"]) <= 0:
+            return "AUX_BUDGET: the strategy's auxiliary turns need aux_max_tokens (IC-21)"
+        return ""
+
+    def _decided_budget(
+        self, plan: dict[str, Any], composition_ref: dict[str, Any]
+    ) -> policies.BudgetPolicy:
+        """A revision's budget policy keeps the goal's L8-decided limits (S10)."""
+        budget = self._budget_policy(composition_ref)
+        decided = plan.get("decided_limits")
+        if isinstance(decided, dict) and isinstance(decided.get("limits"), dict):
+            from dataclasses import replace
+
+            policies.validate_content("limits", decided["limits"])
+            budget = replace(budget, limits=decided["limits"])
+        return budget
+
     def escalate(self, goal_id: str, *, to_cell: str, reason: str) -> dict[str, Any]:
         """M6 cascade escalation (IC-05, interfaces.md §3.3): revision + 1 with the same draft
         and work items, pinned to the cell sibling of the goal's composition on ``to_cell``.
@@ -1146,7 +1830,7 @@ class LocalExecutionService:
         previous = self.store.get(scope, "goal-contract", plan["contract_ref"])
         intent = self.store.get(scope, "intent-envelope", previous["intent_ref"])
         chosen = self.select_composition(installed, was.get("task_class"), pin=sibling)
-        budget = self._budget_policy(chosen["ref"])
+        budget = self._decided_budget(plan, chosen["ref"])  # L8-decided limits stay (S10)
         revision = previous["revision"] + 1
         contract_ref, graph_ref, acceptance_map = self._compile(
             goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
@@ -1700,11 +2384,14 @@ class LocalExecutionService:
         caps = [c for a in goal_apps for c in mode_capabilities(a, plan.get("mode", "work"))]
         chosen = plan.get("composition")
         if chosen:
-            # fixed from here on (design/16:16); eligibility may have changed since planning
+            # fixed from here on (design/16:16); eligibility may have changed since planning.
+            # IC-22 (Work 033 S10): an L3-decided composition is re-checked through the pin path
+            # (pin_allowed and the eligibility filter) and against its decision record
+            decided = chosen.get("decision_ref")
             again = self.select_composition(
                 installed,
                 chosen.get("task_class"),
-                pin=chosen["ref"] if chosen.get("pinned") else None,
+                pin=chosen["ref"] if chosen.get("pinned") or decided else None,
             )
             if again["ref"] != chosen["ref"]:
                 raise Hold(
@@ -1712,7 +2399,32 @@ class LocalExecutionService:
                     "The selected composition changed since planning; plan the goal again",
                     details={"planned": chosen["driver_id"], "now": again["driver_id"]},
                 )
+            if decided:
+                decision = self.store.get(scope, "harness-decision", decided)
+                if (
+                    decision.get("layer") != "L3"
+                    or decision.get("chosen") != chosen.get("cell_id")
+                    or again.get("cell_id") != decision.get("chosen")
+                ):
+                    raise Hold(
+                        "COMPOSITION_CHANGED",
+                        "The composition is not the cell its L3 decision chose; plan again",
+                        details={"decided": decision.get("chosen"),
+                                 "planned": chosen.get("cell_id"), "now": again.get("cell_id")},
+                    )  # fmt: skip
             composition = self.store.get(scope, "harness-composition", chosen["ref"])
+            # the interpretation is honoured at plan time (§2.2): a plan drafted with another
+            # planner text than its composition's (a plan made before the variants had text, or
+            # a changed record) is never approved, so it never runs under the wrong text
+            drafted_with = plan.get("interpretation") or policies.V1["interpretation"]
+            router = policies.router_policy(self.store, scope, composition["router_policy_ref"])
+            if router.interpretation != drafted_with:
+                raise Hold(
+                    "COMPOSITION_CHANGED",
+                    "The plan was drafted with another interpretation than its composition's; "
+                    "plan the goal again",
+                    details={"planned": drafted_with, "now": router.interpretation},
+                )  # fmt: skip
             profile = {
                 "composition_ref": chosen["ref"],
                 "driver_profile_ref": composition["driver_profile_ref"],

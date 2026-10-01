@@ -41,6 +41,7 @@ from test_033_s11_stages import (
     build_world,
     fault,
     hold,
+    split_of,
     task_ids,
     write_corpus,
 )
@@ -262,10 +263,23 @@ def test_with_both_sets_installed_the_operations_use_the_main_sets_app(w: World)
     steps = by_stage(w.ops.search(pid, cell_id=CELL, root_budget=BUDGET)["steps"])
     assert steps["screening"]["state"] == "passed"
     assert w.ops.approve_stage(pid, "focused")["state"] == "passed"
+    # the regression task is never a stage case (§10.6: it freezes as its own corpus)
+    assert "work030-r01" not in (w.ops.app_case_ids() or ())
+    assert sampled_case_ids(w) and "work030-r01" not in sampled_case_ids(w)
     # a main set whose app is not installed still names no app
     lone = replace(w.corpus, bases={"bench": {**w.corpus.bases["bench"], "app_id": "nope"}})
     error = hold("TARGET_UNKNOWN", lambda: LocalMetaOps(w.dep, lone, w.executor, driver=CELL).app)  # type: ignore[arg-type]
     assert error.details == {"installed": [], "named": ["nope"]}
+
+
+def sampled_case_ids(w: World) -> set[str]:
+    """Every case id a stage experiment or a calibration plan sampled."""
+    return {
+        case_id
+        for kind in ("sampling-plan", "calibration-plan")
+        for _, value in w.objects(kind)
+        for case_id in value.get("case_ids") or ()
+    }
 
 
 def two_main_apps(corpus: corpus_v2.CorpusV2) -> corpus_v2.CorpusV2:
@@ -303,6 +317,63 @@ def test_the_app_option_must_be_installed_and_named_by_the_main_set(w: World) ->
     assert error.details == {"app": DEMO_APP, "named": ["app"]}
     # the single named app needs no option, and naming it changes nothing
     assert ops_for(w, w.corpus).app is ops_for(w, w.corpus, "app").app is service.apps["app"]
+
+
+# -- --app: stages and calibration select the selected app's main-set tasks only -----------------
+DEMO_TASKS = ("bug-dev-demo", "bug-val-demo", "bug-hol-demo")
+
+
+def frozen_with_demo_tasks(w: World) -> corpus_v2.CorpusV2:
+    """Version 2.0.0 of the corpus, frozen: the main set plus a development, a validation and a
+    holdout task on a base of the (installed) demo app; the evaluator version and the
+    calibration summary (the demo tasks informative too) are of the new frozen corpus."""
+    service = w.rig.service
+    service.install(AppConfig(DEMO_APP, w.rig.repo, service.apps["app"].config.verifiers))
+    demo = tuple(
+        replace(next(t for t in w.corpus.tasks if t.split == split), task_id=task_id,
+                base_id="demo")
+        for split, task_id in zip(("development", "validation", "holdout"), DEMO_TASKS,
+                                  strict=True)
+    )  # fmt: skip
+    bases = {**w.corpus.bases, "demo": {"dir": "bases/bench", "base_commit": SHA,
+                                        "app_id": DEMO_APP}}  # fmt: skip
+    corpus = replace(w.corpus, version="2.0.0", bases=bases, tasks=(*w.corpus.tasks, *demo))
+    w.refs = corpus_v2.freeze(w.operator, w.store, w.artifacts, corpus, holdout_use_limit=50)
+    w.executor.corpus_version = "2.0.0"
+    w.version_ref = w.evaluator()
+    w.summary_ref = w.summary(extra=DEMO_TASKS[:2])
+    frozen = w.store.get(w.scope, "eval-corpus", w.refs["corpus_ref"])
+    assert set(DEMO_TASKS) <= {c["case_id"] for c in frozen["cases"]}
+    return corpus
+
+
+def test_with_app_every_stage_runs_only_the_selected_apps_main_set_tasks(w: World) -> None:
+    corpus = frozen_with_demo_tasks(w)
+    w.ops = ops_for(w, corpus, "app")
+    assert w.ops.app_case_ids() == {t.task_id for t in w.corpus.tasks}
+    pid = w.propose("a2")
+    w.script(pid)
+    w.ops.search(pid, cell_id=CELL, root_budget=BUDGET)
+    assert w.ops.approve_stage(pid, "focused")["state"] == "passed"
+    w.ops.search(pid, cell_id=CELL, root_budget=BUDGET)
+    assert w.ops.approve_stage(pid, "holdout")["state"] == "passed"
+    assert [s["state"] for s in w.ops.stages(pid)["steps"]] == ["passed"] * 4
+    sampled = sampled_case_ids(w)
+    # every split was sampled, and never a task of the demo app
+    assert {split_of(c) for c in sampled} == {"development", "validation", "holdout"}
+    assert not sampled & set(DEMO_TASKS)
+    assert not {c[1] for c in w.executor.calls} & set(DEMO_TASKS)
+
+
+def test_with_app_the_other_apps_tasks_count_for_no_stage_of_it(w: World) -> None:
+    corpus = frozen_with_demo_tasks(w)
+    w.ops = ops_for(w, corpus, DEMO_APP)
+    assert w.ops.app_case_ids() == set(DEMO_TASKS)
+    pid = w.propose("a2")
+    # the demo app has one informative validation task: the bench app's 18 do not count
+    error = hold("NO_INFORMATIVE_TASKS", w.ops.search, pid, cell_id=CELL, root_budget=BUDGET)
+    assert error.details == {"stage": "focused", "available": 1, "need": 16}
+    assert w.objects("stage-plan") == [] and w.executor.calls == []
 
 
 # -- the loaded corpus must be the frozen one (the trial executor runs the loaded tasks) -----------

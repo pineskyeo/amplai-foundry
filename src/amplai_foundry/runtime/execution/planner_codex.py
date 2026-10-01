@@ -270,6 +270,82 @@ Rules:
 """
 
 
+# Work 033 (interfaces.md §2.2 ``interpretation``, §6.1 L1): the planner instruction variants. Each
+# replaces exactly one rule of the v1 instruction of its mode, the ambiguity rule; "v1" keeps the
+# instruction byte for byte (golden G4). ``contract_form`` "steps" is the S9 M7 ``steps`` schema
+# variant (``plan_schema(..., "steps")`` and ``STEPS_RULES``), chosen by the product.
+PLANNER_INSTRUCTIONS = ("v1", "ask_first", "assume_and_state")
+# the v1 ambiguity rule of each instruction, verbatim (``instruction_text`` checks it is there)
+AMBIGUITY_WORK = (
+    "- If the goal is ambiguous in a way the repository cannot answer, put the question in\n"
+    '  "questions" instead of guessing. Otherwise questions is an empty list.\n'
+)
+AMBIGUITY_DESIGN = (
+    "- If the question is ambiguous in a way the repository cannot answer, put the question in\n"
+    '  "questions" instead of guessing. Otherwise questions is an empty list.\n'
+)
+AMBIGUITY_MULTI = (
+    "- If the goal is ambiguous in a way the repositories cannot answer, put the question in\n"
+    '  "questions" and leave work_items empty. Otherwise questions is an empty list.\n'
+)
+AMBIGUITY_RULES = {"work": AMBIGUITY_WORK, "design": AMBIGUITY_DESIGN, "multi": AMBIGUITY_MULTI}
+ASK_FIRST_WORK = (
+    "- Ask first: whenever the goal is ambiguous (it leaves open what to change, where, or\n"
+    '  how the result is judged), put each clarifying question in "questions" instead of\n'
+    "  assuming an answer, even when the repository suggests one. Otherwise questions is\n"
+    "  an empty list.\n"
+)
+ASK_FIRST_DESIGN = (
+    "- Ask first: whenever the question is ambiguous (it leaves open what the design must\n"
+    '  decide or how it is judged), put each clarifying question in "questions" instead\n'
+    "  of assuming an answer, even when the repository suggests one. Otherwise questions\n"
+    "  is an empty list.\n"
+)
+ASK_FIRST_MULTI = (
+    "- Ask first: whenever the goal is ambiguous (it leaves open what to change, in which\n"
+    '  app, or how the result is judged), put each clarifying question in "questions" and\n'
+    "  leave work_items empty instead of assuming an answer, even when the repositories\n"
+    "  suggest one. Otherwise questions is an empty list.\n"
+)
+ASSUME_WORK = (
+    "- Assume and state: do not ask questions; questions is an empty list. Where the goal\n"
+    "  is ambiguous, choose the most reasonable reading, plan it, and state each\n"
+    '  assumption you made as one entry of "assumptions".\n'
+)
+ASSUME_DESIGN = (
+    "- Assume and state: do not ask questions; questions is an empty list. Where the\n"
+    "  question is ambiguous, choose the most reasonable reading, plan the design for it,\n"
+    '  and state each assumption you made as one entry of "assumptions".\n'
+)
+ASSUME_MULTI = (
+    "- Assume and state: do not ask questions; questions is an empty list. Where the goal\n"
+    "  is ambiguous, choose the most reasonable reading, plan the work items for it, and\n"
+    '  state each assumption you made as one entry of "assumptions".\n'
+)
+INTERPRETATION_RULES = {
+    "ask_first": {"work": ASK_FIRST_WORK, "design": ASK_FIRST_DESIGN, "multi": ASK_FIRST_MULTI},
+    "assume_and_state": {"work": ASSUME_WORK, "design": ASSUME_DESIGN, "multi": ASSUME_MULTI},
+}
+
+
+def instruction_text(base: str, kind: str, planner_instruction: str = "v1") -> str:
+    """The instruction ``base`` of a mode (``kind``: work, design or multi) with the planner
+    instruction variant: ``v1`` returns ``base`` unchanged (G4); ``ask_first`` and
+    ``assume_and_state`` replace its ambiguity rule. RuntimeFault PLANNER_VARIANT for any other
+    value."""
+    if planner_instruction == "v1":
+        return base
+    rules = INTERPRETATION_RULES.get(planner_instruction)
+    if rules is None:
+        raise RuntimeFault(
+            "PLANNER_VARIANT", "Unknown planner instruction", details=planner_instruction
+        )
+    old = AMBIGUITY_RULES[kind]
+    if base.count(old) != 1:  # the v1 text changed: never splice into an unknown instruction
+        raise RuntimeFault("PLANNER_VARIANT", "The v1 instruction has no ambiguity rule to replace")
+    return base.replace(old, rules[kind])
+
+
 def _has_plan(draft: dict[str, Any]) -> bool:
     """Acceptance (one app) or work items (several), or questions for the operator."""
     return bool(draft.get("acceptance") or draft.get("work_items") or draft.get("questions"))
@@ -297,6 +373,10 @@ class CodexPlanner:
     # the plan schema variants this planner drafts (M7, Work 033 S9); a planner without the
     # attribute (a fixed planner) drafts v1 only and a strategy then splits with its own turn
     VARIANTS: tuple[str, ...] = PLAN_VARIANTS
+    # the interpretation planner instructions it has text for (§2.2, §6.1 L1), and whether its
+    # turn can return the sanitized trace (§9.1); a planner without them drafts v1 untraced
+    INSTRUCTIONS: tuple[str, ...] = PLANNER_INSTRUCTIONS
+    TRACES = True
 
     def __init__(
         self,
@@ -330,9 +410,16 @@ class CodexPlanner:
         *,
         variant: str | None = None,
         max_parts: int = 4,
+        interpretation: str = "v1",
     ) -> str:
+        """The single-app prompt. ``interpretation`` is the planner instruction (§2.2): ``v1``
+        keeps the text of golden G4; a variant replaces the ambiguity rule only."""
         listed = "\n".join(f"- {k}: {v}" for k, v in sorted(verifiers.items()))
-        instruction = DESIGN_INSTRUCTION if mode == "design" else INSTRUCTION
+        instruction = (
+            instruction_text(DESIGN_INSTRUCTION, "design", interpretation)
+            if mode == "design"
+            else instruction_text(INSTRUCTION, "work", interpretation)
+        )
         # a strategy's variant adds its rule after the v1 rules; None keeps the v1 text (G4)
         rules = {
             None: "",
@@ -348,17 +435,26 @@ class CodexPlanner:
         assert isinstance(self.turn, CodexReadOnlyTurn)
         return self.turn.argv(prompt)
 
-    def multi_prompt(self, goal: str, apps: dict[str, dict[str, str]]) -> str:
+    def multi_prompt(
+        self, goal: str, apps: dict[str, dict[str, str]], *, interpretation: str = "v1"
+    ) -> str:
         lines = []
         for i, (app, verifiers) in enumerate(apps.items()):
             where = "the current directory" if i == 0 else f"/amplai-input/apps/{app}"
             lines.append(f"- {app} ({where}); installed verifier commands:")
             lines += [f"    - {k}: {v}" for k, v in sorted(verifiers.items())]
         listed = "\n".join(lines)
-        return f"{MULTI_INSTRUCTION}\nApps:\n{listed}\n\nOperator goal (data):\n<<<\n{goal}\n>>>\n"
+        instruction = instruction_text(MULTI_INSTRUCTION, "multi", interpretation)
+        return f"{instruction}\nApps:\n{listed}\n\nOperator goal (data):\n<<<\n{goal}\n>>>\n"
 
     def draft_multi(
-        self, goal: str, apps: dict[str, dict[str, str]], workspaces: dict[str, Path]
+        self,
+        goal: str,
+        apps: dict[str, dict[str, str]],
+        workspaces: dict[str, Path],
+        *,
+        interpretation: str = "v1",
+        capture_trace: bool = False,
     ) -> dict[str, Any]:
         """One read-only turn over every app of a multi-app goal (D-081)."""
         names = list(apps)
@@ -366,7 +462,8 @@ class CodexPlanner:
         return self.draft(
             goal, names[0], {}, workspaces[names[0]],
             schema=multi_plan_schema({a: list(v) for a, v in apps.items()}),
-            prompt=self.multi_prompt(goal, apps), mounts=mounts,
+            prompt=self.multi_prompt(goal, apps, interpretation=interpretation), mounts=mounts,
+            capture_trace=capture_trace,
         )  # fmt: skip
 
     def draft(
@@ -382,23 +479,32 @@ class CodexPlanner:
         mounts: dict[str, Path] | None = None,
         variant: str | None = None,
         max_parts: int = 4,
+        interpretation: str = "v1",
+        capture_trace: bool = False,
     ) -> dict[str, Any]:
         """One read-only planning turn. ``variant`` (``steps``/``parts``, Work 033 S9 M7) adds
-        that field to the schema and its rule to the prompt; None is the v1 draft."""
+        that field to the schema and its rule to the prompt; None is the v1 draft.
+        ``interpretation`` is the planner instruction (§2.2; ``v1`` is today's text).
+        ``capture_trace`` (a trial goal that captures, §9.1) also returns the turn's sanitized
+        events as ``trace``; without it the reply and the turn's arguments are as before."""
         schema = schema or plan_schema(list(verifiers), variant)
+        text = prompt or self.prompt(
+            goal, app, verifiers, mode, variant=variant, max_parts=max_parts,
+            interpretation=interpretation,
+        )  # fmt: skip
+        extra: dict[str, Any] = {"capture_trace": True} if capture_trace else {}
         try:
             result = self.turn.run(
-                prompt=prompt
-                or self.prompt(goal, app, verifiers, mode, variant=variant, max_parts=max_parts),
-                schema=schema,
-                workspace=workspace,
-                mounts=mounts,
+                prompt=text, schema=schema, workspace=workspace, mounts=mounts, **extra
             )
         except Hold as hold:
             raise _planner_hold(hold) from None
         if not _has_plan(result.output):
             raise Hold("PLANNER_OUTPUT", "Planner reply does not match the plan schema")
-        return {"draft": result.output, "usage": result.usage, "seconds": result.seconds}
+        out = {"draft": result.output, "usage": result.usage, "seconds": result.seconds}
+        if capture_trace:
+            out["trace"] = result.trace
+        return out
 
 
 class ClaudePlanner(CodexPlanner):

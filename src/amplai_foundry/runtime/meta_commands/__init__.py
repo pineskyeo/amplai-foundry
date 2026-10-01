@@ -119,11 +119,16 @@ def opened_v2(
     from ...meta_harness.local_executor import LocalTrialExecutor
     from ..execution.loop import ExecutionLoop
     from ..execution.meta_ops import LocalMetaOps
+    from ..meta_cli import trial_traces
 
     with opened_deployment(config) as dep:
         loaded = load_corpus(corpus_root(dep, corpus))
         loop = ExecutionLoop(dep.service, dep.coordinator, publisher=None)
-        executor = LocalTrialExecutor(dep.service, loop, dep.goals, dep.operator(), loaded)
+        # §9.1 (S13): corpus v2 stage and calibration trials capture as the Work 030 gates do
+        # (``meta_cli.opened``); ``meta.trace_capture`` false gives the executor no service
+        executor = LocalTrialExecutor(
+            dep.service, loop, dep.goals, dep.operator(), loaded, traces=trial_traces(dep)
+        )
         ops: LocalMetaOps = LocalMetaOps(dep, loaded, executor, driver=cell, app_id=app)
         if app is not None:
             _ = ops.app  # a wrong --app is refused for every command

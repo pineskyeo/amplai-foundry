@@ -11,9 +11,10 @@ records repo facts; env bootstrap and memory notes add their sections only when 
 feedback form and the attempt policy (attempts, repair base, feedback on/off) change the loop; a
 numeric observation detail renders as one item; a prompt fault after the claim ends the goal and
 frees the app; limits set the root and node budgets; a component this loop does not honour yet
-(including router parts: interpretation, the composition's own route order, roles, deciders
-L1-L3) is held before any claim, while a router equal to the selection router (or a legacy one)
-runs; limits above the deployment ceiling hold at planning.
+is held before any claim; router parts nobody honours (the composition's own route order, roles,
+an L1 decider whose method cannot run) are refused when the goal is planned, before the planner
+turn; an interpretation variant (ask_first) is honoured and runs; a router equal to the selection
+router (or a legacy one) runs; limits above the deployment ceiling hold at planning.
 """
 
 from __future__ import annotations
@@ -465,14 +466,11 @@ def held_before_any_claim(rig: Any, loop: Any, container: Any, goal: str, part: 
             "retrieval (method path_keyword_v1 is not specified yet)",
         ),
         ({"feedback_form": {"mode": "summary"}}, "feedback_form.mode summary"),  # not specified
-        ({"fast_checks": {"enabled": True, "checks": ["check"]}}, "fast_checks (S9)"),
-        # the router carrier: S3 selects with the installed router and plans with interpretation v1
-        ({"interpretation": {"planner_instruction": "ask_first"}}, "interpretation (S4)"),
+        # S10 runs fast checks (L7); the v1 max_followups 0 leaves no turn to report a failure in
         (
-            {"route_policy": {"order": {"*": ["claude-cli", "codex-cli", "opencode-server"]}}},
-            "route_policy order of the composition (S4)",
+            {"fast_checks": {"enabled": True, "checks": ["check"]}},
+            "fast_checks: max_followups 0 leaves no follow-up turn",
         ),
-        ({"route_policy": {"roles": {"planner": ["codex-cli"]}}}, "route_policy roles (S4)"),
     ],
 )
 def test_a_component_the_loop_cannot_honour_is_held_before_any_claim(
@@ -483,10 +481,97 @@ def test_a_component_the_loop_cannot_honour_is_held_before_any_claim(
     held_before_any_claim(rig, loop, container, goal, part)
 
 
-def test_a_router_decider_is_held_before_any_claim(deployment: Any, tmp_path: Path) -> None:
+def refused_at_plan(rig: Any, container: Any, composition: Any, part: str) -> None:
+    """Router parts nobody honours are refused when the goal is planned (S10, clarification
+    after W0-W1): RuntimeFault COMPONENT_CONTENT before the planner turn, so no planner turn,
+    no plan record, no claim and no agent run."""
+    goal = submit(rig, "(refused at plan) make value return 2")
+    with pytest.raises(RuntimeFault) as refused:
+        rig.service.plan(goal, composition=composition)
+    assert not isinstance(refused.value, Hold)
+    assert refused.value.code == "COMPONENT_CONTENT" and refused.value.details == [part]
+    assert rig.planner.calls == []  # refused before the planner turn
+    assert list(rig.workspaces.root.glob("plan-ws-*")) == []
+    with pytest.raises(RuntimeFault):
+        rig.service.plan_record(goal)  # nothing was planned, so nothing can be approved
+    assert container.prompts == [] and rig.published == []
+
+
+@pytest.mark.parametrize(
+    ("components", "part"),
+    [
+        # the router carrier: selection reads the app router; L3 decides the executor cell only
+        (
+            {"route_policy": {"order": {"*": ["claude-cli", "codex-cli", "opencode-server"]}}},
+            "route_policy order of the composition (selection reads the app router)",
+        ),
+        (
+            {"route_policy": {"roles": {"planner": ["codex-cli"]}}},
+            "route_policy roles (L3 decides the executor cell only)",
+        ),
+    ],
+)
+def test_a_router_part_nobody_honours_is_refused_before_the_planner_turn(
+    deployment: Any, tmp_path: Path, components: dict[str, dict[str, Any]], part: str
+) -> None:
+    rig, _loop, container, c = setup(deployment, tmp_path, "right")
+    refused_at_plan(rig, container, c.candidate(**components), part)
+
+
+def test_a_router_decider_that_cannot_run_is_refused_before_the_planner_turn(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # the fixture's method names task_class, which is not an L1 feature (§6.1): the L1 decider
+    # cannot run, so the goal is refused when planned (deciders.check)
+    rig, _loop, container, c = setup(deployment, tmp_path, "right")
+    refused_at_plan(
+        rig, container, c.materialize(L1=c.decider("L1")),
+        "decider L1: features task_class are not L1 features",
+    )  # fmt: skip
+
+
+class InterpretingTurn:
+    """The planner's read-only turn: replies with the rig's draft and keeps each prompt."""
+
+    cell_id = "codex-cli"
+
+    def __init__(self, draft: dict[str, Any]) -> None:
+        self.draft, self.prompts = draft, []  # type: ignore[var-annotated]
+
+    def run(self, *, prompt: str, schema: dict[str, Any], workspace: Path, **_: Any) -> Any:
+        from amplai_foundry.runtime.execution.readonly_turn import TurnResult
+
+        self.prompts.append(prompt)
+        usage = {"input_tokens": 3, "output_tokens": 2}
+        return TurnResult(copy.deepcopy(self.draft), usage, 0.0, "sha256:" + "0" * 64)
+
+
+def test_an_interpretation_variant_is_honoured_and_the_goal_runs(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Moved from the refusals above: the planner has text for ask_first (§2.2), so a goal of
+    that composition is planned with it and runs; the v1 rule is replaced, nothing else."""
+    from amplai_foundry.runtime.execution import planner_codex
+
     rig, loop, container, c = setup(deployment, tmp_path, "right")
-    goal = pinned(rig, c.materialize(L1=c.decider("L1")), "(decider) make value return 2")
-    held_before_any_claim(rig, loop, container, goal, "deciders L1-L3 (S10)")
+    planner = planner_codex.CodexPlanner(None, None, tmp_path / "runs", model="m")  # type: ignore[arg-type]
+    turn = InterpretingTurn(rig.planner.draft_value)
+    planner.turn = turn  # type: ignore[assignment]
+    rig.service.planner = planner
+    ref = c.candidate(interpretation={"planner_instruction": "ask_first"})
+    goal = pinned(rig, ref, "(ask first) make value return 2")
+    plan = rig.service.plan_record(goal)
+    assert plan["interpretation"] == {"planner_instruction": "ask_first", "contract_form": "v1"}
+    (prompt,) = turn.prompts
+    assert planner_codex.ASK_FIRST_WORK in prompt and planner_codex.AMBIGUITY_WORK not in prompt
+    assert prompt == planner.prompt(
+        "(ask first) make value return 2", "app",
+        {v.id: v.description for v in rig.service.apps["app"].config.verifiers},
+        interpretation="ask_first",
+    )  # fmt: skip
+    loop._policies(plan)  # the loop holds nothing for it
+    record = loop.run_goal(goal)
+    assert record["status"] == "published" and len(container.prompts) == 1
 
 
 def test_a_router_the_loop_honours_runs(deployment: Any, tmp_path: Path) -> None:
