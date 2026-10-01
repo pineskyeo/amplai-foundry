@@ -143,6 +143,23 @@ class LocalMetaOps:
             )
         return installed[0]
 
+    def app_case_ids(self) -> frozenset[str] | None:
+        """The case ids the stages may select (``--app`` selects the app): the main-set tasks of
+        the loaded corpus v2 whose base names ``self.app``. None for the Work 030 corpus (one
+        app: every case). A main set naming two apps keeps the other app's tasks out, so a stage
+        trial never runs another app's task under this app's cell (the executor takes the app
+        from the task's base, ``LocalTrialExecutor._spec``). Calibration still pins every
+        development and validation case (``CalibrationService._cases``, §8.2)."""
+        corpus = self.corpus
+        if not isinstance(corpus, CorpusV2):
+            return None
+        app_id = self.app.config.app_id
+        return frozenset(
+            t.task_id
+            for t in corpus.tasks
+            if t.set == MAIN_SET and corpus.bases.get(t.base_id, {}).get("app_id") == app_id
+        )
+
     @property
     def components(self) -> ComponentService:
         from ...meta_harness.components import ComponentService
@@ -198,6 +215,13 @@ class LocalMetaOps:
                 "re-propose the variant as an ordinary proposal",
             )
 
+    def _removal_gate(self, proposal_id: str) -> None:
+        """IC-24 (provisional): Hold NOT_A_REMOVAL for a removal-sweep proposal whose focused
+        stage does not show a removal (``stages.check_removal``); other proposals pass."""
+        from ...meta_harness.stages import check_removal
+
+        check_removal(self.store, self.scope, self.dep.artifacts, proposal_id)
+
     # -- 1. propose (the meta-proposer identity) -----------------------------------------------
     def propose(
         self,
@@ -243,6 +267,9 @@ class LocalMetaOps:
         observation_refs: list[dict[str, Any]],
         prediction: dict[str, Any] | None,
         baseline_ref: dict[str, Any] | None = None,
+        proposer_run_ref: dict[str, Any] | None = None,
+        leak_scan: dict[str, Any] | None = None,
+        origin: str | None = None,
     ) -> str:
         """A component candidate of ``cell_id``, submitted as the proposer identity (§3.9).
 
@@ -252,8 +279,15 @@ class LocalMetaOps:
         ``implementer-<suffix>``. The baseline is the cell's effective composition (the active
         release's) unless given. The change artifact is v2 (§2.12); ``experiment_plan_ref`` names
         a draft that carries the stage-plan id ``stageplan-<proposal_id>``: the stage plan needs
-        the root budget the operator gives at ``search``, after this record is immutable."""
-        from ...meta_harness.stages import slot_of
+        the root budget the operator gives at ``search``, after this record is immutable.
+
+        The change artifact stores ``proposer_run_ref`` (the proposer run that drafted it, §2.12)
+        and ``leak_scan`` (``{"hits": int, "index_ref": ref}``, the scan the caller ran on the new
+        content; the evaluation-quality contamination metric counts it) as given, null when not
+        given, and ``origin`` (IC-24: ``removal_sweep`` for a sweep proposal; null otherwise). A
+        prediction is checked (shape, PROPOSAL_PREDICTION; LEAK_GATE when it names a validation
+        or holdout task, §9.5, IC-11) before anything is written."""
+        from ...meta_harness.stages import REMOVAL_ORIGIN, slot_of
 
         proposer = self.local.proposer
         effective = releases.effective(self.store, self.scope, self.app.compositions)
@@ -264,6 +298,23 @@ class LocalMetaOps:
             raise Hold("CELL_UNKNOWN", "The baseline is not a composition of this cell")
         if not changes:
             raise RuntimeFault("MANIFEST_SLOT", "A candidate changes at least one slot")
+        if origin not in (None, REMOVAL_ORIGIN):
+            raise RuntimeFault("PROPOSAL_ORIGIN", "The origin is removal_sweep or none (IC-24)")
+        if leak_scan is not None and (
+            not isinstance(leak_scan, dict)
+            or set(leak_scan) != {"hits", "index_ref"}
+            or type(leak_scan["hits"]) is not int
+            or leak_scan["hits"] < 0
+            or not isinstance(leak_scan["index_ref"], dict)
+        ):
+            raise RuntimeFault("LEAK_SCAN", 'A leak scan is {"hits": int >= 0, "index_ref": ref}')
+        if proposer_run_ref is not None and (
+            not isinstance(proposer_run_ref, dict)
+            or set(proposer_run_ref) != {"id", "revision", "digest"}
+        ):
+            raise RuntimeFault("PROPOSER_RUN", "proposer_run_ref is a record ref")
+        if prediction:
+            self._check_prediction(prediction)
         manifests = self.manifests
         base_manifest = manifests.of_composition(base_ref)
         slots: dict[str, dict[str, Any] | None] = {}
@@ -317,8 +368,11 @@ class LocalMetaOps:
                     "candidate_ref": candidate,
                     "component_changes": component_changes,
                     "prediction_ref": prediction_ref,
-                    "proposer_run_ref": None,
-                    "leak_scan": None,  # the leak gate runs at screen (MetaHarness.screen hook)
+                    "proposer_run_ref": proposer_run_ref,
+                    # the caller's scan of the new content; screen runs the leak gate again
+                    # (MetaHarness.screen hook) whether or not one is recorded here
+                    "leak_scan": leak_scan,
+                    "origin": origin,
                 }
             ),
             "application/json",
@@ -373,8 +427,12 @@ class LocalMetaOps:
             return str(value["bundle_id"]), int(ref["revision"])
         return str(ref["id"]), int(ref["revision"])
 
-    def _prediction(self, proposal_id: str, prediction: dict[str, Any]) -> dict[str, Any]:
-        """The ``proposal-prediction`` record ``pred-<proposal_id>`` (§2.12)."""
+    def _check_prediction(self, prediction: dict[str, Any]) -> None:
+        """RuntimeFault PROPOSAL_PREDICTION unless it has exactly the §2.12 fields; Hold LEAK_GATE
+        when it names validation or holdout material (a prediction names development task ids
+        only, §9.5, IC-11): the leak gate of ``MetaHarness.screen`` over every stored leak index
+        (task ids of the validation and holdout splits, hidden test names, distinctive reference
+        identifiers, §10.4). The findings name the kind and place, never the token."""
         lists = ("improve_task_ids", "regress_task_ids", "improve_buckets", "regress_buckets")
         delta = prediction.get("expected_delta")
         if (
@@ -389,6 +447,20 @@ class LocalMetaOps:
                 "A prediction has exactly the §2.12 fields",
                 details=sorted(PREDICTION_FIELDS),
             )
+        findings = self.local.leak_findings(
+            self.scope, {"prediction": {k: prediction[k] for k in sorted(PREDICTION_FIELDS)}}
+        )
+        if findings:
+            raise Hold(
+                "LEAK_GATE",
+                "The prediction names validation or holdout task material; a prediction names "
+                "development task ids only (§9.5, IC-11)",
+                details=findings,
+            )
+
+    def _prediction(self, proposal_id: str, prediction: dict[str, Any]) -> dict[str, Any]:
+        """The ``proposal-prediction`` record ``pred-<proposal_id>`` (§2.12)."""
+        self._check_prediction(prediction)
         value = {
             "schema": "amplai.proposal-prediction.v1",
             "scope": self.scope.wire(),
@@ -467,6 +539,7 @@ class LocalMetaOps:
         """Freeze the corpus, the analysis plan (D-088, D-093) and the budget, then approve."""
         head = self._require(proposal_id, "screened")
         self._not_derived(proposal_id)
+        self._removal_gate(proposal_id)
         if not isinstance(self.corpus, local_corpus.Corpus):
             raise Hold(
                 "META_STATE",
@@ -610,6 +683,7 @@ class LocalMetaOps:
         self, proposal_id: str, task_ids: list[str], *, max_trial_tokens: int
     ) -> dict[str, Any]:
         head = self._require(proposal_id, "offline_evaluated")
+        self._removal_gate(proposal_id)
         policy = canary_policy(
             task_ids=task_ids,
             binding_ref=self.app.binding_ref,
@@ -860,6 +934,7 @@ class LocalMetaOps:
                     "prediction_ref": None,
                     "proposer_run_ref": None,
                     "leak_scan": None,  # no new content: the parent's screen covered it
+                    "origin": None,  # IC-19 (A): the parent's stage plan marks it derived
                 }
             ),
             "application/json",

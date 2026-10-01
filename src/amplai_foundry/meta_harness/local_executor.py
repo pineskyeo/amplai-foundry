@@ -72,6 +72,8 @@ MAX_ESCALATIONS = 1
 # or two in-flight trials of one case, repeat and composition), or its case has no split yet.
 UNBOUND_ARM = "unbound"
 UNASSIGNED_SPLIT = "unassigned"
+DEVELOPMENT = "development"
+UNKNOWN_DOMAIN = "unknown"  # IC-23: a case that names no domain (a Work 030 task names none)
 UNKNOWN_SHA = "unknown"  # §8.5: a key built without the harness sha is never reused
 SHA1 = re.compile(r"[0-9a-f]{40}")
 CARRIER_FIELDS = (
@@ -279,9 +281,11 @@ class LocalTrialExecutor:
                 arm=arm,
                 cell_id=cell_id,
                 split=spec.split or UNASSIGNED_SPLIT,
-                capture_trace=self.traces is not None,
+                # §9.1, D-100: only development trials capture (the proposer's split, §9.4)
+                capture_trace=self.traces is not None and spec.split == DEVELOPMENT,
                 planner_mode=self._planner_mode(spec, composition_ref),
                 environment_id=spec.environment_id,
+                domain=self._domain(spec),
             )
             record = self._run_goal(composition_ref, spec, context)
         finally:
@@ -372,7 +376,9 @@ class LocalTrialExecutor:
                 "usage": plan.get("planner_usage") if real else None,
             },
             "counters_source": COUNTERS_SOURCE,
-            "trace_ref": None,  # S13 admits traces
+            # §6.8: the goal's decision records; §2.10: the graded run's harness trace
+            "decisions": [dict(r) for r in plan.get("decisions") or [] if isinstance(r, dict)],
+            "trace_ref": self._trace_ref(ran, context),
             "cache_key": self._cache_key(
                 composition,
                 {**snapshot, "reasoning_profile": effort},
@@ -472,6 +478,15 @@ class LocalTrialExecutor:
                 details={"case_id": case.get("case_id"), "frozen_digest": frozen,
                          "loaded_digest": loaded},
             )  # fmt: skip
+
+    @staticmethod
+    def _domain(spec: _Spec) -> str:
+        """IC-23: the case's domain for the trial's L1/L2 decisions: a corpus v2 task's
+        ``domain`` (``TaskV2.domain``, checked against ``corpus_v2.DOMAINS`` by the loader); a
+        Work 030 task (``CorpusTask``: id, difficulty, objective, acceptance, hidden, reference)
+        names none, so ``"unknown"``."""
+        value = getattr(spec.task, "domain", None)
+        return value if isinstance(value, str) and value else UNKNOWN_DOMAIN
 
     def _planner_mode(
         self, spec: _Spec, composition_ref: dict[str, Any]
@@ -773,6 +788,21 @@ class LocalTrialExecutor:
         }
 
     # -- receipt v2 facts (§2.10, §8.5) ------------------------------------------------------------
+    def _trace_ref(self, ran: list[dict[str, Any]], context: TrialContext) -> dict[str, Any] | None:
+        """The receipt's ``trace_ref``: the ``harness-trace`` admitted for the trial's last run
+        (the graded attempt), or None (no run, no capture, or a ``trace-drop``). A planner-turn
+        trace (``<goal_id>.planner``) is linked by its record's ``goal_id``, not here."""
+        if self.traces is None or not context.capture_trace:
+            return None
+        run_ids = [a.get("run_id") for a in ran if isinstance(a.get("run_id"), str)]
+        if not run_ids:
+            return None
+        try:
+            found: dict[str, Any] | None = self.traces.of_run(run_ids[-1])
+        except (Hold, RuntimeFault):
+            return None
+        return found
+
     def _escalation_chain(
         self, plan: dict[str, Any], composition_ref: dict[str, Any]
     ) -> list[dict[str, Any]]:

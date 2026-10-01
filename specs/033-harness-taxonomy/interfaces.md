@@ -2837,3 +2837,69 @@ after Terminal-Bench 2.0 admission (S16), as S6-freeze foresees.
 - **Open (next fix)**: a gating stage whose experiment is still `frozen` because the process stopped between the stage
   turning `running` and the first dispatch is not resumed by `advance`; it must be resumed (no trial ran). With
   `--app`, stages still select main-set tasks of every app; filtering the corpus by app is open.
+
+## Provisional Operator Decisions After S10, S13 And S14 (2026-10-01)
+
+Put to the operator on 2026-10-01 with a recommendation; implemented with the recommended option and marked
+provisional, like IC-15 … IC-21. Each only adds a constraint or an internal field; the final report lists them for
+explicit confirmation before the nightly loop is activated.
+
+| IC | Provisional choice | Rejected alternative (why) |
+|---|---|---|
+| IC-23 | `TrialContext.domain` (the corpus case's domain; carried by `wire()`): L1/L2 decisions of a trial read it (§6.1); goals keep `"unknown"` | drop `domain` from the L1/L2 features (breaks §6.1; partial pooling could never specialise by domain) |
+| IC-24 | §9.8 sweep variants are ordinary draft proposals (`origin: "removal_sweep"`; baseline = champion; candidate = champion with that component back to its v1 content, `policies.V1`), reviewed and screened like any proposal. A **removal gate** holds holdout and approval (`Hold NOT_A_REMOVAL`) unless the focused report's decision class is `efficiency`, or `non_inferior` with fewer tokens per solved task. IC-19 stays as decided (derived proposals only inside their parent's ablation stage). | extend IC-19 so parentless derived variants run screening and focused and are then re-proposed (every removal evaluated twice) |
+| IC-25 | An evaluator change is qualified only after the library runs the §7.8 Q-suite (`test_033_golden_analysis.py`, `test_033_s1_analysis.py`, `test_033_s1_sequential.py`, `test_033_s2_service.py`, `test_033_s2_calibration.py`, `test_033_s2_requalify.py`) in a subprocess against the running code and stores `{files, passed, failed, errors, junit_digest, code_digests}` in the change head; approve re-checks the code digests (`EVALUATOR_CHANGED`). Q-02 over zero stored reports stays allowed and is flagged `vacuous`. | the operator runs Q-01 … Q-15 by hand (unenforced and self-attested) |
+| IC-26 | A human-only permission `evaluator.approve` guards propose, qualify, approve and reject of evaluator changes and `requalify` | reuse `corpus.manage` (mixes corpus and evaluator authority) |
+| IC-27 | `TASK_CLASS_TO_DOMAIN` (quality metric "domain coverage vs the real goal mix") provisional: bug_fix→bug, new_feature→feature, refactor→refactor, operations→cli_ops; other classes reported as unmapped and left out of the distance | — |
+
+## Clarifications After The S10/S13/S14 Fix Wave (2026-10-01)
+
+- **Provisional IC-28** (security, recommended option A): read-only and executor turns also check the turn's own
+  credential literals (the dispatch's credential values) in the kept text; a hit drops the whole trace with the existing
+  reason `sanitizer_error` (no record schema change). Option B (a `credential` drop reason) needs a §2.11/§9.2
+  amendment and stays open for the operator.
+- **Trace carriers (§9.1)**: plan-time read-only turns (planner draft, L1 `replan_ask_first`, orchestrator lead,
+  parts/steps drafting) are turns named `planner` of one goal-level record `trace-<goal_id>.planner`
+  (`TraceService.admit_turns`, same admission, ACL and secret scan as `admit`), admitted once at the end of `plan()`;
+  run-time auxiliary turns (`reviewer` per round, `investigator-<k>`) are named turns of the run trace through the
+  worker's `aux_traces` carrier; executor turns come first. No run trace carries a `planner` turn. Only
+  development-split trials capture (validation and holdout trials never ask for a trace; `admit` still accepts every
+  split for the ACL tests).
+- **Receipt (§2.10, §6.8)**: `decisions` = the plan's decision refs read after the run (L1 … L8); `trace_ref` = the
+  graded run's trace or null; the planner trace is linked by goal id.
+- **IC-23 details**: `TrialContext.domain` defaults to `"unknown"` and is validated `[a-z0-9_]{1,64}`; a Work 030 task
+  has no domain (`local_corpus.py:42-48`), so `"unknown"`.
+- **Interpretation (L1)**: the `ask_first`, `assume_and_state` and `steps` texts are new authored candidates (the
+  contract named the variants only); each replaces exactly the v1 ambiguity rule of its mode; v1 stays byte-equal (G4).
+  A planner declares support with `INSTRUCTIONS`/`TRACES` class attributes; a planner without them refuses non-v1
+  interpretation before its turn. `contract_form: "steps"` is for one-app work goals and requires `plan_execute`
+  (enabled and final); `replan_ask_first` runs once, under `aux_max_tokens`. `plan["interpretation"]` is stored only
+  when it differs from v1; approval holds `COMPOSITION_CHANGED` when it differs from the composition router's.
+- **Stages**: change artifact v2 gains `origin` (`"removal_sweep"` or null; the 3.0.0 proposal schema is closed, so the
+  key lives in the artifact) and `proposer_run_ref`/`leak_scan` (`{hits, index_ref}`; operator, sweep and dream paths
+  give null, counted as unscanned); a submitting proposer run writes `proprun-<uuid>` twice (before and after submit).
+  The IC-24 removal gate also guards `approve_experiment` and `approve_canary`; tokens per solved task come from the
+  focused report's trials per arm (unknown usage → not cheaper). Prediction refusals use the leak index (validation and
+  holdout ids, hidden test names, distinctive identifiers). Stage findings `PREDICTION_SCORE <stage>: <code>` and
+  `ELITE_ARCHIVE <stage>: <code>` never change a verdict. A gating stage resumes on `advance` only while its experiment
+  head is `frozen`; a `running` experiment needs reconcile. `--app` filters stage cases; the stage plan does not store
+  the app, so a different `--app` later holds `SAMPLING_CHANGED`. **Open (S7b)**: calibration pins every case of its
+  splits (`calibration.py:415-428`), so app/environment selection for calibration is decided with the TB2 environment
+  siblings.
+- **Evaluator changes (IC-25, IC-26)**: head field `qualification_suite` = {files: [{file, tests, passed, failed,
+  errors, skipped}], passed, failed, errors, returncode, junit_digest, code_digests}; a file counts only with ≥ 1
+  passing test; pytest exit code 0 is required; `qualification_scope` = {suite_files, suite_passed, q02_all_equal,
+  vacuous, provisional}. `evaluator.approve` alone suffices for every evaluator call. The offline script
+  `scripts/evaluator_requalify.py` keeps filesystem access as its authority.
+- **New codes accepted**: RuntimeFault `TRACE_PROVIDER`, `TRACE_SANITIZED`, `TRACE_RECORD`, `TRACE_TURN`,
+  `ELITE_ARCHIVE`, `PROPOSER_RUN`, `PREDICTION_STAGE`, `DREAM_NIGHT`, `SWEEP_REASON`, `WORKER_TRACE_SINK`,
+  `PROPOSAL_ORIGIN`, `LEAK_SCAN`, `EVALUATOR_CHANGE_TARGET`, `EVALUATOR_CHANGE_REASON`, `QUALITY_RECORD`,
+  `QUALITY_SINCE`, `QUALITY_NEGATIVE_CONTROL`, `QUALITY_CORPUS_CHECK`, `EVALUATOR_REQUALIFIER`,
+  `EVALUATOR_SUITE_MISSING`; Hold `NOT_A_REMOVAL`, `EVALUATOR_CHANGE_ACTIVE`, `EVALUATOR_CHANGE_STATE`,
+  `EVALUATOR_CHANGE_OPEN`, `JUDGE_NOT_CONFIGURED`, `JUDGE_UNQUALIFIED`.
+- **Trace wiring notes**: the goal planner trace is admitted only when `plan()` returns (a plan that raises after the
+  draft stores no planner trace) and first admission wins per goal; its `driver_id` is the planner composition's
+  driver. IC-28 for executor turns checks the dispatch's injected credential literals (≥ 16 characters) and, for
+  Codex, the leased and post-run `auth.json` string values; with no known literal it keeps the pattern scan only (not
+  failed closed, unlike a read-only Codex turn). Whether a real stream ever carries a credential literal is checked in
+  the pilot (S16) through the `trace-drop` counts.

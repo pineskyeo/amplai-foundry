@@ -2115,3 +2115,335 @@ def test_terminal_nodes_are_the_last_node_of_each_app_in_dependency_order() -> N
         "app": "node-app.s2",
         "consumer": "node-consumer",
     }
+
+
+# ===========================================================================================
+# S13 (§9.1, D-100): auxiliary read-only turns of a capturing trial join the run's trace
+# ===========================================================================================
+# Two carriers (§9.1, the clarifications after the S10/S13/S14 fix wave): run-time turns (reviewer,
+# investigator-<k>) join the run's trace through the ``aux_traces`` argument that
+# ``ExecutionLoop._execute`` passes to ``WorkCoordinator.execute`` and ``continue_resumed``
+# (``StrategyRunner.trace_source``); plan-time turns (the planner draft, the orchestrator lead,
+# split and steps turns) are turns "planner" of one goal-level trace ``trace-<goal>.planner``,
+# admitted once at the end of ``LocalExecutionService.plan``. Every test below runs the production
+# wiring: nothing of the loop, the worker or the planner path is replaced.
+TRACE_TRIAL = "trial-s9"  # trial_context()'s trial id
+
+
+class TracingTurns(FakeTurns):
+    """``FakeTurns`` whose turns take ``capture_trace`` (the S13 ``ReadOnlyTurn.run``) and then
+    return the sanitized stream of one agent message (``texts[kind]``, else "<kind> turn")."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.asked: list[tuple[str, bool]] = []  # (kind, capture_trace) per turn
+        self.texts: dict[str, str] = {}
+
+    def __call__(self, cell_id: str) -> Any:
+        if cell_id in self.missing:
+            raise Hold("TURN_FAILED", "No read-only turn is configured for this cell")
+        return _TracingTurn(self, cell_id)
+
+
+class _TracingTurn(_Turn):
+    turns: TracingTurns
+
+    def run(
+        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None,
+        capture_trace: bool = False,
+    ) -> TurnResult:  # fmt: skip
+        from amplai_foundry.meta_harness.traces import TraceBuffer
+
+        result = super().run(prompt=prompt, schema=schema, workspace=workspace, mounts=mounts)
+        kind = kind_of(schema)
+        self.turns.asked.append((kind, capture_trace))
+        if not capture_trace:
+            return result
+        buffer = TraceBuffer("codex")
+        text = self.turns.texts.get(kind, f"{kind} turn")
+        buffer.add({"type": "item.completed", "item": {"type": "agent_message", "text": text}})
+        return TurnResult(
+            result.output, result.usage, result.seconds, result.events_digest, buffer.snapshot()
+        )
+
+
+def tracing_world(deployment: Any, tmp_path: Path, script: Script = right) -> World:
+    w = make_world(deployment, tmp_path, script)
+    turns = TracingTurns()
+    turns.order = w.agents.order
+    w.runner.turns = turns
+    w.turns = turns
+    return w
+
+
+def store_traces(w: World) -> Any:
+    """The deployment's trace sink on the loop's coordinator and the dispatching trial head
+    ``TraceService`` reads the task from; the executor calls are the loop's own."""
+    from amplai_foundry.meta_harness.traces import TraceService, trace_sink
+
+    d = w.rig.d
+    w.loop.coordinator.trace_sink = trace_sink(
+        d.store, d.scope, d.artifacts, lambda goal_id: w.service.plan_record(goal_id)
+    )
+    with d.store.tx() as db:
+        d.store.cas(db, d.scope, "eval-trial", TRACE_TRIAL, 0, "running", {"task_id": "bug-01"})
+    return TraceService(d.store, d.scope, d.artifacts)
+
+
+class TracingPlanner(FixedPlanner):
+    """The rig's fixed planner that can return its turn's sanitized trace (``TRACES``, §9.1), as
+    ``planner_codex.CodexPlanner`` does: the snapshot of one agent message when asked."""
+
+    TRACES = True
+
+    def __init__(self, text: str = "the planner drafted") -> None:
+        super().__init__(SUITE_DRAFT)
+        self.text = text
+        self.captured: list[bool] = []
+
+    def draft(  # type: ignore[override]
+        self, goal: str, app: str, verifiers: dict[str, str], workspace: Path, *,
+        mode: str = "work", capture_trace: bool = False,
+    ) -> dict[str, Any]:  # fmt: skip
+        from amplai_foundry.meta_harness.traces import TraceBuffer
+
+        out = super().draft(goal, app, verifiers, workspace, mode=mode)
+        self.captured.append(capture_trace)
+        if capture_trace:
+            buffer = TraceBuffer("codex")
+            buffer.add(
+                {"type": "item.completed", "item": {"type": "agent_message", "text": self.text}}
+            )
+            out["trace"] = buffer.snapshot()
+        return out
+
+
+def planner_body(w: World, service: Any, goal: str) -> dict[str, Any] | None:
+    """The body of the goal-level planner trace ``trace-<goal>.planner``, or None."""
+    ref = service.of_run(goal + ".planner")
+    if ref is None:
+        return None
+    assert ref["id"] == f"trace-{goal}.planner"
+    d = w.rig.d
+    record = d.store.get(d.scope, "harness-trace", ref)
+    assert record["goal_id"] == goal and record["run_id"] == goal + ".planner"
+    body: dict[str, Any] = json.loads(d.artifacts.read(d.scope, record["artifact"]))
+    return body
+
+
+def trace_bodies(w: World, service: Any) -> dict[str, dict[str, Any]]:
+    d = w.rig.d
+    return {
+        v["run_id"]: json.loads(d.artifacts.read(d.scope, v["artifact"]))
+        for _r, v in service.records()
+    }
+
+
+def turn_names(body: dict[str, Any]) -> list[Any]:
+    return [t["turn"] for t in body["turns"]]
+
+
+def turn_texts(body: dict[str, Any], name: str) -> list[str]:
+    return [i["text"] for t in body["turns"] if t["turn"] == name for i in t["items"]]
+
+
+def test_a_capturing_generator_reviewer_trial_stores_its_reviewer_turns_in_the_run_trace(
+    deployment: Any, tmp_path: Path
+) -> None:
+    w = tracing_world(deployment, tmp_path, reviewed)
+    service = store_traces(w)
+    w.turns.outputs["review"] = [CHANGES, APPROVE]
+    strategy = w.comps.strategy(
+        "generator_reviewer", {"reviewer_role": "reviewer", "max_rounds": 2}, **AUX
+    )
+    goal = w.approved(strategy, trial=trial_context(capture_trace=True))
+    record = w.loop.run_goal(goal)
+    assert record["status"] == "verified" and outcomes(record) == ["pass"]
+    assert w.turns.asked == [("review", True), ("review", True)]
+    ((run_id, body),) = trace_bodies(w, service).items()
+    assert run_id == record["attempts"][0]["run_id"]
+    # the first turn and its follow-up (executor), then each reviewer round
+    assert turn_names(body) == [0, 1, "reviewer", "reviewer"]
+    assert turn_texts(body, "reviewer") == ["review turn", "review turn"]
+    assert service.counts() == {"traces": {"development": 1}, "drops": {}}
+    assert w.runner._traces == {}  # handed once, nothing left behind
+
+
+def test_capturing_parallel_readonly_investigators_are_named_by_question_and_handed_once(
+    deployment: Any, tmp_path: Path
+) -> None:
+    from amplai_foundry.meta_harness.traces import validate_trace_record
+
+    w = tracing_world(deployment, tmp_path, wrong_first)
+    service = store_traces(w)
+    w.turns.outputs["investigate"] = FINDINGS
+    w.turns.texts["investigate"] = "investigated"
+    strategy = w.comps.strategy("parallel_readonly", {"steps": ALL_QUESTIONS}, **AUX)
+    goal = w.approved(strategy, trial=trial_context(capture_trace=True))
+    record = w.loop.run_goal(goal)
+    assert record["status"] == "verified" and outcomes(record) == ["fail", "pass"]
+    assert sorted(w.turns.asked) == [("investigate", True)] * 3
+    bodies = trace_bodies(w, service)
+    first, second = (bodies[a["run_id"]] for a in record["attempts"])
+    assert turn_names(first) == [0, "investigator-1", "investigator-2", "investigator-3"]
+    assert turn_texts(first, "investigator-2") == ["investigated"]
+    assert turn_names(second) == [0]  # the repair attempt's run: investigators went once
+    for _ref, value in service.records():
+        validate_trace_record(value)
+
+
+def test_a_trial_without_capture_never_asks_a_read_only_turn_for_a_trace(
+    deployment: Any, tmp_path: Path
+) -> None:
+    w = tracing_world(deployment, tmp_path, reviewed)
+    service = store_traces(w)
+    w.turns.outputs["review"] = APPROVE
+    goal = w.approved(
+        w.comps.strategy("generator_reviewer", {"max_rounds": 1}, **AUX), trial=trial_context()
+    )
+    assert w.loop.run_goal(goal)["status"] == "verified"
+    assert w.turns.asked == [("review", False)]
+    assert service.counts() == {"traces": {}, "drops": {}} and w.runner._traces == {}
+
+
+def test_a_real_goal_never_asks_for_a_trace_and_stores_none(
+    deployment: Any, tmp_path: Path
+) -> None:
+    w = tracing_world(deployment, tmp_path, reviewed)
+    service = store_traces(w)
+    w.turns.outputs["investigate"] = FINDINGS
+    record = w.run(w.comps.strategy("parallel_readonly", {"steps": ALL_QUESTIONS}, **AUX))
+    assert record["status"] == "published"
+    assert sorted(w.turns.asked) == [("investigate", False)] * 3  # D-100
+    assert service.counts() == {"traces": {}, "drops": {}} and w.runner._traces == {}
+
+
+def test_a_secret_in_a_reviewer_turn_drops_the_whole_trace_of_the_run(
+    deployment: Any, tmp_path: Path
+) -> None:
+    from amplai_foundry.meta_harness.traces import DROP_KIND
+
+    w = tracing_world(deployment, tmp_path, reviewed)
+    service = store_traces(w)
+    w.turns.outputs["review"] = APPROVE
+    secret = "password: Zq9wXk3LmN8vBc2RtY6uHj4P"
+    w.turns.texts["review"] = "the reviewer quoted " + secret
+    goal = w.approved(
+        w.comps.strategy("generator_reviewer", {"max_rounds": 1}, **AUX),
+        trial=trial_context(capture_trace=True),
+    )  # fmt: skip
+    record = w.loop.run_goal(goal)
+    assert record["status"] == "verified"  # trace capture never changes the run
+    assert service.counts() == {"traces": {}, "drops": {"secret_pattern": 1}}
+    d = w.rig.d
+    ((_ref, drop),) = list(d.store.list_objects(d.scope, DROP_KIND))
+    assert drop["run_id"] == record["attempts"][0]["run_id"] and drop["patterns"]
+    assert secret not in json.dumps(drop)
+
+
+def test_a_capturing_plan_time_lead_turn_goes_back_through_the_plan_context(
+    deployment: Any, tmp_path: Path
+) -> None:
+    from amplai_foundry.runtime.execution.strategy_runner import (
+        AuxLedger,
+        PlanContext,
+        StrategyChoice,
+    )
+
+    w = tracing_world(deployment, tmp_path, orchestrated)
+    w.turns.outputs["lead"] = LEAD
+    goal = w.plan(w.comps.strategy("orchestrator", ORCH, **AUX))
+    plan = w.record(goal)
+    choice = StrategyChoice.of(plan)
+    assert w.turns.asked == [("lead", False)]  # a real goal: no trace
+    contexts = []
+    for capture in (False, True):
+        context = PlanContext(goal, plan["base"], True, AuxLedger(10**6), [VERIFIER], capture)
+        w.runner.items(plan["draft"], choice, "app", context=context)
+        contexts.append(context)
+    assert w.turns.asked[1:] == [("lead", False), ("lead", True)]
+    assert contexts[0].snapshots == []
+    ((snapshot,),) = [c.snapshots for c in contexts[1:]]
+    assert snapshot["items"][0]["text"] == "lead turn"
+    # the runner keeps nothing of a plan-time turn: no run trace carries a "planner" turn
+    assert w.runner._traces == {}
+    assert w.runner.aux_traces(goal, "node-app.p1") == []
+
+
+def test_the_loop_itself_hands_reviewer_turns_to_the_run_trace(
+    deployment: Any, tmp_path: Path
+) -> None:
+    w = tracing_world(deployment, tmp_path, reviewed)
+    service = store_traces(w)
+    w.turns.outputs["review"] = [CHANGES, APPROVE]
+    strategy = w.comps.strategy(
+        "generator_reviewer", {"reviewer_role": "reviewer", "max_rounds": 2}, **AUX
+    )
+    goal = w.approved(strategy, trial=trial_context(capture_trace=True))
+    record = w.loop.run_goal(goal)
+    assert record["status"] == "verified"
+    assert w.turns.asked == [("review", True), ("review", True)]
+    ((_run_id, body),) = trace_bodies(w, service).items()
+    assert turn_names(body) == [0, 1, "reviewer", "reviewer"]
+
+
+def test_a_capturing_orchestrator_trial_stores_its_lead_turn_as_the_planner_turn(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """The planner draft and the lead turn are the two "planner" turns of the goal-level planner
+    trace, in the order they ran; no run trace carries a "planner" turn."""
+    w = tracing_world(deployment, tmp_path, orchestrated)
+    service = store_traces(w)
+    w.turns.outputs["lead"] = LEAD
+    w.turns.texts["lead"] = "the lead split the goal"
+    planner = TracingPlanner()
+    goal = w.approved(
+        w.comps.strategy("orchestrator", ORCH, **AUX), trial=trial_context(capture_trace=True),
+        planner=planner,
+    )  # fmt: skip
+    assert planner.captured == [True] and w.turns.asked == [("lead", True)]
+    body = planner_body(w, service, goal)
+    assert body is not None and turn_names(body) == ["planner", "planner"]
+    assert turn_texts(body, "planner") == ["the planner drafted", "the lead split the goal"]
+    record = w.loop.run_goal(goal)
+    assert record["status"] == "verified" and outcomes(record) == ["pass", "pass", "pass"]
+    bodies = trace_bodies(w, service)
+    runs = [bodies[a["run_id"]] for a in record["attempts"]]
+    assert [turn_names(b) for b in runs] == [[0], [0], [0]]  # executor turns only
+    assert service.counts() == {"traces": {"development": 4}, "drops": {}}
+    assert w.runner._traces == {}
+
+
+def test_a_capturing_trial_whose_planner_has_no_traces_still_stores_the_lead_turn(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """The rig's fixed planner (no ``TRACES``) is called as before; the strategy runner's
+    plan-time turn still captures and is the planner trace's only turn."""
+    w = tracing_world(deployment, tmp_path, orchestrated)
+    service = store_traces(w)
+    w.turns.outputs["lead"] = LEAD
+    goal = w.approved(
+        w.comps.strategy("orchestrator", ORCH, **AUX), trial=trial_context(capture_trace=True)
+    )
+    body = planner_body(w, service, goal)
+    assert body is not None and turn_names(body) == ["planner"]
+    assert turn_texts(body, "planner") == ["lead turn"]
+
+
+def test_a_real_goal_and_an_uncaptured_trial_store_no_trace_of_either_kind(
+    deployment: Any, tmp_path: Path
+) -> None:
+    w = tracing_world(deployment, tmp_path, orchestrated)
+    service = store_traces(w)
+    w.turns.outputs["lead"] = LEAD
+    planner = TracingPlanner()
+    real = w.approved(w.comps.strategy("orchestrator", ORCH, **AUX), planner=planner)
+    assert w.loop.run_goal(real)["status"] == "published"
+    off = w.approved(
+        w.comps.strategy("orchestrator", ORCH, **AUX), trial=trial_context(), planner=planner
+    )
+    assert w.loop.run_goal(off)["status"] == "verified"
+    assert planner.captured == [False, False]  # D-100: nobody asked the planner for a trace
+    assert w.turns.asked == [("lead", False), ("lead", False)]
+    assert planner_body(w, service, real) is None and planner_body(w, service, off) is None
+    assert service.counts() == {"traces": {}, "drops": {}} and w.runner._traces == {}

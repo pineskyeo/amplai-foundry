@@ -21,19 +21,21 @@ import json
 import threading
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
 from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
-from ..contracts.identity import canonical, new_id, now
+from ..contracts.identity import canonical, digest, new_id, now
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
 from .product import PORT, LocalExecutionService
 from .steering import SteeringService
-from .strategy_runner import node_app
+from .strategy_runner import StrategyChoice, node_app
 
 # the v1 feedback form's tail; the form of a goal comes from its composition (D-096)
 FEEDBACK_TAIL = policies.V1["feedback_form"]["tail_chars"]
@@ -161,6 +163,7 @@ class ExecutionLoop:
         options: DispatchOptions | None = None,
         deadline_seconds: float | None = None,
         hooks: Any = None,
+        aux_traces: Any = None,
     ) -> bool:
         """Run one attempt; take over whenever operator steering paused it. True if steered.
 
@@ -174,10 +177,15 @@ class ExecutionLoop:
         budget left at the attempt's start; both go to every turn of the attempt as call
         arguments (Work 033 S8), never into the shared coordinator. ``hooks`` are the strategy's
         turn hooks (Work 033 S9, M3); a resumed turn after steering runs without them.
+        ``aux_traces`` (Work 033 S13, §9.1) is the node's ``StrategyRunner.trace_source``: the
+        worker calls it once, only for a capturing dispatch, at the run's single trace admission
+        (in ``execute``, or in ``continue_resumed`` for a steered run), so the run's reviewer and
+        investigator turns join its trace.
         """
         worker = self.service.actors.worker
-        # passed only when set: a coordinator stand-in without hooks keeps working (v1 strategies)
-        extra = {"hooks": hooks} if hooks is not None else {}
+        # passed only when set: a coordinator stand-in without hooks or aux_traces keeps working
+        traced = {"aux_traces": aux_traces} if aux_traces is not None else {}
+        extra = {**({"hooks": hooks} if hooks is not None else {}), **traced}
 
         def first() -> Any:
             return self.coordinator.execute(
@@ -188,8 +196,9 @@ class ExecutionLoop:
 
         def resumed() -> Any:
             return self.coordinator.continue_resumed(
-                worker, dispatch["run_id"], options=options, deadline_seconds=deadline_seconds
-            )
+                worker, dispatch["run_id"], options=options, deadline_seconds=deadline_seconds,
+                **traced,
+            )  # fmt: skip
 
         turn, steered = first, False
         while True:
@@ -404,7 +413,7 @@ class ExecutionLoop:
             return self._stop_goal(goal_id, "held", reason, [])
         runner = self.service.strategy_runner()  # Work 033 S9: the goal's strategy (§5)
         try:
-            return self._run_attempts(goal_id, plan, context, options, runner)
+            return self._run_attempts(goal_id, plan, context, options, runner, budget)
         finally:
             runner.forget(goal_id)
 
@@ -415,12 +424,19 @@ class ExecutionLoop:
         context: policies.ContextPolicy,
         options: DispatchOptions,
         runner: Any,
+        budget: policies.BudgetPolicy | None = None,
     ) -> dict[str, Any]:
         """Claim -> attempt -> protected verification until the graph is done or stops.
 
         The strategy (``StrategyRunner``, Work 033 S9) gives each attempt its base, feedback,
         hooks and extra prompt sections (M1, M3, M5) and decides after a failed verification
-        (retry, escalate, stop); ``finish_work`` stays the only judge of an attempt."""
+        (retry, escalate, stop); ``finish_work`` stays the only judge of an attempt.
+
+        Work 033 S10 (§6.1): per attempt the L4 decision (context parts) before the prompt, the
+        L7 decision before the final verification (fast checks as M3 follow-ups of the attempt,
+        never a verdict) and, after a failed verification, the L6 decision (retry, escalate,
+        stop). Each writes a harness-decision named in ``plan["decisions"]``."""
+        budget = budget or policies.v1_budget(self.service.budget.wire())
         svc, worker, verifier = (
             self.service,
             self.service.actors.worker,
@@ -462,11 +478,21 @@ class ExecutionLoop:
                 spec = runner.before_attempt(
                     svc.plan_record(goal_id), node, number, options=options
                 )
+                # L4 (S10): the context parts this attempt shows, within the manifest
+                shown = self._context_for(goal_id, plan, node, context, attempts)
                 prompt = self.prompt(
                     contract, plan, spec.feedback, node=node,
-                    upstream=self._upstream(graph, node, plan), context=context,
+                    upstream=self._upstream(graph, node, plan), context=shown,
                     extra_sections=spec.extra_sections,
                 )  # fmt: skip
+                # L7 (S10, M3): fast checks before the final verification, as follow-up turns
+                hooks = spec.hooks
+                fast = (
+                    self._fast_hooks(goal_id, plan, node, budget, context)
+                    if hooks is None
+                    else None
+                )
+                hooks = fast or hooks
             except Exception as exc:
                 self._discard(dispatch["run_id"])
                 reason = f"prompt: {getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]
@@ -476,9 +502,11 @@ class ExecutionLoop:
                 # coordinator.max_seconds raced once trials of one app run concurrently
                 steered = self._execute(
                     goal_id, dispatch, prompt, spec.base, options=options,
-                    deadline_seconds=max(1, int(remaining)), hooks=spec.hooks,
+                    deadline_seconds=max(1, int(remaining)), hooks=hooks,
+                    aux_traces=runner.trace_source(goal_id, node["node_id"]),
                 )  # fmt: skip
             except _Replan as replan:
+                self._fast_decided(goal_id, fast)
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
                      "outcome": "replanned", "reason": replan.reason[:200],
@@ -495,12 +523,13 @@ class ExecutionLoop:
                         reason=f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
                     )  # fmt: skip
             except Exception as exc:
+                self._fast_decided(goal_id, fast)
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
                      "outcome": "driver_failed",
                      "reason": getattr(exc, "code", type(exc).__name__),
                      "seconds": round(self.clock() - started, 1),
-                     **self._turns(spec.hooks)}
+                     **self._turns(hooks)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 status = "cancelled" if goal_id in self._cancel else "held"
@@ -512,6 +541,14 @@ class ExecutionLoop:
                 return self._stop_goal(goal_id, status, reason, attempts)
             work = self.store.head(self.scope, "work", dispatch["node"]["work_id"])
             change = work["data"]["outputs"][PORT]
+            try:  # L7 (S10): recorded by the fast-check hook, or here before the verification
+                self._fast_decided(goal_id, fast)
+                if fast is None:
+                    self._decide_checks(goal_id, plan, node, budget, change, hooks)
+            except Exception as exc:
+                self._discard(dispatch["run_id"])
+                reason = f"decision: {getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]
+                return self._stop_goal(goal_id, "held", reason, attempts)
             try:
                 verdicts = [
                     self.service.verification.verify(verifier, dispatch["run_id"], ac, change)
@@ -523,7 +560,7 @@ class ExecutionLoop:
                 attempts.append(
                     {"run_id": dispatch["run_id"], "app": app, "node_id": node["node_id"],
                      "outcome": "verify_failed", "reason": code,
-                     "seconds": round(self.clock() - started, 1), **self._turns(spec.hooks)}
+                     "seconds": round(self.clock() - started, 1), **self._turns(hooks)}
                 )  # fmt: skip
                 self._discard(dispatch["run_id"])
                 return self._stop_goal(goal_id, "held", f"verification: {code}", attempts)
@@ -534,7 +571,7 @@ class ExecutionLoop:
                  "change": change, **({"steered": True} if steered else {}),
                  "verdicts": [{"acceptance": o["acceptance_id"], "outcome": o["outcome"],
                                "reason": o["reason"]} for o in observations],
-                 "seconds": round(self.clock() - started, 1), **self._turns(spec.hooks)}
+                 "seconds": round(self.clock() - started, 1), **self._turns(hooks)}
             )  # fmt: skip
             self._update(goal_id, attempts=attempts)
             self._discard(dispatch["run_id"])
@@ -544,12 +581,23 @@ class ExecutionLoop:
                     break
                 continue  # the next node whose dependencies are now met
             # M1/M6: another attempt of this node (finish_work allowed it within the node's
-            # max_attempts), an escalation to the cascade's next cell, or the end
+            # max_attempts), an escalation to the cascade's next cell, or the end; the L6
+            # decider (S10) may choose among what is possible, its prior is exactly this rule
             decision = runner.on_failure(svc.plan_record(goal_id), node, observations)
-            if decision == "retry" and state == "ready":
+            try:
+                action = self._on_failure(
+                    goal_id, node, observations, attempts, budget, runner, decision, state,
+                    deadline=deadline, wall=float(contract["budget"]["max_wall_seconds"]),
+                )  # fmt: skip
+            except Exception as exc:  # the work is ready or failed: end the goal, free claims
+                reason = f"decision: {getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600]
+                return self._stop_goal(goal_id, "held", reason, attempts)
+            if action == "retry" and state == "ready":
                 continue
-            if decision == "escalate":
+            if action == "escalate":
                 return self._escalate(goal_id, attempts, runner)
+            if decision == "retry":  # the L6 decider stopped what the attempt policy allowed
+                return self._stop_goal(goal_id, "failed", "stopped by the L6 decider", attempts)
             return self._stop_goal(
                 goal_id, "failed", "acceptance failed within the attempt budget", attempts
             )
@@ -589,10 +637,13 @@ class ExecutionLoop:
         """The follow-up turns and reviewer rounds an attempt's hooks made (M3), for metrics."""
         if hooks is None:
             return {}
-        return {
+        out: dict[str, Any] = {
             "followups": int(getattr(hooks, "sent", 0) or 0),
             "reviewer_rounds": int(getattr(hooks, "rounds", 0) or 0),
         }
+        if isinstance(hooks, FastCheckHooks):  # what the L7 fast checks found (S10)
+            out["fast_checks"] = list(hooks.results)
+        return out
 
     def _escalate(
         self, goal_id: str, attempts: list[dict[str, Any]], runner: Any
@@ -754,23 +805,22 @@ class ExecutionLoop:
         composition = self._composition(plan)
         if composition is None:
             return policies.v1_context(), policies.v1_budget(ceiling)
+        from ...meta_harness import deciders
+
         context = policies.context_policy(self.store, self.scope, composition)
         budget = policies.budget_policy(self.store, self.scope, composition, ceiling=ceiling)
         policies.check_combination(context.feedback_form, budget.attempt_policy, budget.limits)
-        context_assembly.check_supported(context)
+        # the L4 decider is honoured since S10 (``_context_for``); its parts are checked below
+        context_assembly.check_supported(replace(context, decider_l4=None))
         # driver_options (L5) are honoured since S8: resolve_options carries them to the port;
         # the execution strategies since S9, except a strategy the plan refused or one held
-        # (vote, §14 Q16); fast checks (L7, M3) are not built yet
+        # (vote, §14 Q16); fast checks (L7, M3) and the deciders L4-L8 since S10
         refused = self.service.strategy_runner().refusal(plan, budget)
-        unsupported = [
-            name
-            for name, on in (
-                (refused or "", refused is not None),
-                ("fast_checks (S9)", bool(budget.fast_checks and budget.fast_checks["enabled"])),
-                ("deciders L5-L8 (S10)", any(budget.deciders.values())),
-            )
-            if on
-        ]  # fmt: skip
+        unsupported = [refused] if refused is not None else []
+        unsupported += self._fast_check_refusals(plan, budget)
+        unsupported += deciders.check(self.store, self.scope, "L4", context.decider_l4)
+        for layer in policies.BUDGET_DECIDERS:
+            unsupported += deciders.check(self.store, self.scope, layer, budget.deciders[layer])
         unsupported += self._router_unsupported(plan, composition)
         if unsupported:
             raise RuntimeFault(
@@ -787,34 +837,302 @@ class ExecutionLoop:
         (``plan["trial"]["capture_trace"]``; a real goal never captures, D-100). Resolved once
         before any claim: an effort profile then runs with its effort instead of holding
         DISPATCH_OPTIONS_BINDING, and the worker still checks the binding before preparing."""
+        from ...meta_harness import deciders
+
         profile = self.store.head(self.scope, "goal", goal_id)["data"]["profile"]
         trial = plan.get("trial") or {}
-        return resolve_options(
-            self.store, self.scope, profile, budget,
-            capture_trace=trial.get("capture_trace") is True,
+        capture = trial.get("capture_trace") is True
+        # L5 (S10, §6.1): the driver options among the decider's driver_options versions, once
+        # before the first dispatch (its features, cell and strategy, do not change in a goal);
+        # the prior is the composition's own driver_options
+        content, ref = budget.deciders.get("L5"), budget.refs.get("L5")
+        manifest = budget.refs.get("driver_options")
+        prior = deciders.option_id(manifest) if manifest else "driver_defaults"
+        candidates: dict[str, dict[str, Any]] = {}
+        why: dict[str, str] = {}
+        for option_ref in (content or {}).get("options") or []:
+            label = deciders.option_id(option_ref)
+            parts = policies.component_content(
+                self.store, self.scope, option_ref, "driver_options", "driver_options"
+            )
+            candidates[label] = parts
+            try:
+                resolve_options(
+                    self.store, self.scope, profile, replace(budget, driver_options=parts),
+                    capture_trace=capture,
+                )  # fmt: skip
+            except (Hold, RuntimeFault) as exc:
+                why[label] = f"{exc.code}: {exc.message}"
+        decision = self._decide(
+            goal_id, plan, "L5", content, ref,
+            features={"cell": self._cell(plan), "strategy": StrategyChoice.of(plan).strategy},
+            options=tuple(candidates) or (prior,), prior=prior, ineligible=why,
+        )  # fmt: skip
+        if content is not None and decision.option in candidates and decision.option != prior:
+            budget = replace(budget, driver_options=candidates[decision.option])
+        return resolve_options(self.store, self.scope, profile, budget, capture_trace=capture)
+
+    # -- per-layer decisions at dispatch, on failure, before verification (S10, §6.1) ---------
+    @staticmethod
+    def _cell(plan: dict[str, Any]) -> str:
+        return str((plan.get("composition") or {}).get("cell_id") or "")
+
+    def _decide(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        layer: str,
+        content: dict[str, Any] | None,
+        ref: dict[str, Any] | None,
+        *,
+        features: dict[str, Any],
+        options: tuple[str, ...],
+        prior: str,
+        ineligible: dict[str, str] | None = None,
+        record: bool = True,
+    ) -> Any:
+        """One decision of the goal (a trial's subject and arm cell, else the goal and its
+        composition's cell); its ref is appended to ``plan["decisions"]`` unless ``record`` is
+        False (the caller appends it, e.g. from a hook thread)."""
+        from ...meta_harness import deciders
+
+        trial = plan.get("trial") or {}
+        subject = dict(trial["subject"]) if trial.get("subject") else {"goal_id": goal_id}
+        cell = str(trial.get("cell_id") or self._cell(plan))
+        decision = deciders.Decider.of(self.store, self.scope, content, ref=ref).decide(
+            deciders.DecisionContext(
+                layer=layer, cell_id=cell, features=features, options=options, prior=prior,
+                subject=subject, production=not trial, ineligible=dict(ineligible or {}),
+            )
+        )  # fmt: skip
+        if record:
+            self._decided(goal_id, [decision.record_ref])
+        return decision
+
+    def _decided(self, goal_id: str, refs: list[dict[str, Any]]) -> None:
+        if refs:
+            plan = self.service.plan_record(goal_id)
+            self._update(goal_id, decisions=[*(plan.get("decisions") or []), *refs])
+
+    def _context_for(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        node: dict[str, Any],
+        context: policies.ContextPolicy,
+        attempts: list[dict[str, Any]],
+    ) -> policies.ContextPolicy:
+        """L4: which of the manifest's enabled context parts this attempt shows. An option is
+        the "+"-joined set of parts kept on ("none" for all off); the prior is the manifest as
+        written (v1: every part off, so the only option is "none")."""
+        from ...meta_harness import deciders
+
+        parts = ("env_bootstrap", "memory_notes")  # retrieval is refused while unspecified
+        enabled = [p for p in parts if (getattr(context, p) or {}).get("enabled")]
+        subsets = [s for k in range(len(enabled) + 1) for s in combinations(enabled, k)]
+        options = tuple("+".join(s) or "none" for s in subsets)
+        prior = "+".join(enabled) or "none"
+        app = _node_app(plan, node)
+        facts = (plan.get("repo_facts") or {}).get(app) or {}
+        node_id = node["node_id"]
+        failures = sum(
+            1 for a in attempts if a.get("node_id") == node_id and a.get("outcome") == "fail"
+        )
+        content = context.decider_l4
+        ref = context.refs.get("L4")
+        decision = self._decide(
+            goal_id, plan, "L4", content, ref,
+            features={
+                "strategy": StrategyChoice.of(plan).strategy,
+                "repo_files": deciders.repo_files_bucket(
+                    len(facts.get("tree") or []), bool(facts.get("tree_truncated"))
+                ),
+                "prior_failures": failures,
+            },
+            options=options, prior=prior,
+        )  # fmt: skip
+        if content is None or decision.option == prior:
+            return context
+        kept = set() if decision.option == "none" else set(decision.option.split("+"))
+        changes = {
+            p: {**(getattr(context, p) or {}), "enabled": False} for p in enabled if p not in kept
+        }
+        return replace(context, **changes)
+
+    def _fast_hooks(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        node: dict[str, Any],
+        budget: policies.BudgetPolicy,
+        context: policies.ContextPolicy,
+    ) -> FastCheckHooks | None:
+        """The L7 hook of this attempt when the manifest enables fast checks (``_policies``
+        refused what cannot run); None otherwise."""
+        fast = budget.fast_checks
+        if not fast or not fast.get("enabled") or plan.get("mode") == "design":
+            return None
+        app = self.service.apps[_node_app(plan, node)].config
+        return FastCheckHooks(
+            self, goal_id, plan, node, app, fast, context.feedback_form,
+            budget.deciders.get("L7"), budget.refs.get("L7"),
         )  # fmt: skip
 
-    def _router_unsupported(self, plan: dict[str, Any], composition: dict[str, Any]) -> list[str]:
-        """Router-carrier parts of the goal composition that S3 does not honour (D-096, §2.3).
+    def _fast_decided(self, goal_id: str, hooks: FastCheckHooks | None) -> None:
+        """The L7 decision a fast-check hook made in the worker's hook thread, appended to the
+        plan record here, in the loop's thread."""
+        if hooks is not None and hooks.decision_refs:
+            refs, hooks.decision_refs = list(hooks.decision_refs), []
+            self._decided(goal_id, refs)
 
-        S3 plans with the v1 interpretation and selects with the installed router, which the plan
-        records as ``composition.policy_ref`` (``product.py`` select_composition); reading the
-        router from the composition, roles and interpretation are S4 (§4.1 rows
-        ``product.py:443-494``, ``planner_codex.py:195-408``), deciders L1-L3 are S10. A legacy
-        task_class_baseline router reads as route_policy v1 (``policies.router_policy``).
-        """
+    def _decide_checks(
+        self,
+        goal_id: str,
+        plan: dict[str, Any],
+        node: dict[str, Any],
+        budget: policies.BudgetPolicy,
+        change: dict[str, Any],
+        hooks: Any,
+    ) -> None:
+        """L7 without a fast-check hook: recorded before the final verification; no quick check
+        can run (the manifest has fast checks off, a design goal, or the strategy's own
+        follow-up turns hold the hook), so the decision is ``none``."""
+        from ...meta_harness import deciders
+
+        app = self.service.apps[_node_app(plan, node)].config
+        fast = budget.fast_checks or {}
+        if plan.get("mode") == "design":
+            why = "a design goal verifies its document only"
+        elif hooks is not None:
+            why = "the strategy's follow-up turns hold the attempt's hook"
+        else:
+            why = "fast checks are off for this goal"
+        self._decide(
+            goal_id, plan, "L7", budget.deciders.get("L7"), budget.refs.get("L7"),
+            features={
+                "changed_files": deciders.count_bucket(self._changed_files(change)),
+                "quick_available": bool(app.quick_verifiers) and bool(fast.get("enabled")),
+            },
+            options=deciders.OPTIONS["L7"], prior="none", ineligible={"quick_checks": why},
+        )  # fmt: skip
+
+    def _changed_files(self, change: dict[str, Any]) -> int:
+        raw = self.service.workspaces.artifacts.read(self.scope, change)
+        _base, patch = self.service.workspaces.read_change(self.scope, raw)
+        return count_files(patch)
+
+    def _on_failure(
+        self,
+        goal_id: str,
+        node: dict[str, Any],
+        observations: list[dict[str, Any]],
+        attempts: list[dict[str, Any]],
+        budget: policies.BudgetPolicy,
+        runner: Any,
+        decision: str,
+        state: str,
+        *,
+        deadline: float,
+        wall: float,
+    ) -> str:
+        """L6: retry (in the form the attempt policy gives the next attempt), escalate to the
+        cascade's next cell, or stop. The prior is the strategy's own rule (``decision``)."""
+        from ...meta_harness import deciders
+
+        plan = self.service.plan_record(goal_id)
+        strategy = StrategyChoice.of(plan).strategy
+        attempt_policy = budget.attempt_policy
+        feedback = bool(attempt_policy["feedback"]) and strategy not in {"single", "best_of_n"}
+        retry = "retry_feedback" if feedback else "retry_fresh"
+        other = "retry_fresh" if feedback else "retry_feedback"
+        ineligible = {other: f"the attempt policy's next attempt is {retry}"}
+        if state != "ready":
+            ineligible[retry] = "finish_work admitted no further attempt"
+        if runner.next_cell(plan) is None:
+            ineligible["escalate"] = "no next cascade cell"
+        prior = {"retry": retry, "escalate": "escalate"}.get(decision, "stop")
+        failing = [o for o in observations if o["outcome"] != "pass"]
+        mine = [a for a in attempts if a.get("node_id") == node["node_id"] and a.get("verdicts")]
+        same = len(mine) >= 2 and _signature(mine[-1]) == _signature(mine[-2])
+        remaining = max(0.0, deadline - self.clock()) / wall if wall > 0 else 0.0
+        made = self._decide(
+            goal_id, plan, "L6", budget.deciders.get("L6"), budget.refs.get("L6"),
+            features={
+                "attempt": len(mine),
+                "failing_acceptance": deciders.count_bucket(len(failing)),
+                "same_signature": same,
+                "tokens_so_far": deciders.tokens_bucket(self._tokens_so_far(attempts)),
+                "remaining_fraction": deciders.fraction_bucket(remaining),
+            },
+            options=deciders.OPTIONS["L6"], prior=prior, ineligible=ineligible,
+        )  # fmt: skip
+        option = str(made.option)
+        return "retry" if option in {"retry_feedback", "retry_fresh"} else option
+
+    def _tokens_so_far(self, attempts: list[dict[str, Any]]) -> int | None:
+        """Input + output tokens of the goal's runs so far; None when one is not known."""
+        total = 0
+        for attempt in attempts:
+            try:
+                run = self.store.head(self.scope, "run", attempt["run_id"])["data"]["record"]
+            except (Hold, RuntimeFault, KeyError):
+                return None
+            usage = run.get("usage") or {}
+            tokens_in, tokens_out = usage.get("input_tokens"), usage.get("output_tokens")
+            if type(tokens_in) is not int or type(tokens_out) is not int:
+                return None
+            total += tokens_in + tokens_out
+        return total
+
+    def _router_unsupported(self, plan: dict[str, Any], composition: dict[str, Any]) -> list[str]:
+        """Router-carrier parts of the goal composition nobody honours (D-096, §2.3).
+
+        Since S10 a plan refuses them before the planner turn (``refuse_router_parts``); this
+        check keeps holding a goal planned before that. The plan was made with the v1
+        interpretation and selected with the app's router, which it records as
+        ``composition.policy_ref``; route-policy roles are not read (L3 decides the executor
+        cell); the deciders L1-L3 run at plan time and are refused only when their parts cannot
+        run. A legacy task_class_baseline router reads as route_policy v1.
+
+        The interpretation (§2.2) is honoured at plan time: a plan whose recorded interpretation
+        (``plan["interpretation"]``, absent = v1) differs from its composition router's was
+        drafted under another planner text. ``approve`` holds such a plan (COMPOSITION_CHANGED);
+        this check holds one approved before that check existed, before any claim."""
         router = policies.router_policy(self.store, self.scope, composition["router_policy_ref"])
-        return [
-            name
-            for name, on in (
-                ("interpretation (S4)", router.interpretation != policies.V1["interpretation"]),
-                ("route_policy order of the composition (S4)",
-                 self._own_route_order(plan, composition, router)),
-                ("route_policy roles (S4)", bool(router.roles)),
-                ("deciders L1-L3 (S10)", any(router.deciders.values())),
+        parts = self.service.router_refusals(router)
+        if self._own_route_order(plan, composition, router):
+            parts.append("route_policy order of the composition (selection reads the app router)")
+        drafted_with = plan.get("interpretation") or policies.V1["interpretation"]
+        if router.interpretation != drafted_with:
+            parts.append(
+                "interpretation of the plan differs from the composition router's (planned "
+                f"{json.dumps(drafted_with, sort_keys=True)}, router "
+                f"{json.dumps(router.interpretation, sort_keys=True)})"
             )
-            if on
-        ]  # fmt: skip
+        return parts
+
+    def _fast_check_refusals(
+        self, plan: dict[str, Any], budget: policies.BudgetPolicy
+    ) -> list[str]:
+        """L7 fast checks this loop cannot run (S10): checks that are not quick verifiers of
+        every app of the goal, none at all, no follow-up turn to report a failure in, or a
+        strategy whose own follow-up turns hold the attempt's M3 hook (generator_reviewer)."""
+        fast = budget.fast_checks
+        if not fast or not fast.get("enabled"):
+            return []
+        problems = []
+        if not fast["checks"]:
+            problems.append("fast_checks: enabled without checks")
+        if int(fast["max_followups"]) < 1:
+            problems.append("fast_checks: max_followups 0 leaves no follow-up turn")
+        for app in plan.get("apps") or [plan["app"]]:
+            quick = set(self.service.apps[app].config.quick_verifiers)
+            missing = [c for c in fast["checks"] if c not in quick]
+            if missing:
+                problems.append(f"fast_checks: {', '.join(missing)} not quick verifiers of {app}")
+        if StrategyChoice.of(plan).strategy == "generator_reviewer":
+            problems.append("fast_checks with generator_reviewer (one M3 hook per attempt)")
+        return problems
 
     def _own_route_order(
         self, plan: dict[str, Any], composition: dict[str, Any], router: policies.RouterPolicy
@@ -914,3 +1232,129 @@ class ExecutionLoop:
             plan = {**self.service.plan_record(goal_id), **fields}
             fields["strategy_metrics"] = self.service.strategy_runner().metrics(plan)
         return self._update(goal_id, status=status, finished_at=now(), **fields)
+
+
+def count_files(patch: bytes) -> int:
+    """Files a git patch touches (its ``diff --git`` headers)."""
+    return sum(1 for line in patch.splitlines() if line.startswith(b"diff --git "))
+
+
+def _signature(attempt: dict[str, Any]) -> frozenset[tuple[Any, Any, Any]]:
+    """The failing verdicts of an attempt (acceptance, outcome, reason): L6 ``same_signature``."""
+    return frozenset(
+        (v.get("acceptance"), v.get("outcome"), v.get("reason"))
+        for v in attempt.get("verdicts") or []
+        if v.get("outcome") != "pass"
+    )
+
+
+FAST_HEADER = (
+    "Fast checks failed on the current change (quick commands only; the acceptance commands "
+    "still decide after this turn):"
+)
+
+
+class FastCheckHooks:
+    """L7 fast checks (Work 033 S10, interfaces.md §5.2 "L7 fast checks", §6.1 L7, M3).
+
+    After a turn the app's quick verifiers named by the ``fast_checks`` component run on a fresh
+    copy of the run workspace's change (base + patch) in the app's verify sandbox with network
+    none (the deployment's ``SuiteVerifier``, ``verification/runtime/patch_commands.py``). A
+    failure becomes one follow-up message with the failing command and the tail of its output
+    (the goal's feedback-form tail length); the worker resumes the same session with it, at most
+    ``max_followups`` times. Fast checks never produce a verdict: the protected suite after
+    ``output_ready`` stays the only verification. The L7 decision is made at the first turn,
+    when the changed files are known; its record ref is handed to the loop's thread
+    (``decision_refs``), which appends it to the plan."""
+
+    candidates = 1
+
+    def __init__(
+        self,
+        loop: ExecutionLoop,
+        goal_id: str,
+        plan: dict[str, Any],
+        node: dict[str, Any],
+        app: Any,
+        fast: dict[str, Any],
+        form: dict[str, Any],
+        content: dict[str, Any] | None,
+        ref: dict[str, Any] | None,
+    ) -> None:
+        self.loop, self.goal_id, self.plan, self.node, self.app = loop, goal_id, plan, node, app
+        self.checks = tuple(str(c) for c in fast["checks"])
+        self.max_followups = int(fast["max_followups"])
+        self.tail_chars = int(form["tail_chars"])
+        self.content, self.ref = content, ref
+        self.decision_refs: list[dict[str, Any]] = []
+        self.run: bool | None = None  # the L7 decision, made at the first turn
+        self.sent = 0
+        self.results: list[dict[str, Any]] = []
+
+    def spec_digest(self) -> str:
+        return digest(
+            {"mechanism": "fast_checks", "checks": list(self.checks),
+             "max_followups": self.max_followups, "decider": self.ref}
+        )  # fmt: skip
+
+    def select(self, candidates: list[Any]) -> int:
+        return 0
+
+    def _change(self, workspace: Path) -> tuple[bytes, bytes]:
+        """(the change artifact bytes, the patch) of the run workspace as it is now."""
+        service = self.loop.service
+        workspaces, scope = service.workspaces, service.scope
+        snapshot = workspaces.snapshot(scope, Path(workspace))
+        value = json.loads(workspaces.artifacts.read(scope, snapshot))
+        patch = workspaces.artifacts.read(scope, value["patch"])
+        change = {
+            "format": "amplai.change.v1",
+            "base": {k: value[k] for k in ("repo", "commit", "tree")},
+            "patch": value["patch"],
+            "patch_bytes": len(patch),
+        }
+        return canonical(change), patch
+
+    def after_turn(self, *, workspace: Path, turn: int, receipt: dict[str, Any]) -> str | None:
+        from ...meta_harness import deciders
+
+        raw, patch = self._change(workspace)
+        if self.run is None:
+            decision = self.loop._decide(
+                self.goal_id, self.plan, "L7", self.content, self.ref,
+                features={"changed_files": deciders.count_bucket(count_files(patch)),
+                          "quick_available": True},
+                options=deciders.OPTIONS["L7"], prior="quick_checks", record=False,
+            )  # fmt: skip
+            self.decision_refs.append(decision.record_ref)
+            self.run = decision.option == "quick_checks"
+        if not self.run:
+            return None
+        quick = tuple(v for v in self.app.verifiers if v.id in self.checks)
+        suite = self.loop.service.verifier_factory(replace(self.app, verifiers=quick))
+        observation = suite(raw)
+        commands = observation.details.get("commands") or []
+        self.results.append({
+            "turn": turn, "outcome": observation.outcome, "reason": observation.reason,
+            "commands": [{k: c.get(k) for k in ("command_id", "exit_code", "seconds")}
+                         for c in commands],
+        })  # fmt: skip
+        if observation.outcome == "pass":
+            return None
+        self.sent += 1
+        lines = [FAST_HEADER]
+        failing = [c for c in commands if c.get("exit_code") != 0]
+        for c in failing or [{"command_id": "-", "argv": [], "exit_code": None}]:
+            argv = " ".join(str(a) for a in c.get("argv") or [])
+            what = (
+                f"exited {c['exit_code']}" if c.get("exit_code") is not None
+                else observation.reason
+            )  # fmt: skip
+            lines.append(f"- {c.get('command_id')}: `{argv}` {what}".replace(" `` ", " "))
+        tail = str(observation.details.get("stdout_tail") or "") + str(
+            observation.details.get("stderr_tail") or ""
+        )
+        if tail and self.tail_chars:  # tail[-0:] would be the whole text
+            lines.append("```\n" + tail[-self.tail_chars :] + "\n```")
+        lines.append("Fix this in the same directory, then run the acceptance commands again.")
+        return "\n".join(lines)

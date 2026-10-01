@@ -31,6 +31,25 @@ strategy (plan.md §8 rule 4); with ``aux_max_tokens`` 0 every strategy with aux
 ineligible for real goals (IC-21) and refused for trials (no auxiliary turn could start). An
 auxiliary turn that does not complete later (held at the cap after an earlier turn, failed,
 abandoned) leaves the trial ``strategy_degraded`` in ``metrics``, so analysis can filter it.
+
+Trace capture of auxiliary turns (Work 033 S13, interfaces.md §9.1, D-100; the carrier rule of the
+clarifications after the S10/S13/S14 fix wave): only for a goal whose plan carries a trial with
+``capture_trace`` (``PlanContext.capture`` for the plan-time turns) the read-only turn runs with
+``capture_trace=True``; any other goal never asks for a trace (the turn is called exactly as
+before). Two carriers:
+
+- Plan-time turns (orchestrator lead, split, steps) go back to the planner through
+  ``PlanContext.snapshots``, in the order they ran; ``product.plan`` admits them once, with its own
+  planner turns, as turns ``"planner"`` of the goal-level trace ``trace-<goal_id>.planner``
+  (``TraceService.admit_turns``). The runner keeps nothing of them.
+- Run-time turns wait in memory, only while the goal runs (``forget`` at the end of
+  ``run_goal``), as named turns of a node: an investigator as ``"investigator-<k>"`` (k = the
+  question's 1-based position) and a reviewer round as ``"reviewer"``. ``aux_traces(goal_id,
+  node_id)`` hands them, once, to the worker's single trace admission of that node's run (the
+  ``aux_traces`` argument of ``WorkCoordinator.execute`` and ``continue_resumed``, passed by
+  ``ExecutionLoop._execute``): a node's investigators join its first admitted run, a reviewer the
+  run it reviewed (``before_attempt`` drops a reviewer turn whose attempt ended before admission).
+  A late reviewer of an abandoned hook keeps nothing. No run trace carries a ``"planner"`` turn.
 """
 
 from __future__ import annotations
@@ -43,7 +62,7 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
@@ -268,13 +287,26 @@ class AuxLedger:
 
 @dataclass
 class PlanContext:
-    """What plan-time auxiliary turns need (``items``): the goal, its base and the ledger."""
+    """What plan-time auxiliary turns need (``items``): the goal, its base and the ledger.
+    ``capture``: the goal is a trial whose context has ``capture_trace`` (S13, §9.1); only then
+    a plan-time turn runs with ``capture_trace`` and its sanitized snapshot is appended to
+    ``snapshots`` (in the order the turns ran), which the planner admits as turns ``"planner"``
+    of the goal-level planner trace (``product.plan``)."""
 
     goal_id: str
     base: Ref
     trial: bool
     aux: AuxLedger
     verifier_ids: list[str]
+    capture: bool = False
+    snapshots: list[dict[str, Any]] = field(default_factory=list)
+
+
+def captures(plan: dict[str, Any]) -> bool:
+    """The plan record carries a trial context with ``capture_trace`` (S13, D-100): trial goals
+    of the corpus only; a real goal has no ``trial``."""
+    trial = plan.get("trial")
+    return isinstance(trial, dict) and trial.get("capture_trace") is True
 
 
 @dataclass
@@ -318,6 +350,9 @@ class StrategyRunner:
         # ReviewHooks.abandon writes while holding it)
         self._lock = threading.RLock()
         self._nodes: dict[tuple[str, str], _NodeState] = {}  # (goal, node) -> last failure
+        # S13 (§9.1): captured run-time auxiliary turns waiting for the run trace they join,
+        # only while the goal runs: goal -> [(node id, turn name, sanitized snapshot)]
+        self._traces: dict[str, list[tuple[str, str, dict[str, Any]]]] = {}
 
     # -- plan time (L2 without a decider, M7, M5 items) ---------------------------------------
     def choose(
@@ -598,10 +633,13 @@ class StrategyRunner:
             "steps": STEPS_TURN_SCHEMA,
         }[kind]
         workspace = self.service.workspaces.materialize(self.scope, new_id("aux"), context.base)
+        # S13 (§9.1): a capturing trial's plan-time turn goes back to the planner, which admits it
+        # as a "planner" turn of the goal-level planner trace; nothing is kept here
+        on_trace = context.snapshots.append if context.capture else None
         try:
             return self._aux_turn(
                 context.aux, role=role, purpose=kind, cell_id=cell, prompt=prompt,
-                schema=schema, workspace=workspace,
+                schema=schema, workspace=workspace, on_trace=on_trace,
             )  # fmt: skip
         finally:
             self.service.workspaces.discard(workspace)
@@ -618,8 +656,13 @@ class StrategyRunner:
         schema: dict[str, Any],
         workspace: Path,
         node_id: str | None = None,
+        on_trace: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
-        """One read-only auxiliary turn, recorded in ``ledger`` (Hold AUX_BUDGET at the cap)."""
+        """One read-only auxiliary turn, recorded in ``ledger`` (Hold AUX_BUDGET at the cap).
+
+        ``on_trace`` (S13, a capturing trial goal only): the turn runs with ``capture_trace`` and
+        its sanitized snapshot goes to ``on_trace`` after it completed; without it the turn is
+        called exactly as before S13 and asks for no trace."""
         ledger.check(role)
         entry: dict[str, Any] = {
             "role": role, "purpose": purpose, "cell_id": cell_id, "node_id": node_id,
@@ -632,7 +675,12 @@ class StrategyRunner:
             raise
         started = time.monotonic()
         try:
-            result = turn.run(prompt=prompt, schema=schema, workspace=workspace)
+            if on_trace is None:
+                result = turn.run(prompt=prompt, schema=schema, workspace=workspace)
+            else:
+                result = turn.run(
+                    prompt=prompt, schema=schema, workspace=workspace, capture_trace=True
+                )
         except (Hold, RuntimeFault) as exc:  # it may have spent tokens: unknown usage
             seconds = round(time.monotonic() - started, 1)
             ledger.add({**entry, "usage": None, "tokens": None, "seconds": seconds,
@@ -642,7 +690,45 @@ class StrategyRunner:
             **entry, "usage": result.usage, "tokens": usage_tokens(result.usage),
             "seconds": result.seconds, "events_digest": result.events_digest, "error": None,
         })  # fmt: skip
+        trace = getattr(result, "trace", None)
+        if on_trace is not None and isinstance(trace, dict):
+            on_trace(trace)
         return result.output
+
+    # -- S13: captured run-time auxiliary turns (§9.1) ---------------------------------------------
+    def _keep_trace(self, goal_id: str, node_id: str, name: str, trace: dict[str, Any]) -> None:
+        """Keep a captured run-time turn until the run trace it joins is admitted
+        (``aux_traces``); ``forget`` drops what is left when the goal stops running."""
+        with self._lock:
+            self._traces.setdefault(goal_id, []).append((node_id, name, trace))
+
+    def _drop_traces(self, goal_id: str, node_id: str, name: str) -> None:
+        with self._lock:
+            pending = self._traces.get(goal_id)
+            if pending is not None:
+                pending[:] = [e for e in pending if not (e[0] == node_id and e[1] == name)]
+                if not pending:
+                    del self._traces[goal_id]
+
+    def aux_traces(self, goal_id: str, node_id: str) -> list[tuple[str, dict[str, Any]]]:
+        """The named run-time auxiliary turns that join the trace of ``node_id``'s run, each
+        handed once: the node's investigators and reviewers, in the order they ran. Never a
+        ``"planner"`` turn (plan-time turns go to the goal-level planner trace). Empty for a goal
+        that captured nothing (never a real goal)."""
+        with self._lock:
+            pending = self._traces.pop(goal_id, [])
+            taken = [(name, snap) for nid, name, snap in pending if nid == node_id]
+            rest = [e for e in pending if e[0] != node_id]
+            if rest:
+                self._traces[goal_id] = rest
+        return taken
+
+    def trace_source(
+        self, goal_id: str, node_id: str
+    ) -> Callable[[], list[tuple[str, dict[str, Any]]]]:
+        """``aux_traces`` of one node's run as the zero-argument callable the worker calls once at
+        its trace admission (after the last collect, so this attempt's reviewer turns are in)."""
+        return lambda: self.aux_traces(goal_id, node_id)
 
     def _ledger(self, plan: dict[str, Any]) -> AuxLedger:
         cap = int((plan.get("strategy") or {}).get("aux_cap", 0))
@@ -689,6 +775,7 @@ class StrategyRunner:
         questions = list(choice.params.get("steps") or []) or list(QUESTIONS)
         ledger = self._ledger(plan)
         cell = choice.roles.get("executor", "")
+        capture = captures(plan)  # S13: a capturing trial keeps each turn as investigator-<k>
         found: dict[str, list[dict[str, Any]]] = {}
         stops: list[dict[str, Any]] = []
         for node in graph["nodes"]:
@@ -696,9 +783,16 @@ class StrategyRunner:
             workspace = self.service.workspaces.materialize(
                 self.scope, new_id("investigate"), bases[app]
             )
+            captured: dict[int, dict[str, Any]] = {}  # k -> snapshot; kept in k order below
             try:
 
-                def ask(question: str, node: dict[str, Any] = node, ws: Path = workspace) -> Any:
+                def ask(
+                    question: str, k: int, node: dict[str, Any] = node, ws: Path = workspace,
+                    captured: dict[int, dict[str, Any]] = captured,
+                ) -> Any:  # fmt: skip
+                    def keep(trace: dict[str, Any]) -> None:
+                        captured[k] = trace
+
                     prompt = (
                         "You are a read-only INVESTIGATOR for AMPLAI. Do not modify any file; you "
                         "only read the repository in the current directory. Answer the question "
@@ -711,11 +805,13 @@ class StrategyRunner:
                     return self._aux_turn(
                         ledger, role="investigator", purpose=question, cell_id=cell,
                         prompt=prompt, schema=FINDINGS_SCHEMA, workspace=ws,
-                        node_id=node["node_id"],
+                        node_id=node["node_id"], on_trace=keep if capture else None,
                     )  # fmt: skip
 
                 with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as pool:
-                    futures = [(q, pool.submit(ask, q)) for q in questions]
+                    futures = [
+                        (q, pool.submit(ask, q, k)) for k, q in enumerate(questions, start=1)
+                    ]
                     for question, future in futures:
                         try:
                             output = future.result()
@@ -729,6 +825,8 @@ class StrategyRunner:
                             for f in (output.get("findings") or [])[:MAX_FINDINGS]
                             if isinstance(f, dict) and _text(f.get("path"))
                         )  # fmt: skip
+                for k in sorted(captured):  # S13: in question order, whichever finished first
+                    self._keep_trace(goal_id, node["node_id"], f"investigator-{k}", captured[k])
             finally:
                 self.service.workspaces.discard(workspace)
         self._save(goal_id, ledger, investigations=found, aux_stops=stops)
@@ -751,6 +849,9 @@ class StrategyRunner:
         """
         choice = StrategyChoice.of(plan)
         goal_id, node_id = plan["goal_id"], node["node_id"]
+        # S13: a reviewer turn of an earlier attempt that ended before its trace was admitted
+        # does not belong to this attempt's run
+        self._drop_traces(goal_id, node_id, "reviewer")
         app = node_app(plan, node)
         plan_base = (plan.get("bases") or {plan["app"]: plan["base"]})[app]
         sections: list[tuple[str, tuple[str, ...]]] = []
@@ -936,6 +1037,7 @@ class StrategyRunner:
         with self._lock:
             for key in [k for k in self._nodes if k[0] == goal_id]:
                 del self._nodes[key]
+            self._traces.pop(goal_id, None)  # S13: captured turns no run admitted
 
     def refusal(self, plan: dict[str, Any], budget: policies.BudgetPolicy) -> str | None:
         """Why the loop must hold the goal before any claim, or None (§5; ``vote`` per Q16)."""
@@ -1000,10 +1102,17 @@ class StrategyRunner:
                 return None
             if hooks is not None:
                 hooks.in_turn = True
+
+        def keep(trace: dict[str, Any]) -> None:  # S13: never a late turn of an abandoned hook
+            with self._lock:
+                if live():
+                    self._keep_trace(goal_id, node["node_id"], "reviewer", trace)
+
         try:
             output = self._aux_turn(
                 ledger, role="reviewer", purpose="review", cell_id=cell_id, prompt=prompt,
                 schema=REVIEW_SCHEMA, workspace=copy_ws, node_id=node["node_id"],
+                on_trace=keep if captures(plan) else None,
             )  # fmt: skip
         except (Hold, RuntimeFault) as exc:
             self._save(

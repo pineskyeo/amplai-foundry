@@ -775,6 +775,54 @@ def test_the_receipt_carries_the_v2_fields(world: World) -> None:
     bound(world, obs, world.baseline, "bug-01-value", 0)
 
 
+def test_the_receipt_copies_the_goals_decision_refs(world: World) -> None:
+    """§6.8: every decision's ref is in ``plan["decisions"]``; the trial copies them into the
+    receipt (additive: the bound fields stay as they are)."""
+    obs = world.run("bug-01-value")
+    receipt = world.receipt(obs)
+    plan = world.rig.service.plan_record(receipt["goal_id"])
+    assert receipt["decisions"] == plan["decisions"] and len(receipt["decisions"]) >= 4
+    layers = [
+        world.store.get(world.scope, "harness-decision", ref)["layer"]
+        for ref in receipt["decisions"]
+    ]
+    assert layers[:4] == ["L1", "L2", "L3", "L8"]  # intake, then after the plan (§6.1)
+    assert receipt["trace_ref"] is None  # no trace service: nothing was captured
+    bound(world, obs, world.baseline, "bug-01-value", 0)
+
+
+def test_only_a_development_trial_captures_and_its_domain_is_the_cases(world: World) -> None:
+    """§9.1/D-100: a trial captures when the executor has a trace service and the case is
+    development-split (the proposer's split, §9.4); IC-23: the trial carries the case's domain."""
+    from amplai_foundry.meta_harness.traces import TraceService
+
+    world.executor.traces = TraceService(world.store, world.scope, world.d.artifacts)
+    seen = {}
+    for split in ("development", "validation", "holdout", None):
+        obs = world.run("bug-01-value", split=split)
+        trial = world.rig.service.plan_record(world.receipt(obs)["goal_id"])["trial"]
+        seen[split] = (trial["capture_trace"], trial["domain"])
+        # this coordinator has no trace sink: no run trace was stored, so none is named
+        assert world.receipt(obs)["trace_ref"] is None
+    assert seen == {
+        "development": (True, "bug"),
+        "validation": (False, "bug"),
+        "holdout": (False, "bug"),
+        None: (False, "bug"),
+    }
+
+
+def test_a_work030_task_names_no_domain(world: World) -> None:
+    from types import SimpleNamespace
+
+    legacy = local_corpus.load(W030_ROOT)
+    spec = SimpleNamespace(task=legacy.tasks[0])  # CorpusTask: no domain field
+    assert not hasattr(legacy.tasks[0], "domain")
+    assert LocalTrialExecutor._domain(spec) == local_executor.UNKNOWN_DOMAIN == "unknown"  # type: ignore[arg-type]
+    v2 = SimpleNamespace(task=world.corpus.task("amb-01-ask"))
+    assert LocalTrialExecutor._domain(v2) == "ambiguity"  # type: ignore[arg-type]
+
+
 def test_the_cache_key_repeats_for_equal_inputs_and_differs_otherwise(world: World) -> None:
     keys = {
         "a": world.receipt(world.run("bug-01-value", 0))["cache_key"],

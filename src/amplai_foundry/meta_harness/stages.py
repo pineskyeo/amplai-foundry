@@ -37,6 +37,17 @@ IC-01, IC-02, IC-09, IC-16, IC-19 (A, provisional), IC-20 (provisional).
   plan, each stage freeze and a run of an experiment frozen by an earlier process first check
   that the loaded tasks are the frozen ones (``LocalMetaOps.check_corpus``, Hold
   ``CORPUS_CHANGED``, accepted in "Clarifications After S9 And S11").
+- §9.6, §9.9: after each evaluated stage report (screening, focused, holdout; and each ablation
+  variant) the runner writes the proposal's ``prediction-score`` of that stage when it has a
+  prediction and calls ``EliteArchive.update`` (elites from development rows only; focused and
+  holdout reach the archive only as the operator-only lineage verdict). Both are idempotent; a
+  failure is a finding of that stage (``PREDICTION_SCORE <stage>: <code>``, ``ELITE_ARCHIVE
+  <stage>: <code>``) and never changes its verdict.
+- A gating stage found ``running`` whose experiment is still ``frozen`` (the process stopped
+  between the stage turning ``running`` and the first dispatch, so no trial ran) is resumed by
+  ``advance``; one whose experiment left ``frozen`` stays for ``amplai meta reconcile``.
+- IC-24 (provisional): a removal-sweep proposal (change artifact ``origin: "removal_sweep"``)
+  reaches the holdout stage only as a removal (``check_removal``, Hold NOT_A_REMOVAL).
 - §8.5: trials of exploratory stages (development split) are indexed in ``observation-cache``
   heads by their baseline-reuse cache key; validation and holdout trials never are, and no frozen
   experiment ever substitutes a cached trial (its trials are its own,
@@ -53,6 +64,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import json
 import math
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -90,6 +102,14 @@ TERMINAL = frozenset({"passed", "failed", "inconclusive", "aborted", "skipped"})
 OPERATOR_GATES = ("focused", "holdout")
 # a parent's ablation finding: "ABLATION <component>: <code>" (a variant without a report, §8.1)
 ABLATION_FINDING = "ABLATION"
+# after an evaluated stage (§9.6, §9.9): a scoring or archive failure is a finding of that stage,
+# "PREDICTION_SCORE <stage>: <code>" / "ELITE_ARCHIVE <stage>: <code>"; it never changes the verdict
+SCORE_FINDING = "PREDICTION_SCORE"
+ARCHIVE_FINDING = "ELITE_ARCHIVE"
+SCORED_STAGES = ("screening", "focused", "holdout")  # §9.6
+VERDICT_STAGES = ("focused", "holdout")  # §9.9: operator-only lineage verdicts
+# IC-24 (provisional): a removal-sweep proposal's change artifact names this origin
+REMOVAL_ORIGIN = "removal_sweep"
 # default_v1 (§8.1 table; numbers from plan.md §1.4, §4, corrected by IC-09)
 CONFIDENCE = 0.95
 MARGIN = 0.25
@@ -422,6 +442,40 @@ def check_derived(
                      {"fields": fields})  # fmt: skip
 
 
+def proposal_origin(
+    store: Store, scope: Scope, artifacts: Any, proposal: dict[str, Any]
+) -> str | None:
+    """The ``origin`` its change artifact names (IC-24: ``removal_sweep``), None when absent or
+    unreadable (``screen`` refuses an unreadable change artifact on its own)."""
+    try:
+        change = json.loads(artifacts.read(scope, proposal["change_artifact"]))
+    except (RuntimeFault, KeyError, TypeError, ValueError):
+        return None
+    origin = change.get("origin") if isinstance(change, dict) else None
+    return origin if isinstance(origin, str) else None
+
+
+def check_removal(store: Store, scope: Scope, artifacts: Any, proposal_id: str) -> None:
+    """IC-24 (provisional) removal gate: a removal-sweep proposal reaches holdout or an approval
+    only as a removal candidate (§9.8: focused decision class ``efficiency``, or ``non_inferior``
+    with fewer tokens per solved task in the candidate arm, ``proposer.removal_verdict``); Hold
+    NOT_A_REMOVAL otherwise. Any other proposal passes unchanged."""
+    from .proposer import removal_verdict
+
+    head = store.head(scope, "evolution", proposal_id)
+    proposal = store.get(scope, "harness-change-proposal", head["data"]["proposal_ref"])
+    if proposal_origin(store, scope, artifacts, proposal) != REMOVAL_ORIGIN:
+        return
+    verdict = removal_verdict(store, scope, proposal_id)
+    if verdict["removal_candidate"] is not True:
+        raise Hold(
+            "NOT_A_REMOVAL",
+            "A removal-sweep proposal goes on only when its focused stage shows efficiency, or "
+            "non-inferiority with fewer tokens per solved task (IC-24, §9.8)",
+            details=verdict,
+        )
+
+
 def _needs_review(head: dict[str, Any]) -> bool:
     """A class-B candidate waits for the operator's human code review before ``screen``."""
     classification = head["data"].get("classification") or {}
@@ -584,7 +638,11 @@ class StageRunner:
         return summary
 
     def _select(self, corpus_ref: Ref, split: str) -> list[dict[str, Any]]:
-        return self.cases.select(self.operator, corpus_ref, split, purpose="frozen_experiment")
+        """The frozen cases of ``split`` that are main-set tasks of the selected app
+        (``LocalMetaOps.app_case_ids``; ``--app`` selects the app)."""
+        own = self.ops.app_case_ids()
+        cases = self.cases.select(self.operator, corpus_ref, split, purpose="frozen_experiment")
+        return [c for c in cases if own is None or c["case_id"] in own]
 
     # -- plan -----------------------------------------------------------------------------------
     def plan(
@@ -634,7 +692,12 @@ class StageRunner:
         # Hold CORPUS_CHANGED: the tasks loaded now are the frozen ones (every case)
         self.ops.check_corpus(corpus_ref)
         corpus = self.store.get(self.scope, "eval-corpus", corpus_ref)
-        holdout_tasks = sum(1 for c in corpus["cases"] if c["split"] == "holdout")
+        own = self.ops.app_case_ids()  # the selected app's main-set tasks, as ``_select``
+        holdout_tasks = sum(
+            1
+            for c in corpus["cases"]
+            if c["split"] == "holdout" and (own is None or c["case_id"] in own)
+        )
         stages = template_stages(template, holdout_tasks=max(1, holdout_tasks))
         need = confirmatory_tasks()
 
@@ -731,6 +794,8 @@ class StageRunner:
     def _advance(self, proposal_id: str) -> list[StageStep]:
         _plan_ref, plan = self._plan(proposal_id)
         self._check_evaluator(plan)
+        # a gating stage left "running" before its first dispatch resumes (no trial ran)
+        self._resume_frozen(proposal_id, plan)
         head = self._evolution(proposal_id)
         if head["state"] == "draft":
             if _needs_review(head):
@@ -789,6 +854,8 @@ class StageRunner:
         head = self._evolution(proposal_id)
         if head["state"] != "screened":
             raise Hold("META_STATE", f"The candidate is {head['state']}; stages need screened")
+        if stage == "holdout":  # IC-24: Hold NOT_A_REMOVAL for a sweep that is no removal
+            check_removal(self.store, self.scope, self.artifacts, proposal_id)
         entry = next(s for s in plan["stages"] if s["stage"] == stage)
         if not self._stage(proposal_id, plan, entry):
             stop = self.last_stop or {}
@@ -1054,6 +1121,50 @@ class StageRunner:
             )
             self.local.meta.start_offline(self.operator, proposal_id)
         self._update(proposal_id, name, state="running", experiment_ref=experiment_ref)
+        self._run_stage(proposal_id, plan, entry, experiment_ref, cases)
+        return True
+
+    def _experiment_state(self, experiment_ref: Ref) -> str:
+        experiment = self.store.get(self.scope, "eval-experiment", experiment_ref)
+        return str(self.store.head(self.scope, "experiment", experiment["experiment_id"])["state"])
+
+    def _resume_frozen(self, proposal_id: str, plan: dict[str, Any]) -> None:
+        """Run a gating stage (screening, focused, holdout) found ``running`` whose experiment is
+        still ``frozen``: the process stopped between the stage turning ``running`` and the first
+        dispatch (``EvaluationService.run`` turns the experiment ``running`` before it reserves
+        or dispatches any trial), so no trial ran and nothing is replayed. The candidate must be
+        where that stage left it (``screened``; ``offline_running`` for the holdout, whose
+        ``start_offline`` precedes the stage turning ``running``). A stage whose experiment left
+        ``frozen`` (trials may have been dispatched) stays for ``amplai meta reconcile``."""
+        for entry in plan["stages"]:
+            name = entry["stage"]
+            if name == "ablation":  # the ablation resumes on its own (``_ablation``)
+                continue
+            current = self._stage_state(proposal_id, name)
+            ref = current["experiment_ref"]
+            if current["state"] != "running" or ref is None:
+                continue
+            if self._experiment_state(ref) != "frozen":
+                return
+            expected = "offline_running" if name == "holdout" else "screened"
+            if self._evolution(proposal_id)["state"] != expected:
+                return
+            self._check_cases(ref)  # Hold CORPUS_CHANGED: frozen by an earlier process
+            cases = self._select(plan["corpus_ref"], entry["split"])
+            self._run_stage(proposal_id, plan, entry, ref, cases)
+            return
+
+    def _run_stage(
+        self,
+        proposal_id: str,
+        plan: dict[str, Any],
+        entry: dict[str, Any],
+        experiment_ref: Ref,
+        cases: list[dict[str, Any]],
+    ) -> None:
+        """Run a frozen stage experiment, record its report, then score and archive (§9.6, §9.9;
+        never changing the stage's verdict)."""
+        name = entry["stage"]
         try:
             report_ref = self.local.evaluation.run(
                 self.operator, experiment_ref, self.ops.executor, split=entry["split"],
@@ -1082,8 +1193,49 @@ class StageRunner:
             )
         self._update(proposal_id, name, state=state, report_ref=report_ref,
                      decision_class=decision, guard_findings=findings)  # fmt: skip
-        self._record(report, cases, exploratory=entry["purpose"] == "exploratory")
-        return True
+        rows = self._record(report, cases, exploratory=entry["purpose"] == "exploratory")
+        proposal, _head = self._proposal(proposal_id)
+        self._after_report(
+            proposal_id, plan["cell_id"], name, proposal["candidate_ref"], rows,
+            f"{name}:{decision or state}" if name in VERDICT_STAGES else None,
+        )  # fmt: skip
+
+    def _after_report(
+        self,
+        proposal_id: str,
+        cell_id: str,
+        stage: str,
+        composition_ref: Ref,
+        rows: list[dict[str, Any]],
+        verdict: str | None,
+    ) -> None:
+        """After an evaluated stage report: the ``prediction-score`` of a scored stage when the
+        proposal has a prediction (§9.6, ``proposer.score_predictions``; unchanged scores are not
+        rewritten) and ``EliteArchive.update`` (§9.9: elites from development rows only; focused
+        and holdout reach the archive only as the operator-only lineage verdict). Both are
+        idempotent. A failure of either is a finding of that stage (``PREDICTION_SCORE <stage>:
+        <code>`` / ``ELITE_ARCHIVE <stage>: <code>``) and never changes the stage's verdict; a
+        process stop (BaseException) propagates."""
+        from .archive import EliteArchive
+        from .proposer import _prediction, score_predictions
+
+        findings: list[str] = []
+        if stage in SCORED_STAGES:
+            try:
+                if _prediction(self.store, self.scope, proposal_id) is not None:
+                    score_predictions(self.store, self.scope, proposal_id, stage)
+            except Exception as exc:  # never the stage verdict
+                findings.append(f"{SCORE_FINDING} {stage}: {_code(exc)}")
+        try:
+            EliteArchive(self.store, self.scope).update(
+                cell_id, composition_ref=composition_ref, stage_metrics=rows,
+                proposal_id=proposal_id, verdict=verdict,
+            )  # fmt: skip
+        except Exception as exc:  # never the stage verdict
+            findings.append(f"{ARCHIVE_FINDING} {stage}: {_code(exc)}")
+        if findings:
+            known = self._stage_state(proposal_id, stage)["guard_findings"]
+            self._update(proposal_id, stage, guard_findings=[*known, *findings])
 
     def _screening_gate(
         self, report: dict[str, Any], analysis: dict[str, Any], entry: dict[str, Any]
@@ -1356,18 +1508,27 @@ class StageRunner:
         state = "aborted" if report["verdict"] == "aborted" else "passed"
         self._update(derived_id, "ablation", state=state, report_ref=report_ref,
                      decision_class=analysis.get("decision_class"))  # fmt: skip
-        self._record(report, cases, exploratory=True)
+        rows = self._record(report, cases, exploratory=True)
+        derived, _head = self._proposal(derived_id)
+        plan = self.store.get(self.scope, PLAN_KIND, derived["experiment_plan_ref"])
+        # §9.9: the variant's development rows (no prediction to score: a derived proposal has none)
+        self._after_report(derived_id, plan["cell_id"], "ablation", derived["candidate_ref"],
+                           rows, None)  # fmt: skip
         return None if state == "passed" else state
 
     # -- after a run: trial metrics and the baseline-reuse cache (§8.5) --------------------------
     def _record(
         self, report: dict[str, Any], cases: list[dict[str, Any]], *, exploratory: bool
-    ) -> None:
+    ) -> list[dict[str, Any]]:
+        """The ``trial-metrics`` record of every trial of the report (returned) and, for an
+        exploratory stage, its baseline-reuse cache entry (§8.5)."""
         by_id = {c["case_id"]: c for c in cases}
+        rows: list[dict[str, Any]] = []
         for ref in report["run_refs"]:
-            self.metrics.record(ref)
+            rows.append(self.store.get(self.scope, "trial-metrics", self.metrics.record(ref)))
             if exploratory:
                 self._cache(ref, by_id)
+        return rows
 
     def cache_key(
         self, trial: dict[str, Any], receipt: dict[str, Any], case: dict[str, Any]

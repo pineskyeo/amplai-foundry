@@ -381,15 +381,18 @@ class World:
         *,
         cell: str = CELL,
         discordance: float | None = 0.2,
+        extra: tuple[str, ...] = (),
     ) -> dict[str, Any]:
         """A calibration summary: the first `n` tasks of each split informative (default: all of
-        development and validation), the rest saturated; holdout tasks are never calibrated."""
+        development and validation), the rest saturated; holdout tasks are never calibrated.
+        `extra` task ids (tasks added to the corpus by a test) are informative too."""
         limit = {"development": 14, "validation": 18, **(informative or {})}
         tasks: dict[str, Any] = {}
         for split in ("development", "validation"):
             for i, task_id in enumerate(task_ids(split)):
                 klass = "informative" if i < limit[split] else "saturated"
                 tasks[task_id] = {"class": klass}
+        tasks.update({task_id: {"class": "informative"} for task_id in extra})
         plan = self.put(
             "calibration-plan",
             new_id("calplan"),
@@ -2576,3 +2579,133 @@ def test_an_interrupted_holdout_is_reconciled_and_then_aborted_by_the_operator(
     assert w.ops.reconcile(pid, stage="holdout")["state"] == "aborted"
     assert w.state(pid) == "offline_running"  # reconcile chains no gate
     assert w.ops.abort(pid, "holdout interrupted; reconciled")["state"] == "aborted"
+
+
+# ==================================================================================================
+# a gating stage stopped before its first dispatch resumes ("Clarifications After The S9/S11 Fix
+# Wave": the open item); a stage with dispatched trials still needs reconcile
+# ==================================================================================================
+def stop_before_first_dispatch(w: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The next ``EvaluationService.run`` stops the process before it turns the experiment
+    ``running`` (the stage is already ``running``, its experiment still ``frozen``)."""
+
+    def stop(*_: Any, **__: Any) -> Any:
+        raise Crash()
+
+    monkeypatch.setattr(w.local.evaluation, "run", stop)
+
+
+def experiment_state(w: World, ref: dict[str, Any]) -> str:
+    return str(w.store.head(w.scope, "experiment", w.experiment(ref)["experiment_id"])["state"])
+
+
+def test_a_screening_stopped_before_its_first_dispatch_resumes_on_advance(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = planned(w)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.advance(pid)
+    monkeypatch.undo()
+    screening = w.stage_run(pid)["data"]["stages"]["screening"]
+    frozen = screening["experiment_ref"]
+    assert screening["state"] == "running" and experiment_state(w, frozen) == "frozen"
+    assert w.executor.calls == []  # no trial ran
+    experiments = len(w.objects("eval-experiment"))
+    steps = w.runner().advance(pid)  # a new runner (the next process) resumes it
+    assert states(steps)["screening"] == "passed"
+    assert w.step(steps, "focused").waiting_for == "approve-stage focused"
+    after = w.stage_run(pid)["data"]["stages"]["screening"]
+    assert after["experiment_ref"] == frozen and experiment_state(w, frozen) == "evaluated"
+    assert after["report_ref"] is not None
+    assert len(w.objects("eval-experiment")) == experiments  # resumed, never frozen again
+    assert len(w.budget(pid)["data"]["experiment_refs"]) == 1
+
+
+def test_focused_and_holdout_stopped_before_their_first_dispatch_resume_on_advance(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = planned(w)
+    runner.advance(pid)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.approve_stage(pid, "focused")
+    monkeypatch.undo()
+    focused = w.stage_run(pid)["data"]["stages"]["focused"]
+    assert focused["state"] == "running" and experiment_state(w, focused["experiment_ref"]) == (
+        "frozen"
+    )
+    # the operator approved that exact experiment: advance runs it, then the ablation
+    steps = w.runner().advance(pid)
+    assert states(steps)["focused"] == "passed" and states(steps)["ablation"] == "passed"
+    assert (
+        w.stage_run(pid)["data"]["stages"]["focused"]["experiment_ref"]
+        == (focused["experiment_ref"])
+    )
+    assert w.step(steps, "holdout").waiting_for == "approve-stage holdout"
+    # the holdout: approve_experiment and start_offline ran before the stop
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.approve_stage(pid, "holdout")
+    monkeypatch.undo()
+    assert w.state(pid) == "offline_running"
+    holdout = w.stage_run(pid)["data"]["stages"]["holdout"]
+    assert holdout["state"] == "running"
+    assert experiment_state(w, holdout["experiment_ref"]) == "frozen"
+    steps = w.runner().advance(pid)
+    assert states(steps)["holdout"] == "passed"
+    assert w.state(pid) == "offline_evaluated"  # evaluated through the evolution machine
+    assert w.head(pid)["data"]["experiment_ref"] == holdout["experiment_ref"]
+
+
+def test_a_stage_with_a_dispatched_trial_is_not_resumed(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = planned(w)
+    stop_in_first_trial(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.advance(pid)
+    monkeypatch.undo()
+    screening = w.stage_run(pid)["data"]["stages"]["screening"]
+    assert experiment_state(w, screening["experiment_ref"]) == "running"
+    calls = len(w.executor.calls)
+    assert states(w.runner().advance(pid))["screening"] == "running"  # reconcile, not resume
+    assert len(w.executor.calls) == calls
+    w.store.epoch += 1
+    assert w.ops.reconcile(pid, stage="screening")["state"] == "aborted"
+
+
+def test_a_frozen_stage_of_a_candidate_that_moved_on_is_not_resumed(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = planned(w)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.advance(pid)
+    monkeypatch.undo()
+    w.ops.reject(pid, "the operator ended it")
+    assert states(w.runner().advance(pid))["screening"] == "running"
+    assert w.executor.calls == []
+
+
+def test_a_resumed_stage_still_checks_the_loaded_corpus(
+    w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid, runner = planned(w)
+    stop_before_first_dispatch(w, monkeypatch)
+    with pytest.raises(Crash):
+        runner.advance(pid)
+    monkeypatch.undo()
+    frozen = w.stage_run(pid)["data"]["stages"]["screening"]["experiment_ref"]
+    case_id = w.sampling(frozen)["case_ids"][0]
+    w.ops.corpus = replace(
+        w.ops.corpus,
+        tasks=tuple(
+            replace(t, objective="Something else.") if t.task_id == case_id else t
+            for t in w.ops.corpus.tasks
+        ),
+    )
+    error = hold("CORPUS_CHANGED", w.runner().advance, pid)
+    assert error.details["cases"] == [case_id]
+    assert w.executor.calls == []
+    assert experiment_state(w, frozen) == "frozen"

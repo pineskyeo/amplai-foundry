@@ -52,6 +52,22 @@ CODEX_CONFIG_ALLOWLIST: frozenset[str] = frozenset()
 # turn has run, so none is admitted.
 CLAUDE_OPTION_ALLOWLIST: frozenset[str] = frozenset()
 DECIDER_LAYERS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8")
+# The features each layer's decider may read at its decision point (interfaces.md §6.1). Runtime-
+# owned so the decision_method validator below and ``meta_harness/deciders.py`` (FEATURES) share
+# one catalogue without runtime importing meta_harness (§1.3).
+DECIDER_FEATURES: dict[str, tuple[str, ...]] = {
+    "L1": ("questions", "in_scope_empty", "acceptance_items", "domain"),
+    "L2": ("domain", "task_class", "planned_files", "acceptance_items", "apps", "risk"),
+    "L3": ("task_class", "risk", "strategy"),
+    "L4": ("strategy", "repo_files", "prior_failures"),
+    "L5": ("cell", "strategy"),
+    "L6": ("attempt", "failing_acceptance", "same_signature", "tokens_so_far",
+           "remaining_fraction"),
+    "L7": ("changed_files", "quick_available"),
+    "L8": ("task_class", "strategy"),
+}  # fmt: skip
+FEATURE_IDS = frozenset(f for features in DECIDER_FEATURES.values() for f in features)
+JUDGE_QUESTION_TYPES = ("yes_no", "choice", "score")
 SOURCES = ("baseline", "operator", "proposer", "dreaming", "sweep")
 PINNED_IMAGE = re.compile(r"[^@\s]+@sha256:[0-9a-f]{64}")
 
@@ -310,6 +326,11 @@ def _driver_options(c: dict[str, Any]) -> None:
     _fields(k, c, ("claude", "codex"))
     claude, codex = c["claude"], c["codex"]
     _fields(k, claude, ("max_turns", "append_system_prompt", "allowed_tools"))
+    prompt = claude["append_system_prompt"]
+    # an argv value, never a flag or a C-string terminator (§3.4 argv contract, as
+    # cells.DispatchOptions); refused before the allowlist so the reason is named (S10)
+    if isinstance(prompt, str) and (prompt.startswith("-") or "\x00" in prompt):
+        raise _bad(k, "append_system_prompt cannot start with '-' or contain NUL")
     unmeasured = sorted(n for n, v in claude.items() if v is not None)
     if set(unmeasured) - CLAUDE_OPTION_ALLOWLIST:
         raise _bad(k, "claude options come from CLAUDE_OPTION_ALLOWLIST (§14 Q13)", unmeasured)
@@ -371,8 +392,12 @@ def _decider(c: dict[str, Any]) -> None:
     _ref(k, "table", c["table"], nullable=True)
     _ref(k, "judge", c["judge"], nullable=True)
     if c["layer"] in {"L5", "L8"}:  # options: driver_options (L5) / limits (L8) versions
-        for ref in _list(k, "options", c["options"], 1, 8):
+        options = _list(k, "options", c["options"], 1, 8)
+        for ref in options:
             _ref(k, "options[]", ref)
+        # an option is named "<component_id>@<version>" in decision records (S10)
+        if len({(r["id"], r["revision"]) for r in options}) != len(options):
+            raise _bad(k, "options name distinct component versions")
     elif c["options"] is not None:
         raise _bad(k, "options is null outside L5 and L8 (§6.1)")
     policy = c["policy"]
@@ -390,12 +415,21 @@ def _decision_method(c: dict[str, Any]) -> None:
         features
     ):
         raise _bad(k, "features are distinct feature ids")
+    # S10: a feature is one a decision point records (§6.1); which layer's is checked where the
+    # method is used (meta_harness/deciders.py check), since a method names no layer
+    unknown = sorted(f for f in features if f not in FEATURE_IDS)
+    if unknown:
+        raise _bad(k, "features are §6.1 feature ids", unknown)
     _choice(k, "estimator", c["estimator"], ("pooled_beta_binomial_v1", "judge_v1"))
     _choice(k, "selection", c["selection"],
             ("noninferior_then_cheapest_v1", "max_success_v1", "utility_v1"))  # fmt: skip
     _choice(k, "fallback", c["fallback"], ("prior_v1", "coarser_bucket_v1", "judge_v1"))
-    if c["utility_lambda"] is not None:
-        _number(k, "utility_lambda", c["utility_lambda"], float("-inf"), float("inf"))
+    # utility_v1 = success - lambda * tokens / 10^6 (§6.2): lambda is a finite, nonnegative
+    # weight of that selection and of no other (S10)
+    if c["selection"] == "utility_v1":
+        _number(k, "utility_lambda", c["utility_lambda"], 0, 1e12)
+    elif c["utility_lambda"] is not None:
+        raise _bad(k, "utility_lambda is null unless the selection is utility_v1")
 
 
 def _judge_model(c: dict[str, Any]) -> None:
@@ -407,7 +441,18 @@ def _judge_model(c: dict[str, Any]) -> None:
     if cell is not None and (not isinstance(cell, str) or not ID.fullmatch(cell)):
         raise _bad(k, "cell is a cell id or null")
     if "question_types" in c:
-        _subset(k, "question_types", c["question_types"], ("yes_no", "choice", "score"))
+        _subset(k, "question_types", c["question_types"], JUDGE_QUESTION_TYPES)
+    types = c.get("question_types") or []
+    # S10 (§6.6): an LLM judge runs on one cell; a judge answers at least one question type;
+    # "none" names neither
+    if c["judge"] == "llm_cell" and cell is None:
+        raise _bad(k, "an llm_cell judge names its cell")
+    if c["judge"] == "jev" and cell is not None:
+        raise _bad(k, "a jev judge names no cell")
+    if c["judge"] != "none" and not types:
+        raise _bad(k, "a judge answers at least one question type")
+    if c["judge"] == "none" and (cell is not None or types):
+        raise _bad(k, 'judge "none" names no cell and no question types')
 
 
 def _environment_image(c: dict[str, Any]) -> None:

@@ -12,6 +12,28 @@ collect -> checkpoint -> resume -> poll -> collect, so a seeded credential is re
 collect and seeded again at every resume; ``destroy`` runs only after the last turn. An execution
 interrupted inside a follow-up is held, never re-sent (``_existing``: EXECUTION_RECONCILE); its
 recovery is §14 Q16 (a). Vote candidates (M4) are not built (§14 Q16 (b)).
+
+Trace admission (Work 033 S13, interfaces.md §3.12, §9.1, D-100): when the dispatch's options
+capture (``DispatchOptions.capture_trace``, set only for trial goals) and a ``trace_sink`` is
+configured, the sanitized trace of every turn of the attempt (the first turn and its follow-ups,
+``port.trace(handle)``) goes to ``trace_sink(run_id, sanitized)`` after the last collect. Trace
+capture never changes the run: a port without traces is skipped and a sink failure is ignored
+(``TraceService.admit`` records its own refusals as ``trace-drop``). A port without
+``accepts_options`` has no capture point (OpenCode capture is deferred, §9.1): options that differ
+from the default only by ``capture_trace`` reach it as no options, so the trial runs uncaptured
+instead of holding DRIVER_OPTIONS_UNSUPPORTED (``capture_only``); a resumed turn of such a run keeps
+that binding (``continue_resumed``).
+
+The run's auxiliary read-only turns (investigators, reviewers, §9.1; plan-time turns go to the
+goal-level planner trace instead, ``product.plan``) reach the same single admission through
+``aux_traces``, an argument of ``execute`` and ``continue_resumed`` that
+``ExecutionLoop._execute`` passes: a zero-argument callable (``StrategyRunner.trace_source``)
+called once, only when the dispatch captures, after the last collect; each ``(name, snapshot)``
+whose name ``traces.AUX_TURN`` accepts joins ``traces.combine`` after the executor turns. It is
+not part of the request digest (capture never changes the run). A run resumed after steering
+admits its trace in ``continue_resumed``: a capturing ``execute`` that pauses records the
+attempt's handles (``trace_handles``), ``resume_exact`` appends each resumed handle, and the
+resumed run's trace holds every turn.
 """
 
 from __future__ import annotations
@@ -19,7 +41,9 @@ from __future__ import annotations
 import contextlib
 import threading
 import time
+from collections.abc import Callable
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -49,6 +73,50 @@ def _hooks_followups(hooks: Any) -> int:
             "COMPONENT_CONTENT", "Vote candidates (M4) are held until §14 Q16 is answered"
         )
     return followups
+
+
+def port_trace(port: Any, handle: str) -> dict[str, Any] | None:
+    """The sanitized trace a port keeps for ``handle`` (S13): ``port.trace``, else the trace of
+    the CLI driver a ``CliPort`` wraps (``agent_drivers/ports.py`` forwards no ``trace``); None
+    for a port that captures nothing (OpenCode is deferred, §9.1)."""
+    fn = getattr(port, "trace", None)
+    if not callable(fn):
+        fn = getattr(getattr(port, "driver", None), "trace", None)
+    if not callable(fn):
+        return None
+    found = fn(handle)
+    return found if isinstance(found, dict) else None
+
+
+AuxTraces = Callable[[], list[tuple[str, dict[str, Any]]]]
+
+
+def named_turns(aux_traces: AuxTraces | None) -> list[tuple[int | str, dict[str, Any]]]:
+    """The auxiliary turns ``aux_traces`` hands over (S13, §9.1): each ``(name, snapshot)`` whose
+    name ``traces.AUX_TURN`` accepts and whose snapshot is a dict; anything else is left out, and
+    a source that fails gives none (trace capture never changes the run)."""
+    if aux_traces is None:
+        return []
+    from ...meta_harness.traces import AUX_TURN
+
+    try:
+        given = list(aux_traces() or [])
+    except Exception:
+        return []
+    out: list[tuple[int | str, dict[str, Any]]] = []
+    for entry in given:
+        if not isinstance(entry, tuple | list) or len(entry) != 2:
+            continue
+        name, snapshot = entry
+        if isinstance(name, str) and AUX_TURN.fullmatch(name) and isinstance(snapshot, dict):
+            out.append((name, snapshot))
+    return out
+
+
+def capture_only(options: DispatchOptions) -> bool:
+    """Options that differ from the default only by the trace flag (S13): what a trial goal
+    resolves for a cell at the provider default without driver options."""
+    return options.capture_trace and replace(options, capture_trace=False).is_default()
 
 
 def sum_usage(receipts: list[dict[str, Any]]) -> dict[str, Any]:
@@ -125,9 +193,15 @@ class WorkCoordinator:
         *,
         poll_seconds: float = 0.05,
         max_seconds: float = 3600,
+        trace_sink: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
+        """``trace_sink(run_id, sanitized)`` runs after collect when ``options.capture_trace``
+        is true (Work 033 S13, §3.12); None captures nothing."""
         if not 0 < poll_seconds <= 30 or not 0 < max_seconds <= 86400:
             raise RuntimeFault("WORKER_LIMITS", "Polling and execution must be bounded")
+        if trace_sink is not None and not callable(trace_sink):
+            raise RuntimeFault("WORKER_TRACE_SINK", "A trace sink is a callable")
+        self.trace_sink = trace_sink
         self.runtime, self.store, self.registry, self.workspaces = (
             runtime,
             runtime.store,
@@ -174,12 +248,16 @@ class WorkCoordinator:
         DRIVER_OPTIONS_UNSUPPORTED. A port that takes options but got none runs the profile's
         model at the provider default, so an effort profile holds DISPATCH_OPTIONS_BINDING
         rather than run without its effort (never substituted, spec.md Constraints).
+
+        S13 (§9.1): such a port has no capture point, so options that differ from the default
+        only by ``capture_trace`` (``capture_only``) reach it as none and the trial runs
+        uncaptured; the trace flag changes no argv and no run behaviour.
         """
         profile = dispatch["profile"]
         accepts = getattr(port, "accepts_options", False) is True
         if options is not None:
             if not accepts:
-                if options.is_default():
+                if options.is_default() or capture_only(options):
                     return None
                 raise Hold(
                     "DRIVER_OPTIONS_UNSUPPORTED", "This driver port takes no dispatch options",
@@ -195,6 +273,18 @@ class WorkCoordinator:
                     details={"effort": model.get("reasoning_profile")},
                 )  # fmt: skip
         return None
+
+    def _takes_no_options(self, scope: Any, data: dict[str, Any]) -> bool:
+        """The stored execution's port has no ``accepts_options`` (S13, ``continue_resumed``);
+        False when the port is not resolvable (the binding check then holds)."""
+        dispatch = data["dispatch"]
+        try:
+            port = self.registry.resolve(
+                scope, dispatch["profile"]["driver_profile_ref"], dispatch["node"]["strategy"]
+            )
+        except (Hold, RuntimeFault):
+            return False
+        return getattr(port, "accepts_options", False) is not True
 
     def _limit(self, deadline_seconds: float | None) -> float:
         """The wall limit of one call: its deadline when given, else ``max_seconds``."""
@@ -370,6 +460,31 @@ class WorkCoordinator:
         assert_execution_live(self.runtime, worker, dispatch)
         return receipt
 
+    def _admit_trace(
+        self, dispatch: dict[str, Any], port: Any, handles: list[str],
+        options: DispatchOptions | None, aux_traces: AuxTraces | None = None,
+    ) -> None:  # fmt: skip
+        """Hand the attempt's sanitized turns to the trace sink (S13, §9.1): turn 0 is the
+        first dispatch, turn k its follow-up ``<dispatch_id>-f<k>`` (or, after steering, the next
+        resumed turn), then the named auxiliary turns of ``aux_traces``. Never raises: trace
+        capture does not change the run. A non-capturing dispatch never calls ``aux_traces``."""
+        if self.trace_sink is None or options is None or not options.capture_trace:
+            return
+        turns: list[tuple[int | str, dict[str, Any]]] = []
+        for k, handle in enumerate(handles):
+            with contextlib.suppress(Exception):
+                found = port_trace(port, handle)
+                if found is not None:
+                    turns.append((k, found))
+        if not turns:
+            return
+        turns.extend(named_turns(aux_traces))
+        with contextlib.suppress(Exception):
+            from ...meta_harness.traces import combine
+
+            driver_id = str(getattr(port, "driver_id", "") or "")
+            self.trace_sink(dispatch["run_id"], combine(driver_id, turns))
+
     def _turns_usage(
         self, scope: Any, run_id: str, port: Any, receipts: list[dict[str, Any]]
     ) -> dict[str, Any]:
@@ -396,8 +511,13 @@ class WorkCoordinator:
         options: DispatchOptions | None = None,
         hooks: Any = None,
         deadline_seconds: float | None = None,
+        aux_traces: AuxTraces | None = None,
     ) -> dict[str, Any]:
         """Run one admitted dispatch to evidence.
+
+        ``aux_traces`` (Work 033 S13, §9.1): the run's captured auxiliary read-only turns
+        (``StrategyRunner.trace_source``), joined to its trace at the single admission when the
+        options capture; never part of the request digest (module docstring).
 
         ``deadline_seconds`` bounds this call's native run in place of ``max_seconds`` (Work 033
         S8, interfaces.md §3.4): the loop passes its remaining wall budget per call instead of
@@ -561,6 +681,8 @@ class WorkCoordinator:
                 )  # fmt: skip
                 handle = handles[-1]
                 receipts.append(receipt)
+            # S13: after the last collect, before the outputs are admitted (never raises)
+            self._admit_trace(dispatch, port, handles, options, aux_traces)
             outputs = self.workspaces.collect(
                 scope, workspace, output_paths, dispatch["node"], process_stopped=True
             )
@@ -597,7 +719,14 @@ class WorkCoordinator:
                 # Steering: the controller stops this process at a boundary and checkpoints it
                 # (SteeringService.quiesce -> stop_and_snapshot); cancelling here would lose the
                 # session the operator's message resumes (D-082).
-                self._update(worker, did, "pause_requested", hold_code="EXECUTION_PAUSED")
+                # S13: a capturing run keeps its turns' handles for the resumed admission
+                traced = (
+                    {"trace_handles": list(handles)}
+                    if self.trace_sink is not None and options is not None
+                    and options.capture_trace
+                    else {}
+                )  # fmt: skip
+                self._update(worker, did, "pause_requested", hold_code="EXECUTION_PAUSED", **traced)
                 raise
             stopped = False
             if handle is not None:
@@ -751,7 +880,9 @@ class WorkCoordinator:
             if options is not None
             else port.resume(request, prompt, workspace, checkpoint_receipt)
         )
-        self._update(worker, did, "resuming", driver_handle=handle)
+        traced = data.get("trace_handles")  # S13: only a capturing run recorded them
+        extra = {"trace_handles": [*traced, handle]} if isinstance(traced, list) else {}
+        self._update(worker, did, "resuming", driver_handle=handle, **extra)
         start = time.monotonic()
         while time.monotonic() - start < min(30, self.max_seconds):
             observation = port.poll(handle)
@@ -801,12 +932,17 @@ class WorkCoordinator:
         *,
         options: DispatchOptions | None = None,
         deadline_seconds: float | None = None,
+        aux_traces: AuxTraces | None = None,
     ) -> dict[str, Any]:
         """Collect a resumed turn only after the controller commits the new lease.
 
         ``options``, when given, must be the options the run was dispatched with (the resumed
         turn already runs under them, ``resume_exact``); Hold DISPATCH_OPTIONS_BINDING otherwise.
         ``deadline_seconds`` bounds the resumed turn as in ``execute`` (Work 033 S8).
+
+        S13 (§9.1): when the run was dispatched with capturing options (the stored ones), its
+        trace is admitted here after the last collect, as ``execute`` does for a run that was not
+        steered: every turn of the attempt (``trace_handles``) and the ``aux_traces`` turns.
         """
         from copy import deepcopy
 
@@ -814,9 +950,18 @@ class WorkCoordinator:
         did, h = self._run_execution(worker, run_id)
         data = h["data"]
         stored = DispatchOptions.from_wire(data["options"]) if data.get("options") else None
-        if options is not None and (None if options.is_default() else options.digest()) != (
-            None if stored is None or stored.is_default() else stored.digest()
+        if (
+            options is not None
+            and (None if options.is_default() else options.digest())
+            != (None if stored is None or stored.is_default() else stored.digest())
+            and not (
+                stored is None
+                and capture_only(options)
+                and self._takes_no_options(worker.scope, data)
+            )
         ):
+            # S13: a port without dispatch options ran a capturing trial with none
+            # (``_check_options``), so its resumed turn keeps none as well
             raise Hold(
                 "DISPATCH_OPTIONS_BINDING",
                 "A resumed turn keeps the options it was dispatched with",
@@ -880,6 +1025,11 @@ class WorkCoordinator:
                     "Resumed process and completed turn require positive evidence",
                 )
             assert_execution_live(self.runtime, worker, dispatch)
+            # S13: after the last collect, before the outputs are admitted (never raises); the
+            # stored options decide, as they are what the run ran with (``_check_options``)
+            traced = data.get("trace_handles")
+            handles = [h for h in traced if isinstance(h, str)] if isinstance(traced, list) else []
+            self._admit_trace(dispatch, port, handles or [handle], stored, aux_traces)
             outputs = self.workspaces.collect(
                 worker.scope,
                 Path(data["workspace"]),
