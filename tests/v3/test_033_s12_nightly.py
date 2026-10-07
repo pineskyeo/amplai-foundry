@@ -107,6 +107,8 @@ class Fake:
         self.confirm_items: list[dict[str, Any]] = []
         self.proposed = ["prop-1"]
         self.propose_error: Hold | None = None
+        self.screen_result: dict[str, Any] = {"screened": [], "refused": [], "operator": []}
+        self.screen_error: Hold | None = None
         self.search_hold: dict[str, Hold] = {}
         self.plans: dict[str, dict[str, Any]] = {}
         self.derived: list[dict[str, Any]] = []
@@ -174,6 +176,12 @@ class Fake:
         if self.propose_error is not None:
             raise self.propose_error
         return list(self.proposed)
+
+    def screen_drafts(self, cell_id: str) -> dict[str, Any]:
+        self.calls.append(("screen_drafts", cell_id))
+        if self.screen_error is not None:
+            raise self.screen_error
+        return json.loads(json.dumps(self.screen_result))
 
     def search_candidates(self, cell_id: str) -> list[dict[str, Any]]:
         self.calls.append(("search_candidates", cell_id))
@@ -563,6 +571,59 @@ def test_the_proposer_drafts_before_the_search_and_its_proposals_are_recorded(en
     assert unit["drafted"] == ["prop-1"]
 
 
+def test_ic30_class_a_drafts_are_screened_after_the_proposer_and_before_the_ranking(
+    env: Env,
+) -> None:
+    env.fake.screen_result = {
+        "screened": ["prop-1"],
+        "refused": [{"proposal_id": "prop-2", "code": "LEAK_GATE"}],
+        "operator": [{"proposal_id": "prop-3", "surface_class": "B"}],
+    }
+    runner = env.ready()
+    runner.run(DATE)
+    assert first(env, "propose") < first(env, "screen_drafts") < first(env, "search_candidates")
+    assert env.fake.args("screen_drafts") == [(CELL,)]
+    data = env.head()["data"]
+    unit = next(p for p in data["phases"] if p["phase"] == "search")["units"][0]
+    assert unit["screened"] == ["prop-1"] and unit["left_for_operator"] == ["prop-3"]
+    assert f"SCREEN {CELL} prop-2: LEAK_GATE" in data["findings"]
+    assert f"OPERATOR_SCREEN {CELL} prop-3: class B" in data["findings"]
+    assert data["stopped"] is None and "search_run" in env.fake.names()
+
+
+def test_ic30_a_refused_screen_step_is_a_finding_and_the_night_goes_on(env: Env) -> None:
+    env.fake.screen_error = Hold("META_STATE", "the store moved")
+    runner = env.ready()
+    runner.run(DATE)
+    data = env.head()["data"]
+    assert f"SCREEN {CELL}: META_STATE" in data["findings"]
+    unit = next(p for p in data["phases"] if p["phase"] == "search")["units"][0]
+    assert unit["screened"] == [] and unit["left_for_operator"] == []
+    assert data["stopped"] is None and "search_run" in env.fake.names()
+
+
+def test_ic30_a_malformed_screen_result_is_a_rejected_fault(env: Env) -> None:
+    env.fake.screen_result = {"screened": [1]}
+    runner = env.ready()
+    with pytest.raises(RuntimeFault) as caught:
+        runner.run(DATE)
+    assert caught.value.code == "NIGHT_BATCH"
+    assert env.head()["data"]["stopped"] == "error"
+
+
+def test_ic30_a_night_that_must_stop_screens_nothing(env: Env) -> None:
+    def pull(fake: Fake, cell_id: str) -> list[str]:
+        fake.calls.append(("propose", cell_id))
+        fake.kill = True
+        return []
+
+    env.fake.propose = lambda cell_id: pull(env.fake, cell_id)  # type: ignore[method-assign]
+    runner = env.ready()
+    held = stopped(env, runner)
+    assert held.details["reason"] == "kill_switch"
+    assert "screen_drafts" not in env.fake.names()
+
+
 def test_a_refused_proposer_is_a_finding_and_the_night_goes_on(env: Env) -> None:
     env.fake.propose_error = Hold("PROPOSER_BUDGET", "no budget")
     runner = env.ready()
@@ -665,6 +726,7 @@ def test_a_dry_run_plans_every_phase_and_dispatches_nothing(env: Env) -> None:
         "drift_run",
         "screening_run",
         "propose",
+        "screen_drafts",  # IC-30: a dry run screens nothing
         "search_run",
         "queue_confirmation",
         "confirmation_run",

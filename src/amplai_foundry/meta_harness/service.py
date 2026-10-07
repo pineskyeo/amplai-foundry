@@ -57,6 +57,17 @@ CANARY_FIELDS = {
     "abort_on_unknown_effect",
     "fallback_release_ref",
 }
+# IC-30 (A): the mechanical screen of a class A candidate without ``harness.review``
+SCREEN_PERMISSION = "harness.screen"
+
+
+def only_class_a(classification: dict[str, Any]) -> bool:
+    """IC-30: the candidate is class A and every changed component it names is class A
+    (``CompositionService.classify``; an unreadable carrier is already class B there)."""
+    components = classification.get("changed_components") or []
+    return classification.get("surface_class") == "A" and all(
+        isinstance(c, dict) and c.get("surface_class") == "A" for c in components
+    )
 
 
 class MetaHarness:
@@ -203,7 +214,13 @@ class MetaHarness:
         return ref
 
     def screen(self, actor: Actor, proposal_id: str) -> dict[str, Any]:
-        actor.require("harness.review")
+        """The screen gate. ``harness.review`` (the human operator) screens any class;
+        ``harness.screen`` alone (IC-30 (A), the nightly identity) runs the same mechanical
+        checks but admits a class A candidate only: every changed component class A, else
+        ``Hold CODE_REVIEW_REQUIRED`` after the protected-surface check and the leak gate."""
+        reviewer = "harness.review" in actor.permissions
+        if not reviewer:
+            actor.require(SCREEN_PERMISSION)
         scope, head = actor.scope, self.store.head(actor.scope, "evolution", proposal_id)
         self._independent(actor, head)
         proposal = self.store.get(scope, "harness-change-proposal", head["data"]["proposal_ref"])
@@ -256,6 +273,14 @@ class MetaHarness:
                     "The candidate names validation or holdout task material",
                     details=findings,
                 )
+        if not reviewer and not only_class_a(classification):
+            # IC-30 (A): the mechanical screen is for class A; a class B candidate is screened
+            # by the human operator after the review receipt, whatever the receipt says
+            raise Hold(
+                "CODE_REVIEW_REQUIRED",
+                "Only class A candidates are screened without the operator (IC-30); "
+                "behavior/runtime changes wait for the human operator's review and screen",
+            )
         if classification["surface_class"] == "B" and not head["data"].get("review_ref"):
             raise Hold(
                 "CODE_REVIEW_REQUIRED",

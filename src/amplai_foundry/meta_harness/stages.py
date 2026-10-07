@@ -93,6 +93,7 @@ from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.storage.store import Scope, Store
 from .local_executor import task_environment_digest
 from .manifest import BUDGET, CONTEXT, DECIDERS, ROUTER, Manifest, ManifestService
+from .service import only_class_a
 
 if TYPE_CHECKING:
     from ..runtime.contracts.authority import Actor
@@ -682,9 +683,10 @@ class ApprovalIssuer:
       exact digest. Its runner screens drafts, rejects a failed screening and holds every gate.
     - ``standing_issuer``: the nightly identity; ``LocalMetaApprovals.issue_standing`` (derived,
       plan-bound: exploratory development experiments only, so a confirmatory or holdout plan is
-      refused there with Hold STANDING_APPROVAL). Its runner never screens, reviews, rejects or
-      runs an operator gate: a failed screening is recorded (``SCREENING_FAILED`` finding) and
-      left for the operator."""
+      refused there with Hold STANDING_APPROVAL). Its runner screens class A drafts only, as
+      the nightly identity (IC-30 (A), ``harness.screen``: the same protected-surface check and
+      leak gate); it never screens a class B draft, reviews, rejects or runs an operator gate: a
+      failed screening is recorded (``SCREENING_FAILED`` finding) and left for the operator."""
 
     actor: Actor
     issue: Callable[[dict[str, Any]], Ref]
@@ -1072,12 +1074,15 @@ class StageRunner:
         if head["state"] == "draft":
             if _needs_review(head):
                 return self.status(proposal_id)  # class B: the operator's review first
-            if not self.issuer.human:
-                # the screen gate needs harness.review, which the nightly identity never holds
+            if not self.issuer.human and not only_class_a(head["data"].get("classification") or {}):
+                # IC-30 (A): the nightly identity screens class A drafts only (harness.screen);
+                # a reviewed class B draft is still the operator's screen (harness.review)
                 self.last_stop = {"stage": "screening", "code": "OPERATOR_SCREEN"}
                 return self.status(proposal_id)
-            # screen gate: protected surfaces, LEAK_GATE (MetaHarness.screen); a refusal stops here
-            self.local.meta.screen(self.operator, proposal_id)
+            # screen gate: protected surfaces, LEAK_GATE (MetaHarness.screen); a refusal stops
+            # here. The operator's runner screens as the operator, the nightly one as itself.
+            screener = self.operator if self.issuer.human else self.actor
+            self.local.meta.screen(screener, proposal_id)
             head = self._evolution(proposal_id)
         if head["state"] != "screened":
             return self.status(proposal_id)

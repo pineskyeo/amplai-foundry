@@ -39,7 +39,7 @@ from typer.testing import CliRunner
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "v3"))
 
-from test_033_s11_stages import CELL, World, build_world, hold, task_ids
+from test_033_s11_stages import CELL, World, build_world, hold, leaky, task_ids
 
 from amplai_foundry.meta_harness import corpus_v2
 from amplai_foundry.meta_harness.nightly import (
@@ -89,7 +89,10 @@ class Meta:
     """The S11 world as a meta deployment: a corpus with a regression set loaded and frozen, the
     operator's regression calibration, a standing approval, and a night runner on it."""
 
-    def __init__(self, w: World, tmp_path: Path, *, budget_trials: int = 400) -> None:
+    def __init__(
+        self, w: World, tmp_path: Path, *, budget_trials: int = 400,
+        shares: dict[str, float] | None = None,
+    ) -> None:  # fmt: skip
         self.w = w
         regression = tuple(
             replace(t, task_id=f"reg-val-{i:02d}", set="regression", split="validation",
@@ -113,7 +116,7 @@ class Meta:
         w.executor.outcome = self.outcome
         start = time.time()
         self.cfg = NightlyConfig(
-            budget_trials=budget_trials, shares=dict(SHARES), cells=(CELL,),
+            budget_trials=budget_trials, shares=dict(shares or SHARES), cells=(CELL,),
             drift_tasks=tuple(self.reg_ids), pilot=False, pilot_nights=0,
             keep_operator_share=0.5, max_parallel=1, stop_at=hhmm(start + 6 * 3600),
         )  # fmt: skip
@@ -156,6 +159,10 @@ class Meta:
         if bad:
             self.bad.add(pid)
         return pid
+
+    def draft(self, kind: str = "a2") -> str:
+        """A proposer draft the operator has not screened (IC-30: the night screens class A)."""
+        return self.w.propose(kind, prediction=prediction())
 
     # -- reading --------------------------------------------------------------------------------
     def run(self, date: str) -> tuple[dict[str, Any] | None, Hold | None]:
@@ -312,6 +319,97 @@ def test_a_real_night_searches_through_stage_runner_queues_and_the_next_night_co
                        if p.suffix == ".html"])  # fmt: skip
     # nothing of the night touched holdout
     assert not [c for c in w.executor.calls if "-hol-" in c[1]]
+
+
+# ==================================================================================================
+# IC-30 (A): the night screens class A drafts itself
+# ==================================================================================================
+def search_unit(meta: Meta, date: str) -> dict[str, Any]:
+    (phase,) = [p for p in meta.night(date)["phases"] if p["phase"] == "search"]
+    (unit,) = phase["units"]
+    return dict(unit)
+
+
+def test_ic30_a_class_a_draft_is_screened_and_reaches_screening_in_one_unattended_night(
+    meta: Meta,
+) -> None:
+    w = meta.w
+    meta.calibrate_regression()
+    a = meta.draft("a2")  # nobody screened it
+    b = meta.draft("b2")  # class B: the operator's review and screen
+    w.local.evaluation.executor_policy = None
+    ref, held = meta.run(DATE)
+    assert held is None and ref is not None, meta.night(DATE)
+    night = meta.night(DATE)
+    unit = search_unit(meta, DATE)
+    assert unit["screened"] == [a] and unit["left_for_operator"] == [b]
+    # class A: screened by the nightly identity, its screening stage ran under a derived approval
+    assert w.state(a) == "screened"
+    assert meta.stages(a)["screening"] == "passed"
+    assert meta.stages(a)["focused"] == "waiting_approval"
+    screening = w.stage_run(a)["data"]["stages"]["screening"]
+    approval = meta.experiment_approval(screening["experiment_ref"])
+    assert approval["approved_by"]["subject_id"] == NIGHTLY_ID and approval["standing_ref"]
+    (item,) = night["queued_confirmations"]
+    assert item["proposal_id"] == a and item["stage"] == "focused"
+    # class B: left for the operator, never screened, planned or run by the night
+    assert w.state(b) == "draft"
+    assert f"OPERATOR_SCREEN {CELL} {b}: class B" in night["findings"]
+    assert not [r for r, _v in w.objects("stage-plan") if r["id"] == "stageplan-" + b]
+    # no review, rejection, confirmatory or holdout act by the night
+    assert w.objects("harness-review") == []
+    assert {v["plan_kind"] for _r, v in w.objects(APPROVAL_KIND) if v.get("standing_ref")} <= {
+        "experiment", "drift"}  # fmt: skip
+    assert not [c for c in w.executor.calls if "-hol-" in c[1]]
+    # the operator's path for B is unchanged: review, screen, and the next night searches it
+    meta.ops.review(b, outcome="pass", note="read the diff of both components")
+    meta.ops.screen(b)
+    assert w.state(b) == "screened"
+
+
+def test_ic30_a_draft_with_a_planted_leak_is_refused_by_the_nightly_screen(meta: Meta) -> None:
+    w = meta.w
+    meta.calibrate_regression()
+    pid = leaky(w, "Make test_bug_val_00_ok pass first.", "nightleak")
+    w.local.evaluation.executor_policy = None
+    ref, held = meta.run(DATE)
+    assert held is None and ref is not None, meta.night(DATE)
+    night = meta.night(DATE)
+    assert f"SCREEN {CELL} {pid}: LEAK_GATE" in night["findings"]
+    assert "test_bug_val_00_ok" not in repr(night)
+    assert w.state(pid) == "draft" and search_unit(meta, DATE)["screened"] == []
+    assert not [r for r, _v in w.objects("stage-plan") if r["id"] == "stageplan-" + pid]
+    assert night["trials"] == REGRESSION  # the drift unit only
+    # the operator's screen refuses it the same way
+    hold("LEAK_GATE", meta.ops.screen, pid)
+
+
+def test_ic30_pb12_rows_without_a_waiting_candidate_stay_unbuilt_and_the_night_builds_nothing(
+    tmp_path: Path,
+) -> None:
+    """IC-30 (A) admits the mechanical screen only: the night never submits a proposal for a
+    PB12 design row (building rows is the open operator decision IC-33)."""
+    shares = {"drift": 0.1, "screening_design": 0.2, "search": 0.6, "confirmation": 0.3}
+    with build_world(tmp_path) as world:
+        meta = Meta(world, tmp_path, shares=shares)
+        w = meta.w
+        meta.calibrate_regression()
+        x = meta.candidate("a2")  # operator-screened, two class A factors in two slots
+        w.local.evaluation.executor_policy = None
+        ref, held = meta.run(DATE)
+        assert held is None and ref is not None, meta.night(DATE)
+        night = meta.night(DATE)
+        (phase,) = [p for p in night["phases"] if p["phase"] == "screening_design"]
+        (unit,) = phase["units"]
+        assert len(unit["factors"]) == 2
+        # PB12 on two factors: 3 rows each of (on, on), (on, off), (off, on), (off, off); only
+        # (on, on) is a waiting screened candidate (x), the 9 others stay unbuilt
+        assert unit["unbuilt"] == 9
+        assert "built" not in unit and "unbuilt_rows" not in unit
+        assert {r["proposal_id"] for r in unit["rows"]} == {x}
+        assert unit["trials"] == 24  # x, screened once
+        assert [v["proposal_id"] for _r, v in w.objects("harness-change-proposal")] == [x]
+        assert night["proposals"] == []
 
 
 # ==================================================================================================

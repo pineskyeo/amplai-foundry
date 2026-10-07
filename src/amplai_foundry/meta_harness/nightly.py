@@ -12,7 +12,9 @@ standing approval (``amplai meta nightly approve``, action ``nightly.explore``, 
   ``LocalMetaApprovals.issue_standing`` (``NightlyRunner.derive``), which admits only exploratory
   development experiments, calibrations and regression-set drift checks within the standing
   policy's cells and ``max_budget``. It never obtains a confirmatory, holdout, canary or promotion
-  approval; confirmation runs only experiments the operator approved (IC-10).
+  approval; confirmation runs only experiments the operator approved (IC-10). IC-30 (A): it
+  screens class A drafts (``harness.screen``, the mechanical screen: protected surfaces and the
+  leak gate); class B drafts, review, reject and every human gate stay the operator's.
 - **Deployment.** It runs on a separate meta deployment (its own ``local.json`` with
   ``meta.nightly`` and its own store; the store has one owner, ``Store`` ``ACTIVE_OWNER``), never on
   the running server's (§8.8).
@@ -23,7 +25,8 @@ standing approval (``amplai meta nightly approve``, action ``nightly.explore``, 
   change, then ``drift_tasks``: drift iff the pass count k of n lies outside the two-sided 99 %
   binomial prediction range at the ends of the calibrated 95 % Wilson interval, ``drift_range``) →
   screening design (PB12, or its fold-over mirror on the next screening night, when the operator set
-  ``shares.screening_design`` > 0) → search (proposer drafts, surrogate ranking, successive halving)
+  ``shares.screening_design`` > 0) → search (proposer drafts, the nightly screen of class A drafts
+  (IC-30), surrogate ranking, successive halving)
   → confirmation (only operator-approved experiments; otherwise its share returns to search) →
   dreaming → dashboard refresh (``meta_harness.dashboard``; ``skipped`` when the backend
   builds no pages).
@@ -291,6 +294,10 @@ class NightlyBackend(Protocol):
     def screening_run(self, cell_id: str, configs: list[dict[str, str]], guard: Guard,
                       limit: int) -> dict[str, Any]: ...  # fmt: skip
     def propose(self, cell_id: str) -> list[str]: ...
+    # IC-30 (A): screen the cell's class A drafts as the nightly identity (no trial);
+    # {"screened": [pid], "refused": [{"proposal_id", "code"}],
+    #  "operator": [{"proposal_id", "surface_class"}]}
+    def screen_drafts(self, cell_id: str) -> dict[str, Any]: ...
     def search_candidates(self, cell_id: str) -> list[dict[str, Any]]: ...
     def search_rows(self, cell_id: str) -> list[dict[str, Any]]: ...
     def development_tasks(self, cell_id: str) -> list[str]: ...
@@ -326,6 +333,24 @@ class _Night:
     version: int = 0
     phase_used: dict[str, int] = field(default_factory=dict)
     search_blocked: bool = False
+
+
+def _screened(value: Any) -> dict[str, list[Any]]:
+    """A backend ``screen_drafts`` result with its shape checked (RuntimeFault NIGHT_BATCH)."""
+    if not isinstance(value, dict):
+        raise RuntimeFault("NIGHT_BATCH", "A screen result is an object")
+    out: dict[str, list[Any]] = {}
+    for key in ("screened", "refused", "operator"):
+        rows = value.get(key, [])
+        if not isinstance(rows, list):
+            raise RuntimeFault("NIGHT_BATCH", f"screen.{key} is a list")
+        out[key] = list(rows)
+    if any(not isinstance(p, str) for p in out["screened"]) or any(
+        not isinstance(r, dict) or not isinstance(r.get("proposal_id"), str)
+        for r in (*out["refused"], *out["operator"])
+    ):
+        raise RuntimeFault("NIGHT_BATCH", "A screen result names proposals by id")
+    return out
 
 
 def _batch(value: Any) -> dict[str, Any]:
@@ -892,12 +917,14 @@ class NightlyRunner:
         units = []
         for cell in self.config.cells:
             drafted: list[str] = []
+            screen: dict[str, list[Any]] = {"screened": [], "refused": [], "operator": []}
             if not night.dry_run:
                 try:
                     drafted = list(self.backend.propose(cell))
                 except Hold as exc:
                     night.data["findings"].append(f"PROPOSER {cell}: {exc.code}")
                 night.data["proposals"] += drafted
+                screen = self._screen_drafts(night, cell)
             candidates = list(self.backend.search_candidates(cell))
             rows = self.backend.search_rows(cell)
             tasks = self.backend.development_tasks(cell)
@@ -906,7 +933,9 @@ class NightlyRunner:
             order = [str(candidates[i]["candidate_id"]) for i, _score in ranked]
             rungs = successive_halving(order) if order else []
             unit: dict[str, Any] = {
-                "cell_id": cell, "drafted": drafted, "ranking": [
+                "cell_id": cell, "drafted": drafted, "screened": screen["screened"],
+                "left_for_operator": [r["proposal_id"] for r in screen["operator"]],
+                "ranking": [
                     {"candidate_id": str(candidates[i]["candidate_id"]), "score": score}
                     for i, score in ranked
                 ],
@@ -918,6 +947,31 @@ class NightlyRunner:
             units.append(unit)
             self._save(night, "running")
         self._phase(night, name, "planned" if night.dry_run else "done", units=units)
+
+    def _screen_drafts(self, night: _Night, cell: str) -> dict[str, list[Any]]:
+        """IC-30 (A): the cell's class A drafts are screened as the nightly identity (the
+        protected-surface check and the leak gate of ``MetaHarness.screen``; no trial) before
+        the search ranks its candidates. A refused draft stays a draft and is a finding; a class
+        B (or C/D) draft is left for the operator's review and screen (a finding)."""
+        self._check(night)  # a night that must stop screens nothing
+        empty: dict[str, list[Any]] = {"screened": [], "refused": [], "operator": []}
+        try:
+            out = _screened(self.backend.screen_drafts(cell))
+        except Hold as exc:
+            night.data["findings"].append(f"SCREEN {cell}: {exc.code}")
+            self._save(night, "running")
+            return empty
+        for row in out["refused"]:
+            night.data["findings"].append(
+                f"SCREEN {cell} {row['proposal_id']}: {row.get('code') or 'refused'}"
+            )
+        for row in out["operator"]:
+            night.data["findings"].append(
+                f"OPERATOR_SCREEN {cell} {row['proposal_id']}: class "
+                f"{row.get('surface_class') or '?'}"
+            )
+        self._save(night, "running")
+        return out
 
     def _halving(
         self,
@@ -1059,19 +1113,26 @@ class LocalNightlyBackend:
       ``issue_standing``; skipped when that is more than the drift share allows. The band and the
       calibrated snapshot come from the human operator's newest calibration **on the regression
       set** (``amplai meta calibrate --set regression``), never from a night's drift run.
+    - drafts (IC-30 (A), operator decision 2026-10-07): after the proposer ran, each class A
+      draft of the cell (every changed component class A; non-derived) is screened as the
+      nightly identity (``harness.screen``): the same protected-surface check and leak gate as
+      the operator's screen. A refused draft stays a draft (finding ``SCREEN``); a class B, C or
+      D draft is left for the operator's review and screen (finding ``OPERATOR_SCREEN``). The
+      night never holds ``harness.review`` or ``harness.propose``, never reviews or rejects.
     - search: each candidate (a screened, non-derived proposal of the cell whose screening has
       not run) is planned once (``StageRunner.plan``, the root budget = the standing policy's
       ``max_budget``) and advanced by a ``StageRunner`` whose approval issuer is the nightly
       identity's (``stages.standing_issuer``: ``issue_standing``, exploratory development
       experiments only). ``advance`` runs the screening stage and stops at the focused gate. A
       failed screening is recorded (stage ``failed``, finding ``SCREENING_FAILED``) and left for
-      the operator; the night never screens a draft (``harness.review``), reviews or rejects.
-      A candidate's measurement is its screening stage: successive halving re-ranks measured
-      candidates without re-running them (one screening per proposal).
-    - screening design (PB12): a factor is a changed component (slot and component) of a
-      screened candidate of the cell; a design row runs only when a screened candidate whose
-      change is exactly the row's "on" factors waits for its screening (the night never builds or
-      screens a proposal); other rows are counted ``unbuilt``.
+      the operator. A candidate's measurement is its screening stage: successive halving
+      re-ranks measured candidates without re-running them (one screening per proposal).
+    - screening design (PB12): a factor is a changed component (slot and the slot's new ref,
+      ``<slot>=<id>@<revision>``) of a screened candidate of the cell; a design row runs only
+      when a screened candidate whose change is exactly the row's "on" factors waits for its
+      screening (the night never builds a proposal: IC-30 (A) admits the screen only, and
+      building design rows is the open operator decision IC-33); other rows are counted
+      ``unbuilt``.
     - queued confirmations (IC-10): a candidate that passed screening and survived the last rung
       gets its focused experiment built (``StageRunner.queue_stage``, no approval) and listed;
       ``confirmations`` are the queued focused stages the operator approved
@@ -1419,7 +1480,8 @@ class LocalNightlyBackend:
         return sorted(out, key=lambda row: row[0])
 
     def _factors_of(self, proposal: dict[str, Any]) -> list[str]:
-        """The changed components of a proposal as factor names ``<slot>=<id>@<revision>``."""
+        """The changed components of a proposal as factor names ``<slot>=<id>@<revision>`` (the
+        slot's new ref; ``<slot>=none`` for an emptied slot)."""
         manifests = self.ops.manifests
         changes = manifests.diff(
             manifests.of_composition(proposal["baseline_ref"]),
@@ -1427,10 +1489,59 @@ class LocalNightlyBackend:
         )
         out = []
         for change in changes:
-            to = getattr(change, "to", None)
+            to = change.after
             label = f"{to['id']}@{to['revision']}" if isinstance(to, dict) else "none"
             out.append(f"{change.slot}={label}")
         return sorted(out)
+
+    def screen_drafts(self, cell_id: str) -> dict[str, Any]:
+        """IC-30 (A): screen each class A, non-derived draft of the cell as the nightly identity
+        (``MetaHarness.screen`` with ``harness.screen``: protected surfaces, leak gate). A
+        refusal leaves the draft as it is; class B, C and D drafts are left for the operator."""
+        from ..runtime.execution import releases
+        from .service import only_class_a
+        from .stages import is_derived
+
+        installed = self.ops.app.compositions
+        drafts: dict[str, dict[str, Any]] = {}
+        for _ref, proposal in self.store.list_objects(self.scope, "harness-change-proposal"):
+            pid = str(proposal.get("proposal_id"))
+            if pid in drafts:
+                continue
+            try:
+                head = self.store.head(self.scope, "evolution", pid)
+                if head["state"] != "draft":
+                    continue
+                cell = releases.pin_allowed(
+                    self.store, self.scope, installed, proposal["baseline_ref"]
+                )
+                if cell != cell_id or is_derived(self.store, self.scope, proposal):
+                    continue
+            except (RuntimeFault, KeyError, TypeError):
+                continue
+            drafts[pid] = dict(head["data"].get("classification") or {})
+        out: dict[str, Any] = {"screened": [], "refused": [], "operator": []}
+        for pid in sorted(drafts):
+            classification = drafts[pid]
+            if not only_class_a(classification):
+                out["operator"].append(
+                    {"proposal_id": pid, "surface_class": classification.get("surface_class")}
+                )
+                continue
+            code = self._screen(pid)
+            if code is None:
+                out["screened"].append(pid)
+            else:
+                out["refused"].append({"proposal_id": pid, "code": code})
+        return out
+
+    def _screen(self, proposal_id: str) -> str | None:
+        """The nightly identity's screen of one class A draft; the refusal code, or None."""
+        try:
+            self.ops.local.meta.screen(self.runner.identity, proposal_id)
+        except (Hold, RuntimeFault) as exc:
+            return str(exc.code)
+        return None
 
     def screening_factors(self, cell_id: str) -> list[str]:
         """Layer switches of the cell (§8.7): the changed components of its screened candidates
@@ -1447,7 +1558,8 @@ class LocalNightlyBackend:
         self, cell_id: str, configs: list[dict[str, str]], guard: Guard, limit: int
     ) -> dict[str, Any]:
         """Run each design row whose exact configuration is a waiting screened candidate (its
-        screening stage, under the standing approval); count the other rows ``unbuilt``."""
+        screening stage, under the standing approval); count the other rows ``unbuilt`` (the
+        night never builds a design row as a proposal: open operator decision IC-33)."""
         by_on: dict[frozenset[str], str] = {}
         for pid, proposal in self._candidates(cell_id):
             try:
@@ -1500,8 +1612,9 @@ class LocalNightlyBackend:
         }
 
     def search_candidates(self, cell_id: str) -> list[dict[str, Any]]:
-        """Screened, non-derived proposals of the cell whose screening stage has not run (drafts
-        wait for the operator's screen: the nightly identity has no ``harness.review``)."""
+        """Screened, non-derived proposals of the cell whose screening stage has not run (class A
+        drafts were screened by ``screen_drafts`` just before, IC-30; class B drafts wait for the
+        operator's review and screen: the nightly identity has no ``harness.review``)."""
         out = []
         for pid, proposal in self._candidates(cell_id):
             try:

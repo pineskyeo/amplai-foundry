@@ -9,7 +9,7 @@
       "model": "gpt-5.6-sol",
       "auth": "chatgpt_account_sandbox_home",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-5df85a3a8fe442deae68f7c68b1984dd",
+      "qualification_id": "qualification-fe1c3da4e9eb49208560b2c4c0e0e520",
       "checks": [
         {
           "name": "exact_version",
@@ -32,7 +32,7 @@
         {
           "name": "cancel_tree",
           "outcome": "pass",
-          "reason": "SIGTERM via docker stop after first event: stopped_in=0.1s exit=0 (graceful) completed=False running_after=False",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.11s exit=0 (graceful) completed=False running_after=False",
           "artifacts": 2
         },
         {
@@ -44,13 +44,13 @@
         {
           "name": "egress_containment",
           "outcome": "pass",
-          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['chatgpt.com:443']; sidecar denied ['ab.chatgpt.com:443', 'sdmntprcentralus.oaiusercontent.com:443', 'sdmntprnortheu.oaiusercontent.com:443', 'sdmntprsouthcentralus.oaiusercontent.com:443']",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['chatgpt.com:443']; sidecar denied ['ab.chatgpt.com:443', 'example.com:443', 'sdmntprcentralus.oaiusercontent.com:443', 'sdmntprnortheu.oaiusercontent.com:443', 'sdmntprsouthcentralus.oaiusercontent.com:443']",
           "artifacts": 2
         },
         {
           "name": "secret_isolation",
           "outcome": "pass",
-          "reason": "secret absent from stream, stderr, workspace, sidecar log and argv; present in worker-owned session home (85 files, not an agent-visible artifact)",
+          "reason": "secret absent from stream, stderr, workspace, sidecar log and argv; present in worker-owned session home (97 files, not an agent-visible artifact)",
           "artifacts": 1
         },
         {
@@ -67,7 +67,7 @@
         }
       ],
       "tool_use": {
-        "outcome": "fail",
+        "outcome": "pass",
         "commands": [
           {
             "command": "/usr/bin/bash -lc 'python --version'",
@@ -78,10 +78,16 @@
         "file": "Python 3.11.2",
         "rc": 0,
         "long_command": {
-          "outcome": "fail",
-          "seconds": 0.1,
+          "outcome": "pass",
+          "seconds": 52.2,
           "fault": null,
-          "event_types": []
+          "event_types": [
+            "item.completed",
+            "item.started",
+            "thread.started",
+            "turn.completed",
+            "turn.started"
+          ]
         }
       }
     }
@@ -97,7 +103,7 @@
           "output_tokens": 6,
           "reasoning_output_tokens": 0
         },
-        "seconds": 4.1
+        "seconds": 5.1
       },
       {
         "turn": "resume",
@@ -108,28 +114,34 @@
           "output_tokens": 12,
           "reasoning_output_tokens": 0
         },
-        "seconds": 5.4
+        "seconds": 4.7
       },
       {
         "turn": "tool_use",
         "usage": {
-          "input_tokens": 39444,
+          "input_tokens": 39442,
           "cached_input_tokens": 35200,
           "cache_write_input_tokens": 0,
-          "output_tokens": 127,
-          "reasoning_output_tokens": 0
+          "output_tokens": 145,
+          "reasoning_output_tokens": 17
         },
-        "seconds": 10.4
+        "seconds": 17.7
       },
       {
         "turn": "long_command",
-        "usage": null,
-        "seconds": 0.1
+        "usage": {
+          "input_tokens": 39603,
+          "cached_input_tokens": 35200,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 143,
+          "reasoning_output_tokens": 10
+        },
+        "seconds": 52.2
       }
     ]
   },
   "findings": [],
-  "checked_at": "2026-10-07T01:53:27Z",
+  "checked_at": "2026-10-07T03:07:38Z",
   "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
   "container_image": "localhost:5000/amplai-worker-app-amplai-bench-app@sha256:b8e78ae963e7a2e43c38dedfb8b2c1f84f32f8c3a8fc330b7954ffd201fc5435",
   "egress_profile": {
