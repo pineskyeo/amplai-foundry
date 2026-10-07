@@ -1,1 +1,0 @@
-"""Storage format parsers."""

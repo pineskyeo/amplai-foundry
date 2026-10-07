@@ -2,9 +2,9 @@ import json
 from dataclasses import replace
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.evaluation.corpus import CorpusService
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import new_id
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 

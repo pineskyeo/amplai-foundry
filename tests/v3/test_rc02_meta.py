@@ -9,9 +9,9 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.evaluation.analysis import analyze_pairs
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id, now
 from amplai_foundry.runtime.errors import Conflict, Hold
 

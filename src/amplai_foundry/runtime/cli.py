@@ -51,7 +51,7 @@ meta_cli.register(app, guarded)
 
 
 def client() -> AmplaiClient:
-    from .deployment import private_bytes
+    from .keys import private_bytes
 
     token_file = os.getenv("AMPLAI_TOKEN_FILE")
     token = (
@@ -302,66 +302,6 @@ def status(goal_id: str) -> None:
     guarded(operation)
 
 
-@ops.command("demo")
-def demo(output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-demo")) -> None:
-    """Execute actual cross-app files and independent verification, without an LLM."""
-    from .reference import run_reference
-
-    if (output / "state" / "runtime.sqlite3").exists() or (
-        output.exists() and any(output.iterdir())
-    ):
-        raise typer.BadParameter(
-            "Use a new empty output directory; existing work will not be overwritten"
-        )
-    result = guarded(lambda: run_reference(output.absolute()))
-    if result.get("status") != "verified":
-        raise typer.Exit(2)
-
-
-@ops.command("execution-demo")
-def execution_demo(
-    output: Annotated[Path, typer.Option("--output")] = Path("./amplai-dev02-execution"),
-) -> None:
-    """Execute real parallel worker/session/snapshot flow and independent checks."""
-    from .execution.reference import run_execution_reference
-
-    if output.exists() and any(output.iterdir()):
-        raise typer.BadParameter("Use a new empty output directory")
-    result = guarded(lambda: run_execution_reference(output.absolute()))
-    if result.get("status") != "verified":
-        raise typer.Exit(2)
-
-
-@ops.command("meta-demo")
-def meta_demo(
-    output: Annotated[Path, typer.Option("--output")] = Path("./amplai-v3-meta-demo"),
-) -> None:
-    """Run real paired arithmetic trials, canary, CAS promotion and rollback."""
-    from amplai_foundry.meta_harness.reference import run_meta_reference
-
-    if output.exists() and any(output.iterdir()):
-        raise typer.BadParameter("Use a new empty output directory")
-    result = guarded(lambda: run_meta_reference(output.absolute()))
-    if result.get("verdict") != "pass":
-        raise typer.Exit(2)
-
-
-@ops.command("evolution-demo")
-def evolution_demo(
-    output: Annotated[Path, typer.Option("--output")] = Path("./amplai-dev03-evolution"),
-) -> None:
-    """Run 48 real V3 paired trials, two canaries, signed promotion and rollback."""
-    from amplai_foundry.meta_harness.pipeline_reference import run_pipeline_evolution
-
-    if output.exists() and any(output.iterdir()):
-        raise typer.BadParameter(
-            "Use a new empty output directory; existing work will not be overwritten"
-        )
-    result = guarded(lambda: run_pipeline_evolution(output.absolute()))
-    if result.get("verdict") != "pass":
-        raise typer.Exit(2)
-
-
 @ops.command("observatory")
 def observatory(
     composition: str | None = None,
@@ -438,44 +378,9 @@ def schemas(output: Annotated[Path | None, typer.Option("--output")] = None) -> 
 @ops.command("keygen")
 def keygen(path: Path) -> None:
     """Create an owner-only Ed25519 key; this does not grant execution authority."""
-    from .deployment import generate_key
+    from .keys import generate_key
 
     guarded(lambda: generate_key(path))
-
-
-@ops.command("serve")
-def serve(
-    config: Annotated[Path, typer.Option("--config")],
-    host: str = "127.0.0.1",
-    port: int = 5083,
-    behind_tls_proxy: Annotated[bool, typer.Option("--behind-tls-proxy")] = False,
-) -> None:
-    """Start one control-plane owner. Enroll Foundry identities and keys first."""
-    if host not in {"127.0.0.1", "localhost", "::1"} and not behind_tls_proxy:
-        raise typer.BadParameter(
-            "Non-loopback bind requires an explicitly configured TLS reverse proxy"
-        )
-    import uvicorn
-
-    from .deployment import RuntimeDeployment
-
-    deployment = None
-    try:
-        deployment = RuntimeDeployment(config)
-        uvicorn.run(
-            deployment.app,
-            host=host,
-            port=port,
-            workers=1,
-            access_log=False,
-            proxy_headers=behind_tls_proxy,
-        )
-    except RuntimeFault as exc:
-        emit(exc.as_dict())
-        raise typer.Exit(3) from exc
-    finally:
-        if deployment:
-            deployment.close()
 
 
 @ops.command("local-init")
@@ -502,7 +407,7 @@ def local_init(
         import secrets
         import shlex
 
-        from .deployment import generate_key
+        from .keys import generate_key
 
         root = home.expanduser().absolute()
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -565,7 +470,7 @@ def local_init(
 
 def _edit_local_config(config: Path, change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
     """Change local.json atomically (0600), validated before it replaces the old file."""
-    from .deployment import private_bytes
+    from .keys import private_bytes
     from .local_deployment import LocalConfig
 
     path = config.expanduser().absolute()
@@ -865,7 +770,7 @@ def local_cell_list(
     """The legacy cells (driver entries, IC-07) and the configured cells of local.json."""
 
     def show() -> dict[str, Any]:
-        from .deployment import private_bytes
+        from .keys import private_bytes
         from .local_deployment import LocalConfig
 
         cfg = LocalConfig.model_validate_json(private_bytes(config.expanduser().absolute()))

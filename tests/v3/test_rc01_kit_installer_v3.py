@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -17,7 +16,6 @@ from amplai_foundry.distribution.packs import PackRegistry, seal_pack
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
 KEY = Ed25519PrivateKey.generate()
-REPO = Path(__file__).resolve().parents[2]
 
 
 def manifest(pack_id="kit", version="3.0.0", **overrides):
@@ -246,10 +244,18 @@ def test_multi_target_reports_per_target_and_partial_never_complete(kit, tmp_pat
     assert result["targets"][str(bad.absolute())]["code"] in {"INSTALL_PREIMAGE", "UNOWNED_FILE"}
 
 
-def test_t097_release_truth_reports_the_real_kit_discrepancy_without_editing():
-    report = release_truth(REPO / "tools" / "amplai-loop-kit")
+def test_t097_release_truth_reports_a_kit_discrepancy_without_editing(tmp_path):
+    # The Kit 2.x tree that used to carry this discrepancy was removed (legacy-inventory X5);
+    # a synthetic kit keeps the same facts: VERSION 2.4.0 against a README that says 2.5.0.
+    kit = tmp_path / "kit"
+    kit.mkdir()
+    (kit / "VERSION").write_text("2.4.0\n")
+    (kit / "README.md").write_text("# AMPLAI Loop Kit 2.5.0\n")
+    (kit / "CHANGELOG.md").write_text("# Changelog\n\n## 2.4.0 - first\n")
+    report = release_truth(kit)
     assert report["facts"]["VERSION"] == "2.4.0" and report["facts"]["README.md"] == "2.5.0"
+    assert report["facts"]["CHANGELOG.md"] == "2.4.0"
     assert report["status"] == "discrepancy" and report["authoritative"] is None
-    assert (REPO / "tools" / "amplai-loop-kit" / "VERSION").read_text().strip() == "2.4.0", (
-        "report changes nothing"
-    )
+    assert (kit / "VERSION").read_text().strip() == "2.4.0", "report changes nothing"
+    (kit / "README.md").write_text("# AMPLAI Loop Kit 2.4.0\n")
+    assert release_truth(kit)["status"] == "consistent"

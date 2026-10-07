@@ -56,11 +56,6 @@ def test_registry_installs_verifier_profile_under_the_runtime_kind(api: Any) -> 
     assert wrong.status_code == 400 and wrong.json()["code"] == "PROTECTED_REGISTRY"
 
 
-def test_deployment_snapshot_allows_the_runtime_verifier_kind() -> None:
-    source = Path("src/amplai_foundry/runtime/deployment.py").read_text()
-    assert '"verifier-profile"' in source and '"verification-profile"' not in source
-
-
 class _Sandbox:
     def command(self, argv: list[str], *_a: Any, **_k: Any) -> list[str]:
         return argv

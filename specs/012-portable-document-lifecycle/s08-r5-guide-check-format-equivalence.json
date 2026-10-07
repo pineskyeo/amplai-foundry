@@ -1,6 +1,0 @@
-{
-  "before_sha256": "35b5ff7e285007b906da1b9d0582c4645a4d27d9afce4b1253b09c5a9b23b1e2",
-  "after_sha256": "5a6c8e89b06aaf4cb3c491dbd0f8278dcccfd268c8e1d418d2df06e4a487a971",
-  "same_ast": true,
-  "change": "One call wrapped onto one line; no behavior change. R12 evidence retains the preformat hash and source copy."
-}

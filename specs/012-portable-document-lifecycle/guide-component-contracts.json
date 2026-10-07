@@ -1,8 +1,0 @@
-{
-  "schema_version": "1.0",
-  "component": "contracts",
-  "revision": "e83fc34fe1a683ca4a2d3e71a1e82b6fd72a1e86a1223ea0cf27f7a1ee176113",
-  "catalog_sha256": "21ae3865ab6fcf59f242e553ec38c33ff8fb5f31fa9605626291116bc5175b2b",
-  "verified_by": "s08-guide-components.json",
-  "purpose": "INTERNAL local candidate guide reference; not deployment activation"
-}

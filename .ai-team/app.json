@@ -1,8 +1,0 @@
-{
-  "app_id": "amplai-foundry",
-  "content_hash": "sha256:c1342d3a5f32163f537aeb6ace06b37bfd9cf8c519b0d08da63ccec96e8df7cd",
-  "kind": "app_identity",
-  "project_id": "ai-platform",
-  "runtime_protocol": "amplai.async-cross-app.v1",
-  "schema_version": "1.0"
-}

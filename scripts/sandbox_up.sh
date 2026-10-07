@@ -139,7 +139,9 @@ if ! docker ps --filter name="$REGISTRY_NAME" --format '{{.Names}}' | grep -q "$
   docker run -d --name "$REGISTRY_NAME" --restart unless-stopped \
     -p 127.0.0.1:${REGISTRY_PORT}:5000 registry:2 >/dev/null
 fi
-docker build -t "$IMAGE:local" "$REPO/deployment/worker"
+# CLAUDE_CODE_VERSION / CODEX_VERSION pin the CLIs (an unpinned "latest" layer stays cached)
+docker build --build-arg "CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION:-latest}" \
+  --build-arg "CODEX_VERSION=${CODEX_VERSION:-latest}" -t "$IMAGE:local" "$REPO/deployment/worker"
 docker push "$IMAGE:local" >/dev/null
 DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:local" | sed 's/.*@//')"
 CLAUDE_V="$(docker run --rm --network none "$IMAGE:local" claude --version 2>/dev/null | head -1)"

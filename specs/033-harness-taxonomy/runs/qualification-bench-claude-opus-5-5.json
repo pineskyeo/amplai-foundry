@@ -1,0 +1,271 @@
+{
+  "schema_version": "1.0",
+  "kind": "driver_qualification_in_container",
+  "reports": {
+    "claude-cli": {
+      "status": "pass",
+      "driver_version": "2.1.292",
+      "host_version": "2.1.292 (Claude Code)",
+      "model": "claude-opus-5-5",
+      "auth": "oauth_token",
+      "native_delegation_qualified": false,
+      "qualification_id": "qualification-f710536436044370ab5713136d502898",
+      "checks": [
+        {
+          "name": "exact_version",
+          "outcome": "pass",
+          "reason": "container reports '2.1.292 (Claude Code)'; pinned '2.1.292'",
+          "artifacts": 1
+        },
+        {
+          "name": "exact_session",
+          "outcome": "pass",
+          "reason": "session bound=True rc=0 text='PONG'",
+          "artifacts": 1
+        },
+        {
+          "name": "ordered_events",
+          "outcome": "pass",
+          "reason": "4/4 events normalized, fault=None",
+          "artifacts": 1
+        },
+        {
+          "name": "cancel_tree",
+          "outcome": "pass",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=0.97s exit=143 (signal) completed=False running_after=False",
+          "artifacts": 2
+        },
+        {
+          "name": "filesystem_containment",
+          "outcome": "pass",
+          "reason": "probe: root_write_rc=1 | ws_write_ok | absent=/Users | absent=/var/run/docker.sock | root_home=readonly | root_home_entries=0 | uid=65534; turn wrote only ['.probe']",
+          "artifacts": 1
+        },
+        {
+          "name": "egress_containment",
+          "outcome": "pass",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['api.anthropic.com:443']; sidecar denied ['example.com:443', 'http-intake.logs.us5.datadoghq.com:443']",
+          "artifacts": 2
+        },
+        {
+          "name": "secret_isolation",
+          "outcome": "pass",
+          "reason": "secret absent from stream, stderr, workspace, sidecar log and argv; absent from session home",
+          "artifacts": 1
+        },
+        {
+          "name": "budget_accounting",
+          "outcome": "pass",
+          "reason": "usage=measured",
+          "artifacts": 1
+        },
+        {
+          "name": "crash_recovery",
+          "outcome": "pass",
+          "reason": "SIGKILL mid-turn (exit=137), then exact-session resume: same_session=True rc=0 text='PONG'",
+          "artifacts": 2
+        }
+      ],
+      "tool_use": {
+        "outcome": "pass",
+        "commands": [
+          {
+            "command": "python --version",
+            "exit": 0,
+            "output": "Python 3.11.2"
+          }
+        ],
+        "file": "Python 3.11.2",
+        "rc": 0,
+        "long_command": {
+          "outcome": "pass",
+          "seconds": 49.2,
+          "fault": null,
+          "event_types": [
+            "assistant",
+            "rate_limit_event",
+            "result",
+            "system",
+            "tool_progress",
+            "user"
+          ]
+        }
+      }
+    }
+  },
+  "cost": {
+    "claude-cli": [
+      {
+        "turn": "pong",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 3174,
+          "cache_read_input_tokens": 16000,
+          "output_tokens": 5,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 3174,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 5,
+              "cache_read_input_tokens": 16000,
+              "cache_creation_input_tokens": 3174,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 3174
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard",
+          "fallback_credit": null
+        },
+        "seconds": 3.8
+      },
+      {
+        "turn": "resume",
+        "usage": {
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 1569,
+          "cache_read_input_tokens": 17660,
+          "output_tokens": 5,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 1569,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 5,
+              "cache_read_input_tokens": 17660,
+              "cache_creation_input_tokens": 1569,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 1569
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard",
+          "fallback_credit": null
+        },
+        "seconds": 3.0
+      },
+      {
+        "turn": "tool_use",
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 20981,
+          "cache_read_input_tokens": 41547,
+          "output_tokens": 209,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 20981,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 48,
+              "cache_read_input_tokens": 20829,
+              "cache_creation_input_tokens": 152,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 152
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard",
+          "fallback_credit": null
+        },
+        "seconds": 5.2
+      },
+      {
+        "turn": "long_command",
+        "usage": {
+          "input_tokens": 4,
+          "cache_creation_input_tokens": 1542,
+          "cache_read_input_tokens": 40078,
+          "output_tokens": 113,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 1542,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "not_available",
+          "iterations": [
+            {
+              "input_tokens": 2,
+              "output_tokens": 6,
+              "cache_read_input_tokens": 20740,
+              "cache_creation_input_tokens": 140,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 140
+              },
+              "type": "message"
+            }
+          ],
+          "speed": "standard",
+          "fallback_credit": null
+        },
+        "seconds": 49.2
+      }
+    ]
+  },
+  "findings": [],
+  "checked_at": "2026-10-07T01:53:05Z",
+  "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
+  "container_image": "localhost:5000/amplai-worker-app-amplai-bench-app@sha256:b8e78ae963e7a2e43c38dedfb8b2c1f84f32f8c3a8fc330b7954ffd201fc5435",
+  "egress_profile": {
+    "schema_version": "1.0",
+    "name": "local-colima",
+    "network": "amplai-internal",
+    "proxy": "amplai-egress-proxy:3128",
+    "allow": [
+      "api.anthropic.com:443",
+      "api.openai.com:443",
+      "auth.openai.com:443",
+      "chatgpt.com:443",
+      "opencode.ai:443"
+    ],
+    "digest": "a80a7959d6de10fbb2138e7401f7c2985988c9083ff81ff83417ef16fd4a2510"
+  },
+  "artifacts_dir": "specs/033-harness-taxonomy/runs/artifacts"
+}

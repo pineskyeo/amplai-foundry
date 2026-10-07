@@ -8,11 +8,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from meta_pipeline_world import PipelineMetaReference
+from meta_world import MetaReference
 
 from amplai_foundry.control_plane.api_v3.server import ApiServices, create_app
 from amplai_foundry.evaluation.observatory import Observatory
-from amplai_foundry.meta_harness.pipeline_reference import PipelineMetaReference
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
@@ -310,7 +310,7 @@ def test_dev03_forged_report_cannot_replace_the_recorded_experiment_output(meta0
     [
         "src/amplai_foundry/evaluation/service.py",
         "src/amplai_foundry/meta_harness/budget.py",
-        "src/amplai_foundry/governance/service.py",
+        "src/amplai_foundry/runtime/storage/store.py",
         "eval/holdout/tasks.json",
         "contracts/state-machines.json",
         "../runtime.py",
@@ -339,6 +339,16 @@ def test_dev03_meta_changes_cannot_modify_their_own_protection(meta03, path):
     m.meta.submit(m.proposer, proposal)
     with pytest.raises(RuntimeFault):
         m.meta.screen(m.reviewer, proposal["proposal_id"])
+
+
+def test_dev03_local_qualification_never_promotes_even_in_the_demo_scope(meta03):
+    """D-101: the service had a `demo-local` scope exception for local drills; it is gone."""
+    m = meta03
+    assert m.d.scope.tenant_id == "demo-local"
+    p = m.prepare(purpose="local_qualification")
+    with pytest.raises(Hold) as e:
+        m.execute(p)
+    assert e.value.code == "CONFIRMATORY_REQUIRED"
 
 
 def test_dev03_proposer_cannot_reenable_killed_runtime(meta03):

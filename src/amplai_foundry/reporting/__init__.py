@@ -1,1 +1,0 @@
-"""Human-readable reporting adapters."""

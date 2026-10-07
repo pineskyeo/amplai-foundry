@@ -24,9 +24,3 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
-      - run: amplai-foundry schema check
-      - run: amplai-foundry lint vault/
-      - run: amplai-foundry stats vault/
-      - run: python tools/amplai-loop-kit/seal.py --verify
-      - run: python tools/amplai-loop-kit/selftest.py
-      - run: python scripts/loopctl.py doctor

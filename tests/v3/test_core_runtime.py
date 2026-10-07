@@ -53,7 +53,7 @@ def test_utf16_ordering():
 def test_approved_schemas_exact():
     contracts = Contracts()
     assert len(contracts.definitions) == 30
-    base = Path(__file__).parents[2] / "contracts" / "schemas"
+    base = Path(__file__).parents[2] / "src/amplai_foundry/runtime/contracts/data/schemas"
     for name, schema in contracts.definitions.items():
         assert schema == json.loads((base / (name + ".schema.json")).read_text())
 

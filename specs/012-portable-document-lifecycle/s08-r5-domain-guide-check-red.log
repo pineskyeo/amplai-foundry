@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/pinesky/workspace/amplai-foundry/specs/012-portable-document-lifecycle/verify-kit-guide-selection.py", line 63, in <module>
-    sys.exit(main())
-             ^^^^^^
-  File "/Users/pinesky/workspace/amplai-foundry/specs/012-portable-document-lifecycle/verify-kit-guide-selection.py", line 25, in main
-    assert {row["path"] for row in selection["documents"]} == GUIDES
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError

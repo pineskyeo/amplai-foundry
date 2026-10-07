@@ -22,6 +22,7 @@ from statistics import mean
 from types import SimpleNamespace
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.evaluation import calibration, versions
 from amplai_foundry.evaluation.analysis import analyze_pairs
@@ -42,7 +43,6 @@ from amplai_foundry.evaluation.service import (
     effective_parallel,
     run_bounded,
 )
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id, now
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 

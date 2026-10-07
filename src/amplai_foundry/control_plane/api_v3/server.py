@@ -108,12 +108,6 @@ class AnswerBody(Body):
     contract_ref: dict[str, Any]
 
 
-class AuthorityLinkBody(Body):
-    proposal_ref: dict[str, Any]
-    definition_digest: str
-    authorization_name: str
-
-
 class MetaApprovalBody(Body):
     approval_ref: dict[str, Any]
     experiment_ref: dict[str, Any]
@@ -191,7 +185,6 @@ class ApiServices:
     meta: Any = None
     planning: Any = None
     planning_context: Callable[..., Any] | None = None
-    authority_bridge: Any = None
     # Collector is a local worker/qualified supervisor, not a request payload.
     worker_collector: Callable[..., Any] | None = None
     global_checker: Callable[..., Any] | None = None
@@ -694,26 +687,6 @@ def create_app(services: ApiServices) -> FastAPI:
         if services.object_read_guard:
             services.object_read_guard(a, kind, ref)
         return store.get(a.scope, kind, ref)
-
-    @app.post("/api/v3/authority/link")
-    def authority_link(
-        body: AuthorityLinkBody, a: Actor = Depends(actor), k: str = Depends(key)
-    ) -> Any:
-        a.require("runtime.admin")
-        from amplai_foundry.governance.models import ProposalRef
-
-        return command(
-            a,
-            k,
-            "authority.link",
-            body,
-            lambda: require_service(services.authority_bridge, "Live Foundry authority").link(
-                a,
-                ProposalRef.model_validate(body.proposal_ref),
-                body.definition_digest,
-                body.authorization_name,
-            ),
-        )
 
     @app.post("/api/v3/authority/grants")
     def grant(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:

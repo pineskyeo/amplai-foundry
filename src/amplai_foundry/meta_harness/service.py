@@ -30,7 +30,6 @@ from .budget import EvolutionBudget
 from .composition import CompositionService
 
 PROTECTED_PATHS = (
-    "src/amplai_foundry/governance/",
     "src/amplai_foundry/runtime/contracts/",
     "src/amplai_foundry/runtime/budgets/",
     "src/amplai_foundry/runtime/effects/",
@@ -431,9 +430,7 @@ class MetaHarness:
             raise Hold("REPLAY_NOT_CAUSAL", "Replay/static alone cannot support live promotion")
         _, policy = resolve_ref(self.store, scope, exp["analysis_plan_ref"])
         purpose = policy["policy"].get("purpose", "exploratory")
-        if purpose != "confirmatory" and not (
-            purpose == "local_qualification" and scope.tenant_id == "demo-local"
-        ):
+        if purpose != "confirmatory":
             raise Hold(
                 "CONFIRMATORY_REQUIRED",
                 "Local drills and exploratory results cannot authorize production promotion",

@@ -1,6 +1,3 @@
-"""AMPLAI Foundry knowledge contract and tooling."""
+"""AMPLAI V3: governed intent-to-verified-work runtime and evidence-driven meta-harness."""
 
-from amplai_foundry.domain.models import MemoryObject, MemoryRelation
-
-__all__ = ["MemoryObject", "MemoryRelation"]
 __version__ = "3.0.0.dev3"

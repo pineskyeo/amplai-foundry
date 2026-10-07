@@ -17,8 +17,9 @@ python -m venv .venv
 python -m pip install dist/amplai_foundry-3.0.0.dev2-py3-none-any.whl
 amplai ops version
 amplai ops schemas
-amplai ops execution-demo --output /tmp/amplai-dev02-new-run
 ```
+
+> 2026-10-07 legacy 정리(specs/033-harness-taxonomy/legacy-inventory.md D7)에서 `ops demo`·`ops execution-demo` 명령을 지웠다. 같은 경로는 `tests/v3/test_core_runtime.py`(`run_reference`)와 `tests/v3/test_dev02_execution.py`(`run_execution_reference`)가 실행한다.
 
 `--output`에는 비어 있는 새 경로를 지정한다. 이 예제는 별도 데모 권한으로 두 앱의 계약·DAG를 만들고, WorkCoordinator가 각각의 작업 폴더에 `result.json`을 실제로 생성한다. Worker는 `verifying`까지만 이동시킨다. 별도 verifier가 출력 바이트를 검사하고, 마지막 통합 verifier가 두 앱의 결과를 확인해야 `verified`가 된다. 결과는 출력 폴더의 `execution-report.json`에 저장된다.
 

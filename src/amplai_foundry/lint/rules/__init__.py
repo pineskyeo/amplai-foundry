@@ -1,1 +1,0 @@
-"""Independent knowledge lint rules."""
