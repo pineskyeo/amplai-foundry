@@ -1,4 +1,0 @@
-name: amplai
-version: 0.1.0
-description: DRAFT-only AMPLAI work request and status tools for Hermes.
-entry_point: __init__:register

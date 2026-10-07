@@ -1,5 +1,0 @@
-interface:
-  display_name: "Speckit Plan"
-  short_description: "Internal AMPLAI capability invoked by a controller"
-policy:
-  allow_implicit_invocation: false

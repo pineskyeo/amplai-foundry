@@ -1,1 +1,0 @@
-"""Deterministic knowledge linting."""

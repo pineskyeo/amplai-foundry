@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.meta_harness import corpus_v2, leak_gate
 from amplai_foundry.meta_harness.leak_gate import LeakGate, LeakHit
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 SHA = "9e574bcd0270ad8ef6e27aa6f6b757d7c032c06b"

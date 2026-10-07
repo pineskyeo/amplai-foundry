@@ -6,8 +6,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 
-from amplai_foundry.domain.project import ProjectId
-
+ProjectId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")]
 MemoryId = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9]*-[A-Z0-9-]+$")]
 MemoryNamespace = Annotated[
     str,

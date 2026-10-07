@@ -16,11 +16,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.meta_harness import corpus_v2, local_corpus
 from amplai_foundry.meta_harness.corpus_v2 import TaskV2
 from amplai_foundry.meta_harness.local_corpus import CorpusError
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 REPO = Path(__file__).resolve().parents[2]

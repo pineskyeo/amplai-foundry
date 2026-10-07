@@ -13,6 +13,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from meta_world import MetaReference
 from test_033_s2_service import (
     ARMS3,
     FakeValidator,
@@ -27,7 +28,6 @@ from test_033_s2_service import (
 )
 
 from amplai_foundry.evaluation import versions
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import canonical, digest
 from amplai_foundry.runtime.errors import Hold
 

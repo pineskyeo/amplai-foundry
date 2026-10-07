@@ -1,8 +1,0 @@
-{
-  "chunk_id": "21d0b3",
-  "wall_time_seconds": 0.000001,
-  "session_id": 92244,
-  "original_token_count": 38,
-  "output": "{\"exit_code\":0,\"output_bytes\":543395,\"status\":\"RESOLVED\",\"dependency_snapshot_hash\":\"b44fc0bb30a512d1bed7d3e36db2c33d846af96541908809b99d8588ae29d926\"}\n",
-  "exit_code": 0
-}

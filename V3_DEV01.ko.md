@@ -13,8 +13,9 @@ Python 3.11 이상을 사용한다. 이번 실제 검증 인터프리터는 전�
 ```bash
 amplai ops version
 amplai ops schemas
-amplai ops demo --output /tmp/amplai-dev01-demo-new
 ```
+
+> 2026-10-07 legacy 정리(specs/033-harness-taxonomy/legacy-inventory.md D7)에서 `ops demo`·`ops execution-demo` 명령을 지웠다. 같은 경로는 `tests/v3/test_core_runtime.py`(`run_reference`)와 `tests/v3/test_dev02_execution.py`(`run_execution_reference`)가 실행한다.
 
 `demo`는 비어 있는 새 디렉터리를 요구한다. 실제 JSON 파일을 생성하고 해시 기반
 증거 수집·독립 검증·앱 간 전역 검증을 수행한다. LLM을 호출하거나 외부 계정을

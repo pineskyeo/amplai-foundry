@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
   "approved_by_role": "human",
-  "approval_ref": "specs/012-portable-document-lifecycle/review-r6.json",
+  "approval_ref": "tests/fixtures/rendered-views/review-r6.json",
   "goldens": {
-    "specs/012-portable-document-lifecycle/html-developer-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html": "89160da6793a3fd9d9809503896771adea29608057b76829c81b2e55861538f3",
-    "specs/012-portable-document-lifecycle/html-developer-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html": "551f7fb6c6538c1135752868a3c98ba76b77725f5ac1f112133a2f52d05deadf",
-    "specs/012-portable-document-lifecycle/html-developer-r6/index.html": "a9dfc451b232637fe4777173dd424aaa2ffb37a2dc08730d85a9b20dd6955ec1",
-    "specs/012-portable-document-lifecycle/html-operator-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html": "9da5cd031c9870a017801f1ce7d709115def517af08d447cdd4f272881e5cb7f",
-    "specs/012-portable-document-lifecycle/html-operator-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html": "6068b0716d3d59c647ca41e887af49181d0c23016c2ec3e5ff07ef1061600615",
-    "specs/012-portable-document-lifecycle/html-operator-r6/index.html": "cebe28b11413e9bd79dc0d5acd8dac20d8e4dcb5a9a30c812a44194c9c438599"
+    "tests/fixtures/rendered-views/html-developer-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html": "89160da6793a3fd9d9809503896771adea29608057b76829c81b2e55861538f3",
+    "tests/fixtures/rendered-views/html-developer-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html": "551f7fb6c6538c1135752868a3c98ba76b77725f5ac1f112133a2f52d05deadf",
+    "tests/fixtures/rendered-views/html-developer-r6/index.html": "a9dfc451b232637fe4777173dd424aaa2ffb37a2dc08730d85a9b20dd6955ec1",
+    "tests/fixtures/rendered-views/html-operator-r6/document-0ed28cfc66dda7269e168fc9892bfa53dfc7bd2e14c87b1df028580449f2fe81.html": "9da5cd031c9870a017801f1ce7d709115def517af08d447cdd4f272881e5cb7f",
+    "tests/fixtures/rendered-views/html-operator-r6/document-ea720ad694243f0d25704cb01966faf4a7deac42fec37f50855d06d858dd3ba8.html": "6068b0716d3d59c647ca41e887af49181d0c23016c2ec3e5ff07ef1061600615",
+    "tests/fixtures/rendered-views/html-operator-r6/index.html": "cebe28b11413e9bd79dc0d5acd8dac20d8e4dcb5a9a30c812a44194c9c438599"
   },
-  "registry_sha256": "e15fd1ef24b666c7456a72a9654deb9163cf6bbb50d594b459276f4ed24df6b4"
+  "registry_sha256": "b85b51b55a8c65e18d432315a9b11c94a5b21539c4376cb4b272e2c62c557560"
 }

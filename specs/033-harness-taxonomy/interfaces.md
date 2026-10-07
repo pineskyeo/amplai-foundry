@@ -3028,3 +3028,11 @@ surface, and the final report lists IC-31 and IC-32 for explicit confirmation be
   probe for that pair; skips name the environment (`EFFORT_UNPROBED`, or `EFFORT_REFUSED` for a refused probe); a
   changed image or driver version needs a new probe. Limit: environment ids are unique per app only, so two apps
   sharing an environment id would share its probes (open; TB2 ids are `tb2-<name>`).
+
+## Operator Decisions Of 2026-10-07
+
+The operator confirmed every provisional decision as implemented: IC-15 … IC-29, IC-31, IC-32 are no longer
+provisional (IC-22 included). IC-30 is decided **(A)**: the nightly identity may run the mechanical screen
+(protected-surface check and leak gate) for class A drafts only, through a new permission `harness.screen`; class B
+drafts still wait for the operator's review receipt; confirmatory, holdout, canary and promotion stay human. The
+operator approved the legacy inventory with its recommendations (S17) and the start of the pilot (S16).

@@ -1,8 +1,9 @@
 """V3-059 — Frontend/docs actual-render acceptance suite (design/14 §4-§5, T-057-T-063).
 
-Real rendered views under specs/012 are inspected through the release → view manifest →
-bytes chain and structural checks. The browser layer runs only with a qualified renderer;
-on this host it is recorded as BROWSER_UNAVAILABLE and the suite is `inconclusive`, not pass.
+Real rendered views (moved from specs/012 to tests/fixtures/rendered-views) are inspected
+through the release → view manifest → bytes chain and structural checks. The browser layer
+runs only with a qualified renderer; on this host it is recorded as BROWSER_UNAVAILABLE and
+the suite is `inconclusive`, not pass.
 """
 
 from __future__ import annotations
@@ -21,8 +22,8 @@ from amplai_foundry.verification.runtime.render_acceptance import (
 
 REPO = Path(__file__).resolve().parents[2]
 VIEWS = [
-    "specs/012-portable-document-lifecycle/html-developer-r6",
-    "specs/012-portable-document-lifecycle/html-operator-r6",
+    "tests/fixtures/rendered-views/html-developer-r6",
+    "tests/fixtures/rendered-views/html-operator-r6",
 ]
 REGISTRY = "tests/e2e/artifacts/golden-registry.json"
 

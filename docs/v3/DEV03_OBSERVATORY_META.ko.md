@@ -20,9 +20,9 @@
 | 엄격한 JSON receipt 검사 | `src/amplai_foundry/evaluation/receipts.py` |
 | proposal 공통 비용·횟수·동시성 | `src/amplai_foundry/meta_harness/budget.py` |
 | 검토·카나리·승격·롤백 | `src/amplai_foundry/meta_harness/service.py` |
-| 실제 Runtime을 통한 로컬 재현 | `src/amplai_foundry/meta_harness/pipeline_reference.py` |
+| 실제 Runtime을 통한 로컬 재현 (test fixture) | `tests/v3/meta_pipeline_world.py` |
 
-위 경로의 기준 디렉터리는 `src/amplai_foundry/`이다.
+위 경로의 기준 디렉터리는 `src/amplai_foundry/`이다. 마지막 행만 저장소 기준 경로다.
 
 ## 2. 관측 지표의 의미
 
@@ -116,16 +116,15 @@ timeout, 연결 유실, 비정상 receipt는 외부 실행이 끝났다는 증�
 
 ## 7. 네트워크 없이 실제 파이프라인 재현
 
-패키지를 설치한 Linux/WSL 환경에서 빈 출력 경로를 사용한다. 기존 경로를 덮어쓰지 않는다.
+`ops evolution-demo` 명령은 2026-10-07 legacy 정리(D-101, legacy-inventory X15)에서 지웠다. 같은 재현은 test fixture `tests/v3/meta_pipeline_world.py` 로 옮겼고 다음 test 가 실행한다.
 
 ```bash
-amplai ops version
-amplai ops evolution-demo --output ./dev03-evolution
+.venv/bin/python -m pytest tests/v3/test_dev03_meta_harness.py -k actual_pipeline
 ```
 
-이 명령은 산술 recipe의 두 동결 구성을 **24개 문제 × baseline/candidate = 48회**, 카나리 2회 비교한다. 각 회차는 실제 Goal Contract → WorkGraph → grant → lease → local recipe worker → JSON 파일 → 독립 verifier → global verification을 거친다. 보고서는 `pipeline-evolution-report.json`이고 마지막에 서명된 승격과 fallback 롤백까지 검사한다. 각 평가 receipt는 실제 RunRecord/출력/검증 reference에 연결된다.
+이 명령은 산술 recipe의 두 동결 구성을 **24개 문제 × baseline/candidate = 48회**, 카나리 2회 비교한다. 각 회차는 실제 Goal Contract → WorkGraph → grant → lease → local recipe worker → JSON 파일 → 독립 verifier → global verification을 거친다. 보고서는 fixture 의 작업 폴더에 남는 `pipeline-evolution-report.json`이고 마지막에 서명된 승격과 fallback 롤백까지 검사한다. 각 평가 receipt는 실제 RunRecord/출력/검증 reference에 연결된다.
 
-후보 알고리즘이 틀린 negative control도 자동시험에서 확인한다. 단, 이 예제는 **결정적인 로컬 산술 recipe**다. 외부 LLM 성능 개선, Claude/Codex/OpenCode 연결, 실제 컨테이너 방어, 회사 승인 체계가 qualification됐다는 뜻이 아니다. local recipe의 token/cost=0은 외부 모델 호출이 없다는 범위이며 CPU·인건비가 공짜라는 지표가 아니다. local_qualification 결과는 `demo-local` 범위를 벗어나 승격할 수 없다.
+후보 알고리즘이 틀린 negative control도 자동시험에서 확인한다. 단, 이 예제는 **결정적인 로컬 산술 recipe**다. 외부 LLM 성능 개선, Claude/Codex/OpenCode 연결, 실제 컨테이너 방어, 회사 승인 체계가 qualification됐다는 뜻이 아니다. local recipe의 token/cost=0은 외부 모델 호출이 없다는 범위이며 CPU·인건비가 공짜라는 지표가 아니다. fixture 의 분석 계획은 confirmatory 다. `local_qualification` 결과는 어떤 범위에서도 승격할 수 없다(`demo-local` 예외를 D-101 정리에서 지웠다).
 
 ## 8. 재실행할 시험
 
@@ -362,7 +361,7 @@ development 밖의 과제는 `<split> task #N` 으로 표시하고 trace 본문,
 | "실제 진화 실행(S7)은 아직 하지 않았다" | 이 문장은 낡았다. Work 030 S7 은 끝났고 그 결과가 D-093 이다(`spec.md`). Work 033 의 실제 pilot 은 아직 하지 않았다 |
 | 운영자용 명령은 `propose`~`status` | 같은 명령에 `calibrate`, `search`, `approve-stage`, `nightly`, `dashboard` 등이 더해졌다(`docs/v3/USING_AMPLAI_WORK.ko.md` 참조) |
 
-그대로 유효한 것: §1~§5 의 평가 경로와 budget 규칙, §6 의 class 와 canary 와 승격 규칙(canary 정책 `cost_basis` D-092, 사람 승인 기록, `reject`, 서명된 release), §7 의 오프라인 재현(`ops evolution-demo`, 아직 repository 에 있다). `meta_harness/reference.py` 와 `pipeline_reference.py` 의 제거는 계획(D-101, legacy 정리 단계)이며 이 문서 시점에는 남아 있다.
+그대로 유효한 것: §1~§5 의 평가 경로와 budget 규칙, §6 의 class 와 canary 와 승격 규칙(canary 정책 `cost_basis` D-092, 사람 승인 기록, `reject`, 서명된 release), §7 의 오프라인 재현. 2026-10-07 legacy 정리(D-101)에서 `ops evolution-demo` 와 `meta_harness/reference.py`·`pipeline_reference.py` 를 지우고, 재현은 test fixture `tests/v3/meta_world.py`·`meta_pipeline_world.py` 로 옮겼다.
 
 ### 10.15 확인하지 못한 것
 

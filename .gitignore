@@ -18,13 +18,5 @@ build/
 .amplai/apply.lock
 .amplai/proposals/**/*.tmp
 
-# AMPLAI-LOCAL-BEGIN
-.ai-team/local/
-.ai-team/backups/amplai-loop-kit/
-# AMPLAI-LOCAL-END
-
-# eval run state (scripts/eval.sh EVIDENCE_DIR)
-.specify/eval/
-
 # Browser render output written next to a view by RenderAcceptance.browser_layer
 specs/**/html-*-render/

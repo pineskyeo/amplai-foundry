@@ -1,29 +1,31 @@
 # amplai-foundry — Claude Code Adapter
 
-공통 개발 규칙은 [AGENTS.md](AGENTS.md), Loop Runtime 은
-[.ai-team/README.md](.ai-team/README.md) 를 따른다. 이 파일은 Claude Code 에만 필요한
-adapter 지침이다.
+공통 개발 규칙은 [AGENTS.md](AGENTS.md) 를 따른다. 이 파일은 Claude Code 에만 필요한 adapter
+지침이다.
 
 ## Commands
 
-사용자-facing 개발 command 는 다음 둘뿐이다.
+개발 작업의 입구는 V3 `amplai` CLI 다. 이 저장소를 local product 의 app 으로 등록해 쓴다
+(`deployment/local-container-app-amplai-foundry.json`, 등록 절차는
+[docs/v3/USING_AMPLAI_WORK.ko.md](docs/v3/USING_AMPLAI_WORK.ko.md)).
 
 ```text
-/work <goal>
-/design <problem>
+amplai work "<goal>"        목표를 내고 계약 초안을 받는다
+amplai approve <goal-id>    계약을 승인한다. 검증된 결과만 draft PR 로 돌아온다
+amplai status [<goal-id>]   계획·시도·검증·PR 을 본다
+amplai steer <goal-id> ...  실행 중인 agent 에게 방향을 준다
+amplai replan <goal-id> ... 실행 중인 목표의 계획을 바꾼다
+amplai cancel <goal-id>     승인을 거두고 멈춘다
+amplai design "<problem>"   구현 없이 설계 문서만 만든다
 ```
 
-나머지 개발 capability(`speckit-*`, `taskify`, `code-review`, `dev-loop`,
-`systematic-debugging`)는 controller 가 내부에서 쓴다. 직접 부르지 않는다.
-
-loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/eli12`, `/grilling`.
-개발 절차를 지휘하지 않는다.
+loop 밖 보조 skill 은 사용자가 직접 부른다 — `/grill-me`, `/eli12`, `/grilling`. 개발 절차를
+지휘하지 않는다.
 
 ## Skill Layout
 
-공통 정본은 `.agents/skills/`다. `.claude/skills/<name>`은 같은 workflow를 가리키는
-symlink mirror이며 Claude 전용 사본을 따로 두지 않는다. skill 내용은 두 host에서 같고
-호출 표기만 Claude `/skill`, Codex `$skill`로 다르다.
+보조 skill 3개의 정본은 `.agents/skills/` 다. `.claude/skills/<name>` 은 같은 skill 을 가리키는
+symlink 다. `skills-lock.json` 이 외부 출처를 고정한다.
 
 ## Communication
 
@@ -34,11 +36,11 @@ symlink mirror이며 Claude 전용 사본을 따로 두지 않는다. skill 내�
 
 ## Verification
 
-```bash
-python3 scripts/loopctl.py doctor
-python3 .ai-team/verifiers/run.py --profile v2
-scripts/eval.sh --feature specs/<feature> --slice S01
-```
+CI(`.github/workflows/ci.yml`)와 같은 네 가지가 통과해야 완료다.
 
-`amplai-foundry verify` 의 7 check 는 verifier registry 에 등록돼 있다. 그 registry 가
-이제 단일 출처다.
+```bash
+.venv/bin/python -m pytest -n auto --dist worksteal
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/mypy src
+```

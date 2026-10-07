@@ -4,10 +4,10 @@ import json
 from dataclasses import replace
 
 import pytest
+from meta_world import MetaReference
 
 from amplai_foundry.evaluation.analysis import analyze_pairs, validate_analysis_plan
 from amplai_foundry.evaluation.receipts import read_receipt
-from amplai_foundry.meta_harness.reference import MetaReference
 from amplai_foundry.runtime.contracts.identity import canonical, digest, new_id
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 

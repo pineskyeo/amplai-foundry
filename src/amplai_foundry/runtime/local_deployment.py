@@ -39,7 +39,6 @@ from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
 from .contracts.identity import digest
 from .contracts.registry import Contracts
-from .deployment import private_bytes, read_key
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
 from .execution import releases
@@ -80,6 +79,7 @@ from .execution.service import Runtime
 from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
 from .goals.service import GoalService
+from .keys import private_bytes, read_key
 from .storage.store import Scope, Store
 
 SERVICE_PERMISSIONS = frozenset(
