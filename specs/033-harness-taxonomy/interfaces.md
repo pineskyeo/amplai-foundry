@@ -3036,3 +3036,54 @@ provisional (IC-22 included). IC-30 is decided **(A)**: the nightly identity may
 (protected-surface check and leak gate) for class A drafts only, through a new permission `harness.screen`; class B
 drafts still wait for the operator's review receipt; confirmatory, holdout, canary and promotion stay human. The
 operator approved the legacy inventory with its recommendations (S17) and the start of the pilot (S16).
+
+## Clarification: IC-30 Implemented (2026-10-07)
+
+IC-30 (A) is implemented: the screen only. It replaces the first two sentences of the bullet "Search limits on a night
+(until IC-30 is decided)" above (a night now screens class A drafts itself); the rest of that bullet stays as recorded
+there: PB12 design rows run only where they match a screened candidate (others are counted as unbuilt), successive
+halving re-ranks measured candidates (screening runs once per proposal on ≤ 12 tasks).
+
+- **Permission**: `harness.screen` is added to `NIGHTLY_PERMISSIONS` only (`runtime/execution/meta_local.py:97`); it is
+  not in `NIGHTLY_EXCLUDED`. The human operator keeps `harness.review` (`META_OPERATOR_PERMISSIONS`, unchanged), which
+  screens any class. The nightly identity still never holds `harness.review`, `harness.propose`,
+  `corpus.holdout.evaluate`, `canary.*`, `release.*`, `experiment.reconcile` or `nightly.approve`.
+- **`MetaHarness.screen`** (`meta_harness/service.py:216`): an actor with `harness.review` screens as before; an actor
+  without it needs `harness.screen` (else `FORBIDDEN`). The independence check, the change-path check, the
+  protected-surface check (`PROTECTED_META_SURFACE`) and the leak gate (`LEAK_GATE`) run unchanged and in the same order
+  for both. After the leak gate, a `harness.screen`-only actor holds `CODE_REVIEW_REQUIRED` unless `only_class_a`
+  (`service.py:64`: `surface_class` "A" and every `changed_components[].surface_class` "A"); this holds for a class B
+  candidate before and after the operator's review receipt, so a reviewed class B candidate is still screened by the
+  operator. The gate results (G-16, G-22) and the transition are the same as the operator's.
+- **`StageRunner._advance`** (`meta_harness/stages.py:1084`): a runner with the nightly issuer screens a class A draft as
+  the nightly identity; any other draft stops with `last_stop` `OPERATOR_SCREEN` (class B without a receipt still
+  shows `waiting_for: "review"`).
+- **Night, search phase** (`meta_harness/nightly.py:927`, `LocalNightlyBackend.screen_drafts`): after the proposer runs
+  for the cell, every non-derived draft of the cell is examined: class A drafts are screened as the nightly identity
+  (finding `SCREEN <cell> <pid>: <code>` on a refusal; the draft stays a draft and is examined again on later nights);
+  class B, C and D drafts are left for the operator (finding `OPERATOR_SCREEN <cell> <pid>: class <X>`). The search
+  unit records `screened` and `left_for_operator`. Then candidates are ranked, measured by their screening stage under
+  derived approvals and queued for the focused gate as before. A dry run screens nothing. The ablation still runs after
+  the operator-approved focused stage (confirmation phase), not in the search phase.
+- **Night, screening design (PB12)** (`LocalNightlyBackend.screening_run`): unchanged. A row runs only when its "on"
+  factors equal a waiting screened candidate; every other row is counted `unbuilt`. The night never submits a proposal
+  (it holds no `harness.propose`, and IC-30 (A) admits the mechanical screen only); building design rows is the open
+  decision IC-33 below. Factor names now carry the slot's new ref (`<slot>=<id>@<revision>`, `<slot>=none` for an
+  emptied slot, `LocalNightlyBackend._factors_of`); before this change `_factors_of` read a missing attribute
+  (`ComponentChange` has `after`, not `to`, `meta_harness/manifest.py:90-95`) and named every factor `<slot>=none`.
+- **Open**: the factors of a night's PB12 design still come only from screened candidates whose screening has not run.
+  The night's own class A drafts are screened in the search phase, which runs after the screening design, and are
+  measured there, so they become PB12 factors only when a night stops before measuring them. The HTTP endpoint
+  `POST /api/v3/meta/{proposal_id}/screen` still requires `harness.review` (`control_plane/api_v3/server.py:845`); the
+  nightly identity does not use it.
+
+## Open Operator Decision IC-33 (Not Implemented)
+
+A PB12 design row (§8.7) runs only when a screened candidate with exactly the row's "on" factors waits for its
+screening, so most rows of a night's design stay `unbuilt`. Building the missing rows means submitting new proposals
+(a champion plus the row's class A components) and the observation records they cite; IC-30 (A) did not decide that,
+so it is not implemented.
+
+| IC | Options | Recommendation |
+|---|---|---|
+| IC-33 | (A) **the night builds** a class A row (every "on" factor class A, at most one per slot) as a proposal of the cell's effective champion, through an in-process proposer identity, then screens it under IC-30 (A); the observation the proposal cites is marked with its own trust (not `verifier`), since the screen's `NO_EVIDENCE_CHANGE` check (`meta_harness/service.py:289`) only asks for a non-empty `observation_refs` and cannot tell night-written evidence apart. (B) **never build**: rows without a matching candidate stay `unbuilt` (today's rule). (C) **the operator builds during the day**: a command lists the night's unbuilt rows and submits them as proposals under the operator's `harness.propose`; the night screens and measures them on a later night. | None recorded: the operator decides. (A) lets one unattended process author, evidence and screen the same proposal, which the independence check (`MetaHarness._independent`, `service.py:116-124`: the actor's subject id against the proposer id, and `harness.propose`) does not catch. |

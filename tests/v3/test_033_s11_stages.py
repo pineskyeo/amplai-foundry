@@ -2735,10 +2735,31 @@ def test_the_default_issuer_is_the_human_operators(w: World) -> None:
     assert runner.issuer.human and runner.actor == w.ops.operator
 
 
-def test_a_nightly_runner_never_screens_a_draft(w: World) -> None:
+def test_a_nightly_runner_screens_a_class_a_draft_as_the_nightly_identity(w: World) -> None:
+    """IC-30 (A): the nightly runner screens a class A draft itself (harness.screen), then asks
+    for the screening stage's derived approval (refused here, so nothing runs)."""
     pid = w.propose("a2")
+    asked: list[dict[str, Any]] = []
+
+    def refuse(plan: dict[str, Any]) -> dict[str, Any]:
+        asked.append(plan)
+        raise Hold("STANDING_APPROVAL", "no standing approval in this test")
+
+    runner = nightly_runner(w, refuse)
+    runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    hold("STANDING_APPROVAL", runner.advance, pid)
+    assert w.state(pid) == "screened" and w.executor.calls == []
+    assert len(asked) == 1  # the screening stage's plan, after the screen
+    assert w.head(pid)["data"]["gate_results"]  # the same screen gate as the operator's
+
+
+def test_a_nightly_runner_never_screens_a_class_b_draft_even_after_the_review(w: World) -> None:
+    pid = w.propose("b2")
     runner = nightly_runner(w)
     runner.plan(pid, cell_id=CELL, root_budget=BUDGET)
+    steps = runner.advance(pid)
+    assert w.step(steps, "screening").waiting_for == "review" and w.state(pid) == "draft"
+    w.ops.review(pid, outcome="pass", note="read the diff of both components")
     steps = runner.advance(pid)
     assert w.state(pid) == "draft" and w.executor.calls == []
     assert runner.last_stop == {"stage": "screening", "code": "OPERATOR_SCREEN"}

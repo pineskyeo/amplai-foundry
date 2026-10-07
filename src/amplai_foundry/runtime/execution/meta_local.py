@@ -91,8 +91,11 @@ PROPOSER_PERMISSIONS = frozenset({"harness.propose"})
 NIGHTLY_ID = "amplai-meta-nightly"
 NIGHTLY_ACTION = "nightly.explore"
 NIGHTLY_PERMISSION = "nightly.approve"
+# IC-30 (A, operator decision 2026-10-07): ``harness.screen`` lets the nightly identity run the
+# mechanical screen (protected surfaces, leak gate) of a class A draft (``MetaHarness.screen``);
+# class B, review, reject and every human gate stay out of reach (NIGHTLY_EXCLUDED)
 NIGHTLY_PERMISSIONS = frozenset(
-    {"experiment.approve", "experiment.run", "corpus.read", "execution.approve"}
+    {"experiment.approve", "experiment.run", "corpus.read", "execution.approve", "harness.screen"}
 )
 # never held by the nightly identity (IC-17); an actor holding any of them is not the nightly one
 NIGHTLY_EXCLUDED = frozenset(
@@ -121,7 +124,8 @@ CALIBRATION_PLAN_SCHEMA = "amplai.calibration-plan.v1"  # evaluation/calibration
 
 def nightly_actor(scope: Scope) -> Actor:
     """The service identity the nightly runner acts as (IC-17): exploratory approvals under a
-    current standing approval, trial runs and trial-goal approvals; nothing else."""
+    current standing approval, trial runs and trial-goal approvals, and the mechanical screen of
+    class A drafts (IC-30); nothing else."""
     return Actor(NIGHTLY_ID, scope, NIGHTLY_PERMISSIONS, "service", "local-meta-nightly")
 
 

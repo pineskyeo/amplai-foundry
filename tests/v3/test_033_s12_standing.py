@@ -145,16 +145,18 @@ def hold_code(fn: Any, *args: Any, **kwargs: Any) -> tuple[str, str]:
 # --- the identity and the permission tables ----------------------------------------------------
 
 
-def test_the_nightly_identity_is_a_service_with_exactly_four_permissions(env: Env) -> None:
+def test_the_nightly_identity_is_a_service_with_exactly_five_permissions(env: Env) -> None:
     actor = env.nightly
     assert (actor.subject_id, actor.kind, actor.scope) == (
         "amplai-meta-nightly",
         "service",
         env.scope,
     )
+    # IC-30 (A): harness.screen (the mechanical screen of class A drafts) is the fifth
     assert actor.permissions == {"experiment.approve", "experiment.run", "corpus.read",
-                                 "execution.approve"}  # fmt: skip
+                                 "execution.approve", "harness.screen"}  # fmt: skip
     assert actor.permissions == NIGHTLY_PERMISSIONS
+    assert "harness.screen" not in NIGHTLY_EXCLUDED
     for forbidden in ("corpus.holdout.evaluate", "canary.approve", "canary.run", "release.promote",
                       "release.rollback", "harness.review", "harness.propose",
                       "experiment.reconcile", "nightly.approve"):  # fmt: skip
