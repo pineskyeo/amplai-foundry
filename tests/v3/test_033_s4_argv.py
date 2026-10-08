@@ -26,6 +26,7 @@ from amplai_foundry.runtime.execution.cells import (
 MODEL = "pinned-model-1"
 SESSION = "0f3a9c1e-7b52-4d0a-9d55-2a3c1b6e8f10"
 CLAUDE_TOOLS = "Read,Edit,Write,Glob,Grep,Bash"
+WEB_OFF = ["-c", 'web_search="disabled"']  # decision (C): on every Codex argv
 ALL_CLAUDE_OPTIONS = frozenset({"max_turns", "append_system_prompt", "allowed_tools"})
 
 
@@ -64,7 +65,7 @@ def test_codex_exec_carries_the_effort_as_a_config_override(tmp_path: Path, auth
     driver = make_driver(tmp_path, "codex", auth)
     assert driver.argv("Fix it.", options=opts("high")) == [
         "codex", "--ask-for-approval", "never", "exec", "--json", "--model", MODEL,
-        "-c", "model_reasoning_effort=high",
+        "-c", "model_reasoning_effort=high", *WEB_OFF,
         "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "Fix it.",
     ]  # fmt: skip
 
@@ -73,7 +74,7 @@ def test_codex_exec_resume_carries_the_effort_too(tmp_path: Path) -> None:
     driver = make_driver(tmp_path, "codex")
     assert driver.argv("go on", session=SESSION, options=opts("xhigh")) == [
         "codex", "--ask-for-approval", "never", "exec", "resume", SESSION, "--json",
-        "--model", MODEL, "-c", "model_reasoning_effort=xhigh",
+        "--model", MODEL, "-c", "model_reasoning_effort=xhigh", *WEB_OFF,
         "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "go on",
     ]  # fmt: skip
 
@@ -84,17 +85,21 @@ def test_every_documented_codex_effort_appears_exactly_once(
     tmp_path: Path, effort: str, session: str | None
 ) -> None:
     argv = make_driver(tmp_path, "codex").argv("p", session=session, options=opts(effort))
-    assert argv.count("-c") == 1
+    assert argv.count("-c") == 2  # the effort and decision (C)'s web search override
     assert argv[argv.index("-c") + 1] == f"model_reasoning_effort={effort}"
+    assert argv[argv.index("-c") + 2 : argv.index("-c") + 4] == WEB_OFF
     assert argv[-1] == "p"  # the prompt stays the last element
     assert "--effort" not in argv  # Claude's flag never reaches Codex
 
 
-def test_codex_without_an_effort_has_no_config_override(tmp_path: Path) -> None:
+def test_codex_without_an_effort_has_only_the_web_search_override(tmp_path: Path) -> None:
     driver = make_driver(tmp_path, "codex")
     for options in (None, DispatchOptions.default(MODEL)):
-        assert "-c" not in driver.argv("p", options=options)
-        assert "-c" not in driver.argv("p", session=SESSION, options=options)
+        for argv in (driver.argv("p", options=options),
+                     driver.argv("p", session=SESSION, options=options)):  # fmt: skip
+            assert argv.count("-c") == 1
+            i = argv.index("-c")
+            assert argv[i : i + 3] == [*WEB_OFF, "--skip-git-repo-check"]
 
 
 def test_codex_config_overrides_follow_the_effort_and_need_the_allowlist(
@@ -117,7 +122,7 @@ def test_codex_config_overrides_follow_the_effort_and_need_the_allowlist(
     # a config override alone (no effort) is still `-c k=v` before --skip-git-repo-check
     alone = driver.argv("p", options=opts(None, codex_config=(("some_key", "1"),)))
     j = alone.index("-c")
-    assert alone[j : j + 3] == ["-c", "some_key=1", "--skip-git-repo-check"]
+    assert alone[j : j + 5] == ["-c", "some_key=1", *WEB_OFF, "--skip-git-repo-check"]
 
 
 def test_codex_refuses_claude_driver_options(

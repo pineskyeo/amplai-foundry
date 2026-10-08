@@ -31,6 +31,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from amplai_foundry.agent_drivers.cli import CODEX_WEB_SEARCH_OFF
 from amplai_foundry.agent_drivers.protocol import EventNormalizer, JsonlDecoder
 from amplai_foundry.agent_drivers.qualification import MANDATORY, QualificationRunner
 from amplai_foundry.runtime.reference import ReferenceDeployment
@@ -142,9 +143,10 @@ class ContainerTurns:
         args = ["codex", "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        # Same argv as production CliDriver.argv (D-073: the container is the sandbox).
+        # Same argv as production CliDriver.argv (D-073: the container is the sandbox), including
+        # operator decision (C), 2026-10-08: hosted web search off on every dispatch
         args += [
-            "--json", "--model", self.model, "--skip-git-repo-check",
+            "--json", "--model", self.model, *CODEX_WEB_SEARCH_OFF, "--skip-git-repo-check",
             "--dangerously-bypass-approvals-and-sandbox",
         ]  # fmt: skip
         return [*args, prompt]

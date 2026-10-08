@@ -3191,3 +3191,349 @@ The first pilot calibration stopped on two successful trials that appended tests
 (A): a trial's `safety_failures` counts a deleted test file or an existing test file with a removed or changed line
 (`diff_stats.tests_changed`); appending tests to an existing test file is ordinary work (`tests_extended`, recorded,
 not a safety failure). New test files stay `tests_added`. Protected paths and `SECRET_DETECTED` are unchanged.
+
+## Open Operator Decision IC-34: What `usage.input_tokens` Counts (Not Merged)
+
+The P8 pilot fix in the working tree changes what the 3.0.0 `usage.input_tokens` of a Claude run and of a Claude
+read-only turn counts. Before it, the value was Anthropic's own `input_tokens`, which excludes cache; with it, the
+value is `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` (`agent_drivers/protocol.py`
+`input_total`, used by `EventNormalizer` for the run usage and by `readonly_turn._claude_usage` for planner,
+auxiliary and judge turns). Codex values do not change: Codex `input_tokens` already contains its cached input and
+cache writes (`INPUT_INCLUDES_CACHE`, D-094). D-094 fixed only how pricing splits the usage detail into exclusive
+buckets and kept the 3.0.0 `usage` object as it was; it did not say what `input_tokens` means across providers. The
+change therefore needs an operator decision before merge. The D-entry is written after the operator chooses
+(`DECISIONS.md` takes accepted decisions only).
+
+**Who reads the count** (each counts `input_tokens + output_tokens`):
+
+- §5.3 node budgets (`(max_tokens − aux_max_tokens) // (max_attempts × nodes)`) and the run reservation and overrun
+  rules (`verification/runtime/service.py:470-478`).
+- §5.3 / IC-21 `limits.aux_max_tokens` (`StrategyRunner`, `strategy_runner.py:403`; `product.py:1682`).
+- §5.3 / §7.1 / §8.3 the trial reservation (`max_trial_tokens`; the qualified executor's `per_trial_tokens`) and its
+  settlement: a trial whose tokens exceed its reservation is an overrun (`meta_harness/budget.py:150`), which stops a
+  calibration (`evaluation/calibration.py:733-734`) or an experiment (`evaluation/service.py:759-760`) and blocks
+  further admission on that root (`META_PRIOR_OVERRUN`, `budget.py:93-94`).
+- §2.8 `calibration-summary` `tokens_per_solved` (`trial_metrics.py:770-793`), decider tables `cost_tokens_mean`
+  (`deciders.py:551`), the dashboard `tokens_mean` (`dashboard.py:1756`).
+- §3.13 / §8.6 `QuotaWindow.input_tokens` (`quota.py`: the run's `usage.input_tokens`) and the suggested nightly
+  budget B (median tokens per trial). `QuotaWindow.cached_input_tokens` stays the usage detail's cache-read count;
+  under (A) it is a part of `input_tokens` for both providers, under (B) it is a part for Codex and an addition for
+  Claude.
+
+**Stored facts** (meta store `~/.amplai/meta/runtime/runtime.sqlite3`, read 2026-10-08):
+
+| Record | Old meaning | New meaning |
+|---|---|---|
+| `run-730c167378a14c84b059c83c2cdd11e3` (opus, `usage-detail-0f803a17b208ebbdd7f99eed843439e2`) | input 20, output 9,363 | input 368,551 (20 + cache read 324,979 + cache write 43,552) |
+| `run-a0457c0f3232464e9c6f4708a7b8b5f1` (sonnet, `usage-detail-8a500eb56e4e1771f4b5941f0c80e079`) | input 34, output 14,896 | input 993,753 |
+| `caltrial-e7e21a61918b4e6381680c52601c1026` (that sonnet run + planner input 20, output 5,514) | 54 + 20,410 = 20,464 | ≥ 1,014,183 (planner cache not stored) |
+
+- Plan `calplan-d6b91d293f9a69fc39678e74`: Claude trials record input 28, 54, 12, 6, 8, 4; Codex trials record
+  65,248 – 553,726. Its `calsum-calplan-d6b91d293f9a69fc39678e74` gives `tokens_per_solved` 10,047 (opus) and 30,381
+  (sonnet) beside 1,098,051 (codex medium). Every trial reserved 1,000,000 tokens
+  (`executor-qualification-f265285b7726440da6b01e60feaf2df7`, basis "per-trial ceiling from the first measured
+  trial (410k)").
+- Four of the six Claude trials ran no agent run (planner turn only: `caltrial-13b9f029…`, `caltrial-6c525766…`,
+  `caltrial-a5efb133…`, `caltrial-a945422a…`). The trial receipt keeps a planner turn's usage as `input_tokens` and
+  `output_tokens` only (e.g. `caltrial-8983599a…` receipt `planner.usage` `{"input_tokens": 8, "output_tokens":
+  3321}`), because the old `ClaudeReadOnlyTurn` dropped the cache fields. Their cache counts are not stored anywhere,
+  so these records cannot be recomputed in the new meaning; only the run part of a trial can (from the run's
+  `usage.source_ref` usage detail).
+- Budgets in force for the bench app: `limits.baseline` `max_tokens` 60,000,000, `max_attempts` 3, `aux_max_tokens` 0
+  (harness-component `limits.baseline`); node budget 20,000,000 / nodes. The node count per bench goal is 확인 필요.
+
+**Decision 1: the meaning of `input_tokens`.**
+
+| Option | Consequence |
+|---|---|
+| (A) every input token the turn sent, cache included, for every provider (the working tree) | Budgets, trial tokens and quota windows compare the same quantity across cells. Only Claude values change meaning; Codex records stay valid. The Claude trial reservation must be resized: under (A) `caltrial-e7e21a61…` exceeds the 1,000,000 reservation and would have stopped the calibration as an overrun. Node budgets (20,000,000 / nodes) exceed every run of the plan (largest new-meaning run 1,008,649 tokens, `run-a0457c0f…`); `aux_max_tokens` is 0, so no auxiliary cap changes today. |
+| (B) the provider's own count (revert `input_total` in `EventNormalizer` and `_claude_usage`) | No stored record changes meaning. Claude budgets keep admitting turns whose real input is about 18,000× the counted value (run-730c…: 20 vs 368,551); cross-provider token figures (`tokens_per_solved`, `cost_tokens_mean`, quota B) keep comparing Codex with cache against Claude without cache. Comparable totals would need every reader to recompute from usage details, which read-only turns do not store. |
+| (C) uncached input only, for every provider (Codex `input − cached − cache_write`) | Changes the meaning of every Codex record and of the executor qualification sized from a Codex trial (410k). Rejected in this recommendation: it moves more records than (A) and drops the cache reads that dominate subscription usage (D-094 Reason: 89 % of a Codex run's input). |
+
+**Decision 2: records stored under the old meaning** (only if (A)).
+
+| Option | Consequence |
+|---|---|
+| (i) recompute old Claude records when reading them | Possible for the run part only; planner and auxiliary turns have no stored cache counts, so 4 of the 6 Claude trials of the plan stay old-meaning and the other 2 become lower bounds. Readers would need a marker telling old records from new ones (e.g. the receipt `harness_sha`). |
+| (ii) mark the plan's Claude token figures as old-meaning and unusable for budget sizing, and size from a calibration run after the change | No reader change; the plan was stopped anyway (`budget_overrun_or_unknown_usage`, unknown usage of `caltrial-441e1077…`). Quota windows over nights before the change mix meanings for Claude and are read as such. |
+| (iii) re-run the plan's Claude cells under the new meaning | Spends subscription quota; gives comparable figures for the same tasks. |
+
+| IC | Recommendation |
+|---|---|
+| IC-34 | Decision 1 (A); Decision 2 (ii), with a new calibration plan after merge (which is (iii) for every cell). Until the operator decides: the working-tree change is not merged, and no `max_trial_tokens`, `per_trial_tokens` or nightly budget B is sized from `calplan-d6b91d293f9a69fc39678e74` (its Claude token figures are old-meaning, and its Codex high cell has an unknown trial). |
+
+## Operator Decision IC-34 And Unknown-Usage Charging (2026-10-08)
+
+The operator chose the textbook option on 2026-10-08. The two parts below are implemented in the working tree (not
+committed). Parts (C) (Codex hosted web search off, answer-lookup attempts recorded and the trial FAILED) and (D) (no
+git object beyond the base commit in the trial workspace) are implemented elsewhere and are not described here.
+
+**(A) `usage.input_tokens` is every input token, cache included, for every provider.** This is Decision 1 (A) of
+IC-34. The cache amounts stay separate in the usage detail (D-094). Where the meaning is produced and consumed:
+
+- Produced: `agent_drivers/protocol.py` `input_total` (Claude: `input_tokens + cache_read_input_tokens +
+  cache_creation_input_tokens`; Codex unchanged, it already contains its cache) for the run usage (`EventNormalizer`)
+  and for Claude read-only turns (`runtime/execution/readonly_turn.py` `_claude_usage`). A Claude read-only turn also
+  keeps `cache_read_input_tokens`, `cache_creation_input_tokens` and, when Anthropic reports them under
+  `cache_creation`, `ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens`. A Codex read-only turn keeps its
+  `turn.completed` usage as before.
+- Counted as `input_tokens + output_tokens`, code unchanged, now including Claude cache: run reservations and
+  overruns (§5.3), `AuxLedger` / `usage_tokens` (`strategy_runner.py:240`), `worker.sum_usage`, trial tokens
+  (`local_executor.py` `_usage`), the trial reservation settlement (§7.1, §8.3), `tokens_per_solved` (§2.8,
+  `calibration.py`, `trial_metrics.py`), `cost_tokens_mean`, the dashboard `tokens_mean`,
+  `QuotaWindow.input_tokens` and nightly budget B (§3.13, §8.6).
+- Cache counts are a part of `input_tokens`, never an addition: `QuotaWindow.cached_input_tokens` (read from the
+  usage-detail record's `fields`, `quota.py:104-107`) and the trial-metrics `tokens.cached_input`.
+- Pricing never adds cache to `usage.input_tokens`: a run is priced from its usage detail, which keeps the provider's
+  own fields (`input_includes_cache` false for Claude), split into exclusive buckets (`evaluation/pricing.py`
+  `buckets`). A planner, auxiliary or judge turn is now priced the same way: `protocol.turn_detail` rebuilds the
+  D-094 detail from the turn's usage (Claude uncached input = total − cache read − cache write) and
+  `trial_metrics._turn_detail` picks the provider from the price-table row of the turn's model
+  (`PRICE_PROVIDER`: `anthropic` → `claude`, `openai` → `codex`). A turn without a cache breakdown (a Claude turn
+  stored before this change kept input and output only) or a model without a price row is priced as before, all
+  input at the uncached rate with `upper_bound` true. This closes the review finding that aux and planner turns
+  were priced as a large overestimate under the new meaning.
+- Decision 2 of IC-34 is not stated separately in the decision text. This clarification applies (ii), the
+  recommendation: records stored under the old meaning are not rewritten or recomputed;
+  `calplan-d6b91d293f9a69fc39678e74`'s Claude token figures are old-meaning and are not used to size
+  `max_trial_tokens`, `per_trial_tokens` or nightly budget B. Sizing uses a calibration run after this change. The
+  executor qualification's `per_trial_tokens` 1,000,000 (`executor-qualification-f265285b7726440da6b01e60feaf2df7`)
+  needs a new qualification record sized from such a run (operator action, not done here).
+
+**(B) A trial with unknown usage is charged its reservation and the run continues.**
+
+- Rule (`evaluation/service.py` `usage_unknown`, `unknown_usage_charge`): a trial that reports no token count
+  (`input_tokens` or `output_tokens` null) and no unknown effect. `EvaluationService` and `CalibrationService`
+  settle its allocation at the trial's token reservation (an experiment: `min(ExecutorPolicy.max_trial_tokens,
+  max_trial_tokens)`; a calibration: `ExecutorPolicy.max_trial_tokens`) or, when more, at the tokens the parts that
+  did report already add up to (`TrialObservation.known_tokens`, below); the cost is the reported cost, else the
+  larger of the cost reservation and `known_cost_microunits`. At the reservation the allocation is `settled`, not
+  `unknown`, with `overrun` false, so later reservations of the root are admitted (no `META_USAGE_UNKNOWN`) and the
+  run continues. Usage is never recovered from a file the agent can write (the native rollout file of the diagnosis
+  is under the agent's writable home).
+- Known lower bound (`TrialObservation.known_tokens`, `known_cost_microunits`, optional, default null):
+  `LocalTrialExecutor._usage` keeps, for an unknown usage, the sum of every count the planner, auxiliary and run
+  parts did report, and puts both values in the receipt; the services bind them to the receipt when they are not
+  null (`OBSERVATION_BINDING`). Without it a trial whose planner and auxiliary turns already reported more than
+  the reservation, and whose run's usage is unknown, would be charged the reservation and its real overrun hidden.
+  With it the charge is that sum, `budget.py` settle sees `tokens > token_ceiling`, and the run stops with
+  `budget_overrun_or_unknown_usage`. The trial record keeps `known_tokens`.
+- The trial is a missing outcome. Its record keeps the executor's value in `reported_success` and stores `success`
+  null, `outcome_missing: "usage_unknown"` and `charged_tokens`; `input_tokens`, `output_tokens` stay null and
+  `usage_status` stays `unknown`. Every outcome reader already treats `success` null as missing: the analysis
+  (`missing_or_unknown_trials`, `evaluation/analysis.py:328-340`, `:509-548`), the calibration rule and its task
+  class `unknown` (§8.2), the observation cache (`stages.py:2090-2097`) and the trial-metrics `unknown` count.
+- Exception, precedence with (C): a trial whose observation carries an answer-lookup attempt
+  (`TrialObservation.answer_lookup` > 0) keeps `success` False (FAILED, counted as a failure by every outcome
+  reader) and has no `outcome_missing`; it is still charged as above. (C) decides the outcome, (B) the charge: the
+  lookup is recorded evidence about the outcome, the unknown usage a gap in the cost. This follows the literal text
+  of decision (C) ("the trial counts as FAILED"); see the (C) clarification below.
+- Tokens per solved (§2.8) counts an unknown-usage trial at its `charged_tokens` in the numerator and never in the
+  denominator (it is never solved): `evaluation/service.py` `spent_tokens`, used by the `calibration-summary` cells
+  (`calibration.py` `_cell_summary`) and the trial-metrics arm and strategy summaries (`trial_metrics.py`
+  `_tokens_per_solved`). A trial with neither counts nor a charge (an executor fault, a trial stored before (B))
+  makes the value null: unknown is never fewer, as `proposer._tokens_per_solved` (`proposer.py:1555-1566`). Before
+  this, `trial_metrics` counted such a trial as 0 tokens. `calibration-summary` cells gain `usage_unknown_trials`
+  (the trials with `charged_tokens`). Not changed here (other owners): `proposer._tokens_per_solved` returns null
+  for a trial with null counts, charged or not; the dashboard `_per_solved` (`dashboard.py:756-761`) leaves out
+  rows with `success` null, so it leaves out a missing-outcome trial's charge.
+- A run still stops on: an unknown effect (IC-18, the allocation stays `unknown`), a safety failure, a real overrun
+  (reported tokens above the reservation, including the known lower bound of an unknown usage), a guard or a
+  budget hold. Not changed: an experiment whose `cost_basis` is `compared` and whose trial reports tokens but no
+  cost still settles as uncertain and stops (D-088 default). The stop reason identifier
+  `budget_overrun_or_unknown_usage` keeps its name (stored records use it); after this change only an overrun or
+  that cost case gives it.
+- `meta_harness/budget.py` is not changed: in the ledger a ceiling-charged allocation looks like measured usage
+  equal to the reservation (or to the known lower bound); the trial record carries the marker.
+
+**Evaluator version.** `service.py` and `calibration.py` are the evaluator's `SERVICE_FILES`
+(`evaluation/versions.py:34`), so `service_code_digest` changes and `versions.current_version_ref` no longer
+matches `eval-2`. Until a new evaluator version `eval-3` is written (operator requalification), every reader of
+`current_version_ref` sees none: `CalibrationService.summarize` holds `EVALUATOR_UNQUALIFIED`, so does
+`meta_ops.py:1396-1398`, and the nightly preflight lists `EVALUATOR_UNQUALIFIED` (`nightly.py:1210-1211`).
+
+Tests: `tests/v3/test_033_unknown_usage_charge.py` (B: one unknown-usage trial, the run completes, the budget counts
+the reservation, a safety failure and a real overrun still stop, for both services; an answer lookup with unknown
+usage stays FAILED and is charged the reservation, for both services; reported parts above the reservation stop
+the run, below it are charged the reservation; tokens per solved counts the charge, and is null with a trial of no
+recorded tokens; the executor keeps the reported parts of an unknown usage; A: read-only turn detail and pricing),
+`tests/v3/test_033_calibration_usage.py`.
+
+## Clarification: Answer Lookup And Workspace Objects, Decisions (C) And (D) (2026-10-08)
+
+Operator decision 2026-10-08, textbook option, parts (C) and (D). Implemented in the working tree (not committed).
+
+**(C) Codex hosted web search is off for every dispatch.**
+
+- Facts, Codex CLI 0.155.1 in the pinned app image (`deployment/local-container-app-amplai-bench-app.json`,
+  `image` `...@sha256:b8e78ae9...`, `tools.codex`), run with `docker run --rm --network none` and no credential:
+  `codex --help` lists `--search` "Enable live web search. When enabled, the native Responses `web_search` tool is
+  available to the model"; `codex -c web_search=bogus features list` fails with "unknown variant `bogus`, expected
+  one of `disabled`, `cached`, `indexed`, `live`", and `-c 'web_search="disabled"'` loads; `codex features list`
+  shows `web_search_request` and `web_search_cached` as `deprecated` and `standalone_web_search` as
+  `under development` (false). `codex exec --help` and `codex exec resume --help` both list `-c, --config
+  <key=value>` "Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`".
+- Rule: `CliDriver.argv` adds `-c web_search="disabled"` (`agent_drivers/cli.py` `CODEX_WEB_SEARCH_OFF`) as the
+  last config override, right before `--skip-git-repo-check`, on every Codex dispatch (first turn, resume,
+  follow-up, vote candidate). It is an argv override, so a `config.toml` the agent writes in its home (a bind mount)
+  never turns search back on for a later turn. `DispatchOptions.codex_config` naming `web_search`,
+  `tools.web_search`, `features.web_search_request`, `features.web_search_cached` or
+  `features.standalone_web_search` holds `DRIVER_OPTIONS_UNSUPPORTED` (`CODEX_WEB_KEYS`; the allowlist is empty
+  anyway, `policies.py:47`).
+- Golden G2 (§4.2) is amended by this decision: a Codex argv is the frozen c9f896a oracle plus exactly that pair
+  (`tests/v3/test_033_golden_argv.py` `with_web_search_off`; `tests/golden033/argv_oracle.py` unchanged).
+- 확인 필요: whether `web_search = "disabled"` also removes the code-mode tool `tools.web__run` that the pilot trial
+  called (native rollout of `dispatch-9abec031c0a946fe9438a1d45ed3c6b2`, record 58, a `custom_tool_call` `exec`).
+  Only a real Codex run shows it; the detection below is the backstop either way.
+- Read-only Codex turns too (review fix of the integrity change): `CodexReadOnlyTurn.argv`
+  (`runtime/execution/readonly_turn.py:226-235`; the planner, reviewer, investigator, judge, proposer and effort-probe
+  turns) carries the same pair as its last config override, right before `--skip-git-repo-check`. Golden G4 is
+  amended by exactly that pair (`tests/v3/test_033_s4_readonly_turn.py` `codex_oracle`,
+  `tests/v3/test_033_golden_argv.py` `test_the_planner_argv_equals_the_oracle`). `codex exec --help` in the pinned
+  image lists both `-c, --config <key=value>` and `--output-schema <FILE>` on `codex exec`. The qualification argv
+  (`scripts/container_qualify.py:146-151`) carries it too, so it again equals the production argv
+  (`tests/v3/test_rc06_foundation.py` loads the script and compares). An effort probe's `argv_digest` changes with the
+  argv; it is recorded only, never compared (`cells.py:507`).
+- Claude: the executor argv passes `--allowedTools Read,Edit,Write,Glob,Grep,Bash` (`cli.py:58`, `:204-209`); the
+  read-only turns pass `--allowedTools Read,Glob,Grep` (`readonly_turn.py:337`). `claude --help` (2.1.292, pinned
+  image, `docker run --rm --network none`) describes `--allowedTools` as "Comma or space-separated list of tool names
+  to allow", `--disallowedTools` as "Comma or space-separated list of tool names to deny" and `--tools` as "Specify the
+  list of available tools from the built-in set. Use "" to disable all tools, "default" to use all tools, or specify
+  tool names". Stored fact: the qualification turn `exact_session`/`ordered_events` (`container_qualify.py:386`, argv
+  `--allowedTools Read`, `:139`) in the same image and version has a `system`/`init` event whose `tools` list
+  includes `WebSearch` and `WebFetch` (and `Bash`, `Edit`, `Write`), `permissionMode` `auto`
+  (`specs/033-harness-taxonomy/runs/artifacts/claude-exact_session-stream.bin`; `default` in
+  `claude-cancel_tree-stream.bin`). So `--allowedTools` does not take the web tools out of the model's tool set.
+  Whether a call of one is then denied in `-p` mode (no permission-mode flag; `--permission-prompts` default `host`)
+  is 확인 필요: no stored stream calls one (`permission_denials` empty, `server_tool_use` web requests 0), and only a
+  real turn with a credential shows it. Changing the Claude argv amends golden G2 and is outside decision (C)'s text
+  ("Codex hosted web search"), so it is Open Operator Decision IC-35 below, not implemented. A Claude web tool use is
+  detected and fails the trial either way (executor and read-only turns).
+
+**(C) Answer-lookup attempts are recorded and fail the trial.**
+
+- Source: the raw provider events the driver reads from the agent CLI's stdout (`CliDriver._collect`), before the
+  normalizer; only what the agent asked for (a command, a tool name and its input), never a command's output and
+  never a file the agent can write.
+- Rules (`agent_drivers/answer_lookup.py`, three kinds): `outside_workspace_search`: `find`, `fd`, `tree`,
+  recursive `grep`, `rg`/`ag`/`ack`, `ls -R` whose root is outside `/workspace`, any `locate`, plain `ls` of `/` or
+  the home, Claude `Grep`/`Glob` with such a path (`/tmp` is the container's own empty tmpfs and does not count, nor does Codex's own skill directory
+  `/home/agent/.codex/skills`, the skill root its instructions name, rollout record 2);
+  `git_history`: `git fsck`, `git reflog`, `git log`/`rev-list`/`shortlog`/`whatchanged`/`show-branch` with
+  `--all`, `--reflog`, `-g`, `--branches`, `--tags`, `--remotes` or `--glob`, `git cat-file --batch-all-objects`,
+  a recursive listing of a `.git` directory, reading `.git/objects`, `.git/logs` or `.git/lost-found`;
+  `web_search`: a Codex item or event whose type names web search, an item or tool named `web.run`/`web__run`/
+  `web_search`/`browser...`, a code-mode tool input calling one, a Claude `WebSearch`/`WebFetch` tool use or
+  `server_tool_use`, a Claude `result` with `server_tool_use` web requests above 0. A command is read as a shell
+  script (`&&`, `||`, `;`, `|`, newlines, `$(...)`, backticks; `cd` moves the directory relative paths resolve
+  from; `bash -c` scripts, `sudo`/`env`/`timeout`/`xargs` prefixes and heredoc bodies handled). `git status`,
+  `git diff`, `git show`, `git log` of `HEAD`, `grep -r`/`rg` inside the workspace and reads of system files never
+  match. Not detected: searches written in another language (`python -c "os.walk('/')"`) and a `cd` in one Claude
+  `Bash` call followed by a relative search in a later call. Codex `exec --json` item shapes beyond
+  `command_execution` (`command`, `cwd`) are not recorded for 0.155.1 (§14 Q14), so other items are matched by type
+  and name fields only; both recorded `command` shapes (argv list in the native rollout, one string in
+  `specs/015-external-qualification/artifacts/codex-stream-sol.jsonl`) are read.
+- Recording: `CliDriver._note_lookups` keeps the findings in the dispatch's driver journal as `answer_lookup` (at most
+  20, no duplicates, evidence at most 300 characters) before `EventNormalizer.accept`, so an event the normalizer
+  refuses is recorded first. Evidence that holds a `scan_secrets` pattern or one of the dispatch's credential values
+  is replaced by a withheld marker (a secret would make the receipt admission refuse, `cas.py:82-88`). A dispatch
+  without a finding keeps its journal bytes. `worker.driver_lookups` reads them through the port
+  (`CliDriver.answer_lookup`, found as `port_trace` finds a trace; no `poll` or other lifecycle call) and copies the
+  entries (with `dispatch_id`) into the
+  worker-execution head `answer_lookup` when the execution reaches `verifying` or `held` (`_complete`, `_fail`,
+  `continue_resumed`), vote candidates' handles included.
+- Trial: `LocalTrialExecutor._counters` collects them per run (with `run_id`, at most 50); `_observe` then sets
+  `success` False whatever the goal reached, and the receipt v2 gains the additive field `answer_lookup` (the
+  evidence list; empty when none), `detail` "answer lookup: <rule>", and the proof counters `answer_lookup` (count).
+  It is not a safety failure: it stops nothing (IC-18 unchanged).
+- Trial metrics: `guards.answer_lookup` (count; optional in the record schema, so older records stay valid).
+  `TrialMetrics.guards` adds the finding `answer_lookup: +N trials ...` when the candidate arm has at least
+  `hack_guards.answer_lookup` more trials with a lookup than the baseline; a stage plan that names no such threshold
+  (every plan frozen before this) uses +1. A finding fails screening with `HACK_GUARD` (§9.10).
+- Recorded case (`caltrial-441e1077…`, rollout records 37, 44, 51, 58): `git log --oneline --all`,
+  `git fsck --full --no-reflogs --unreachable`, `find / -type f ... -name '*amplai*'`, `find /workspace/.git -type
+  f`, `tools.web__run({search_query: [...]})`; each is a test case (`tests/v3/test_033_answer_lookup.py`).
+- Read-only turns (review fix of the integrity change): the planner, reviewer, investigator, lead/split/steps, judge
+  and proposer turns decode their own events (`readonly_turn.py`), so each `run` scans them itself:
+  `answer_lookup.scan_turn` (`answer_lookup.py:594`) runs `scan_event` over every decoded event (same rules, same
+  20-entry cap and withholding; the withheld literals are the Claude token and the leased Codex `auth.json` values as
+  seeded and as left, now read for every Codex turn, not only a captured one). The turn's own mounts are not outside
+  (`scan_event(..., inside=...)`: Codex `SCHEMA_MOUNT` and the `mounts` it was given, e.g. a multi-app planner's
+  `/amplai-input/apps/<app>`; `/` is never accepted as one). The findings ride in the turn's usage as
+  `answer_lookup` (`readonly_turn.LOOKUP_KEY`, `_with_lookups`), so they are stored wherever the usage already is,
+  with no change to the callers: the plan record's `planner_usage` (`product.py:927`, `:1159`; also the receipt's
+  `planner.usage`) and each `aux_usage` entry's `usage` (`strategy_runner.py:726`). A turn without a finding returns
+  exactly its old usage; a turn that reported no usage but has a finding returns `{"input_tokens": null,
+  "output_tokens": null, "answer_lookup": [...]}` (still unknown usage). `LocalTrialExecutor._counters` appends
+  `_turn_lookups(plan)` (`local_executor.py:916`) after the run entries, under the same 50-entry cap: planner entries
+  carry `turn: "planner"`, auxiliary ones `turn: "aux:<role>"` and `node_id`, and no `run_id`. `_observe` then fails
+  the trial as for a run finding; the evaluation binding counts the list length only (`evaluation/service.py:282-286`),
+  and the trial-metrics guard counts the receipt list, also for a planner-only trial.
+- Not covered (read-only turns): a turn that fails (`TURN_FAILED`, `TURN_OUTPUT`, `TURN_TIMEOUT`) returns no
+  `TurnResult`, so its findings are lost (`strategy_runner.py` records `usage` null with the error; a planner Hold
+  leaves no `planner_usage`); such a trial is held or failed, never a success. A replan overwrites `planner_usage`
+  with the new planner turn's (`product.py:1159`), so an earlier revision's planner findings are not kept. Judge and
+  proposer turns keep their findings in their own usage records (`judges.py:297`, `proposer.py:546-561`) and fail no
+  trial (they are not trial turns).
+- Precedence with (B), a trial with both an answer lookup and unknown usage (the recorded case: its turn never
+  completed): (C) decides the outcome, (B) the charge. The executor passes the evidence count as
+  `TrialObservation.answer_lookup` (`local_executor.py` `_observe`); the evaluation side (the (B) change in the same
+  working tree, `evaluation/service.py`) binds it to the length of the receipt's `answer_lookup` list
+  (`OBSERVATION_BINDING`), refuses a non-failed observation that carries it (`TRIAL_TYPE`), and
+  `unknown_usage_charge` keeps `success` False (no `outcome_missing`) while it still charges the reservation. That
+  supersedes the "Open for the (C) implementer" bullet of the IC-34 section above.
+
+**(D) A trial workspace holds no git object beyond the base commit.**
+
+- Mechanism, unchanged: `GitWorkspaceManager.materialize` extracts `git archive <commit>` into a fresh directory
+  (`git_workspace.py:179`, `:196`), runs `git init -q -b amplai` there and commits the tree once as
+  "amplai base <commit>" (`:182`, `:224-232`). No object, ref, reflog entry or pack of the source repository is
+  copied; a repair copy applies the previous patch with `git apply` (no object written).
+- Facts (2026-10-08, read-only): the bench base repo `~/.amplai/repos/amplai-bench-app` has one commit
+  (`8432e64…`) and 73 objects, 41 reachable and 32 unreachable blobs (their first lines are bench module docstrings,
+  e.g. "Non-throwing validation for order CSV files."). A workspace materialized from it in a temp directory held 41
+  objects, exactly the base tree plus its own commit; `git fsck --unreachable --no-reflogs` printed nothing; none of
+  the 32 blobs was present; no pack; the source repository was unchanged. In the pilot trial, `git log --all` showed
+  one commit and `git fsck --unreachable` printed nothing (rollout records 39, 46).
+- Tests: `tests/v3/test_033_workspace_objects.py` (a source with a later commit, a branch, a tag, an amended commit
+  and a dangling blob: the workspace odb equals the base tree plus its own commit; fsck finds nothing; no object of
+  the later history; a repair copy adds none).
+- Noted, not changed: the workspace commit message and the implementer prompt (rollout record 8) both name the source
+  commit id, which the pilot trial used as a web search query. It is not an object (D); web search off and the
+  detection cover it.
+
+## Open Operator Decision IC-35: Claude Web Tools (Not Implemented)
+
+The ask: decision (C) turned Codex hosted web search off. Should the Claude argv also turn Claude's `WebSearch` and
+`WebFetch` off? Today a Claude trial still has them in its tool set, and whether a call is refused is not known. A
+call is detected and fails the trial either way (clarification above). Turning them off amends golden G2 (executor)
+and G4 (read-only turns) for Claude, and decision (C)'s text names only Codex, so it is not implemented before the
+operator decides (user rule: contract changes are decided first).
+
+Facts (pinned image, Claude Code 2.1.292, `claude --help` with `docker run --rm --network none`, no credential):
+
+- Production argv: `--allowedTools Read,Edit,Write,Glob,Grep,Bash` (`cli.py:58`, `:204-209`); read-only turns
+  `--allowedTools Read,Glob,Grep` (`readonly_turn.py:337`); qualification `--allowedTools <tools>`
+  (`container_qualify.py:139`). No `--permission-mode`, `--tools` or `--disallowedTools` anywhere.
+- Help text: `--allowedTools` "Comma or space-separated list of tool names to allow"; `--disallowedTools` "Comma or
+  space-separated list of tool names to deny"; `--tools` "Specify the list of available tools from the built-in set.
+  Use "" to disable all tools, "default" to use all tools, or specify tool names"; `--permission-prompts` "Who
+  answers permission prompts with --print: "host" (the SDK host or --permission-prompt-tool) or "none" (nobody:
+  anything that would prompt is denied automatically ...)", default `host`.
+- Stored stream (`specs/033-harness-taxonomy/runs/artifacts/claude-exact_session-stream.bin`, the qualification
+  PONG turn with `--allowedTools Read`, `container_qualify.py:386`): the `system`/`init` `tools` list has 24 tools,
+  among them `WebSearch`, `WebFetch`, `Bash`, `Edit`, `Write`, `Task`; `Glob` and `Grep` are not in it;
+  `permissionMode` `auto`. No stored stream calls a web tool (`permission_denials` empty, `server_tool_use` web
+  requests 0).
+- 확인 필요: whether `-p` with these flags refuses a `WebSearch`/`WebFetch` call, and whether `--disallowedTools`
+  removes the tools from the `init` list or only denies calls. Only a real turn with a credential shows either.
+
+| Option | Consequence |
+|---|---|
+| (A) add `--disallowedTools WebSearch,WebFetch` right after `--allowedTools <list>` in every Claude argv (`CliDriver.argv`, `ClaudeReadOnlyTurn.argv`, `container_qualify.py`) | The smallest change, the counterpart of Codex's single switch: the rest of the tool set is unchanged. G2/G4 Claude vectors gain exactly that pair. The stored Claude qualification reports were measured without it, so each Claude cell is requalified (one PONG turn shows the new `init` list) before the next calibration. |
+| (B) pass `--tools <the allowed list>` as well | The model's tool set becomes exactly the listed tools: no web tools, and also no `Task`, `Workflow` and the other tools of the `init` list. The production list names `Glob` and `Grep`, which the stored `init` list does not hold, so what `--tools` does with them is 확인 필요. A larger behaviour change of the Claude harness (calibrated Claude figures would not compare with later ones), plus the same G2/G4 amendment and requalification as (A). |
+| (C) keep the argv | No golden or qualification change. A Claude agent may reach the web if the call is not refused (확인 필요); in a trial the call is recorded and fails the trial, in a real goal it is recorded in the driver journal only. |
+
+| IC | Recommendation |
+|---|---|
+| IC-35 | (A), with one qualification turn per Claude cell to record the resulting `init` tool list before the next calibration. Until the operator decides, the argv stays as it is and detection is the only guard. |

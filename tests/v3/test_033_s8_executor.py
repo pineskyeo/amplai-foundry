@@ -638,8 +638,11 @@ def test_an_auxiliary_turn_with_unknown_usage_makes_the_usage_unknown(world: Wor
     plan = world.rig.service.plan_record(world.receipt(obs)["goal_id"])
     aux = [aux_entry(100, {"input_tokens": 60, "output_tokens": 40}), aux_entry(None, None)]
     usage = world.executor._usage(plan["attempts"], None, real=False, aux=aux)
+    # decision (B): the reported parts stay as the lower bound of the charge, the run's 10 + 5
+    # and the first auxiliary turn's 60 + 40
     assert usage == {"input_tokens": None, "output_tokens": None, "cost_microunits": None,
-                     "usage_status": "unknown"}  # fmt: skip
+                     "usage_status": "unknown", "known_tokens": 115,
+                     "known_cost_microunits": 0}  # fmt: skip
 
 
 def test_an_auxiliary_turn_that_never_started_adds_nothing(world: World) -> None:

@@ -169,7 +169,7 @@ class EventNormalizer:
         ):
             self.usage = {
                 **self.usage,
-                "input_tokens": usage["input_tokens"],
+                "input_tokens": input_total(self.provider, usage),
                 "output_tokens": usage["output_tokens"],
                 "status": "measured",
             }
@@ -256,6 +256,59 @@ USAGE_DETAIL_FIELDS = {
     ),
 }
 INPUT_INCLUDES_CACHE = {"codex": True, "claude": False}
+# The cache classes Anthropic reports beside (not inside) ``input_tokens``.
+CLAUDE_CACHE_INPUT = ("cache_read_input_tokens", "cache_creation_input_tokens")
+
+
+def input_total(provider: str, usage: dict[str, Any]) -> int:
+    """Every input token the turn sent, cache included: the run's 3.0.0 ``usage.input_tokens``.
+
+    Budgets, trial tokens and quota windows count ``input_tokens + output_tokens``, so the input
+    count means the same for every provider. Codex's ``input_tokens`` already contains its cached
+    reads and cache writes; Anthropic's excludes them, so its cache reads and cache writes are
+    added (a field it did not report counts 0). The provider's own fields stay in the usage
+    detail (D-094), which pricing splits into exclusive buckets, so nothing is counted twice.
+    Operator decision IC-34 (A), 2026-10-08 (interfaces.md).
+    """
+    total: int = usage["input_tokens"]
+    if provider == "claude":
+        total += sum(
+            usage[k] for k in CLAUDE_CACHE_INPUT if type(usage.get(k)) is int and usage[k] >= 0
+        )
+    return total
+
+
+# Anthropic splits ``cache_creation_input_tokens`` by cache lifetime under ``cache_creation``.
+CLAUDE_CACHE_WRITE_SPLIT = ("ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens")
+
+
+def turn_detail(provider: str, usage: dict[str, Any]) -> dict[str, Any] | None:
+    """The D-094 usage detail of a read-only turn (planner, auxiliary, judge) from the counts
+    it reports (``readonly_turn.TurnResult.usage``), so pricing splits it into exclusive buckets
+    like a run's detail. A Claude turn reports ``input_tokens`` as the total (IC-34 (A)) and its
+    cache classes beside it, so the provider's own uncached ``input_tokens`` is the total minus
+    both cache classes. None when the turn did not report its cache breakdown (a Claude turn
+    recorded before IC-34 kept input and output only): it is then priced as an upper bound."""
+    counts = (usage.get("input_tokens"), usage.get("output_tokens"))
+    if any(type(c) is not int or c < 0 for c in counts):
+        return None
+    if provider == "codex":
+        if type(usage.get("cached_input_tokens")) is not int:
+            return None
+        return usage_detail("codex", usage)
+    if provider != "claude":
+        return None
+    if any(type(usage.get(k)) is not int or usage[k] < 0 for k in CLAUDE_CACHE_INPUT):
+        return None
+    fields: dict[str, int] = {k: usage[k] for k in CLAUDE_CACHE_INPUT}
+    fields["input_tokens"] = usage["input_tokens"] - sum(fields.values())
+    if fields["input_tokens"] < 0:
+        return None
+    fields["output_tokens"] = usage["output_tokens"]
+    for k in CLAUDE_CACHE_WRITE_SPLIT:
+        if type(usage.get(k)) is int and usage[k] >= 0:
+            fields[k] = usage[k]
+    return {"provider": "claude", "input_includes_cache": False, "fields": fields}
 
 
 def usage_detail(provider: str, usage: dict[str, Any]) -> dict[str, Any]:
@@ -267,7 +320,7 @@ def usage_detail(provider: str, usage: dict[str, Any]) -> dict[str, Any]:
     }
     creation = usage.get("cache_creation")
     if provider == "claude" and isinstance(creation, dict):
-        for k in ("ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens"):
+        for k in CLAUDE_CACHE_WRITE_SPLIT:
             if type(creation.get(k)) is int and creation[k] >= 0:
                 fields[k] = creation[k]
     return {

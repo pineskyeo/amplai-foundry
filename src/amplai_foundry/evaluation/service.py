@@ -57,6 +57,13 @@ class TrialObservation:
     input_tokens: int | None = None
     output_tokens: int | None = None
     usage_status: str = "measured"
+    # Operator decision 2026-10-08 (C): the answer-lookup evidence entries of the trial (its
+    # receipt's ``answer_lookup`` list); such a trial is FAILED, ``success`` False.
+    answer_lookup: int = 0
+    # Decision (B): with unknown usage, the tokens and cost that the parts which did report add
+    # up to (a lower bound; None when the usage is known). The charge is never below it.
+    known_tokens: int | None = None
+    known_cost_microunits: int | None = None
 
 
 @dataclass(frozen=True)
@@ -87,6 +94,61 @@ class ExecutorPolicy:
                 "EVAL_EXTERNAL_EFFECT",
                 "Evaluation/shadow cannot mutate external or production systems",
             )
+
+
+def usage_unknown(observation: TrialObservation) -> bool:
+    """Operator decision 2026-10-08 (B): the trial reported no token counts and left no effect
+    uncertain. Such a trial is charged its reservation, the run continues and its outcome is
+    missing (``unknown_usage_charge``). An unknown effect is not this case: it stays uncertain
+    and stops the run (IC-18)."""
+    return not observation.unknown_effects and (
+        observation.input_tokens is None or observation.output_tokens is None
+    )
+
+
+def unknown_usage_charge(
+    observation: TrialObservation, *, tokens: int, cost: int
+) -> tuple[dict[str, Any], int, int]:
+    """For an unknown-usage trial (``usage_unknown``): the trial-record fields and the tokens and
+    cost its allocation settles at.
+
+    Charge: the per-trial token reservation, or the tokens the reporting parts already add up to
+    (``known_tokens``) when that is more, so a real overrun still shows as one at settlement; the
+    cost is the reported cost, else the larger of the cost reservation and ``known_cost``. Usage
+    is never recovered from a file the agent could write (decision (B)).
+
+    Outcome: missing (``success`` null, ``outcome_missing``), the executor's value kept in
+    ``reported_success``; except a trial with an answer-lookup attempt, which stays FAILED
+    (``success`` False, decision (C)): the attempt is recorded evidence about the outcome, the
+    unknown usage is a gap in the cost only."""
+    charged_tokens = max(tokens, observation.known_tokens or 0)
+    charged_cost = (
+        max(cost, observation.known_cost_microunits or 0)
+        if observation.cost_microunits is None
+        else observation.cost_microunits
+    )
+    fields: dict[str, Any] = {
+        "reported_success": observation.success,
+        "charged_tokens": charged_tokens,
+        "known_tokens": observation.known_tokens,
+    }
+    if observation.answer_lookup:
+        fields["success"] = False
+    else:
+        fields |= {"success": None, "outcome_missing": "usage_unknown"}
+    return fields, charged_tokens, charged_cost
+
+
+def spent_tokens(trial: dict[str, Any]) -> int | None:
+    """The tokens a stored trial counts toward tokens per solved: its reported input plus output,
+    else the tokens charged for its unknown usage (``charged_tokens``, decision (B)); None when
+    neither is recorded (an executor fault, or a trial stored before (B)). A reader that gets
+    None for any trial reports no tokens per solved: unknown is never fewer."""
+    tin, tout = trial.get("input_tokens"), trial.get("output_tokens")
+    if type(tin) is int and type(tout) is int:
+        return tin + tout
+    charged = trial.get("charged_tokens")
+    return charged if type(charged) is int else None
 
 
 def e_process_key(baseline_ref: dict[str, Any], candidate_ref: dict[str, Any], stage: str) -> str:
@@ -175,7 +237,11 @@ def validate_observation(
         raise RuntimeFault("TRIAL_TYPE", "Success must be boolean or unknown")
     if not observation.artifact_refs:
         raise Hold("TRIAL_EVIDENCE", "Actual independent evidence bytes are required")
-    for value in (observation.safety_failures, observation.unknown_effects):
+    for value in (
+        observation.safety_failures,
+        observation.unknown_effects,
+        observation.answer_lookup,
+    ):
         if type(value) is not int or value < 0:
             raise RuntimeFault(
                 "TRIAL_USAGE", "Safety and uncertainty counters must be nonnegative integers"
@@ -184,12 +250,17 @@ def validate_observation(
         observation.cost_microunits,
         observation.input_tokens,
         observation.output_tokens,
+        observation.known_tokens,
+        observation.known_cost_microunits,
     )
     for optional in optional_values:
         if optional is not None and (type(optional) is not int or optional < 0):
             raise RuntimeFault("TRIAL_USAGE", "Usage is nonnegative integer or explicitly unknown")
     if observation.usage_status not in {"measured", "estimated", "unknown"}:
         raise RuntimeFault("TRIAL_USAGE", "Unknown usage classification")
+    if observation.answer_lookup and observation.success is not False:
+        # decision (C): an answer-lookup attempt fails the trial
+        raise RuntimeFault("TRIAL_TYPE", "A trial with an answer-lookup attempt is failed")
     for ref in observation.artifact_refs:
         artifacts.read(scope, ref, trusted=True)
     receipt = read_receipt(artifacts.read(scope, observation.artifact_refs[0], trusted=True))
@@ -206,6 +277,18 @@ def validate_observation(
         "output_tokens": observation.output_tokens,
         "usage_status": observation.usage_status,
     }
+    # additive fields, bound only when the observation carries them (other executors' receipts
+    # have none): the answer-lookup evidence count (C) and the known usage lower bound (B)
+    if observation.answer_lookup:
+        lookups = receipt.get("answer_lookup")
+        if not isinstance(lookups, list) or len(lookups) != observation.answer_lookup:
+            raise Hold(
+                "OBSERVATION_BINDING", "Independent evidence does not bind field: answer_lookup"
+            )
+    for key in ("known_tokens", "known_cost_microunits"):
+        value = getattr(observation, key)
+        if value is not None:
+            expected[key] = value
     check_observation(receipt, expected)
 
 
@@ -710,6 +793,13 @@ class EvaluationService:
                 if observation.input_tokens is not None and observation.output_tokens is not None
                 else None
             )
+            cost = observation.cost_microunits
+            if usage_unknown(observation):
+                # decision (B): charge the reservation, keep running, the outcome is missing
+                fields, tokens, cost = unknown_usage_charge(
+                    observation, tokens=trial_tokens, cost=policy.max_trial_cost_microunits
+                )
+                trial.update(fields)
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, "eval-trial", trial_id, 1, trial)
                 th = self.store.head(scope, "eval-trial", trial_id, db=db)
@@ -728,7 +818,7 @@ class EvaluationService:
                     proposal_id,
                     trial_id,
                     tokens=tokens,
-                    cost=observation.cost_microunits,
+                    cost=cost,
                     uncertain=bool(observation.unknown_effects),
                     cost_required=analysis.get("cost_basis", "compared") == "compared",
                 )

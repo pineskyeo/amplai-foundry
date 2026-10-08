@@ -101,7 +101,10 @@ class QuotaObserver:
             return 0
         if kind != "usage-detail":
             return 0
-        return next((_count(detail[k]) for k in CACHED_FIELDS if type(detail.get(k)) is int), 0)
+        # a usage-detail record keeps the provider's counts under ``fields`` (worker._usage)
+        nested = detail.get("fields")
+        fields: dict[str, Any] = nested if isinstance(nested, dict) else detail
+        return next((_count(fields[k]) for k in CACHED_FIELDS if type(fields.get(k)) is int), 0)
 
     def observe(self, *, until: str) -> list[QuotaWindow]:
         """Per driver (sorted) and window (1h, 5h, 24h, 7d): what ran in the window ending at

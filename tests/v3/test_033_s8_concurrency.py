@@ -449,7 +449,8 @@ def test_a_legacy_goal_resolves_the_provider_default(setup: Setup) -> None:
     seen = record_options(setup)
     assert setup.loop.run_goal(setup.goal())["status"] == "published"
     assert seen == [DispatchOptions.default(MODEL)]
-    assert "-c" not in setup.container.argvs[0]
+    argv = setup.container.argvs[0]  # no effort flag; decision (C)'s web search override only
+    assert argv.count("-c") == 1 and argv[argv.index("-c") + 1] == 'web_search="disabled"'
 
 
 def test_the_trial_trace_flag_reaches_the_options_only_for_a_trial_goal(setup: Setup) -> None:

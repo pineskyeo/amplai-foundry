@@ -905,7 +905,8 @@ def test_a_capturing_trial_on_a_port_without_options_runs_uncaptured(
     assert record["status"] == "verified", record
     assert calls == [] and built.container.driver._traces == {}
     assert len(built.container.argvs) == 1  # it ran, with today's argv
-    assert "-c" not in built.container.argvs[0]
+    argv = built.container.argvs[0]  # no effort flag; decision (C)'s web search override only
+    assert argv.count("-c") == 1 and argv[argv.index("-c") + 1] == 'web_search="disabled"'
 
 
 def test_the_deployment_sink_stores_the_trial_trace_and_nothing_for_a_real_goal(

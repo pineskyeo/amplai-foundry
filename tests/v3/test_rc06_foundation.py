@@ -9,8 +9,10 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -77,19 +79,37 @@ def test_codex_argv_equals_the_qualified_container_argv(tmp_path: Path) -> None:
     # given: the argv scripts/container_qualify.py qualifies. Codex's own bwrap sandbox cannot
     # create namespaces in the unprivileged container (measured 2026-09-28: shell and file
     # writes fail), so the container is the sandbox and Codex's is bypassed (D-073).
+    # Operator decision (C), 2026-10-08: plus `-c web_search="disabled"` on every dispatch, in
+    # the qualification argv as in production
     qualified = [
         "codex", "--ask-for-approval", "never", "exec", "--json", "--model", "gpt-5.6-sol",
+        "-c", 'web_search="disabled"',
         "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "do it",
     ]  # fmt: skip
     resumed = [
         "codex", "--ask-for-approval", "never", "exec", "resume", "sess_1", "--json", "--model",
-        "gpt-5.6-sol", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox",
-        "do it",
+        "gpt-5.6-sol", "-c", 'web_search="disabled"',
+        "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "do it",
     ]  # fmt: skip
     driver = _codex(tmp_path)
     # expected: production builds exactly the same vector (workspaces carry no .git)
     assert driver.argv("do it") == qualified
     assert driver.argv("do it", session="sess_1") == resumed
+    # and so does the qualification script itself (its argv is built without a sandbox)
+    script = _qualify_script()
+    turns = SimpleNamespace(driver="codex", model="gpt-5.6-sol")
+    assert script.ContainerTurns.argv(turns, "do it") == qualified
+    assert script.ContainerTurns.argv(turns, "do it", session="sess_1") == resumed
+
+
+def _qualify_script() -> Any:
+    """``scripts/container_qualify.py`` as a module (it runs nothing on import)."""
+    path = Path(__file__).resolve().parents[2] / "scripts" / "container_qualify.py"
+    spec = importlib.util.spec_from_file_location("container_qualify_rc06", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class _SpyPort(RecipePort):
