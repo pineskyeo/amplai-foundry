@@ -281,10 +281,12 @@ def test_opencode_has_no_effort_axis() -> None:
 
 
 def test_opencode_ports_take_no_dispatch_options() -> None:
-    from amplai_foundry.agent_drivers.opencode_port import PerDispatchOpenCodePort
     from amplai_foundry.agent_drivers.ports import CliPort, OpenCodePort, RecipePort
 
-    for port in (PerDispatchOpenCodePort, OpenCodePort, RecipePort, CliPort):
+    # amended by the operator decision of 2026-10-08 (web tools off in tests): the production
+    # OpenCode port (PerDispatchOpenCodePort) takes options for the trial flag only, and holds an
+    # effort or a driver option (tests/v3/test_033_web_tools_off.py)
+    for port in (OpenCodePort, RecipePort, CliPort):
         assert getattr(port, "accepts_options", False) is not True, port.__name__
 
 

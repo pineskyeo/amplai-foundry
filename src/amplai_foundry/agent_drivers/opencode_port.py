@@ -9,6 +9,15 @@ the server once the driver has confirmed a stopped process.
 
 The container launcher itself is pending an operator decision on the execution image
 (design.md D3); ``PendingDockerLauncher`` holds until then.
+
+Operator decision 2026-10-08 (``agent_drivers/offline.py``): a trial dispatch runs with the web
+tools off. The trial flag arrives as ``DispatchOptions.offline``, so this port takes options
+(``accepts_options``) but honours only that flag: an effort or a driver option holds
+DRIVER_OPTIONS_UNSUPPORTED (OpenCode cells run at the provider default, ``cells.py``), and the
+trace flag changes nothing (OpenCode capture is deferred, §9.1). With the flag, ``prepare`` and
+``resume`` launch the server through ``launcher.launch(..., offline=True)``; the port's
+``offline_tools`` is its launcher's, so a launcher that declares none makes the port undeclared
+(DRIVER_WEB_UNDECLARED for a trial). Without the flag the launcher is called as before.
 """
 
 from __future__ import annotations
@@ -18,13 +27,16 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import httpx
 
 from ..runtime.errors import Hold
 from .http import OpenCodeDriver
 from .protocol import SessionJournal
+
+if TYPE_CHECKING:
+    from ..runtime.execution.cells import DispatchOptions
 
 AUTH = Path(".local") / "share" / "opencode" / "auth.json"
 CATALOG = Path(".cache") / "opencode" / "models.json"
@@ -114,6 +126,7 @@ class PerDispatchOpenCodePort:
 
     strategies = frozenset({"direct", "bounded_loop", "deliberative", "discovery"})
     driver_id = "opencode-server"  # design.md D2 keeps the existing OpenCodePort id
+    accepts_options = True  # only for the trial flag (module docstring)
 
     def __init__(
         self,
@@ -134,6 +147,23 @@ class PerDispatchOpenCodePort:
         self.driver_factory = driver_factory or self._driver
         self._runs: dict[str, _Run] = {}
         self._lock = threading.Lock()
+
+    @property
+    def offline_tools(self) -> Any:
+        """The launcher's declaration of what ``launch(..., offline=True)`` adds, or None."""
+        return getattr(self.launcher, "offline_tools", None)
+
+    @staticmethod
+    def _offline(options: DispatchOptions | None) -> bool:
+        """The trial flag of ``options``; any other non-default option holds."""
+        if options is None:
+            return False
+        if options.effort is not None or options.has_driver_options():
+            raise Hold(
+                "DRIVER_OPTIONS_UNSUPPORTED", "OpenCode takes no effort or driver options",
+                details={"driver_id": "opencode-server"},
+            )  # fmt: skip
+        return options.offline
 
     def _driver(self, server: OpenCodeServer) -> OpenCodeDriver:
         if not server.password:
@@ -166,13 +196,15 @@ class PerDispatchOpenCodePort:
             )
         return run
 
-    def _launch(self, dispatch_id: str, workspace: Path, home: Path) -> _Run:
+    def _launch(self, dispatch_id: str, workspace: Path, home: Path, offline: bool) -> _Run:
         with self._lock:
             if dispatch_id in self._runs:
                 return self._runs[dispatch_id]
             self.credential.seed(home)
+            # the trial flag only when set: a launcher is otherwise called exactly as before
+            extra: dict[str, Any] = {"offline": True} if offline else {}
             try:
-                server = self.launcher.launch(dispatch_id, Path(workspace).resolve(), home)
+                server = self.launcher.launch(dispatch_id, Path(workspace).resolve(), home, **extra)
             except Exception:
                 self.credential.release(home)
                 raise
@@ -195,9 +227,17 @@ class PerDispatchOpenCodePort:
         self.credential.release(run.home)
         run.stopped = True
 
-    def prepare(self, dispatch: dict[str, Any], prompt: str, workspace: Path) -> dict[str, Any]:
+    def prepare(
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        *,
+        options: DispatchOptions | None = None,
+    ) -> dict[str, Any]:
+        offline = self._offline(options)
         did = dispatch["dispatch_id"]
-        run = self._launch(did, workspace, self._home(did))
+        run = self._launch(did, workspace, self._home(did), offline)
         run.driver.prepare(dispatch, prompt)
         return {"dispatch": dispatch, "prompt": prompt}
 
@@ -231,15 +271,22 @@ class PerDispatchOpenCodePort:
         return receipt
 
     def resume(
-        self, dispatch: dict[str, Any], prompt: str, workspace: Path, checkpoint: dict[str, Any]
+        self,
+        dispatch: dict[str, Any],
+        prompt: str,
+        workspace: Path,
+        checkpoint: dict[str, Any],
+        *,
+        options: DispatchOptions | None = None,
     ) -> str:
         """Relaunch on the paused session's home. Session restore after a restart is unmeasured
         (design.md R3); the driver's own checks hold if the native session is not there."""
+        offline = self._offline(options)
         home = Path(checkpoint["native_home"])
         if home.parent != self.native_root:
             raise Hold("RESUME_HOME", "Checkpoint home is outside this port's native root")
         did = dispatch["dispatch_id"]
-        run = self._launch(did, workspace, home)
+        run = self._launch(did, workspace, home, offline)
         native = {k: v for k, v in checkpoint.items() if k != "native_home"}
         try:
             run.driver.resume(dispatch, prompt, native)

@@ -24,6 +24,9 @@ import os
 import subprocess
 from pathlib import Path
 
+from amplai_foundry.agent_drivers import offline as web_off
+from amplai_foundry.agent_drivers.cli import CODEX_WEB_SEARCH_OFF
+
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "specs" / "015-external-qualification"
 WORK = Path(os.environ.get("REQUALIFY_WORKDIR", "/tmp/amplai-requalify"))
@@ -54,6 +57,10 @@ def probe_claude() -> dict[str, object]:
         os.environ.get("REQUALIFY_CLAUDE_MODEL", "claude-sonnet-5"),
         "--allowedTools",
         "Read",
+        # operator decision 2026-10-08 (agent_drivers/offline.py): every test turn runs with the
+        # web tools off; --bare also loads no MCP server (the OAuth isolation already says so)
+        *web_off.CLAUDE_OFFLINE,
+        *([] if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN") else web_off.CLAUDE_NO_MCP),
     ]
     run = subprocess.run(args, cwd=ws, stdin=subprocess.DEVNULL, capture_output=True, timeout=300)
     events = [json.loads(line) for line in run.stdout.splitlines() if line.strip()]
@@ -83,6 +90,11 @@ def probe_codex() -> dict[str, object]:
         "--json",
         "--sandbox",
         "workspace-write",
+        # decision (C) and operator decision 2026-10-08 (agent_drivers/offline.py): web search,
+        # the networked features and config.toml off on every test turn
+        *CODEX_WEB_SEARCH_OFF,
+        *web_off.CODEX_FEATURES_OFF,
+        *web_off.CODEX_IGNORE_CONFIG,
         "--skip-git-repo-check",
         "-m",
         model,

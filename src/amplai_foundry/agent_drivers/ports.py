@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, runtime_checkable
 
 from ..runtime.contracts.identity import digest
 from ..runtime.contracts.registry import strict_json_loads
@@ -101,6 +101,12 @@ class DriverRegistry:
                 },
             )
 
+    def installed(self, scope: Scope, profile_ref: dict[str, Any]) -> AgentDriverPort | None:
+        """The port registered for the exact scoped profile, or None (no strategy check; for a
+        check that runs before any claim, such as the web-tools declaration of a trial)."""
+        value = self.entries.get((*scope.keys(), digest(profile_ref)))
+        return None if value is None else value[1]
+
     def resolve(self, scope: Scope, profile_ref: dict[str, Any], strategy: str) -> AgentDriverPort:
         value = self.entries.get((*scope.keys(), digest(profile_ref)))
         if value is None:
@@ -117,6 +123,8 @@ class RecipePort:
     driver_id = "local-recipe"
     version = "3.0.0"
     strategies = frozenset({"direct", "bounded_loop"})
+    # operator decision 2026-10-08 (agent_drivers/offline.py): no model, no tools to turn off
+    offline_tools: ClassVar[dict[str, str]] = {"no_tools": "deterministic recipe; no model agent"}
 
     def __init__(self, journal: SessionJournal) -> None:
         self.journal = journal

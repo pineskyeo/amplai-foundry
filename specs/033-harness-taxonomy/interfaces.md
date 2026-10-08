@@ -3407,7 +3407,7 @@ Operator decision 2026-10-08, textbook option, parts (C) and (D). Implemented in
   Whether a call of one is then denied in `-p` mode (no permission-mode flag; `--permission-prompts` default `host`)
   is 확인 필요: no stored stream calls one (`permission_denials` empty, `server_tool_use` web requests 0), and only a
   real turn with a credential shows it. Changing the Claude argv amends golden G2 and is outside decision (C)'s text
-  ("Codex hosted web search"), so it is Open Operator Decision IC-35 below, not implemented. A Claude web tool use is
+  ("Codex hosted web search"), so it was Open Operator Decision IC-35 below (superseded 2026-10-08: web tools off in tests). A Claude web tool use is
   detected and fails the trial either way (executor and read-only turns).
 
 **(C) Answer-lookup attempts are recorded and fail the trial.**
@@ -3502,7 +3502,10 @@ Operator decision 2026-10-08, textbook option, parts (C) and (D). Implemented in
   commit id, which the pilot trial used as a web search query. It is not an object (D); web search off and the
   detection cover it.
 
-## Open Operator Decision IC-35: Claude Web Tools (Not Implemented)
+## Open Operator Decision IC-35: Claude Web Tools (Superseded 2026-10-08)
+
+Superseded by "Operator Decision 2026-10-08: Web Tools Off In Tests" below, which turns the web
+tools off for every driver on every trial dispatch; the text of this section is kept as asked.
 
 The ask: decision (C) turned Codex hosted web search off. Should the Claude argv also turn Claude's `WebSearch` and
 `WebFetch` off? Today a Claude trial still has them in its tool set, and whether a call is refused is not known. A
@@ -3537,3 +3540,146 @@ Facts (pinned image, Claude Code 2.1.292, `claude --help` with `docker run --rm 
 | IC | Recommendation |
 |---|---|
 | IC-35 | (A), with one qualification turn per Claude cell to record the resulting `init` tool list before the next calibration. Until the operator decides, the argv stays as it is and detection is the only guard. |
+
+## Operator Decision 2026-10-08: Web Tools Off In Tests (Supersedes IC-35)
+
+Decision (operator, 2026-10-08): in tests, every trial dispatch (calibration, stage experiments, canary trials,
+nightly) runs every agent driver with all internet and web tools disabled: Claude Code, Codex, OpenCode and any
+driver added later. The container egress allowlist (model API only) and answer-lookup detection (decision (C)) stay
+as additional guards. A real (non-trial) goal is unchanged, except Codex hosted web search, which decision (C)
+already turned off for every dispatch.
+
+**Contract (`agent_drivers/offline.py`).**
+
+- A driver port, and the read-only turn of a cell, declares how its web tools are turned off as `offline_tools`: a
+  non-empty mapping with keys among `argv` (arguments added to a trial dispatch), `env` (environment entries added;
+  never a secret), `config` (configuration applied) and `no_tools` (a reason, for a port that runs no model). An
+  empty entry (`{"argv": []}`) is no declaration (`offline.declaration`).
+- The trial flag is `DispatchOptions.offline` (`runtime/execution/cells.py`). `ExecutionLoop._options` sets it for
+  every goal whose plan has a `trial` context (`loop.py:878`), never otherwise. `wire()` carries `offline` only when
+  it is true, so options recorded before the flag keep their wire and digest; with it `is_default()` is false, so a
+  trial dispatch's options enter the request digest and the driver journal (`options_digest`).
+- A port receives the flag only inside its options, so `offline.require_port` accepts a port that declares
+  settings only when it has `accepts_options`; a `no_tools` port (`RecipePort`, `ports.py:127`) needs none and the
+  worker strips the flag for it (`worker._check_options`, `worker.py:341`). Anything else holds
+  `DRIVER_WEB_UNDECLARED`:
+  - `LocalTrialExecutor._require_offline` (`meta_harness/local_executor.py:361`), called at `:337`, before `_bind`
+    and before any goal is submitted, for the executed composition's registered port (`DriverRegistry.installed`,
+    `ports.py:104`: the port of the exact scoped profile, without a strategy check);
+  - `ExecutionLoop._require_offline` (`loop.py:913`), from `_options`, before any claim, for every trial goal and
+    every revision of it (an escalated revision runs `run_goal` again); the goal stops `held` with reason
+    `dispatch options: DRIVER_WEB_UNDECLARED: ...`.
+  - A profile with no registered port is left to the dispatch (`DRIVER_NOT_INSTALLED`), as before.
+- Read-only turns of a trial: `ReadOnlyTurn.run(..., offline=True)`. `StrategyRunner._aux_turn` takes `offline`
+  (plan-time turns `PlanContext.trial`, `strategy_runner.py:684`; investigators `:863`; reviewer `:1173`;
+  `is_trial(plan)`, `:310`) and requires the turn's declaration first (`:724`; a missing one is recorded like a turn
+  that could not start, no tokens). The planner turn: `product._offline_turn` (`product.py:286`) requires the
+  planner's `turn` declaration and passes `offline` in the draft arguments (`:926`), so the L1 `replan_ask_first`
+  turn carries it too; a planner without a `turn` (the fixed `TrialPlanner`) runs no model and is called as before.
+- Judges, proposer, dreaming and effort probes: every one of their turns runs with `offline=True`, in a trial or
+  not, after `offline.require` (Hold `DRIVER_WEB_UNDECLARED` before any scratch directory or turn). Source: the
+  operator's statement of 2026-10-08, "모든것들 인터넷 막는다 claude code, codex, opencode등 앞으로 추가되는것 모든것들 전부
+  인터넷 막아야지 테스트에서는" (every model turn of the test and meta-harness flows, not only trial dispatches).
+  Sites: `LlmCellJudge.ask` (`meta_harness/judges.py:288`, `:298`); `ProposerEnsemble.run` requires both the
+  breadth and the depth turn before its inputs are built (`meta_harness/proposer.py:888-889`) and runs both
+  offline (`:904`, `:933`); `dream` (`:1431`, `:1435`); `run_probe` (`runtime/execution/cells.py:508`, `:512`; an
+  undeclared turn makes no probe value), and `probe_local_cell` records the probe argv built with `offline=True`
+  (`runtime/local_deployment.py:1126`, `:1134`), so a probe's `argv_digest` changes from the probes stored before.
+  A judge of a real goal's decider runs offline too (the judge connector has no trial flag).
+- Qualification turns run with the trial argv: `scripts/container_qualify.py` (Claude: `--disallowedTools <the
+  five tools>` right after `--allowedTools <list>`, `--strict-mcp-config` is already in `ISOLATION`; Codex: the
+  trial dispatch's exact vector, `CliDriver.argv(..., options=DispatchOptions(..., offline=True))`, checked by
+  `tests/v3/test_rc06_foundation.py`), `scripts/opencode_qualify.py` (`server_argv(..., offline=True)`) and the
+  host-side `scripts/requalify_drivers.py` (Claude the deny list, plus `--strict-mcp-config` with `--bare`; Codex
+  decision (C)'s web search off, the features off and `--ignore-user-config`). The stored qualification reports
+  were measured without these arguments.
+- Every other flag is passed only when set: a real goal calls ports, launchers, planner and auxiliary turns
+  exactly as before.
+
+**Per-driver settings (pinned images; facts below).**
+
+| Driver | Trial dispatch | Read-only turn |
+|---|---|---|
+| Claude Code 2.1.292 (`CliDriver` in `OptionsCliPort`) | `--disallowedTools WebSearch,WebFetch,RemoteTrigger,DesignSync,PushNotification` right after `--allowedTools <list>` (`cli.py:227`); the API-key (`--bare`) argv also `--strict-mcp-config` (the OAuth argv already has it) | the same pair right after `--allowedTools Read,Glob,Grep` (this argv already has `--strict-mcp-config`) |
+| Codex 0.155.1 (`CliDriver` in `SeededCodexPort`) | after decision (C)'s `-c web_search="disabled"` (every dispatch, unchanged): `-c features.<name>=false` for `apps`, `browser_use`, `browser_use_external`, `browser_use_full_cdp_access`, `computer_use`, `in_app_browser`, `remote_plugin`, `skill_mcp_dependency_install`, then `--ignore-user-config`, right before `--skip-git-repo-check` (`cli.py:256`); first turn, resume and follow-ups | the same arguments at the same place |
+| OpenCode 1.17.13 (`PerDispatchOpenCodePort`, `DockerOpenCodeLauncher`) | the server container gets `OPENCODE_CONFIG_CONTENT={"permission":{"webfetch":"deny","websearch":"deny"},"agent":{"general":{"permission":{"webfetch":"deny","websearch":"deny"}},"explore":{"permission":{"webfetch":"deny","websearch":"deny"}}}}` and `OPENCODE_DISABLE_PROJECT_CONFIG=1` (`opencode_launcher.server_argv`, `launch(..., offline=True)`), on `prepare` and on `resume` | none: OpenCode never plans (`NON_PLANNING_DRIVERS`) |
+
+- `PerDispatchOpenCodePort` now has `accepts_options` (`opencode_port.py:129`) for the trial flag only: an effort or
+  a driver option holds `DRIVER_OPTIONS_UNSUPPORTED` (`_offline`, `:157`); the trace flag changes nothing (capture
+  stays deferred, §9.1); its `offline_tools` is its launcher's (`:152`), so `PendingDockerLauncher` (no declaration)
+  makes it undeclared. A real goal's OpenCode dispatch launches with the same argv as before; its execution head now
+  stores its default options (the worker stores options whenever a port takes them), with the same request digest.
+- `CODEX_WEB_KEYS` also lists the eight `features.<name>` keys, so no driver option can turn one back on.
+
+**Facts behind the settings (2026-10-08, `docker run --rm --network none <pinned image>`, no credential).**
+
+- Image: `deployment/local-container-app-amplai-bench-app.json` (`claude` 2.1.292, `codex-cli` 0.155.1, `opencode`
+  1.17.13).
+- Claude: `claude --help` lists `--disallowedTools, --disallowed-tools <tools...>` "Comma or space-separated list of
+  tool names to deny", `--strict-mcp-config` "Only use MCP servers from --mcp-config, ignoring all other MCP
+  configurations", `--tools` "Specify the list of available tools from the built-in set". The stored `init` tool list
+  (`specs/033-harness-taxonomy/runs/artifacts/claude-{exact_session,cancel_tree,ordered_events}-stream.bin`) has 24
+  tools and `mcp_servers` `[]`. Network tools among them, by the CLI's own files
+  (`/usr/local/lib/node_modules/@anthropic-ai/claude-code/sdk-tools.d.ts`): `WebFetch` (`url`) and `WebSearch`
+  (`query`), `:1099-1126`; `RemoteTrigger` (actions `run`, `create_webhook_trigger`, `list_runs`, `get_run_log` with a
+  remote session id; output `status: number`), `:2939-2959`, `:4027-4031`; `PushNotification` ("mobile OSes
+  truncate", output `pushSent`), `:3246-3252`, `:4185-4194`; `DesignSync` (strings in `bin/claude.exe`: "DesignSync is
+  only available with claude.ai authentication", "DesignSync is unavailable while nonessential network traffic is
+  ...").
+- Codex: `codex exec --help` and `codex exec resume --help` list `-c, --config <key=value>`, `--disable <FEATURE>`
+  "Equivalent to `-c features.<name>=false`" and `--ignore-user-config` "Do not load `$CODEX_HOME/config.toml`; auth
+  still uses `CODEX_HOME`". `codex features list` shows the eight features above as stable and `true`;
+  `codex -c features.<each>=false ... features list` shows each `false` (the keys parse). The dispatch home is seeded
+  with `auth.json` only (`runtime/execution/codex.py:48`), so no `config.toml` (where `mcp_servers` live) is lost, and
+  one the agent writes in its home is never loaded by a later turn.
+- OpenCode: the config skill text inside `bin/opencode.exe` says "Known permission keys: `read, edit, glob, grep,
+  list, bash, task, external_directory, todowrite, question, webfetch, websearch, lsp, doom_loop, skill`" (`webfetch`
+  and `websearch` take a flat action `"allow"`/`"ask"`/`"deny"`), "Per-agent `permission:` overrides top-level
+  `permission:`", "Configs from each scope are deep-merged. Project overrides global", and lists
+  `OPENCODE_CONFIG_CONTENT` ("inject inline JSON as a final local-scope merge") and
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1` ("skip the project's local `opencode.json`"). The built-in `explore` agent's
+  ruleset in the binary allows `webfetch` and `websearch` explicitly. `opencode --help` names no permission flag.
+
+**Tests.** `tests/v3/test_033_web_tools_off.py` (the flag's wire; each driver's trial argv or env; a real goal's argv
+unchanged; read-only turns; the OpenCode launcher call; a future driver, a declaration that turns nothing off, a plain
+`CliPort` and a port without options holding `DRIVER_WEB_UNDECLARED`; the executor check). Golden G2/G4 are amended
+deliberately and only for trials (`tests/v3/test_033_golden_argv.py` `with_trial_web_off`: the frozen oracle plus
+exactly the arguments above at exactly those places); every non-trial G2/G4 vector is unchanged. Amended tests:
+`test_033_s4_argv.py` (the production OpenCode port takes options), `test_033_s13_traces_acl.py` (a trial on a port
+without options is now held `DRIVER_WEB_UNDECLARED` before it runs; before, it ran uncaptured),
+`test_033_answer_lookup.py` (the trial Codex argv), `test_033_readonly_lookup.py` (a trial's planner turn is asked
+`offline`), the scripted turns of `test_033_s4b_interpretation.py`, `test_033_s13_aux_capture.py` and
+`tests/e2e/test_033_s9_strategies.py` (they declare `offline_tools`), `tests/rc06_rig.py` (the two-driver rig
+registers Claude as the production `OptionsCliPort`, not a plain `CliPort`) and the shifted line citations of
+`test_033_s9b_q16.py`. Judges, proposer, dreaming, probes and qualification: `test_033_s10_judges.py`
+(`test_a_judge_turn_runs_with_web_tools_off_and_an_undeclared_one_is_held`), `test_033_s13_proposer.py` (both
+ensemble turns and the dreaming turn are asked `offline`; an undeclared breadth, depth or dreaming turn holds
+before any turn), `test_033_s4_cells.py` (`test_a_probe_runs_with_web_tools_off_and_an_undeclared_turn_is_held`),
+`test_rc06_foundation.py` (the Codex qualification vector equals the trial dispatch's) and
+`test_033_web_tools_off.py` (the Claude qualification argv); the scripted turns of `test_033_s10_judges.py`,
+`test_033_s13_proposer.py`, `test_033_s4_cells.py`, `test_033_s4_binding.py`, `test_033_effort_images.py` and
+`tests/e2e/test_033_s4_local_cell.py` declare
+`offline_tools`.
+
+**Not known or not done (확인 필요).**
+
+- No real turn ran with these arguments (no credential used). Whether `--disallowedTools` removes the tools from the
+  Claude `init` list or only denies calls, whether `--bare` with `--strict-mcp-config` starts, whether each Codex
+  feature named above is a tool surface in `codex exec` at all (chosen by name), and whether the OpenCode final merge
+  overrides the built-in agents' rulesets as the skill text says, are shown only by one qualification turn per cell
+  with the trial argv; the stored qualification reports were measured without them.
+- Claude `ListAgents` and `SendMessage` stay allowed: the binary shows cross-session and socket messaging, not a
+  network service; 확인 필요.
+- OpenCode's `build` and `plan` agents get the top-level deny only; their built-in rulesets were not read.
+- `OPENCODE_DISABLE_PROJECT_CONFIG=1` may do more than skip the project's `opencode.json`. The reviewer read the
+  minified code of the pinned binary (`/usr/local/lib/node_modules/opencode-ai/bin/opencode.exe`, app image) and
+  found the flag also guarding instruction discovery
+  (`OPENCODE_DISABLE_PROJECT_CONFIG||!Z?[]:yield*_.up({targets:["AGENTS.md"],...})`) and the `.opencode` directory
+  and `tui` lookups. Inferred from minified code; 확인 필요. If true, an OpenCode trial does not read the workspace
+  `AGENTS.md` while Claude and Codex trials do, a behaviour change beyond turning the web off that skews
+  cross-driver comparisons. Check: one OpenCode qualification turn with the trial env in a workspace whose
+  `AGENTS.md` holds a marker instruction. The alternative, dropping the flag and relying on
+  `OPENCODE_CONFIG_CONTENT` (documented as the final merge), lets a project `opencode.json` the agent writes add
+  MCP servers or plugins; choosing between the two is an Open Operator Decision, not taken here, so the flag stays.
+- OpenCode tool calls are not scanned by answer-lookup detection (`answer_lookup.py` has Codex and Claude rules;
+  `agent_drivers/http.py` records none), so for OpenCode the config and the egress allowlist are the guards.

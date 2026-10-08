@@ -25,12 +25,13 @@ import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, Any, ClassVar
 
 import httpx
 
 from ..runtime.errors import Hold
 from ..sandbox.container import ContainerSandbox
+from . import offline as web_off
 
 PORT = 4096
 USER = "opencode"
@@ -69,9 +70,19 @@ def write_env_guard(directory: Path) -> Path:
 
 
 def server_argv(
-    sandbox: ContainerSandbox, workspace: Path, name: str, native_home: Path, guard: Path
+    sandbox: ContainerSandbox,
+    workspace: Path,
+    name: str,
+    native_home: Path,
+    guard: Path,
+    *,
+    offline: bool = False,
 ) -> list[str]:
-    """The exact sandbox argv for ``opencode serve``, detached, with the env guard mounted."""
+    """The exact sandbox argv for ``opencode serve``, detached, with the env guard mounted.
+
+    ``offline`` (a trial dispatch, operator decision 2026-10-08): the server also gets
+    ``offline.OPENCODE_OFFLINE_ENV`` (webfetch and websearch denied in the final config merge, no
+    project ``opencode.json``); without it the argv is unchanged."""
     cmd = sandbox.command(
         ["opencode", "serve", "--port", str(PORT), "--hostname", "127.0.0.1"],
         workspace, name, env_names=[PASSWORD_ENV, USERNAME_ENV], native_home=native_home,
@@ -79,6 +90,9 @@ def server_argv(
     )  # fmt: skip
     at = cmd.index(sandbox.profile.image)
     extra = ["--env", f"OPENCODE_CONFIG_DIR={GUARD_DIR}", "--env", f"SHELL={GUARD_DIR}/shell"]
+    if offline:
+        for key, value in web_off.OPENCODE_OFFLINE_ENV.items():
+            extra += ["--env", f"{key}={value}"]
     return [cmd[0], cmd[1], "-d", *cmd[2:at], *extra, *cmd[at:]]
 
 
@@ -268,16 +282,27 @@ class DockerOpenCodeServer:
 class DockerOpenCodeLauncher:
     """Starts ``opencode serve`` for one dispatch and waits until it answers healthy."""
 
+    # operator decision 2026-10-08 (agent_drivers/offline.py): what ``launch(..., offline=True)``
+    # adds to the server's environment
+    offline_tools: ClassVar[dict[str, Any]] = {
+        "env": dict(web_off.OPENCODE_OFFLINE_ENV),
+        "config": web_off.OPENCODE_OFFLINE_CONFIG,
+    }
+
     def __init__(
         self, sandbox: ContainerSandbox, guard: Path, *, prefix: str = "amplai-opencode"
     ) -> None:
         self.sandbox, self.prefix = sandbox, prefix
         self.guard = write_env_guard(guard)
 
-    def launch(self, dispatch_id: str, workspace: Path, native_home: Path) -> DockerOpenCodeServer:
+    def launch(
+        self, dispatch_id: str, workspace: Path, native_home: Path, *, offline: bool = False
+    ) -> DockerOpenCodeServer:
         name = f"{self.prefix}-{dispatch_id}"[:100]
         password = secrets.token_urlsafe(32)
-        detached = server_argv(self.sandbox, workspace, name, native_home, self.guard)
+        detached = server_argv(
+            self.sandbox, workspace, name, native_home, self.guard, offline=offline
+        )
         engine = self.sandbox.engine
         subprocess.run([engine, "rm", "-f", name], capture_output=True, check=False)
         env = {**os.environ, PASSWORD_ENV: password, USERNAME_ENV: USER}

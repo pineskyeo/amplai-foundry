@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 from pydantic import ValidationError
@@ -154,14 +154,24 @@ def test_the_documented_values_come_from_the_measured_facts() -> None:
 # -- run_probe ------------------------------------------------------------------------------------
 class FakeTurn:
     cell_id = "fake"
+    # operator decision 2026-10-08: a probe turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]] | None] = {"argv": ["--web-off"]}
 
     def __init__(self, result: Hold | dict[str, Any] | None = None) -> None:
         self.result, self.calls = result, []  # type: ignore[var-annotated]
 
     def run(
-        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None
+        self,
+        *,
+        prompt: str,
+        schema: dict[str, Any],
+        workspace: Path,
+        mounts: Any = None,
+        offline: bool = False,
     ) -> Any:
-        self.calls.append({"prompt": prompt, "schema": schema, "workspace": workspace})
+        self.calls.append(
+            {"prompt": prompt, "schema": schema, "workspace": workspace, "offline": offline}
+        )
         if isinstance(self.result, Hold):
             raise self.result
         return TurnResult(
@@ -193,6 +203,25 @@ def test_a_probe_turn_runs_on_an_empty_scratch_directory(deployment: Any, tmp_pa
     # the effort was not observed to be applied (14 Q2): nothing is claimed
     assert value["stream_evidence"] == {"effort_reported": None, "error_text_digest": None}
     assert turn.calls[0]["workspace"] == tmp_path / "s"
+
+
+def test_a_probe_runs_with_web_tools_off_and_an_undeclared_turn_is_held(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Operator decision 2026-10-08: every test turn runs with its web tools off, the effort
+    probe too; a turn that does not declare how holds DRIVER_WEB_UNDECLARED before it runs and
+    no probe value is made."""
+    c = cell(CODEX, CODEX_MODEL, "high")
+    turn = FakeTurn()
+    probe_of(deployment, c, turn, tmp_path / "s")
+    assert [call["offline"] for call in turn.calls] == [True]
+
+    class Undeclared(FakeTurn):
+        offline_tools = None
+
+    bare = Undeclared()
+    assert hold_code(probe_of, deployment, c, bare, tmp_path / "u") == "DRIVER_WEB_UNDECLARED"
+    assert bare.calls == []
 
 
 def test_a_probe_outcome_follows_the_turn_failure_code(deployment: Any, tmp_path: Path) -> None:

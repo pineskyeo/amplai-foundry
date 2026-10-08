@@ -873,6 +873,11 @@ class ExecutionLoop:
         profile = self.store.head(self.scope, "goal", goal_id)["data"]["profile"]
         trial = plan.get("trial") or {}
         capture = trial.get("capture_trace") is True
+        # operator decision 2026-10-08 (agent_drivers/offline.py): a trial goal runs with every
+        # web tool off; its driver must declare how, checked here, before any claim
+        offline = bool(trial)
+        if offline:
+            self._require_offline(profile)
         # L5 (S10, §6.1): the driver options among the decider's driver_options versions, once
         # before the first dispatch (its features, cell and strategy, do not change in a goal);
         # the prior is the composition's own driver_options
@@ -890,7 +895,7 @@ class ExecutionLoop:
             try:
                 resolve_options(
                     self.store, self.scope, profile, replace(budget, driver_options=parts),
-                    capture_trace=capture,
+                    capture_trace=capture, offline=offline,
                 )  # fmt: skip
             except (Hold, RuntimeFault) as exc:
                 why[label] = f"{exc.code}: {exc.message}"
@@ -901,7 +906,21 @@ class ExecutionLoop:
         )  # fmt: skip
         if content is not None and decision.option in candidates and decision.option != prior:
             budget = replace(budget, driver_options=candidates[decision.option])
-        return resolve_options(self.store, self.scope, profile, budget, capture_trace=capture)
+        return resolve_options(
+            self.store, self.scope, profile, budget, capture_trace=capture, offline=offline
+        )
+
+    def _require_offline(self, profile: dict[str, Any]) -> None:
+        """Hold DRIVER_WEB_UNDECLARED when the goal's registered port does not declare how its
+        web tools are off (``offline.require_port``). A profile without a registered port is left to
+        the worker, which holds DRIVER_NOT_INSTALLED at dispatch as before."""
+        from ...agent_drivers import offline
+
+        registry = getattr(self.coordinator, "registry", None)
+        installed = getattr(registry, "installed", None)
+        port = installed(self.scope, profile["driver_profile_ref"]) if callable(installed) else None
+        if port is not None:
+            offline.require_port(port)
 
     # -- per-layer decisions at dispatch, on failure, before verification (S10, §6.1) ---------
     @staticmethod

@@ -59,6 +59,16 @@ Objects"), applies to these turns as to the executor's dispatches (``agent_drive
   reported no usage but has a finding returns ``{"input_tokens": None, "output_tokens": None,
   "answer_lookup": [...]}`` (its usage stays unknown). A turn that fails (``TURN_FAILED``,
   ``TURN_OUTPUT``, ``TURN_TIMEOUT``) returns nothing, so its findings are not kept.
+
+Operator decision 2026-10-08 (supersedes IC-35; ``agent_drivers/offline.py``): a read-only turn of
+a trial goal runs with every web tool off. ``run(..., offline=True)`` adds the same arguments as
+the executor's trial argv: Claude ``--disallowedTools`` with the network tools (its argv already
+loads no MCP server, ``--strict-mcp-config``) right after ``--allowedTools``; Codex the networked
+features off and ``--ignore-user-config`` right after the web search pair. Each turn declares them
+as ``offline_tools``; the trial callers (``strategy_runner._aux_turn``, ``product.plan`` through
+the planner) require that declaration and hold DRIVER_WEB_UNDECLARED without it. Without
+``offline`` the argv is unchanged (golden G4). Judges, proposer, dreaming and effort probes
+always pass it after the same check (the operator's 2026-10-08 statement: every test turn).
 """
 
 from __future__ import annotations
@@ -69,11 +79,12 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
 
 from jsonschema import Draft202012Validator
 
 from ...agent_drivers import answer_lookup
+from ...agent_drivers import offline as web_off
 from ...agent_drivers.cli import CODEX_WEB_SEARCH_OFF
 from ...agent_drivers.protocol import (
     CLAUDE_CACHE_INPUT,
@@ -169,6 +180,7 @@ class ReadOnlyTurn(Protocol):
         workspace: Path,
         mounts: dict[str, Path] | None = None,
         capture_trace: bool = False,  # S13 (§9.1): also return the sanitized events
+        offline: bool = False,  # a trial turn: web tools off (operator decision 2026-10-08)
     ) -> TurnResult: ...
 
 
@@ -223,14 +235,21 @@ class CodexReadOnlyTurn:
         self.runs_root = _runs_root(runs_root)
         self.timeout = timeout_seconds
 
-    def argv(self, prompt: str) -> list[str]:
+    # operator decision 2026-10-08: what ``argv(..., offline=True)`` adds after web search off
+    offline_tools: ClassVar[dict[str, list[str]]] = {
+        "argv": [*web_off.CODEX_FEATURES_OFF, *web_off.CODEX_IGNORE_CONFIG]
+    }
+
+    def argv(self, prompt: str, *, offline: bool = False) -> list[str]:
         # effort as a config override of `codex exec` (cli-effort-facts.md, §14 Q1), beside
         # --json/--model as in the executor argv (agent_drivers/cli.py)
         effort = ["-c", "model_reasoning_effort=" + self.effort] if self.effort else []
+        # a trial turn: the networked features off, no config.toml (as CliDriver.argv)
+        off = [*web_off.CODEX_FEATURES_OFF, *web_off.CODEX_IGNORE_CONFIG] if offline else []
         # decision (C): web search off, the last config override (as CliDriver.argv)
         return [
             "codex", "--ask-for-approval", "never", "exec", "--json", "--model", self.model,
-            *effort, *CODEX_WEB_SEARCH_OFF, "--skip-git-repo-check",
+            *effort, *CODEX_WEB_SEARCH_OFF, *off, "--skip-git-repo-check",
             "--dangerously-bypass-approvals-and-sandbox", "--output-schema", SCHEMA_MOUNT, prompt,
         ]  # fmt: skip
 
@@ -242,6 +261,7 @@ class CodexReadOnlyTurn:
         workspace: Path,
         mounts: dict[str, Path] | None = None,
         capture_trace: bool = False,
+        offline: bool = False,
     ) -> TurnResult:
         run = self.runs_root / new_id("plan")
         home = run / "home"
@@ -257,7 +277,7 @@ class CodexReadOnlyTurn:
         started = time.time()
         try:
             command = self.sandbox.command(
-                self.argv(prompt),
+                self.argv(prompt, offline=offline),
                 workspace,
                 name,
                 native_home=home,
@@ -328,13 +348,18 @@ class ClaudeReadOnlyTurn:
         self.runs_root = _runs_root(runs_root)
         self.timeout = timeout_seconds
 
-    def argv(self, prompt: str, schema: dict[str, Any]) -> list[str]:
+    # operator decision 2026-10-08: what ``argv(..., offline=True)`` adds after --allowedTools
+    # (this argv already loads no MCP server: --strict-mcp-config without --mcp-config)
+    offline_tools: ClassVar[dict[str, list[str]]] = {"argv": list(web_off.CLAUDE_OFFLINE)}
+
+    def argv(self, prompt: str, schema: dict[str, Any], *, offline: bool = False) -> list[str]:
         # `claude --help` 2.1.278: "--effort <level>" (cli-effort-facts.md, §14 Q15)
         effort = ["--effort", self.effort] if self.effort else []
+        off = list(web_off.CLAUDE_OFFLINE) if offline else []
         return [
             "claude", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
             "--no-chrome", "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--model", self.model, *effort, "--allowedTools", self.tools,
+            "--model", self.model, *effort, "--allowedTools", self.tools, *off,
             "--json-schema", json.dumps(schema, separators=(",", ":")),
         ]  # fmt: skip
 
@@ -346,6 +371,7 @@ class ClaudeReadOnlyTurn:
         workspace: Path,
         mounts: dict[str, Path] | None = None,
         capture_trace: bool = False,
+        offline: bool = False,
     ) -> TurnResult:
         run = self.runs_root / new_id("plan")
         home = run / "home"
@@ -355,7 +381,7 @@ class ClaudeReadOnlyTurn:
         env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.token}
         try:
             command = self.sandbox.command(
-                self.argv(prompt, schema),
+                self.argv(prompt, schema, offline=offline),
                 workspace,
                 name,
                 env_names=["CLAUDE_CODE_OAUTH_TOKEN"],

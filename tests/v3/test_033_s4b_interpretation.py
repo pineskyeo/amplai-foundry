@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 from test_033_s10_deciders import Env, rows
@@ -68,6 +68,8 @@ class ScriptedTurn:
     events of ``EVENTS`` (a ``TraceBuffer`` snapshot, the shape the real turns return)."""
 
     cell_id = "codex-cli"
+    # operator decision 2026-10-08: a trial's planner turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]]] = {"argv": ["--scripted-turn-has-no-web"]}
 
     def __init__(self, *outputs: Any) -> None:
         self.outputs = list(outputs) or [DRAFT]

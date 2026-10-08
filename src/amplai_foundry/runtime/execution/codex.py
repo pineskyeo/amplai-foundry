@@ -111,6 +111,12 @@ class OptionsCliPort(CliPort):
 
     accepts_options = True
 
+    @property
+    def offline_tools(self) -> dict[str, Any]:
+        """The driver's web-off arguments (``agent_drivers/offline.py``); this port passes the
+        trial flag to the driver inside the options."""
+        return self.driver.offline_tools
+
     def prepare(
         self,
         dispatch: dict[str, Any],

@@ -1123,7 +1123,7 @@ def probe_local_cell(
             ScopedCredential(local(cfg.codex.credential_home)), scratch_root / "runs",
             model=cell.model, effort=cell.effort, cell_id=cell.cell_id,
         )  # fmt: skip
-        turn, argv = codex_turn, codex_turn.argv(PROBE_PROMPT)
+        turn, argv = codex_turn, codex_turn.argv(PROBE_PROMPT, offline=True)
     else:
         if cfg.claude is None:
             raise Hold("AUTH_TOKEN_REQUIRED", "Claude cells need the claude token file")
@@ -1131,7 +1131,7 @@ def probe_local_cell(
             ContainerSandbox(container_profile(inputs)), claude_token(local(cfg.claude.token_file)),
             scratch_root / "runs", model=cell.model, effort=cell.effort, cell_id=cell.cell_id,
         )  # fmt: skip
-        turn, argv = claude_turn, claude_turn.argv(PROBE_PROMPT, PROBE_SCHEMA)
+        turn, argv = claude_turn, claude_turn.argv(PROBE_PROMPT, PROBE_SCHEMA, offline=True)
     scope = Scope.parse(cfg.scope)
     # opened before the turn: a store another process owns fails here, not after a spent turn
     store = Store(local(cfg.runtime_root))

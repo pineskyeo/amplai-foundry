@@ -21,7 +21,7 @@ import json
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 from test_033_s10_deciders import (
@@ -91,8 +91,17 @@ class JudgeTurn:
         self.reply, self.usage = reply, usage
         self.calls: list[dict[str, Any]] = []
 
+    # operator decision 2026-10-08: a judge turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]] | None] = {"argv": ["--web-off"]}
+
     def run(
-        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None
+        self,
+        *,
+        prompt: str,
+        schema: dict[str, Any],
+        workspace: Path,
+        mounts: Any = None,
+        offline: bool = False,
     ) -> TurnResult:
         where = Path(workspace)
         self.calls.append(
@@ -101,6 +110,7 @@ class JudgeTurn:
                 "schema": schema,
                 "workspace": where,
                 "mounts": mounts,
+                "offline": offline,
                 "existed": where.is_dir(),
                 "entries": sorted(os.listdir(where)) if where.is_dir() else [],
             }
@@ -368,6 +378,27 @@ def test_the_judge_turn_reads_a_goals_workspace_without_copying_or_removing_it(
 def test_a_judge_reply_that_is_not_answers_holds_judge_output(reply: Any) -> None:
     judge = LlmCellJudge(JudgeTurn(reply=reply if reply is not None else {}))
     hold("JUDGE_OUTPUT", judge.ask, STATE, [YES])
+
+
+def test_a_judge_turn_runs_with_web_tools_off_and_an_undeclared_one_is_held(
+    tmp_path: Path,
+) -> None:
+    """Operator decision 2026-10-08: every test turn runs with its web tools off, judges too; a
+    judge turn that does not declare how holds DRIVER_WEB_UNDECLARED before any scratch or turn."""
+    turn = JudgeTurn(reply={"answers": [answer("q", True, 0.8)]})
+    LlmCellJudge(turn).ask(STATE, [YES])
+    assert [c["offline"] for c in turn.calls] == [True]
+
+    class Undeclared(JudgeTurn):
+        offline_tools = None
+
+    bare = Undeclared(reply={"answers": [answer("q", True, 0.8)]})
+    scratch_root = tmp_path / "scratch"
+    scratch_root.mkdir()
+    judge = LlmCellJudge(bare, scratch_root=scratch_root)
+    hold("DRIVER_WEB_UNDECLARED", judge.ask, STATE, [YES])
+    assert bare.calls == [] and list(scratch_root.iterdir()) == []
+    assert judge.last_usage is None
 
 
 def test_a_failing_turn_leaves_no_scratch_and_the_hold_reaches_the_caller(tmp_path: Path) -> None:

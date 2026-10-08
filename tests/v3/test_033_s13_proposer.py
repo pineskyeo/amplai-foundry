@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 from test_033_s11_stages import (
@@ -79,8 +79,17 @@ class Turn:
         self.cell_id, self.script = cell_id, script
         self.calls: list[dict[str, Any]] = []
 
+    # operator decision 2026-10-08: a proposer turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]] | None] = {"argv": ["--web-off"]}
+
     def run(
-        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None
+        self,
+        *,
+        prompt: str,
+        schema: dict[str, Any],
+        workspace: Path,
+        mounts: Any = None,
+        offline: bool = False,
     ) -> TurnResult:
         files = sorted(p for p in Path(workspace).rglob("*") if p.is_file())
         seen = {
@@ -88,6 +97,7 @@ class Turn:
             "schema": schema,
             "workspace": Path(workspace),
             "mounts": mounts,
+            "offline": offline,
             "files": [str(p.relative_to(workspace)) for p in files],
             "dirs": sorted(
                 str(p.relative_to(workspace)) for p in Path(workspace).rglob("*") if p.is_dir()
@@ -628,6 +638,8 @@ def test_an_earlier_proposal_naming_validation_or_holdout_material_is_left_out(
         assert hidden.lower() not in flat.lower(), hidden
     ens.run(cell_id=CELL, drafts=1, refine=1)
     assert len(breadth.calls) == 1 and len(depth.calls) == 1
+    # operator decision 2026-10-08: both proposer turns run with their web tools off
+    assert breadth.calls[0]["offline"] is True and depth.calls[0]["offline"] is True
     assert [e["proposal_id"] for e in breadth.calls[0]["inputs"]["proposals"]] == [clean]
     text = seen_text(breadth, depth)
     for hidden in HIDDEN:
@@ -675,6 +687,30 @@ def test_the_whole_inputs_are_leak_checked_before_any_turn_runs(
     assert {"kind": "task_id", "where": "/inputs.json/metrics/0/task_id"} in error.details
     assert HOLD[0] not in json.dumps(error.details)
     hold("LEAK_GATE", ens.inputs, CELL)
+
+
+class UndeclaredTurn(Turn):
+    """A turn that does not say how its web tools are off (a driver added without it)."""
+
+    offline_tools = None
+
+
+@pytest.mark.parametrize("which", ["breadth", "depth"])
+def test_a_proposer_turn_without_a_web_off_declaration_is_held_before_any_turn(
+    w: World, tmp_path: Path, which: str
+) -> None:
+    """Operator decision 2026-10-08: every test turn runs with its web tools off, so a proposer
+    turn that does not declare how holds DRIVER_WEB_UNDECLARED before any turn or scratch."""
+    breadth, depth = turns([E_ROLE])
+    if which == "breadth":
+        breadth = UndeclaredTurn("cheap-cell", lambda seen, n: {"edits": [E_ROLE]})
+    else:
+        depth = UndeclaredTurn("strong-cell", refine_ok)
+    ens = ensemble(w, tmp_path, breadth, depth)
+    hold("DRIVER_WEB_UNDECLARED", ens.run, cell_id=CELL, drafts=1, refine=1)
+    assert breadth.calls == [] and depth.calls == []
+    assert not (tmp_path / "scratch").exists()
+    assert w.objects(RUN_KIND) == []
 
 
 def test_a_scratch_root_inside_the_repository_is_refused(
@@ -1142,9 +1178,10 @@ def test_dreaming_proposes_add_deltas_with_evidence_and_the_absolute_date(
         ("memory_notes", "memory_notes.dream." + CELL)
     ]
     assert change["component_changes"][0]["to"] == component[0]
-    # one read-only turn on an empty scratch directory holding the night's inputs
+    # one read-only turn on an empty scratch directory holding the night's inputs, with its web
+    # tools off (operator decision 2026-10-08)
     (call,) = turn.calls
-    assert call["schema"] is proposer.DREAM_SCHEMA
+    assert call["schema"] is proposer.DREAM_SCHEMA and call["offline"] is True
     assert call["files"][0] == "inputs.json" and sorted(call["traces"]) == sorted(
         t["id"] for t in traces
     )
@@ -1249,6 +1286,15 @@ def test_dreaming_with_evidence_of_a_hidden_split_is_refused(w: World) -> None:
     assert dream(w.ops, cell_id=CELL, night=night(), turn=turn) is None  # refused: nothing left
     assert "trace-run-val-night" not in turn.calls[0]["text"]  # the turn never saw that trace
     assert [v for _r, v in w.objects("harness-component") if v["source"] == "dreaming"] == []
+
+
+def test_dreaming_with_an_undeclared_turn_is_held_before_it_runs(w: World) -> None:
+    """Operator decision 2026-10-08: the dreaming turn must declare how its web tools are off;
+    without it DRIVER_WEB_UNDECLARED holds before the turn and nothing is proposed."""
+    dev_traces_of_the_night(w)
+    turn = UndeclaredTurn("cheap-cell", lambda seen, n: {"deltas": []})
+    hold("DRIVER_WEB_UNDECLARED", dream, w.ops, cell_id=CELL, night=night(), turn=turn)
+    assert turn.calls == []
 
 
 def test_dreaming_has_nothing_to_do_without_traces_of_that_night(w: World) -> None:

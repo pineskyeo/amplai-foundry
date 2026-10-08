@@ -18,6 +18,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from amplai_foundry.agent_drivers import offline
 from amplai_foundry.agent_drivers.cli import CliDriver
 from amplai_foundry.agent_drivers.ports import DriverRegistry, RecipePort
 from amplai_foundry.agent_drivers.protocol import SessionJournal
@@ -95,11 +96,22 @@ def test_codex_argv_equals_the_qualified_container_argv(tmp_path: Path) -> None:
     # expected: production builds exactly the same vector (workspaces carry no .git)
     assert driver.argv("do it") == qualified
     assert driver.argv("do it", session="sess_1") == resumed
-    # and so does the qualification script itself (its argv is built without a sandbox)
+    # and the qualification script builds the trial dispatch's vector (its argv is built
+    # without a sandbox): operator decision 2026-10-08, every test turn runs with the web tools
+    # off, so the qualification measures the argv the trials run
+    from amplai_foundry.runtime.execution.cells import DispatchOptions
+
+    trial = DispatchOptions("gpt-5.6-sol", None, offline=True)
     script = _qualify_script()
     turns = SimpleNamespace(driver="codex", model="gpt-5.6-sol")
-    assert script.ContainerTurns.argv(turns, "do it") == qualified
-    assert script.ContainerTurns.argv(turns, "do it", session="sess_1") == resumed
+    assert script.ContainerTurns.argv(turns, "do it") == driver.argv("do it", options=trial)
+    assert script.ContainerTurns.argv(turns, "do it", session="sess_1") == driver.argv(
+        "do it", session="sess_1", options=trial
+    )
+    at = qualified.index("--skip-git-repo-check")
+    web_off = [*offline.CODEX_FEATURES_OFF, *offline.CODEX_IGNORE_CONFIG]
+    expected = [*qualified[:at], *web_off, *qualified[at:]]
+    assert script.ContainerTurns.argv(turns, "do it") == expected
 
 
 def _qualify_script() -> Any:

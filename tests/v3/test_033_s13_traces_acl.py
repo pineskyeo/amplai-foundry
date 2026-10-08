@@ -886,11 +886,13 @@ def test_a_trial_goal_without_capture_and_a_real_goal_never_reach_the_sink(setup
     assert setup.container.driver._traces == {}
 
 
-def test_a_capturing_trial_on_a_port_without_options_runs_uncaptured(
+def test_a_capturing_trial_on_a_port_without_options_is_held_before_it_runs(
     deployment: Any, tmp_path: Path
 ) -> None:
-    # a cell whose port takes no dispatch options (OpenCode-like): the trial completes, nothing
-    # is held and the sink is never called (OpenCode capture is deferred, §9.1)
+    # amended by the operator decision of 2026-10-08 (web tools off in tests): a port that takes
+    # no dispatch options cannot receive the trial's web-off flag, so it declares no
+    # ``offline_tools`` and the trial is held DRIVER_WEB_UNDECLARED before any claim; nothing
+    # runs and the sink is never called. (Before: the trial ran uncaptured with today's argv.)
     built = Setup(deployment, tmp_path, plain_port=True)
     calls: list[tuple[str, dict[str, Any]]] = []
     built.coordinator.trace_sink = lambda run_id, value: calls.append((run_id, value))
@@ -902,11 +904,10 @@ def test_a_capturing_trial_on_a_port_without_options_runs_uncaptured(
     )  # fmt: skip
     rig.service.approve(rig.operator, goal)
     record = ExecutionLoop(rig.service, built.coordinator, publisher=None).run_goal(goal)
-    assert record["status"] == "verified", record
+    assert record["status"] == "held", record
+    assert record["reason"].startswith("dispatch options: DRIVER_WEB_UNDECLARED"), record
     assert calls == [] and built.container.driver._traces == {}
-    assert len(built.container.argvs) == 1  # it ran, with today's argv
-    argv = built.container.argvs[0]  # no effort flag; decision (C)'s web search override only
-    assert argv.count("-c") == 1 and argv[argv.index("-c") + 1] == 'web_search="disabled"'
+    assert built.container.argvs == []  # nothing ran
 
 
 def test_the_deployment_sink_stores_the_trial_trace_and_nothing_for_a_real_goal(

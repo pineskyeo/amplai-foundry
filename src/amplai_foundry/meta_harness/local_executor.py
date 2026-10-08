@@ -332,6 +332,9 @@ class LocalTrialExecutor:
             if self._drifted(installed, spec.environment_id):
                 return self._drift(composition_ref, case, repeat, mode, spec, cell_id, binding)
             executed = self.service.env_sibling(installed, composition_ref, spec.environment_id)
+        # operator decision 2026-10-08: the driver must declare how its web tools are off
+        # before any goal exists (the loop checks again before any claim, for every revision)
+        self._require_offline(executed)
         subject, arm, bound = self._bind(composition_ref, case, repeat)
         try:
             context = TrialContext(
@@ -354,6 +357,20 @@ class LocalTrialExecutor:
             composition_ref, case, repeat, mode, spec, context, record,
             executed=executed, binding=binding,
         )  # fmt: skip
+
+    def _require_offline(self, composition_ref: dict[str, Any]) -> None:
+        """Hold DRIVER_WEB_UNDECLARED when the composition's registered driver port does not
+        declare how its web tools are turned off (``agent_drivers/offline.py``). A driver with no
+        registered port is left to the dispatch (DRIVER_NOT_INSTALLED), as before."""
+        from ..agent_drivers import offline
+
+        composition = self.store.get(self.scope, "harness-composition", composition_ref)
+        registry = getattr(self.loop.coordinator, "registry", None)
+        installed = getattr(registry, "installed", None)
+        ref = composition.get("driver_profile_ref")
+        port = installed(self.scope, ref) if callable(installed) and ref else None
+        if port is not None:
+            offline.require_port(port)
 
     # -- IC-12 task environments: drift (S7b, §10.5 step 6) ------------------------------------
     def task_environment_digest(self, installed: Any, environment_id: str) -> str:

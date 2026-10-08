@@ -185,3 +185,95 @@ def test_the_planner_argv_equals_the_oracle(tmp_path: Path, prompt: str) -> None
         "--json-schema",
         '{"type":"object","properties":{"a":{"type":"string"}},"required":["a"]}',
     ]
+
+
+# -- operator decision 2026-10-08 (supersedes IC-35): web tools off in tests ---------------------
+# A trial dispatch (DispatchOptions.offline) and a trial read-only turn (offline=True) carry the
+# driver's web-off arguments; every vector above (a real goal) is unchanged. The amendment adds
+# exactly these arguments, at exactly these places, to the frozen oracle's vectors:
+# - Claude: `--disallowedTools <network tools>` right after `--allowedTools <list>` (the API-key
+#   argv also `--strict-mcp-config`; the OAuth argv already has it);
+# - Codex: the networked features off and `--ignore-user-config` right after decision (C)'s pair.
+def with_trial_web_off(provider: str, auth: str, frozen: tuple[str, Any]) -> tuple[str, Any]:
+    from amplai_foundry.agent_drivers import offline
+
+    kind, value = with_web_search_off(provider, frozen)
+    if kind != "ok":
+        return kind, value
+    if provider == "codex":
+        i = value.index("--skip-git-repo-check")
+        return kind, [*value[:i], *offline.CODEX_FEATURES_OFF, *offline.CODEX_IGNORE_CONFIG,
+                      *value[i:]]  # fmt: skip
+    i = value.index("--allowedTools") + 2
+    extra = [*offline.CLAUDE_OFFLINE, *(offline.CLAUDE_NO_MCP if auth == "api_key" else ())]
+    return kind, [*value[:i], *extra, *value[i:]]
+
+
+@pytest.mark.parametrize("schema", SCHEMAS, ids=["no-schema", "schema"])
+@pytest.mark.parametrize("session", SESSIONS, ids=["no-session", "exact-session"])
+@pytest.mark.parametrize(
+    ("provider", "auth"),
+    [("codex", "api_key"), ("codex", "oauth_token"), ("claude", "api_key"),
+     ("claude", "oauth_token")],
+)  # fmt: skip
+def test_a_trial_argv_is_the_oracle_plus_exactly_the_web_off_arguments(
+    tmp_path: Path, provider: str, auth: str, session: str | None, schema: dict[str, Any] | None
+) -> None:
+    from amplai_foundry.runtime.execution.cells import DispatchOptions
+
+    driver = make_driver(tmp_path, provider, auth)
+    trial = DispatchOptions(MODEL, None, offline=True)
+    got = outcome(driver.argv, "P", session=session, output_schema=schema, options=trial)
+    want = with_trial_web_off(provider, auth, outcome(
+        argv_oracle.argv, provider, provider, MODEL, auth, "P", session=session,
+        output_schema=schema,
+    ))  # fmt: skip
+    assert got == want
+
+
+def test_a_trial_argv_pins_the_web_off_literals(tmp_path: Path) -> None:
+    from amplai_foundry.runtime.execution.cells import DispatchOptions
+
+    trial = DispatchOptions(MODEL, None, offline=True)
+    oauth = make_driver(tmp_path, "claude", "oauth_token").argv("P", options=trial)
+    at = oauth.index("--allowedTools")
+    assert oauth[at : at + 4] == [
+        "--allowedTools", "Read,Edit,Write,Glob,Grep,Bash",
+        "--disallowedTools", "WebSearch,WebFetch,RemoteTrigger,DesignSync,PushNotification",
+    ]  # fmt: skip
+    assert oauth.count("--strict-mcp-config") == 1
+    api = make_driver(tmp_path, "claude", "api_key").argv("P", options=trial)
+    assert api[api.index("--disallowedTools") + 2] == "--strict-mcp-config"
+    codex = make_driver(tmp_path, "codex", "api_key").argv("P", session="S1", options=trial)
+    assert codex[9:] == [
+        "-c", 'web_search="disabled"',
+        "-c", "features.apps=false", "-c", "features.browser_use=false",
+        "-c", "features.browser_use_external=false",
+        "-c", "features.browser_use_full_cdp_access=false", "-c", "features.computer_use=false",
+        "-c", "features.in_app_browser=false", "-c", "features.remote_plugin=false",
+        "-c", "features.skill_mcp_dependency_install=false",
+        "--ignore-user-config",
+        "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "P",
+    ]  # fmt: skip
+
+
+@pytest.mark.parametrize("prompt", PROMPTS)
+def test_a_trial_planner_argv_is_the_g4_oracle_plus_exactly_the_web_off_arguments(
+    tmp_path: Path, prompt: str
+) -> None:
+    from amplai_foundry.runtime.execution.readonly_turn import ClaudeReadOnlyTurn, CodexReadOnlyTurn
+
+    codex = CodexPlanner(None, None, tmp_path / "codex-runs", model=MODEL)  # type: ignore[arg-type]
+    assert isinstance(codex.turn, CodexReadOnlyTurn)
+    assert ("ok", codex.turn.argv(prompt, offline=True)) == with_trial_web_off(
+        "codex", "oauth_token", ("ok", argv_oracle.codex_planner_argv(MODEL, prompt))
+    )
+    claude = ClaudePlanner(None, "token", tmp_path / "claude-runs", model=MODEL)  # type: ignore[arg-type]
+    assert isinstance(claude.turn, ClaudeReadOnlyTurn)
+    # the read-only Claude argv is the OAuth form: --strict-mcp-config is already in it
+    assert ("ok", claude.turn.argv(prompt, SCHEMA, offline=True)) == with_trial_web_off(
+        "claude", "oauth_token", ("ok", argv_oracle.claude_planner_argv(MODEL, prompt, SCHEMA))
+    )
+    # without the flag the planner argv is G4 as before
+    assert codex.turn.argv(prompt) == codex.argv(prompt)
+    assert claude.turn.argv(prompt, SCHEMA) == claude.claude_argv(prompt, SCHEMA)

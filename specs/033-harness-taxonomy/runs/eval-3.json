@@ -1,0 +1,9 @@
+{
+  "version": "eval-3",
+  "changes": [
+    {
+      "kind": "analysis_code",
+      "detail": "operator decisions 2026-10-08: a trial with unknown usage is charged max(reservation, known partial usage) and the run continues (a real overrun still stops); an answer-lookup trial counts as failed even with unknown usage; tokens per solved count charged tokens"
+    }
+  ]
+}

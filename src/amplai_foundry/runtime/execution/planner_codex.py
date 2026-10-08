@@ -455,6 +455,7 @@ class CodexPlanner:
         *,
         interpretation: str = "v1",
         capture_trace: bool = False,
+        offline: bool = False,
     ) -> dict[str, Any]:
         """One read-only turn over every app of a multi-app goal (D-081)."""
         names = list(apps)
@@ -463,7 +464,7 @@ class CodexPlanner:
             goal, names[0], {}, workspaces[names[0]],
             schema=multi_plan_schema({a: list(v) for a, v in apps.items()}),
             prompt=self.multi_prompt(goal, apps, interpretation=interpretation), mounts=mounts,
-            capture_trace=capture_trace,
+            capture_trace=capture_trace, offline=offline,
         )  # fmt: skip
 
     def draft(
@@ -481,18 +482,23 @@ class CodexPlanner:
         max_parts: int = 4,
         interpretation: str = "v1",
         capture_trace: bool = False,
+        offline: bool = False,
     ) -> dict[str, Any]:
         """One read-only planning turn. ``variant`` (``steps``/``parts``, Work 033 S9 M7) adds
         that field to the schema and its rule to the prompt; None is the v1 draft.
         ``interpretation`` is the planner instruction (§2.2; ``v1`` is today's text).
         ``capture_trace`` (a trial goal that captures, §9.1) also returns the turn's sanitized
-        events as ``trace``; without it the reply and the turn's arguments are as before."""
+        events as ``trace``; without it the reply and the turn's arguments are as before.
+        ``offline`` (a trial goal, operator decision 2026-10-08): the turn runs with its web tools
+        off (``ReadOnlyTurn.run(..., offline=True)``); without it the turn is called as before."""
         schema = schema or plan_schema(list(verifiers), variant)
         text = prompt or self.prompt(
             goal, app, verifiers, mode, variant=variant, max_parts=max_parts,
             interpretation=interpretation,
         )  # fmt: skip
         extra: dict[str, Any] = {"capture_trace": True} if capture_trace else {}
+        if offline:
+            extra["offline"] = True
         try:
             result = self.turn.run(
                 prompt=text, schema=schema, workspace=workspace, mounts=mounts, **extra

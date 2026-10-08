@@ -30,7 +30,7 @@ import json
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -218,6 +218,7 @@ class TurnCall:
     workspace: Path
     existed: bool
     patch_in_prompt: str = ""
+    offline: bool = False  # a trial turn runs with its web tools off (decision 2026-10-08)
 
 
 class FakeTurns:
@@ -249,16 +250,28 @@ class FakeTurns:
 
 
 class _Turn:
+    # operator decision 2026-10-08 (agent_drivers/offline.py): a trial's read-only turn declares
+    # how its web tools are off; this scripted turn has none and records the flag
+    offline_tools: ClassVar[dict[str, list[str]]] = {"argv": ["--scripted-turn-has-no-web"]}
+
     def __init__(self, turns: FakeTurns, cell_id: str) -> None:
         self.turns, self.cell_id = turns, cell_id
 
     def run(
-        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None
-    ) -> TurnResult:
+        self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None,
+        offline: bool = False,
+    ) -> TurnResult:  # fmt: skip
         turns, kind = self.turns, kind_of(schema)
         with turns._lock:
             turns.calls.append(
-                TurnCall(self.cell_id, kind, prompt, Path(workspace), Path(workspace).is_dir())
+                TurnCall(
+                    self.cell_id,
+                    kind,
+                    prompt,
+                    Path(workspace),
+                    Path(workspace).is_dir(),
+                    offline=offline,
+                )
             )
             turns.order.append(("turn", kind))
             turns.active += 1
@@ -2167,11 +2180,13 @@ class _TracingTurn(_Turn):
 
     def run(
         self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None,
-        capture_trace: bool = False,
+        capture_trace: bool = False, offline: bool = False,
     ) -> TurnResult:  # fmt: skip
         from amplai_foundry.meta_harness.traces import TraceBuffer
 
-        result = super().run(prompt=prompt, schema=schema, workspace=workspace, mounts=mounts)
+        result = super().run(
+            prompt=prompt, schema=schema, workspace=workspace, mounts=mounts, offline=offline
+        )
         kind = kind_of(schema)
         self.turns.asked.append((kind, capture_trace))
         if not capture_trace:

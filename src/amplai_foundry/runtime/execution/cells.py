@@ -148,6 +148,9 @@ class DispatchOptions:
     allowed_tools: tuple[str, ...] | None = None
     codex_config: tuple[tuple[str, str], ...] = ()
     capture_trace: bool = False
+    # operator decision 2026-10-08 (supersedes IC-35): a trial dispatch runs with every web tool
+    # off (``agent_drivers/offline.py``); set for every goal with a trial context, never else
+    offline: bool = False
 
     def __post_init__(self) -> None:
         from .policies import CLAUDE_OPTION_ALLOWLIST, CLAUDE_TOOLS, CODEX_CONFIG_ALLOWLIST
@@ -183,6 +186,8 @@ class DispatchOptions:
             for pair in self.codex_config
         ):
             bad.append("codex_config")
+        if type(self.offline) is not bool:
+            bad.append("offline")
         if bad:
             raise Hold(
                 "DRIVER_OPTIONS_UNSUPPORTED", "Driver options outside their allowed values",
@@ -215,6 +220,8 @@ class DispatchOptions:
             "allowed_tools": list(self.allowed_tools) if self.allowed_tools is not None else None,
             "codex_config": [list(pair) for pair in self.codex_config],
             "capture_trace": self.capture_trace,
+            # only when set: options recorded before the flag keep their wire and digest
+            **({"offline": True} if self.offline else {}),
         }
 
     def digest(self) -> str:
@@ -229,8 +236,14 @@ class DispatchOptions:
         )
 
     def is_default(self) -> bool:
-        """Effort None, no driver options, no trace capture: today's argv (golden G2)."""
-        return self.effort is None and not self.has_driver_options() and not self.capture_trace
+        """Effort None, no driver options, no trace capture, not a trial: today's argv (golden
+        G2)."""
+        return (
+            self.effort is None
+            and not self.has_driver_options()
+            and not self.capture_trace
+            and not self.offline
+        )
 
     @classmethod
     def default(cls, model: str) -> DispatchOptions:
@@ -247,6 +260,7 @@ class DispatchOptions:
             allowed_tools=tuple(tools) if tools is not None else None,
             codex_config=tuple((k, v) for k, v in value.get("codex_config") or []),
             capture_trace=bool(value.get("capture_trace")),
+            offline=bool(value.get("offline")),
         )
 
 
@@ -276,6 +290,7 @@ def resolve_options(
     policy: BudgetPolicy,
     *,
     capture_trace: bool,
+    offline: bool = False,
 ) -> DispatchOptions:
     """Model and effort from the activated model profile; driver options from the budget
     policy's ``driver_options`` component (L5), only the keys the policies allowlists admit
@@ -307,6 +322,7 @@ def resolve_options(
         allowed_tools=tuple(tools) if tools is not None else None,
         codex_config=tuple((str(k), str(v)) for k, v in codex),
         capture_trace=capture_trace,
+        offline=offline,
     )
 
 
@@ -485,10 +501,15 @@ def run_probe(
     scratch = Path(scratch).absolute()
     if scratch.resolve() != scratch or not scratch.is_dir() or any(scratch.iterdir()):
         raise Hold("TURN_FAILED", "The probe needs an empty, link-free scratch directory")
+    # operator decision 2026-10-08 (agent_drivers/offline.py): the probe runs with every web tool
+    # off; a turn that does not declare how holds DRIVER_WEB_UNDECLARED before it runs (no record)
+    from ...agent_drivers import offline as web_off
+
+    web_off.require(turn)
     usage: dict[str, Any] | None = None
     error: str | None = None
     try:
-        result = turn.run(prompt=PROBE_PROMPT, schema=PROBE_SCHEMA, workspace=scratch)
+        result = turn.run(prompt=PROBE_PROMPT, schema=PROBE_SCHEMA, workspace=scratch, offline=True)
         usage = result.usage
         outcome = "accepted"
     except Hold as hold:

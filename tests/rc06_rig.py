@@ -18,12 +18,13 @@ from pathlib import Path
 from typing import Any
 
 from amplai_foundry.agent_drivers.cli import ClaudeCodeDriver, CodexCliDriver
-from amplai_foundry.agent_drivers.ports import CliPort, DriverRegistry
+from amplai_foundry.agent_drivers.ports import DriverRegistry
 from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.execution.codex import (
     AUTH,
     CodexProfileInputs,
+    OptionsCliPort,
     SeededCodexPort,
     install_codex_profile,
 )
@@ -405,7 +406,9 @@ def rig_with_two_drivers(
     (home / AUTH).write_text('{"tokens": "original"}')
     registry = DriverRegistry(d.store)
     registry.register(d.actor, codex_refs["driver"], SeededCodexPort(codex, home))
-    registry.register(d.actor, claude_refs["driver"], CliPort(claude))
+    # the production Claude port (build_claude_port): it takes the dispatch options, so a trial
+    # reaches the driver with its web tools off (operator decision 2026-10-08)
+    registry.register(d.actor, claude_refs["driver"], OptionsCliPort(claude))
     coordinator = WorkCoordinator(d.runtime, registry, rig.workspaces, poll_seconds=0.05)
     published: list[str] = []
 

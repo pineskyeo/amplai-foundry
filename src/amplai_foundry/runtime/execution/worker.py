@@ -352,11 +352,20 @@ class WorkCoordinator:
         S13 (§9.1): such a port has no capture point, so options that differ from the default
         only by ``capture_trace`` (``capture_only``) reach it as none and the trial runs
         uncaptured; the trace flag changes no argv and no run behaviour.
+
+        Operator decision 2026-10-08 (``agent_drivers/offline.py``): a trial's ``offline`` flag
+        can reach a port only through its options, so a port without ``accepts_options`` takes
+        it only when it declares ``no_tools`` (it runs no model, nothing is turned off); any
+        other such port holds DRIVER_OPTIONS_UNSUPPORTED for a trial dispatch.
         """
+        from ...agent_drivers import offline
+
         profile = dispatch["profile"]
         accepts = getattr(port, "accepts_options", False) is True
         if options is not None:
             if not accepts:
+                if options.offline and offline.toolless(port):
+                    options = replace(options, offline=False)
                 if options.is_default() or capture_only(options):
                     return None
                 raise Hold(
