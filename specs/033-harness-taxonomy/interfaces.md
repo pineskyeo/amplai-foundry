@@ -3087,3 +3087,100 @@ so it is not implemented.
 | IC | Options | Recommendation |
 |---|---|---|
 | IC-33 | (A) **the night builds** a class A row (every "on" factor class A, at most one per slot) as a proposal of the cell's effective champion, through an in-process proposer identity, then screens it under IC-30 (A); the observation the proposal cites is marked with its own trust (not `verifier`), since the screen's `NO_EVIDENCE_CHANGE` check (`meta_harness/service.py:289`) only asks for a non-empty `observation_refs` and cannot tell night-written evidence apart. (B) **never build**: rows without a matching candidate stay `unbuilt` (today's rule). (C) **the operator builds during the day**: a command lists the night's unbuilt rows and submits them as proposals under the operator's `harness.propose`; the night screens and measures them on a later night. | None recorded: the operator decides. (A) lets one unattended process author, evidence and screen the same proposal, which the independence check (`MetaHarness._independent`, `service.py:116-124`: the actor's subject id against the proposer id, and `harness.propose`) does not catch. |
+
+## Clarification: Pilot Split Rule (2026-10-08)
+
+Operator decision 2026-10-08: the pilot runs on the own tasks now, with a split registered before any run (no run
+result exists yet); Terminal-Bench 2.0 comes later as a new corpus version (§10.2 procedure, §14 Q7 still open).
+`stratified_by_domain_v1` alone refuses the own tasks (`SPLIT_TOO_SMALL`: holdout 22, validation 13 < 24), as the
+§10.2 arithmetic predicts.
+
+- **Rule `stratified_by_domain_pilot_v1`** (`meta_harness/corpus_v2.py:54`, `assign_splits(..., method=...)`
+  `corpus_v2.py:430`): per domain holdout = 30 % of the own tasks (as v1, TB2 and imported tasks never holdout);
+  validation = 50 % of the remaining main tasks of the domain (`_half`, rounded half up like `_share`;
+  the operator did not fix the rounding); development = the rest. Same per-domain `Random(f"{seed}:{domain}")` over the
+  sorted ids and the same two shuffles as v1, so with one seed both rules give the same holdout and the v1 validation
+  is a subset of the pilot validation. Same minimums (holdout ≥ 16, validation ≥ 24, else `SPLIT_TOO_SMALL`, the
+  message names the rule). `stratified_by_domain_v1` is unchanged and stays the default (§10.2); an unknown rule is
+  `TASK_SPLIT`.
+- **Seed**: `split_seed` 20261008 (the decision date), fixed before computing.
+- **Where it is written**: `corpus_v2.write_splits(root, seed=, method=)` (`corpus_v2.py:492`), from
+  `scripts/corpus_check.py --corpus <root> --write-splits <rule> --seed <n>` (judges nothing). It writes `splits.json`
+  `{"seed", "method": <rule id>, "assignments"}` (sorted by id) and the manifest `split_seed`. An existing
+  `splits.json` or manifest seed that differs is refused (`TASK_SPLIT`); a re-split is a new corpus version (§10.2)
+  and starts by removing them. This amends the §10.1 file ownership: for this corpus version the main session wrote
+  `splits.json` before S6-freeze, at the operator's decision; §10.1's `"method": "stratified_by_domain_v1"` now reads
+  "one of `SPLIT_METHODS`".
+- **Read path**: `load` accepts either rule id in `splits.json` (checks unchanged: seed = manifest `split_seed`, main
+  tasks only, holdout only for own tasks) and keeps it as `CorpusV2.split_method` (`corpus_v2.py:133`); `freeze`
+  records it as the task index `splits.method` (`corpus_v2.py:851`; v1 when absent, `REGRESSION_METHOD` for the
+  regression set).
+- **Result** (`specs/033-harness-taxonomy/corpus/splits.json`, 71 main tasks; the 20 regression tasks stay validation
+  of their own corpus, §10.6):
+
+| Domain | holdout | validation | development |
+|---|---|---|---|
+| ambiguity | 4 | 4 | 4 |
+| bug | 4 | 5 | 4 |
+| cli_ops | 4 | 4 | 4 |
+| data | 3 | 4 | 4 |
+| feature | 4 | 4 | 4 |
+| refactor | 3 | 4 | 4 |
+| **total** | **22** | **25** | **24** |
+
+- **Open**: validation 25 is just above the minimum; whether `n_val · r ≥ max(16, n_min)` holds is unknown until S16
+  calibration measures r (§10.2). Development has 24 tasks for the proposer.
+- Tests: `tests/v3/test_033_pilot_split.py`.
+
+## Clarification: TB2 Test Entry And Grading (2026-10-08)
+
+Operator decision 2026-10-08: Terminal-Bench 2.0 is prepared in parallel and added later as a new corpus version;
+TB2 tasks never go to holdout (unchanged §10.2 rule). This answers the test-entry half of §14 Q7 from the task files
+and implements `tb2_tests` grading. Facts and per-task counts: `specs/033-harness-taxonomy/runs/tb2-q7.md`
+(`harbor-framework/terminal-bench-2@2fd12b88aafdd04a52c298e3940bcb189f9766d6`, Apache-2.0; Harbor
+`laude-institute/harbor@4d1dcfb2`).
+
+- **§14 Q7, answered part**: every one of the 89 tasks has `tests/test.sh`; Harbor uploads `tests/` to `/tests`
+  and runs `/tests/test.sh` in the image's working directory (`harbor/verifier/verifier.py:175-232`,
+  `harbor/environments/docker/docker.py:1362,1411-1412`; no `task.toml` sets `workdir`); the Dockerfile's last
+  `WORKDIR` is `/app` for 86 tasks (`/app/personal-site`, `/app/dclm`, `/workspace` once each). The verdict is the
+  reward file, not the exit status: Harbor reads `/logs/verifier/reward.json`, else `/logs/verifier/reward.txt`
+  (`verifier.py:257-266`), and every TB2 `test.sh` writes `1`/`0` there as its last statement, so it exits 0
+  whether or not the tests passed. **Still open (§14 Q7)**: how many tasks admit, whether the driver layer runs on
+  each task base image, the built images' `Config.WorkingDir`, and image sizes (not stated in the source). All 89
+  scripts install test dependencies at test time (`uv`/`uvx`/`pip`; 82 `curl` uv, 82 `apt-get`), which network
+  none and uid 65534 may break; only the operator admission run (§10.5 step 4) can tell.
+- **`meta_harness/tb2_grading.py`** (new): `entry_for(task)` gives the entry `bash /tests/test.sh`, verdict
+  `reward_file`, timeout `[verifier] timeout_sec`; no `tests/test.sh` gives None. `grade(entry, workspace, tests,
+  image=, profile=, run=)` runs it once against a scratch copy of the workspace after the run, in a fresh container
+  of the task image with network `none`, uid/gid 65534, a read-only root, the task's `tests/` read-only at `/tests`
+  and a fresh empty host directory read-write at `/logs/verifier` (opened 0777 for uid 65534, as Harbor does,
+  `harbor/models/trial/paths.py:161`). Result: reward `1` pass, `0` fail; an `exit_status` entry passes on 0; an
+  unknown entry, a timeout, no reward, an empty or other reward, or a `reward.json` (pass rule not defined by TB2
+  2.0) is null. A profile that is not pinned, not uid/gid 65534 or not network none holds the new code
+  `TB2_GRADING`. The outcome is `Tb2Outcome(Outcome)`: `result` is True, False or None; `success` is
+  `result is True`, so an ungraded run is never a pass, and a reader that must tell failure from null reads
+  `result`.
+- **Mount choice (implementation, not fixed by §10.5)**: the grading `docker_runner` adds the `/tests` (read-only)
+  and `/logs/verifier` (read-write) binds after `ContainerSandbox.command`, which admits trusted mounts only under
+  `/amplai-input/` for agent runs; TB2 scripts name both paths literally. Rejected: linking `/tests` and
+  `/logs/verifier` in the per-task image (`tb2.image_spec`) — a link into `/workspace` would let a result plant a
+  reward file. Whether docker creates the `/logs/verifier` mount point on a read-only root for every task image is
+  확인 필요 (operator run).
+- **`corpus_v2.grade`**: the `tb2_tests` branch calls `tb2_grading.grade_task` when the new keyword
+  `tb2_grader=tb2_grading.Grader(corpus_root, run, scratch)` is given; `grade_task` reads `image`,
+  `container_profile` and the `grading` entry from the task's `environment.json` (no entry: null). Without
+  `tb2_grader` it still holds `TASK_GRADING`. Not changed: `local_executor.py:466-470` still reports a verified
+  `tb2_tests` trial as `success` null "not graded"; wiring the executor to `grade_task` is open.
+- **`scripts/tb2_adapter.py`**: `admit` without `--test-command` grades its test steps with the task entry
+  (`tb2_grading.admit`: `tb2.admit` sees 0/1/None per step; None is reported as reason `timeout`), and the result
+  gains `grading` (the entry) and `test_grades`; a task without `tests/test.sh` holds `TB2_ADMISSION`. An explicit
+  `--test-command` keeps the S7a exit-status path unless `--test-result reward_file`. `write` calls
+  `tb2_grading.write_task`, which adds the admission's `grading` entry to `environment.json`.
+- Tests: `tests/v3/test_033_tb2_grading.py` (fake task, fake runner, no docker).
+
+## Operator Decision IC-33 (2026-10-08)
+
+IC-33 is decided **(B)**, the textbook rule: an unattended night never builds proposals (PB12 rows or others) and
+never writes evidence for its own screen; it screens and measures only proposals the proposer or the operator
+submitted. Generation and evidence stay separated.

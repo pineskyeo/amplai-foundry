@@ -13,16 +13,25 @@ With ``--corpus`` the corpus v2 loader scans the task directories (interfaces §
 narrows to domains. Ambiguity tasks that expect a question also need the ambiguity proof: each
 reference passes its own hidden suite and fails the other's (§10.3). ``tb2_tests`` tasks are
 listed as SKIP: their fairness is the TB2 admission run in the task image (§10.5).
+
+    .venv/bin/python scripts/corpus_check.py --corpus specs/033-harness-taxonomy/corpus \
+        --write-splits stratified_by_domain_pilot_v1 --seed 20261008
+
+``--write-splits METHOD --seed N`` judges nothing: it assigns the main set with that split rule
+(``corpus_v2.SPLIT_METHODS``), writes ``splits.json`` and the manifest ``split_seed``
+(``corpus_v2.write_splits``) and prints the counts per split and domain.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import tempfile
 from pathlib import Path
 
 from amplai_foundry.meta_harness import corpus_v2, local_corpus
+from amplai_foundry.meta_harness.local_corpus import CorpusError
 
 ROOT = Path(__file__).resolve().parents[1] / "specs" / "030-meta-harness-live" / "corpus"
 
@@ -32,6 +41,10 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--corpus", type=Path, help="a corpus v2 root (Work 033)")
     parser.add_argument("--domain", action="append", choices=corpus_v2.DOMAINS)
+    parser.add_argument(
+        "--write-splits", choices=corpus_v2.SPLIT_METHODS, help="write splits.json (no judging)"
+    )
+    parser.add_argument("--seed", type=int, help="the split seed for --write-splits")
     parser.add_argument("task_ids", nargs="*")
     return parser
 
@@ -92,8 +105,26 @@ def _v2(root: Path, domains: list[str] | None, task_ids: list[str], repeats: int
     return 1 if bad else 0
 
 
+def _write_splits(root: Path, method: str, seed: int) -> int:
+    try:
+        result = corpus_v2.write_splits(root, seed=seed, method=method)
+    except CorpusError as exc:
+        print(f"{exc.code}: {exc}")
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str]) -> int:
     args = _parser().parse_args(argv)
+    if args.write_splits or args.seed is not None:
+        if args.corpus is None or args.write_splits is None or args.seed is None:
+            print("--write-splits needs --corpus and --seed")
+            return 2
+        if args.domain or args.task_ids:
+            print("--write-splits assigns the whole main set (no --domain or task ids)")
+            return 2
+        return _write_splits(args.corpus, args.write_splits, args.seed)
     if args.repeats < 1:
         print("--repeats must be at least 1")
         return 2
