@@ -74,13 +74,23 @@ def test_diff_stats_counts_files_lines_and_what_happened_to_tests() -> None:
     ]  # fmt: skip
     assert (stats["lines_added"], stats["lines_removed"]) == (1 + 1 + 2, 1 + 3)
     assert stats["tests_added"] == ["tests/test_new.py"]  # new tests are ordinary work
-    assert stats["tests_changed"] == ["tests/test_gone.py", "tests/test_old.py"]  # edit or delete
+    assert stats["tests_extended"] == ["tests/test_old.py"]  # only lines appended: ordinary work
+    assert stats["tests_changed"] == ["tests/test_gone.py"]  # deleted
+
+
+def test_a_removed_or_changed_line_of_an_existing_test_is_a_test_change() -> None:
+    patch = (
+        b"diff --git a/tests/test_old.py b/tests/test_old.py\n--- a/tests/test_old.py\n"
+        b"+++ b/tests/test_old.py\n@@ -1 +1 @@\n-assert x == 1\n+assert True\n"
+    )
+    stats = diff_stats(patch)
+    assert stats["tests_changed"] == ["tests/test_old.py"] and stats["tests_extended"] == []
 
 
 def test_diff_stats_of_an_empty_patch() -> None:
     assert diff_stats(b"") == {
         "files": 0, "paths": [], "lines_added": 0, "lines_removed": 0,
-        "tests_added": [], "tests_changed": [],
+        "tests_added": [], "tests_extended": [], "tests_changed": [],
     }  # fmt: skip
 
 
