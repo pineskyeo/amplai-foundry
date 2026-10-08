@@ -307,6 +307,12 @@ class PlanContext:
     snapshots: list[dict[str, Any]] = field(default_factory=list)
 
 
+def is_trial(plan: dict[str, Any]) -> bool:
+    """The plan record carries a trial context: its read-only turns run with the web tools off
+    (operator decision 2026-10-08, ``agent_drivers/offline.py``); a real goal has no ``trial``."""
+    return isinstance(plan.get("trial"), dict)
+
+
 def captures(plan: dict[str, Any]) -> bool:
     """The plan record carries a trial context with ``capture_trace`` (S13, D-100): trial goals
     of the corpus only; a real goal has no ``trial``."""
@@ -675,7 +681,7 @@ class StrategyRunner:
         try:
             return self._aux_turn(
                 context.aux, role=role, purpose=kind, cell_id=cell, prompt=prompt,
-                schema=schema, workspace=workspace, on_trace=on_trace,
+                schema=schema, workspace=workspace, on_trace=on_trace, offline=context.trial,
             )  # fmt: skip
         finally:
             self.service.workspaces.discard(workspace)
@@ -693,12 +699,20 @@ class StrategyRunner:
         workspace: Path,
         node_id: str | None = None,
         on_trace: Callable[[dict[str, Any]], None] | None = None,
+        offline: bool = False,
     ) -> dict[str, Any]:
         """One read-only auxiliary turn, recorded in ``ledger`` (Hold AUX_BUDGET at the cap).
 
         ``on_trace`` (S13, a capturing trial goal only): the turn runs with ``capture_trace`` and
         its sanitized snapshot goes to ``on_trace`` after it completed; without it the turn is
-        called exactly as before S13 and asks for no trace."""
+        called exactly as before S13 and asks for no trace.
+
+        ``offline`` (a trial goal, operator decision 2026-10-08): the turn must declare how its
+        web tools are off (``offline.require``: DRIVER_WEB_UNDECLARED, recorded like a turn that
+        could not start) and runs with ``offline=True``; without it the turn is called as
+        before."""
+        from ...agent_drivers import offline as web_off
+
         ledger.check(role)
         entry: dict[str, Any] = {
             "role": role, "purpose": purpose, "cell_id": cell_id, "node_id": node_id,
@@ -706,17 +720,20 @@ class StrategyRunner:
         }  # fmt: skip
         try:
             turn = self.turns(cell_id)
+            if offline:
+                web_off.require(turn)
         except (Hold, RuntimeFault) as exc:  # nothing ran: no tokens were spent
             ledger.add({**entry, "usage": None, "tokens": 0, "seconds": 0.0, "error": exc.code})
             raise
         started = time.monotonic()
         try:
-            if on_trace is None:
-                result = turn.run(prompt=prompt, schema=schema, workspace=workspace)
-            else:
-                result = turn.run(
-                    prompt=prompt, schema=schema, workspace=workspace, capture_trace=True
-                )
+            # each flag only when set: a turn is otherwise called exactly as before
+            extra: dict[str, Any] = {}
+            if on_trace is not None:
+                extra["capture_trace"] = True
+            if offline:
+                extra["offline"] = True
+            result = turn.run(prompt=prompt, schema=schema, workspace=workspace, **extra)
         except (Hold, RuntimeFault) as exc:  # it may have spent tokens: unknown usage
             seconds = round(time.monotonic() - started, 1)
             ledger.add({**entry, "usage": None, "tokens": None, "seconds": seconds,
@@ -812,6 +829,7 @@ class StrategyRunner:
         ledger = self._ledger(plan)
         cell = choice.roles.get("executor", "")
         capture = captures(plan)  # S13: a capturing trial keeps each turn as investigator-<k>
+        trial = is_trial(plan)  # web tools off (operator decision 2026-10-08)
         found: dict[str, list[dict[str, Any]]] = {}
         stops: list[dict[str, Any]] = []
         for node in graph["nodes"]:
@@ -842,6 +860,7 @@ class StrategyRunner:
                         ledger, role="investigator", purpose=question, cell_id=cell,
                         prompt=prompt, schema=FINDINGS_SCHEMA, workspace=ws,
                         node_id=node["node_id"], on_trace=keep if capture else None,
+                        offline=trial,
                     )  # fmt: skip
 
                 with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as pool:
@@ -1151,7 +1170,7 @@ class StrategyRunner:
             output = self._aux_turn(
                 ledger, role="reviewer", purpose="review", cell_id=cell_id, prompt=prompt,
                 schema=REVIEW_SCHEMA, workspace=copy_ws, node_id=node["node_id"],
-                on_trace=keep if captures(plan) else None,
+                on_trace=keep if captures(plan) else None, offline=is_trial(plan),
             )  # fmt: skip
         except (Hold, RuntimeFault) as exc:
             self._save(

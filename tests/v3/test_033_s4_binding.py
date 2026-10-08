@@ -10,7 +10,7 @@ execution loop; stand-in: the scripted host-process "container" of the rc06 rig.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -58,6 +58,8 @@ class NoOptionsPort(SeededCodexPort):
 
 class Turn:
     cell_id = "fake"
+    # operator decision 2026-10-08: a probe turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]] | None] = {"argv": ["--web-off"]}
 
     def run(self, **_: Any) -> TurnResult:
         return TurnResult({"ok": True}, None, 0.0, "sha256:" + "0" * 64)

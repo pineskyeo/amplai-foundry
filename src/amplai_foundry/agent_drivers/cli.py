@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
-from . import answer_lookup
+from . import answer_lookup, offline
 from .protocol import EventNormalizer, JsonlDecoder, SessionJournal
 
 if TYPE_CHECKING:
@@ -37,10 +37,12 @@ CODEX_AUTH = Path(".codex") / "auth.json"
 # <key=value>  Override a configuration value that would otherwise be loaded from
 # ~/.codex/config.toml"), so a config.toml the agent can write in its home never re-enables it.
 CODEX_WEB_SEARCH_OFF = ("-c", 'web_search="disabled"')
-# config keys that would turn web search back on; never accepted through DispatchOptions
+# config keys that would turn web search (or, on a trial, a networked feature) back on; never
+# accepted through DispatchOptions
 CODEX_WEB_KEYS = frozenset({
     "web_search", "tools.web_search", "features.web_search_request", "features.web_search_cached",
     "features.standalone_web_search",
+    *(f"features.{name}" for name in offline.CODEX_NETWORK_FEATURES),
 })  # fmt: skip
 
 
@@ -132,6 +134,21 @@ class CliDriver:
             raise Hold("SESSION_UNPINNED", "Only an exact native session ID is accepted")
         return session
 
+    @property
+    def offline_tools(self) -> dict[str, Any]:
+        """How a trial dispatch turns the web tools off (``agent_drivers/offline.py``): the
+        arguments ``argv`` adds when ``options.offline`` is set."""
+        if self.provider == "claude":
+            no_mcp = list(offline.CLAUDE_NO_MCP) if self.auth == "api_key" else []
+            return {"argv": [*offline.CLAUDE_OFFLINE, *no_mcp]}
+        return {
+            "argv": [
+                *CODEX_WEB_SEARCH_OFF,
+                *offline.CODEX_FEATURES_OFF,
+                *offline.CODEX_IGNORE_CONFIG,
+            ]
+        }
+
     def _options(self, options: DispatchOptions | None) -> DispatchOptions | None:
         """None for no options or default options (today's argv, golden G2)."""
         if options is None:
@@ -207,6 +224,12 @@ class CliDriver:
                 else self.CLAUDE_DEFAULT_TOOLS
             )
             args += ["--allowedTools", tools]
+            if opts is not None and opts.offline:
+                # operator decision 2026-10-08: a trial denies the network tools; the API-key
+                # (--bare) argv also loads no MCP server (the OAuth argv already says so above)
+                args += [*offline.CLAUDE_OFFLINE]
+                if self.auth == "api_key":
+                    args += [*offline.CLAUDE_NO_MCP]
             if session:
                 args += ["--resume", session]
             if output_schema:
@@ -230,6 +253,10 @@ class CliDriver:
             args += ["-c", key + "=" + value]
         # decision (C): last of the overrides, on every dispatch (first turn, resume, follow-up)
         args += [*CODEX_WEB_SEARCH_OFF]
+        if opts is not None and opts.offline:
+            # operator decision 2026-10-08: a trial also turns the networked features off and
+            # never loads $CODEX_HOME/config.toml (MCP servers), on every turn of the session
+            args += [*offline.CODEX_FEATURES_OFF, *offline.CODEX_IGNORE_CONFIG]
         args += ["--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox"]
         if output_schema is not None:
             raise Hold("SCHEMA_FILE_REQUIRED", "Codex needs a pinned read-only schema file")

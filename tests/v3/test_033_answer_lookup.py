@@ -27,7 +27,7 @@ from typing import Any
 import pytest
 from test_033_s8_executor import AgentContainer, World, bound, make_world
 
-from amplai_foundry.agent_drivers import answer_lookup
+from amplai_foundry.agent_drivers import answer_lookup, offline
 from amplai_foundry.agent_drivers.answer_lookup import (
     DISPATCH_MAX,
     WITHHELD,
@@ -374,7 +374,11 @@ class LookupContainer(AgentContainer):
 
     def command(self, argv: list[str], workspace: Path, run_name: str, **kw: Any) -> list[str]:
         self.prompts.append(argv[-1])
-        assert list(CODEX_WEB_SEARCH_OFF) == argv[argv.index("--skip-git-repo-check") - 2 :][:2]
+        # a trial dispatch: web search off (decision (C)), then the trial's web-off arguments
+        # (operator decision 2026-10-08), right before --skip-git-repo-check
+        off = [*CODEX_WEB_SEARCH_OFF, *offline.CODEX_FEATURES_OFF, *offline.CODEX_IGNORE_CONFIG]
+        at = argv.index("--skip-git-repo-check")
+        assert argv[at - len(off) : at] == off
         return [sys.executable, "-c", LOOKUP_AGENT, str(workspace), self.mode,
                 json.dumps(self.commands), WEB_RUN]  # fmt: skip
 

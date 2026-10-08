@@ -881,6 +881,12 @@ class ProposerEnsemble:
             raise RuntimeFault("PROPOSER_RUN", f"drafts is 1..{MAX_EDITS}")
         if type(refine) is not int or not 0 <= refine <= drafts:
             raise RuntimeFault("PROPOSER_RUN", "refine is 0..drafts")
+        # operator decision 2026-10-08 (agent_drivers/offline.py): both turns run with every web
+        # tool off; a turn that does not declare how holds DRIVER_WEB_UNDECLARED before any runs
+        from ..agent_drivers import offline as web_off
+
+        web_off.require(self.breadth)
+        web_off.require(self.depth)
         inputs, bodies, trace_refs, score_refs, left_out = self._inputs(cell_id)
         archive_ref = self.archive.head_ref(cell_id)
         run_id = new_id("proprun")
@@ -894,8 +900,9 @@ class ProposerEnsemble:
         try:
             _write_inputs(scratch, inputs, bodies)
             result = self.breadth.run(
-                prompt=self.breadth_prompt(drafts), schema=PROPOSAL_SCHEMA, workspace=scratch
-            )
+                prompt=self.breadth_prompt(drafts), schema=PROPOSAL_SCHEMA, workspace=scratch,
+                offline=True,
+            )  # fmt: skip
             results.append(result)
             raw = result.output.get("edits")
             raw_edits = raw[:drafts] if isinstance(raw, list) else []
@@ -922,8 +929,9 @@ class ProposerEnsemble:
             for _index, draft, dropped in ranked[:refine]:
                 try:
                     turn = self.depth.run(
-                        prompt=self.depth_prompt(draft), schema=PROPOSAL_SCHEMA, workspace=scratch
-                    )
+                        prompt=self.depth_prompt(draft), schema=PROPOSAL_SCHEMA,
+                        workspace=scratch, offline=True,
+                    )  # fmt: skip
                 except RuntimeFault as exc:  # a failed refinement is not submitted
                     failures.append({"component_id": draft["component_id"], "code": exc.code})
                     continue
@@ -1416,10 +1424,15 @@ def dream(
         f"{EVIDENCE_MAX} trace ids from inputs.json that support the delta.\n"
         "Return only the JSON object."
     )
+    # operator decision 2026-10-08 (agent_drivers/offline.py): the turn runs with every web tool
+    # off; one that does not declare how holds DRIVER_WEB_UNDECLARED before it runs
+    from ..agent_drivers import offline as web_off
+
+    web_off.require(turn)
     scratch = _scratch_dir(scratch_root or default_scratch_root(ops))
     try:
         _write_inputs(scratch, inputs, bodies)
-        result = turn.run(prompt=prompt, schema=DREAM_SCHEMA, workspace=scratch)
+        result = turn.run(prompt=prompt, schema=DREAM_SCHEMA, workspace=scratch, offline=True)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     deltas = result.output.get("deltas")

@@ -283,6 +283,20 @@ def _traces(planner: Any) -> bool:
     return getattr(planner, "TRACES", False) is True
 
 
+def _offline_turn(planner: Any) -> bool:
+    """Whether a trial's planner runs a model turn, which then must declare how its web tools are
+    off (operator decision 2026-10-08, ``agent_drivers/offline.py``; Hold DRIVER_WEB_UNDECLARED
+    before the turn). A planner without a ``turn`` (the fixed ``TrialPlanner``) runs no model and
+    is called as before."""
+    from ...agent_drivers import offline
+
+    turn = getattr(planner, "turn", None)
+    if turn is None:
+        return False
+    offline.require(turn)
+    return True
+
+
 def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
     """Model text within contract schema bounds: trimmed, non-empty, at most 4000 characters."""
 
@@ -908,6 +922,8 @@ class LocalExecutionService:
         capture = capturing and _traces(planner)  # a planner without TRACES is called as before
         if capture:
             draft_args["capture_trace"] = True
+        if trial is not None and _offline_turn(planner):
+            draft_args["offline"] = True
         drafted, repo_facts = self._draft(
             planner, intent["text"], targets, verifiers, bases, mode=mode, args=draft_args
         )

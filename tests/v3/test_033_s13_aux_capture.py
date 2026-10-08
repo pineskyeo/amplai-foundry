@@ -28,7 +28,7 @@ import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -221,6 +221,8 @@ class StrictTurn:
     """A read-only turn; ``legacy`` has today's signature without ``capture_trace``."""
 
     cell_id = "codex-cli"
+    # operator decision 2026-10-08: a trial's read-only turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]]] = {"argv": ["--scripted-turn-has-no-web"]}
 
     def __init__(self, *, trace: dict[str, Any] | None = None, fail: Hold | None = None) -> None:
         self.trace, self.fail = trace, fail
@@ -228,7 +230,7 @@ class StrictTurn:
 
     def run(
         self, *, prompt: str, schema: dict[str, Any], workspace: Path, mounts: Any = None,
-        capture_trace: bool = False,
+        capture_trace: bool = False, offline: bool = False,
     ) -> TurnResult:  # fmt: skip
         self.asked.append(capture_trace)
         if self.fail is not None:

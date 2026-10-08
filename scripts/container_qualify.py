@@ -31,6 +31,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from amplai_foundry.agent_drivers import offline as web_off
 from amplai_foundry.agent_drivers.cli import CODEX_WEB_SEARCH_OFF
 from amplai_foundry.agent_drivers.protocol import EventNormalizer, JsonlDecoder
 from amplai_foundry.agent_drivers.qualification import MANDATORY, QualificationRunner
@@ -137,16 +138,23 @@ class ContainerTurns:
         if self.driver == "claude":
             args = ["claude", *ISOLATION, "-p", prompt, "--output-format", "stream-json"]
             args += ["--verbose", "--model", self.model, "--allowedTools", tools]
+            # operator decision 2026-10-08 (agent_drivers/offline.py): every test turn runs with
+            # the web tools off, the qualification too (the trial argv's deny list; ISOLATION
+            # already has --strict-mcp-config)
+            args += [*web_off.CLAUDE_OFFLINE]
             if max_turns is not None:
                 args += ["--max-turns", str(max_turns)]
             return args + (["--resume", session] if session else [])
         args = ["codex", "--ask-for-approval", "never", "exec"]
         if session:
             args += ["resume", session]
-        # Same argv as production CliDriver.argv (D-073: the container is the sandbox), including
-        # operator decision (C), 2026-10-08: hosted web search off on every dispatch
+        # Same argv as production CliDriver.argv of a trial dispatch (D-073: the container is the
+        # sandbox), including operator decision (C), 2026-10-08: hosted web search off on every
+        # dispatch, and the operator decision 2026-10-08 that every test turn runs with the web
+        # tools off (agent_drivers/offline.py: the networked features off, no config.toml)
         args += [
-            "--json", "--model", self.model, *CODEX_WEB_SEARCH_OFF, "--skip-git-repo-check",
+            "--json", "--model", self.model, *CODEX_WEB_SEARCH_OFF, *web_off.CODEX_FEATURES_OFF,
+            *web_off.CODEX_IGNORE_CONFIG, "--skip-git-repo-check",
             "--dangerously-bypass-approvals-and-sandbox",
         ]  # fmt: skip
         return [*args, prompt]

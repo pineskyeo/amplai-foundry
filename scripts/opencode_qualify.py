@@ -342,11 +342,13 @@ class ContainerServer(Server):
         return f"http://127.0.0.1:{self.PORT}"
 
     def argv(self) -> list[str]:
-        # the product's argv: the exact sandbox flags, detached, with the env guard (D-091)
+        # the product's argv of a trial dispatch: the exact sandbox flags, detached, with the env
+        # guard (D-091) and, operator decision 2026-10-08 (agent_drivers/offline.py), the web
+        # tools off as on every test turn
         from amplai_foundry.agent_drivers.opencode_launcher import server_argv, write_env_guard
 
         guard = write_env_guard(Path.home() / ".amplai-sandbox-probes" / "opencode-guard")
-        return server_argv(self.sandbox, self.ws, self.NAME, self.home, guard)
+        return server_argv(self.sandbox, self.ws, self.NAME, self.home, guard, offline=True)
 
     def start(self) -> None:
         subprocess.run(["docker", "rm", "-f", self.NAME], capture_output=True, check=False)

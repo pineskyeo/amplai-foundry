@@ -279,7 +279,13 @@ class LlmCellJudge:
         return "\n".join(lines) + "\n"
 
     def ask(self, state: JudgeState, questions: list[JudgeQuestion]) -> list[JudgeAnswer]:
+        """One read-only turn with every web tool off (operator decision 2026-10-08,
+        ``agent_drivers/offline.py``): the turn must declare how (Hold DRIVER_WEB_UNDECLARED
+        before anything runs) and runs with ``offline=True``."""
+        from ..agent_drivers import offline as web_off
+
         self.last_usage = None
+        web_off.require(self.turn)
         scratch: Path | None = None
         workspace = state.workspace
         if workspace is None:
@@ -289,7 +295,7 @@ class LlmCellJudge:
         try:
             result = self.turn.run(
                 prompt=self.prompt(state, questions), schema=answers_schema(questions),
-                workspace=workspace,
+                workspace=workspace, offline=True,
             )  # fmt: skip
         finally:
             if scratch is not None:

@@ -5,11 +5,11 @@
     "claude-cli": {
       "status": "pass",
       "driver_version": "2.1.292",
-      "host_version": "2.1.292 (Claude Code)",
+      "host_version": "2.1.293 (Claude Code)",
       "model": "claude-opus-5-5",
       "auth": "oauth_token",
       "native_delegation_qualified": false,
-      "qualification_id": "qualification-f710536436044370ab5713136d502898",
+      "qualification_id": "qualification-c11dee32baba4689b7a2cda2f00c6704",
       "checks": [
         {
           "name": "exact_version",
@@ -32,7 +32,7 @@
         {
           "name": "cancel_tree",
           "outcome": "pass",
-          "reason": "SIGTERM via docker stop after first event: stopped_in=0.97s exit=143 (signal) completed=False running_after=False",
+          "reason": "SIGTERM via docker stop after first event: stopped_in=2.05s exit=143 (signal) completed=False running_after=False",
           "artifacts": 2
         },
         {
@@ -44,7 +44,7 @@
         {
           "name": "egress_containment",
           "outcome": "pass",
-          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['api.anthropic.com:443']; sidecar denied ['example.com:443', 'http-intake.logs.us5.datadoghq.com:443']",
+          "reason": "direct egress: direct_rc=6 | denied_http=000; turn used only allowlist targets ['api.anthropic.com:443']; sidecar denied ['http-intake.logs.us5.datadoghq.com:443']",
           "artifacts": 2
         },
         {
@@ -79,7 +79,7 @@
         "rc": 0,
         "long_command": {
           "outcome": "pass",
-          "seconds": 49.2,
+          "seconds": 51.3,
           "fault": null,
           "event_types": [
             "assistant",
@@ -99,7 +99,7 @@
         "turn": "pong",
         "usage": {
           "input_tokens": 2,
-          "cache_creation_input_tokens": 3174,
+          "cache_creation_input_tokens": 3006,
           "cache_read_input_tokens": 16000,
           "output_tokens": 5,
           "output_tokens_details": {
@@ -111,7 +111,7 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 3174,
+            "ephemeral_1h_input_tokens": 3006,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
@@ -120,10 +120,10 @@
               "input_tokens": 2,
               "output_tokens": 5,
               "cache_read_input_tokens": 16000,
-              "cache_creation_input_tokens": 3174,
+              "cache_creation_input_tokens": 3006,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 3174
+                "ephemeral_1h_input_tokens": 3006
               },
               "type": "message"
             }
@@ -131,14 +131,14 @@
           "speed": "standard",
           "fallback_credit": null
         },
-        "seconds": 3.8
+        "seconds": 4.6
       },
       {
         "turn": "resume",
         "usage": {
           "input_tokens": 2,
-          "cache_creation_input_tokens": 1569,
-          "cache_read_input_tokens": 17660,
+          "cache_creation_input_tokens": 1536,
+          "cache_read_input_tokens": 17525,
           "output_tokens": 5,
           "output_tokens_details": {
             "thinking_tokens": 0
@@ -149,7 +149,7 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 1569,
+            "ephemeral_1h_input_tokens": 1536,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
@@ -157,11 +157,11 @@
             {
               "input_tokens": 2,
               "output_tokens": 5,
-              "cache_read_input_tokens": 17660,
-              "cache_creation_input_tokens": 1569,
+              "cache_read_input_tokens": 17525,
+              "cache_creation_input_tokens": 1536,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 1569
+                "ephemeral_1h_input_tokens": 1536
               },
               "type": "message"
             }
@@ -169,15 +169,15 @@
           "speed": "standard",
           "fallback_credit": null
         },
-        "seconds": 3.0
+        "seconds": 3.9
       },
       {
         "turn": "tool_use",
         "usage": {
           "input_tokens": 6,
-          "cache_creation_input_tokens": 20981,
-          "cache_read_input_tokens": 41547,
-          "output_tokens": 209,
+          "cache_creation_input_tokens": 20813,
+          "cache_read_input_tokens": 41211,
+          "output_tokens": 166,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -187,15 +187,15 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 20981,
+            "ephemeral_1h_input_tokens": 20813,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
           "iterations": [
             {
               "input_tokens": 2,
-              "output_tokens": 48,
-              "cache_read_input_tokens": 20829,
+              "output_tokens": 5,
+              "cache_read_input_tokens": 20661,
               "cache_creation_input_tokens": 152,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -207,15 +207,15 @@
           "speed": "standard",
           "fallback_credit": null
         },
-        "seconds": 5.2
+        "seconds": 7.0
       },
       {
         "turn": "long_command",
         "usage": {
           "input_tokens": 4,
-          "cache_creation_input_tokens": 1542,
-          "cache_read_input_tokens": 40078,
-          "output_tokens": 113,
+          "cache_creation_input_tokens": 1532,
+          "cache_read_input_tokens": 39775,
+          "output_tokens": 136,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -225,7 +225,7 @@
           },
           "service_tier": "standard",
           "cache_creation": {
-            "ephemeral_1h_input_tokens": 1542,
+            "ephemeral_1h_input_tokens": 1532,
             "ephemeral_5m_input_tokens": 0
           },
           "inference_geo": "not_available",
@@ -233,11 +233,11 @@
             {
               "input_tokens": 2,
               "output_tokens": 6,
-              "cache_read_input_tokens": 20740,
-              "cache_creation_input_tokens": 140,
+              "cache_read_input_tokens": 20572,
+              "cache_creation_input_tokens": 163,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 140
+                "ephemeral_1h_input_tokens": 163
               },
               "type": "message"
             }
@@ -245,12 +245,12 @@
           "speed": "standard",
           "fallback_credit": null
         },
-        "seconds": 49.2
+        "seconds": 51.3
       }
     ]
   },
   "findings": [],
-  "checked_at": "2026-10-07T01:53:05Z",
+  "checked_at": "2026-10-08T09:53:30Z",
   "method": "scripts/container_qualify.py: real turns inside the pinned image on the qualified egress profile; QualificationRunner with CAS-admitted artifacts (operator trust: self-measured, not an independent verifier); status fail unless all nine pass",
   "container_image": "localhost:5000/amplai-worker-app-amplai-bench-app@sha256:b8e78ae963e7a2e43c38dedfb8b2c1f84f32f8c3a8fc330b7954ffd201fc5435",
   "egress_profile": {

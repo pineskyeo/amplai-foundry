@@ -16,7 +16,7 @@ import json
 import os
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 from typer.testing import CliRunner
@@ -46,6 +46,8 @@ class Turn:
     """A scripted probe turn: completes, or fails like a provider refusing the flag."""
 
     cell_id = "fake"
+    # operator decision 2026-10-08: a probe turn declares how its web tools are off
+    offline_tools: ClassVar[dict[str, list[str]] | None] = {"argv": ["--web-off"]}
 
     def __init__(self, fail: bool = False) -> None:
         self.fail = fail

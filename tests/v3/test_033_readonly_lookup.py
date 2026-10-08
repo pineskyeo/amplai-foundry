@@ -224,9 +224,14 @@ class LookingPlanner(QuestionPlanner):
         super().__init__([])
         self.turn = turn
 
-    def draft(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def draft(self, *args: Any, offline: bool = False, **kwargs: Any) -> dict[str, Any]:
+        # a trial's planner turn runs with its web tools off (operator decision 2026-10-08)
+        assert offline is True
+        self.offline = offline
         draft = super().draft(*args, **kwargs)["draft"]
-        result = self.turn.run(prompt="plan it", schema={"type": "object"}, workspace=args[3])
+        result = self.turn.run(
+            prompt="plan it", schema={"type": "object"}, workspace=args[3], offline=offline
+        )
         assert result.output == draft
         return {"draft": result.output, "usage": result.usage}
 
