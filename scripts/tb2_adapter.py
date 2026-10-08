@@ -19,18 +19,24 @@ admission and task output. Every step that needs docker is operator-run.
     .venv/bin/python scripts/tb2_adapter.py admit --source CLONE --commit SHA --task NAME \
         --image IMAGE@sha256:... --container-profile PROFILE.json --base-repo TB2_REPO \
         --commits-file CORPUS/bases/tb2.commits.json \
-        --test-command '...' --solution-command '...' [--repeats 3] [--out RESULT.json]
+        --solution-command '...' [--test-command '...' [--test-result exit_status]] \
+        [--repeats 3] [--out RESULT.json]
 
     # 5. write tb2/<name>/ from an admission result
     .venv/bin/python scripts/tb2_adapter.py write --source CLONE --commit SHA --task NAME \
         --admission RESULT.json --dest CORPUS/tb2
 
-The test and solution entry commands, the working directory and the driver-layer paths are
-확인 필요 (§14 Q7): they are required arguments, never defaults. The commands are split with
-``shlex``; the tests are mounted read-only at ``/amplai-input/tests`` and the solution at
-``/amplai-input/solution`` (``tb2.TESTS_MOUNT``, ``tb2.SOLUTION_MOUNT``). The admission scratch
-defaults to a directory under ``$HOME`` (colima shares ``$HOME`` only, as
-``scripts/container_qualify.py``).
+The test entry is the task's own (§14 Q7 answered 2026-10-08, ``runs/tb2-q7.md``): without
+``--test-command``, ``admit`` grades its test steps with ``tb2_grading.entry_for`` (``bash
+/tests/test.sh``, verdict from ``/logs/verifier/reward.txt``, the tests read-only at ``/tests``)
+and records that entry in the result (``grading``) and every test step's grade (``test_grades``);
+``write`` copies the entry into ``environment.json``, which ``corpus_v2.grade`` reads. A task
+without ``tests/test.sh`` holds ``TB2_ADMISSION``. An explicit ``--test-command`` keeps the S7a
+path (verdict by exit status, tests at ``/amplai-input/tests``) unless ``--test-result
+reward_file`` is given. The solution entry command, the working directory and the driver-layer
+paths stay required arguments. The commands are split with ``shlex``; the solution is mounted
+read-only at ``/amplai-input/solution`` (``tb2.SOLUTION_MOUNT``). The admission scratch defaults
+to a directory under ``$HOME`` (colima shares ``$HOME`` only, as ``scripts/container_qualify.py``).
 
 ``--execute`` on ``workdir`` and ``extract`` runs the printed docker argvs; without it they are
 only printed. ``base-commit`` writes the extracted tree into the one tb2 base repository
@@ -51,7 +57,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from amplai_foundry.meta_harness import tb2
+from amplai_foundry.meta_harness import tb2, tb2_grading
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 SCRATCH = Path.home() / ".amplai-sandbox-probes" / "tb2"
@@ -179,22 +185,53 @@ def _spec(args: argparse.Namespace) -> int:
     return 0 if spec["ready"] else 1
 
 
+def _entry(args: argparse.Namespace, task: tb2.Tb2Task) -> tb2_grading.TestEntry | None:
+    """The grading entry of ``admit``; None selects the S7a exit-status path."""
+    if args.test_command is None:
+        entry = tb2_grading.entry_for(task)
+        if entry is None:
+            raise Hold("TB2_ADMISSION", f"{task.name}: no tests/test.sh; pass --test-command")
+        return entry
+    if args.test_result == "reward_file":
+        return tb2_grading.TestEntry(
+            tuple(shlex.split(args.test_command)),
+            "reward_file",
+            task.verifier_timeout_sec,
+            tb2_grading.dockerfile_workdir(task.source_dir) if task.source_dir else None,
+        )
+    return None
+
+
 def _admit(args: argparse.Namespace) -> int:
     task = _task(args)
     commit = _recorded_commit(args.commits_file, task.name)
+    entry = _entry(args, task)
     scratch = (args.scratch or SCRATCH / task.name).resolve()
     scratch.mkdir(parents=True, exist_ok=False)
-    result = tb2.admit(
-        task,
-        image=args.image,
-        container_profile=args.container_profile,
-        repeats=args.repeats,
-        test_command=shlex.split(args.test_command),
-        solution_command=shlex.split(args.solution_command),
-        base_repo=args.base_repo,
-        base_commit=commit,
-        scratch=scratch,
-    )
+    if entry is None:  # the S7a path: an explicit command graded by its exit status
+        result = tb2.admit(
+            task,
+            image=args.image,
+            container_profile=args.container_profile,
+            repeats=args.repeats,
+            test_command=shlex.split(args.test_command),
+            solution_command=shlex.split(args.solution_command),
+            base_repo=args.base_repo,
+            base_commit=commit,
+            scratch=scratch,
+        )
+    else:
+        result = tb2_grading.admit(
+            task,
+            entry=entry,
+            image=args.image,
+            container_profile=args.container_profile,
+            repeats=args.repeats,
+            solution_command=shlex.split(args.solution_command),
+            base_repo=args.base_repo,
+            base_commit=commit,
+            scratch=scratch,
+        )
     if args.out is not None:
         args.out.write_text(json.dumps(result, indent=2) + "\n")
     _print(result)
@@ -203,7 +240,7 @@ def _admit(args: argparse.Namespace) -> int:
 
 def _write(args: argparse.Namespace) -> int:
     admitted = json.loads(args.admission.read_text())
-    folder = tb2.write_task(_task(args), admitted, args.dest, created=args.created)
+    folder = tb2_grading.write_task(_task(args), admitted, args.dest, created=args.created)
     _print({"written": str(folder)})
     return 0
 
@@ -247,7 +284,13 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--container-profile", type=Path, required=True)
     p.add_argument("--base-repo", type=Path, required=True, help="the tb2 base repository")
     p.add_argument("--commits-file", type=Path, required=True, help="bases/tb2.commits.json")
-    p.add_argument("--test-command", required=True)
+    p.add_argument("--test-command", help="default: the task's tests/test.sh (tb2_grading)")
+    p.add_argument(
+        "--test-result",
+        choices=tb2_grading.RESULTS,
+        default="exit_status",
+        help="verdict of an explicit --test-command (default exit_status, the S7a path)",
+    )
     p.add_argument("--solution-command", required=True)
     p.add_argument("--repeats", type=int, default=tb2.ADMISSION_REPEATS)
     p.add_argument("--scratch", type=Path)

@@ -1,7 +1,7 @@
 {
   "corpus_id": "amplai-bench-v2",
   "version": "2.0.0",
-  "split_seed": null,
+  "split_seed": 20261008,
   "bases": {
     "bench": {
       "app_id": "amplai-bench-app",

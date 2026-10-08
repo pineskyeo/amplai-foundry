@@ -10,7 +10,9 @@ Layout under ``specs/033-harness-taxonomy/corpus/`` (interfaces §10.1)::
     tb2/<name>/task.json         TB2 adapter output: tests/, solution/ (S7a)
 
 ``load`` scans the task directories; there is no task list. Authors never set ``split``:
-``assign_splits`` computes it (``stratified_by_domain_v1``) and S6-freeze writes ``splits.json``.
+``assign_splits`` computes it (``stratified_by_domain_v1``, or ``stratified_by_domain_pilot_v1``
+for the pilot, interfaces "Pilot Split Rule (2026-10-08)") and ``write_splits`` writes
+``splits.json`` with the rule id and seed.
 Regression-set tasks are all ``validation`` and are frozen as their own corpus (§10.6).
 """
 
@@ -35,7 +37,7 @@ from ..runtime.contracts.identity import ID, canonical, digest
 from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.evidence.cas import ArtifactStore
 from ..runtime.storage.store import Store
-from . import local_corpus
+from . import local_corpus, tb2_grading
 from .local_corpus import HIDDEN_DIR, CorpusError, Outcome
 
 Ref = dict[str, Any]
@@ -47,6 +49,10 @@ LICENSES = ("Apache-2.0", "LicenseRef-amplai-internal")
 GRADINGS = ("pytest_hidden", "tb2_tests", "planner_questions")
 SPLITS = ("development", "validation", "holdout")
 SPLIT_METHOD = "stratified_by_domain_v1"
+# Operator decision 2026-10-08 (interfaces "Pilot Split Rule (2026-10-08)"): the pilot runs on the
+# own tasks with validation = 50 % of the remaining main tasks of each domain.
+PILOT_SPLIT_METHOD = "stratified_by_domain_pilot_v1"
+SPLIT_METHODS = (SPLIT_METHOD, PILOT_SPLIT_METHOD)
 # §10.6: the regression set is its own corpus with every case in validation. The method label of
 # its task index is not named by the spec (reported as open).
 REGRESSION_CORPUS_ID = "amplai-regression-v1"
@@ -122,6 +128,9 @@ class CorpusV2:
     tasks: tuple[TaskV2, ...]
     # The manifest's ``split_seed`` (§10.1); appended with a default, not in the §3.11 field list.
     split_seed: int | None = None
+    # The ``splits.json`` method (one of ``SPLIT_METHODS``) when that file exists; appended with a
+    # default like ``split_seed``. ``freeze`` records it in the task index.
+    split_method: str | None = None
 
     def task(self, task_id: str) -> TaskV2:
         for item in self.tasks:
@@ -336,16 +345,18 @@ def _load_task(folder: Path, bases: dict[str, Any], in_tb2_dir: bool) -> TaskV2:
     return task
 
 
-def _apply_splits(root: Path, seed: int | None, tasks: list[TaskV2]) -> list[TaskV2]:
+def _apply_splits(
+    root: Path, seed: int | None, tasks: list[TaskV2]
+) -> tuple[list[TaskV2], str | None]:
     path = root / "splits.json"
     if not path.exists():
-        return tasks
+        return tasks, None
     data = _json(path, "TASK_SPLIT")
     if (
         not isinstance(data, dict)
         or set(data) != {"seed", "method", "assignments"}
         or type(data["seed"]) is not int
-        or data["method"] != SPLIT_METHOD
+        or data["method"] not in SPLIT_METHODS
         or not isinstance(data["assignments"], dict)
         or (seed is not None and data["seed"] != seed)
     ):
@@ -360,7 +371,7 @@ def _apply_splits(root: Path, seed: int | None, tasks: list[TaskV2]) -> list[Tas
     return [
         replace(t, split=data["assignments"].get(t.task_id)) if t.set == "main" else t
         for t in tasks
-    ]
+    ], data["method"]
 
 
 def load(root: Path) -> CorpusV2:
@@ -381,7 +392,7 @@ def load(root: Path) -> CorpusV2:
     if len({t.task_id for t in tasks}) != len(tasks):
         raise CorpusError("TASK_DUPLICATE", "Task ids must be unique")
     seed = manifest.get("split_seed")
-    tasks = _apply_splits(root, seed, tasks)
+    tasks, method = _apply_splits(root, seed, tasks)
     return CorpusV2(
         manifest["corpus_id"],
         manifest["version"],
@@ -389,6 +400,7 @@ def load(root: Path) -> CorpusV2:
         {k: dict(v) for k, v in manifest["bases"].items()},
         tuple(tasks),
         seed,
+        method,
     )
 
 
@@ -410,16 +422,26 @@ def _share(count: int) -> int:
     return (3 * count + 5) // 10
 
 
-def assign_splits(tasks: list[TaskV2], *, seed: int) -> dict[str, str]:
-    """``stratified_by_domain_v1`` over the main set (§10.2).
+def _half(count: int) -> int:
+    """50 % of ``count``, rounded half up (as ``_share``)."""
+    return (count + 1) // 2
+
+
+def assign_splits(tasks: list[TaskV2], *, seed: int, method: str = SPLIT_METHOD) -> dict[str, str]:
+    """``stratified_by_domain_v1`` (default, §10.2) or ``stratified_by_domain_pilot_v1`` over the
+    main set.
 
     Per domain: holdout = 30 % of the own tasks (TB2 and imported tasks never go to holdout),
-    validation = 30 % of the remaining main tasks, development = the rest. Each domain draws from
-    its own ``Random(f"{seed}:{domain}")`` over the ids in sorted order, so adding tasks to one
-    domain never reshuffles another. Regression-set tasks are not assigned (§10.6).
+    validation = 30 % (v1) or 50 % (pilot) of the remaining main tasks, development = the rest.
+    Each domain draws from its own ``Random(f"{seed}:{domain}")`` over the ids in sorted order, so
+    adding tasks to one domain never reshuffles another. Both rules draw the same two shuffles, so
+    with one seed they give the same holdout. Regression-set tasks are not assigned (§10.6).
     """
     if type(seed) is not int:
         raise CorpusError("TASK_SPLIT", "The split seed is an integer")
+    if method not in SPLIT_METHODS:
+        raise CorpusError("TASK_SPLIT", f"Unknown split method {method!r}")
+    validation_share = _half if method == PILOT_SPLIT_METHOD else _share
     if len({t.task_id for t in tasks}) != len(tasks):
         raise CorpusError("TASK_DUPLICATE", "Task ids must be unique")
     by_domain: dict[str, list[TaskV2]] = {}
@@ -436,7 +458,7 @@ def assign_splits(tasks: list[TaskV2], *, seed: int) -> dict[str, str]:
         holdout = set(own[: _share(len(own))])
         rest = [i for i in ids if i not in holdout]
         rng.shuffle(rest)
-        validation = set(rest[: _share(len(rest))])
+        validation = set(rest[: validation_share(len(rest))])
         for task_id in ids:
             split = (
                 "holdout"
@@ -451,10 +473,43 @@ def assign_splits(tasks: list[TaskV2], *, seed: int) -> dict[str, str]:
     if holdout_n < HOLDOUT_MIN or validation_n < VALIDATION_MIN:
         raise CorpusError(
             "SPLIT_TOO_SMALL",
-            f"holdout {holdout_n} (min {HOLDOUT_MIN}), validation {validation_n} "
+            f"{method}: holdout {holdout_n} (min {HOLDOUT_MIN}), validation {validation_n} "
             f"(min {VALIDATION_MIN}); counts by split and domain: {json.dumps(counts)}",
         )
     return {t.task_id: assignments[t.task_id] for t in tasks if t.task_id in assignments}
+
+
+def split_counts(tasks: list[TaskV2], assignments: dict[str, str]) -> dict[str, dict[str, int]]:
+    """``{split: {domain: n}}`` of ``assignments`` (as the task index ``splits.counts``)."""
+    domain_of = {t.task_id: t.domain for t in tasks}
+    counts: dict[str, dict[str, int]] = {}
+    for task_id, split in sorted(assignments.items()):
+        by_domain = counts.setdefault(split, {})
+        by_domain[domain_of[task_id]] = by_domain.get(domain_of[task_id], 0) + 1
+    return counts
+
+
+def write_splits(root: Path, *, seed: int, method: str) -> dict[str, Any]:
+    """Assign the main set of the corpus at ``root`` and write ``splits.json`` (seed, method,
+    assignments sorted by id) and the manifest ``split_seed`` (§10.1). The split is registered
+    before any run: an existing ``splits.json`` or manifest seed that differs is refused
+    (``TASK_SPLIT``); a re-split is a new corpus version (§10.2) and starts by removing them."""
+    root = Path(root)
+    corpus = load(root)
+    tasks = list(corpus.tasks)
+    assignments = dict(sorted(assign_splits(tasks, seed=seed, method=method).items()))
+    data = {"seed": seed, "method": method, "assignments": assignments}
+    path = root / "splits.json"
+    if path.exists() and _json(path, "TASK_SPLIT") != data:
+        raise CorpusError("TASK_SPLIT", "splits.json exists with another split; not overwritten")
+    manifest_path = root / "manifest.json"
+    manifest = _json(manifest_path, "TASK_META")
+    if manifest.get("split_seed") not in (None, seed):
+        raise CorpusError("TASK_SPLIT", "The manifest has another split_seed; not overwritten")
+    manifest["split_seed"] = seed
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    return {"seed": seed, "method": method, "counts": split_counts(tasks, assignments)}
 
 
 # -- grading -------------------------------------------------------------------------------------
@@ -472,6 +527,7 @@ def grade(
     *,
     planner_questions: list[str] | None = None,
     timeout: int = 300,
+    tb2_grader: tb2_grading.Grader | None = None,
 ) -> Outcome:
     """One trial's outcome on ``workspace`` (a scratch copy of the result, never the agent's tree).
 
@@ -479,14 +535,18 @@ def grade(
     ``planner_questions``: expected ``ask`` succeeds when the planner asked and some question
     names a ``must_mention_any`` string (case-insensitive); expected ``proceed`` succeeds when it
     asked nothing and the hidden tests pass (§8.3). An ``ask`` grade runs no test suite.
-    ``tb2_tests``: graded in the task image (§10.5); its test entry command is 확인 필요 (§14 Q7).
+    ``tb2_tests``: the task's own test entry in the task image (§10.5, ``tb2_grading.grade_task``),
+    returned as a ``tb2_grading.Tb2Outcome`` whose ``result`` is None when not graded; without
+    ``tb2_grader`` (corpus root and container runner) it holds ``TASK_GRADING``.
     """
     if task.grading == "pytest_hidden":
         return local_corpus.judge(_shim(task, task.hidden), workspace, timeout=timeout)
     if task.grading == "tb2_tests":
-        raise CorpusError(
-            "TASK_GRADING", f"{task.task_id}: tb2_tests grading runs in the task image (§14 Q7)"
-        )
+        if tb2_grader is None:
+            raise CorpusError(
+                "TASK_GRADING", f"{task.task_id}: tb2_tests grading runs in the task image (§10.5)"
+            )
+        return tb2_grading.grade_task(task, workspace, tb2_grader)
     if planner_questions is None or task.ambiguity is None:
         raise CorpusError(
             "TASK_GRADING", f"{task.task_id}: planner_questions grading needs the questions"
@@ -793,7 +853,9 @@ def freeze(
         "tasks": rows,
         "splits": {
             "seed": corpus.split_seed,
-            "method": SPLIT_METHOD if set_name == "main" else REGRESSION_METHOD,
+            "method": (corpus.split_method or SPLIT_METHOD)
+            if set_name == "main"
+            else REGRESSION_METHOD,
             "counts": counts,
         },
     }
