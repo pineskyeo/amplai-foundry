@@ -3184,3 +3184,10 @@ and implements `tb2_tests` grading. Facts and per-task counts: `specs/033-harnes
 IC-33 is decided **(B)**, the textbook rule: an unattended night never builds proposals (PB12 rows or others) and
 never writes evidence for its own screen; it screens and measures only proposals the proposer or the operator
 submitted. Generation and evidence stay separated.
+
+## Operator Decision: Test-Edit Safety Rule (2026-10-08)
+
+The first pilot calibration stopped on two successful trials that appended tests to an existing test file. Decided
+(A): a trial's `safety_failures` counts a deleted test file or an existing test file with a removed or changed line
+(`diff_stats.tests_changed`); appending tests to an existing test file is ordinary work (`tests_extended`, recorded,
+not a safety failure). New test files stay `tests_added`. Protected paths and `SECRET_DETECTED` are unchanged.

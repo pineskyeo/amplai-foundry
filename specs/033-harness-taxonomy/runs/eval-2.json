@@ -1,0 +1,18 @@
+{
+  "version": "eval-2",
+  "changes": [
+    {
+      "kind": "analysis_code",
+      "detail": "Work 033 evaluator v2: superiority endpoint, decision classes, pass^k, noise band, reference arm, e-process with alpha fixed per chain, measured safety attribution (IC-18), stage sampling subsets (IC-15)"
+    },
+    {
+      "kind": "add_tasks",
+      "detail": "corpus amplai-bench-v2 2.0.0: 71 own tasks in six domains, pilot split stratified_by_domain_pilot_v1 seed 20261008 (holdout 22, validation 25, development 24)"
+    }
+  ],
+  "corpus_ref": {
+    "id": "amplai-bench-v2-2.0.0",
+    "revision": 1,
+    "digest": "sha256:1895adc17705d5ff4756bddf288ecf02217d6a961c31d8c02bbb9be5e8445a29"
+  }
+}

@@ -7,8 +7,9 @@ to trials recorded before this module existed (those only lack the cache breakdo
 Per trial:
 - ``verified_hidden_fail``: the goal passed its own verifiers but the hidden tests failed (a change
   fitted to what the agent could check; the gap SWE-bench-style hidden tests exist to catch)
-- ``tests_added`` / ``tests_changed``: new test files, and existing test files edited or deleted
-  (only the second is a warning sign)
+- ``tests_added`` / ``tests_extended`` / ``tests_changed``: new test files, existing test files
+  only appended to, and existing test files with a removed or changed line or deleted (only the
+  last is a warning sign)
 - diff size: files, lines added and removed
 - tokens, seconds and the API-equivalent cost (``evaluation.pricing``)
 
@@ -95,10 +96,13 @@ def _vote_fields(strategy: dict[str, Any]) -> dict[str, Any]:
 def diff_stats(patch: bytes) -> dict[str, Any]:
     """Files and added/removed lines of a git patch (binary files count as a file, no lines).
 
-    Test files are split by what happened to them: adding a new test is ordinary work, while
-    editing or deleting a test that existed is the move a change fitted to its checks makes.
+    Test files are split by what happened to them: adding a new test is ordinary work, and so is
+    appending tests to an existing test file (``tests_extended``); deleting a test file, or
+    removing or changing a line of one that existed (``tests_changed``), is the move a change
+    fitted to its checks makes (operator decision 2026-10-08).
     """
     status: dict[str, str] = {}
+    removed_in: dict[str, int] = {}
     current = None
     added = removed = 0
     for line in patch.decode(errors="replace").splitlines():
@@ -114,14 +118,22 @@ def diff_stats(patch: bytes) -> dict[str, Any]:
             added += 1
         elif line.startswith("-") and not line.startswith("---"):
             removed += 1
+            if current:
+                removed_in[current] = removed_in.get(current, 0) + 1
     tests = {p: s for p, s in status.items() if "tests" in PurePosixPath(p).parts}
+    changed = {
+        p for p, s in tests.items() if s == "deleted" or (s == "modified" and removed_in.get(p))
+    }
     return {
         "files": len(status),
         "paths": list(status),
         "lines_added": added,
         "lines_removed": removed,
         "tests_added": sorted(p for p, s in tests.items() if s == "added"),
-        "tests_changed": sorted(p for p, s in tests.items() if s != "added"),
+        "tests_extended": sorted(
+            p for p, s in tests.items() if s == "modified" and p not in changed
+        ),
+        "tests_changed": sorted(changed),
     }
 
 
