@@ -465,9 +465,10 @@ def test_a_follow_up_that_stops_without_completing_holds_driver_boundary(s: Setu
     with pytest.raises(Hold) as boundary:
         s.execute(dispatch, base, Hooks(["more"]))
     assert boundary.value.code == "DRIVER_BOUNDARY"
-    assert boundary.value.details == {"state": "failed", "followup": 1}
+    assert boundary.value.details == {"state": "failed", "followup": 1, "failure": None}
     head = s.head(dispatch["dispatch_id"])
     assert head["state"] == "held" and head["data"]["hold_code"] == "DRIVER_BOUNDARY"
+    assert head["data"]["hold_details"] == {"state": "failed", "followup": 1, "failure": None}
     assert head["data"]["followups"][0]["receipt_digest"] is None  # it never produced a receipt
 
 

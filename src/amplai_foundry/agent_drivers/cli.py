@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
+from . import answer_lookup
 from .protocol import EventNormalizer, JsonlDecoder, SessionJournal
 
 if TYPE_CHECKING:
@@ -28,6 +29,19 @@ ACTIVE = frozenset({"starting", "running", "cancelling", "unknown"})
 TERMINAL = frozenset({"completed", "failed", "cancelled", "paused"})
 # the credential a SeededCodexPort leases into a dispatch home (runtime/execution/codex.py AUTH)
 CODEX_AUTH = Path(".codex") / "auth.json"
+# Operator decision (C), 2026-10-08: Codex hosted web search is off for every dispatch. Codex CLI
+# 0.155.1 (the pinned app image) reads the config key ``web_search``: `codex -c
+# web_search=bogus features list` fails with "unknown variant `bogus`, expected one of `disabled`,
+# `cached`, `indexed`, `live`", and `codex --help` says "--search  Enable live web search". The
+# override is an argv `-c` (`codex exec --help` and `codex exec resume --help`: "-c, --config
+# <key=value>  Override a configuration value that would otherwise be loaded from
+# ~/.codex/config.toml"), so a config.toml the agent can write in its home never re-enables it.
+CODEX_WEB_SEARCH_OFF = ("-c", 'web_search="disabled"')
+# config keys that would turn web search back on; never accepted through DispatchOptions
+CODEX_WEB_KEYS = frozenset({
+    "web_search", "tools.web_search", "features.web_search_request", "features.web_search_cached",
+    "features.standalone_web_search",
+})  # fmt: skip
 
 
 def _holds(value: Any, literals: frozenset[str] | set[str]) -> bool:
@@ -100,6 +114,8 @@ class CliDriver:
         self._credentials: dict[str, set[str]] = {}
         self._credential_homes: dict[str, Path] = {}
         self._credential_hits: set[str] = set()
+        # operator decision (C): each dispatch's answer-lookup evidence (``answer_lookup.py``)
+        self._lookups: dict[str, list[dict[str, str]]] = {}
         self.native_root = journal.root / "native"
         self.native_root.mkdir(mode=0o700, exist_ok=True)
 
@@ -135,6 +151,8 @@ class CliDriver:
             raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "Claude options on the Codex CLI")
         if self.provider == "claude" and options.codex_config:
             raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "Codex config overrides on the Claude CLI")
+        if any(key in CODEX_WEB_KEYS for key, _ in options.codex_config):
+            raise Hold("DRIVER_OPTIONS_UNSUPPORTED", "Codex web search stays off (decision (C))")
         return None if options.is_default() else options
 
     def argv(
@@ -210,6 +228,8 @@ class CliDriver:
             args += ["-c", "model_reasoning_effort=" + opts.effort]
         for key, value in opts.codex_config if opts is not None else ():
             args += ["-c", key + "=" + value]
+        # decision (C): last of the overrides, on every dispatch (first turn, resume, follow-up)
+        args += [*CODEX_WEB_SEARCH_OFF]
         args += ["--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox"]
         if output_schema is not None:
             raise Hold("SCHEMA_FILE_REQUIRED", "Codex needs a pinned read-only schema file")
@@ -407,6 +427,8 @@ class CliDriver:
                 # for the dispatch's own credential literals
                 if literals and did not in self._credential_hits and _holds(event, literals):
                     self._credential_hits.add(did)
+            # decision (C): recorded before the normalizer, which may refuse the event
+            self._note_lookups(did, event)
             normalized = normalizer.accept(event)
             seq += 1
             self.journal.append(did, f"provider-{seq}", normalized)
@@ -495,7 +517,10 @@ class CliDriver:
 
     def cancel(self, handle: str, *, reason: str = "cancel") -> dict[str, Any]:
         record = self.journal.read(handle)
-        if record["state"] in {"cancelled", "paused"} and record.get("process_stopped"):
+        # A turn that already failed with its process confirmed stopped keeps its record: a
+        # cancel after the fact (the worker's ``_fail`` on DRIVER_BOUNDARY) must not overwrite
+        # why it ended (``failure``, e.g. the stream fault ``_collect`` recorded) with "cancel".
+        if record["state"] in {"cancelled", "paused", "failed"} and record.get("process_stopped"):
             return {
                 "process_stopped": True,
                 "session_handle": record["session_handle"],
@@ -588,6 +613,30 @@ class CliDriver:
             )
         )
 
+    def _note_lookups(self, did: str, event: dict[str, Any]) -> None:
+        """Operator decision (C), 2026-10-08: answer-lookup attempts in a raw event
+        (``answer_lookup.scan_event``: a search outside the workspace, reading history beyond the
+        base commit, a web search tool call) are kept in the dispatch's driver journal as
+        ``answer_lookup`` (at most ``DISPATCH_MAX`` entries), where the worker reads them for the
+        run. Evidence holding a secret pattern or one of the dispatch's credential values is
+        withheld. A dispatch without a finding keeps its journal bytes."""
+        found = answer_lookup.scan_event(self.provider, event)
+        if not found:
+            return
+        literals = {v for v in self.environment.values() if len(v) >= 16}
+        literals |= self._credentials.get(did) or set()
+        kept = self._lookups.setdefault(did, [])
+        if answer_lookup.merge(kept, answer_lookup.withheld(found, literals)):
+            self.journal.update(did, answer_lookup=[dict(entry) for entry in kept])
+
+    def answer_lookup(self, handle: str) -> list[dict[str, Any]]:
+        """Decision (C): the answer-lookup evidence the dispatch's journal holds
+        (``_note_lookups``); empty when it holds none (``worker.driver_lookups`` reads it)."""
+        entries = self.journal.read(handle).get("answer_lookup")
+        if not isinstance(entries, list):
+            return []
+        return [dict(entry) for entry in entries if isinstance(entry, dict)]
+
     def _trace_buffer(self, dispatch_id: str) -> Any:
         """The dispatch's trace buffer (``meta_harness/traces.py``, imported lazily: drivers do
         not depend on the meta-harness unless a trial captures). A duplicate prepare keeps it."""
@@ -672,6 +721,7 @@ class CliDriver:
         self._credentials.pop(handle, None)
         self._credential_homes.pop(handle, None)
         self._credential_hits.discard(handle)
+        self._lookups.pop(handle, None)
         # Native home is retained for explicit operator-governed retention, never put in a ZIP.
 
 

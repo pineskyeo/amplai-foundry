@@ -7,6 +7,12 @@ Claude, session none/exact, output schema none/set, auth api_key/oauth.
 Once S4 adds `DispatchOptions` (`runtime/execution/cells.py`, interfaces.md 3.4), the same matrix
 also runs with `options=None` and `options=DispatchOptions.default(model)`; before then those two
 variants are skipped, not silently passed.
+
+Operator decision (C), 2026-10-08 (interfaces.md, clarification "Answer Lookup And Workspace
+Objects"): every Codex argv also carries `-c web_search="disabled"` right before
+`--skip-git-repo-check`, the executor's (G2) and the read-only planner turn's (G4). The oracle
+stays the frozen c9f896a copy; `with_web_search_off` adds exactly that one pair to its Codex
+vectors, so any other change still fails G2 and G4.
 """
 
 from __future__ import annotations
@@ -17,7 +23,7 @@ from typing import Any
 
 import pytest
 
-from amplai_foundry.agent_drivers.cli import CliDriver
+from amplai_foundry.agent_drivers.cli import CODEX_WEB_SEARCH_OFF, CliDriver
 from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.planner_codex import ClaudePlanner, CodexPlanner
@@ -58,6 +64,15 @@ def default_options(kind: str) -> dict[str, Any]:
     return {"options": None if kind == "none" else DispatchOptions.default(MODEL)}
 
 
+def with_web_search_off(provider: str, frozen: tuple[str, Any]) -> tuple[str, Any]:
+    """The oracle's outcome with decision (C)'s pair before `--skip-git-repo-check` (Codex)."""
+    kind, value = frozen
+    if provider != "codex" or kind != "ok":
+        return frozen
+    i = value.index("--skip-git-repo-check")
+    return kind, [*value[:i], "-c", 'web_search="disabled"', *value[i:]]
+
+
 def outcome(fn: Any, *args: Any, **kwargs: Any) -> tuple[str, Any]:
     """Value, or the Hold code: an error is part of the frozen behaviour."""
     try:
@@ -91,10 +106,10 @@ def test_the_driver_argv_equals_the_oracle(
     extra = default_options(options)
     driver = make_driver(tmp_path, provider, auth)
     got = outcome(driver.argv, prompt, session=session, output_schema=schema, **extra)
-    want = outcome(
+    want = with_web_search_off(provider, outcome(
         argv_oracle.argv, provider, provider, MODEL, auth, prompt, session=session,
         output_schema=schema,
-    )  # fmt: skip
+    ))  # fmt: skip
     assert got == want
     # Codex refuses a schema (a pinned file is required); every other cell yields an argv.
     assert (got[0] == "hold") == (provider == "codex" and schema is not None)
@@ -119,7 +134,9 @@ def test_a_prompt_over_one_mebibyte_is_refused_as_the_oracle_refuses(
     for size, code in ((1024 * 1024, "ok"), (1024 * 1024 + 1, "hold")):
         prompt = "x" * size
         got = outcome(driver.argv, prompt)
-        want = outcome(argv_oracle.argv, provider, provider, MODEL, "api_key", prompt)
+        want = with_web_search_off(
+            provider, outcome(argv_oracle.argv, provider, provider, MODEL, "api_key", prompt)
+        )
         assert got[0] == want[0] == code
         if code == "ok":
             assert got == want
@@ -130,8 +147,10 @@ def test_literal_argv_shapes_pin_the_oracle_itself(tmp_path: Path) -> None:
     codex = make_driver(tmp_path, "codex", "api_key").argv("P", session="S1")
     assert codex == [
         "codex", "--ask-for-approval", "never", "exec", "resume", "S1", "--json", "--model", MODEL,
+        "-c", 'web_search="disabled"',
         "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", "P",
     ]  # fmt: skip
+    assert CODEX_WEB_SEARCH_OFF == ("-c", 'web_search="disabled"')
     api = make_driver(tmp_path, "claude", "api_key").argv("P", output_schema={"t": 1})
     assert api == [
         "claude", "--bare", "-p", "P", "--output-format", "stream-json", "--verbose",
@@ -149,7 +168,9 @@ def test_literal_argv_shapes_pin_the_oracle_itself(tmp_path: Path) -> None:
 @pytest.mark.parametrize("prompt", PROMPTS)
 def test_the_planner_argv_equals_the_oracle(tmp_path: Path, prompt: str) -> None:
     codex = CodexPlanner(None, None, tmp_path / "codex-runs", model=MODEL)  # type: ignore[arg-type]
-    assert codex.argv(prompt) == argv_oracle.codex_planner_argv(MODEL, prompt)
+    assert ("ok", codex.argv(prompt)) == with_web_search_off(
+        "codex", ("ok", argv_oracle.codex_planner_argv(MODEL, prompt))
+    )
     claude = ClaudePlanner(None, "token", tmp_path / "claude-runs", model=MODEL)  # type: ignore[arg-type]
     assert claude.claude_argv(prompt, SCHEMA) == argv_oracle.claude_planner_argv(
         MODEL, prompt, SCHEMA

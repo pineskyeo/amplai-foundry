@@ -43,7 +43,9 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from ..agent_drivers.protocol import turn_detail
 from ..evaluation import pricing
+from ..evaluation.service import spent_tokens
 from ..runtime.contracts.identity import now
 from ..runtime.contracts.semantics import resolve_ref
 from ..runtime.errors import Hold, RuntimeFault
@@ -66,6 +68,8 @@ CALIBRATION_ARM = "calibration"
 # reported by Codex only (`reasoning_output_tokens`), so it is null for a Claude run.
 CACHED_FIELD = {"codex": "cached_input_tokens", "claude": "cache_read_input_tokens"}
 REASONING_FIELD = {"codex": "reasoning_output_tokens"}
+# The driver provider of a price-table row's provider (``deployment/prices``, D-094).
+PRICE_PROVIDER = {"openai": "codex", "anthropic": "claude"}
 # Unknown-effect states of an effect head (runtime/execution/service.py:976-985).
 OPEN_EFFECT_STATES = ("dispatched", "unknown")
 SECRET_CODE = "SECRET_DETECTED"  # runtime/evidence/cas.py:82-87
@@ -326,6 +330,9 @@ RECORD_SCHEMA: dict[str, Any] = {
                 "broken_tool_calls": _OPT_COUNT,
                 "test_file_edits": _COUNT,
                 "verified_hidden_fail": {"type": "boolean"},
+                # decision (C), 2026-10-08: answer-lookup evidence entries of the trial; optional
+                # so records written before it stay valid
+                "answer_lookup": _COUNT,
             },
         },
         "phase": {"enum": list(PHASES)},
@@ -363,6 +370,16 @@ def _per_solved(values: list[float], solved: int) -> float | None:
     return round(sum(values) / solved, 1) if solved and values else None
 
 
+def _tokens_per_solved(items: list[dict[str, Any]], solved: int) -> float | None:
+    """Tokens per solved trial (§2.8): each trial's ``spent_tokens`` (reported input plus output,
+    else the tokens charged for its unknown usage, decision (B)); None when any trial has no
+    tokens recorded at all (unknown is never fewer, as ``proposer._tokens_per_solved``)."""
+    spent = [spent_tokens(r) for r in items]
+    if any(s is None for s in spent):
+        return None
+    return _per_solved([s for s in spent if s is not None], solved)
+
+
 class TrialMetrics:
     def __init__(
         self, service: LocalExecutionService, tables: list[pricing.PriceTable] | None = None
@@ -392,6 +409,9 @@ class TrialMetrics:
             "seconds": round(elapsed / 1000, 1) if elapsed is not None else None,
             "input_tokens": trial.get("input_tokens"),
             "output_tokens": trial.get("output_tokens"),
+            # decision (B): the tokens charged for an unknown usage (None: usage known, or a trial
+            # stored before (B)); counted by tokens per solved, not stored in the record
+            "charged_tokens": trial.get("charged_tokens"),
         }
         facts["verified_hidden_fail"] = (
             receipt.get("goal_status") == "verified" and receipt.get("hidden_passed") is False
@@ -438,7 +458,8 @@ class TrialMetrics:
                            "cached_input": None, "reasoning": None},
                 "verification_seconds": None, "agent_calls": 1 if real_planner else 0,
                 "attempts_used": 0, "nodes": 0,
-                "guards": self._guards(ask_back, None, facts["verified_hidden_fail"]),
+                "guards": self._guards(ask_back, None, facts["verified_hidden_fail"],
+                                       lookups=len(receipt.get("answer_lookup") or [])),
             }  # fmt: skip
         plan = self.service.plan_record(goal_id)
         last = plan.get("attempts") or []  # the last revision's attempts (its change is graded)
@@ -490,7 +511,12 @@ class TrialMetrics:
             + (1 if real_planner else 0),
             "attempts_used": len(attempts),
             "nodes": graph_nodes,
-            "guards": self._guards(ask_back, facts["diff"], facts["verified_hidden_fail"]),
+            "guards": self._guards(
+                ask_back,
+                facts["diff"],
+                facts["verified_hidden_fail"],
+                lookups=len(receipt.get("answer_lookup") or []),
+            ),
         }
 
     def _strategy_metrics(self, plan: dict[str, Any]) -> dict[str, Any]:
@@ -512,8 +538,12 @@ class TrialMetrics:
         return computed
 
     @staticmethod
-    def _guards(ask_back: bool, diff: dict[str, Any] | None, vhf: bool) -> dict[str, Any]:
-        """Per-trial hack-guard signals (§9.10); the last change's diff is the edit."""
+    def _guards(
+        ask_back: bool, diff: dict[str, Any] | None, vhf: bool, *, lookups: int = 0
+    ) -> dict[str, Any]:
+        """Per-trial hack-guard signals (§9.10); the last change's diff is the edit.
+        ``answer_lookup`` (decision (C)): the receipt's answer-lookup evidence entries (such a
+        trial is already failed by the executor, ``local_executor.py``)."""
         return {
             "ask_back": ask_back,
             "edit_files": diff["files"] if diff else 0,
@@ -522,6 +552,7 @@ class TrialMetrics:
             "broken_tool_calls": None,
             "test_file_edits": len(diff["tests_changed"]) if diff else 0,
             "verified_hidden_fail": vhf,
+            "answer_lookup": lookups,
         }
 
     def _split_stage(
@@ -647,17 +678,19 @@ class TrialMetrics:
             usage = run.get("usage") or {}
             priced.append((str(model), self._detail(usage), usage))
         if planner is not None:
-            # the real planner's turn (§8.3), at the planning composition's model; its usage has
-            # totals only, so it is priced as an upper bound
-            planned_model = (plan.get("planned_with") or {}).get("model") or model
-            priced.append((str(planned_model), None, planner.get("usage") or {}))
+            # the real planner's turn (§8.3), at the planning composition's model; priced from its
+            # cache breakdown when it reported one (``_turn_detail``), else as an upper bound
+            planned_model = str((plan.get("planned_with") or {}).get("model") or model)
+            usage = planner.get("usage") or {}
+            priced.append((planned_model, self._turn_detail(planned_model, day, usage), usage))
         for entry in self._aux_ran(plan):
-            # an auxiliary read-only turn (§5.3 ``aux_usage``, Work 033 S9), at its cell's model;
-            # like the planner's it reports totals only, so it is priced as an upper bound
+            # an auxiliary read-only turn (§5.3 ``aux_usage``, Work 033 S9), at its cell's model,
+            # priced like the planner's turn
             aux_model = self._cell_model(plan, entry.get("cell_id"))
             if aux_model is None:
                 return {"status": "aux_unpriced", "model": model}
-            priced.append((aux_model, None, entry.get("usage") or {}))
+            usage = entry.get("usage") or {}
+            priced.append((aux_model, self._turn_detail(aux_model, day, usage), usage))
         for one_model, detail, usage in priced:
             one = pricing.estimate(one_model, day, detail=detail, usage=usage, tables=self.tables)
             statuses.add(one["status"])
@@ -677,6 +710,17 @@ class TrialMetrics:
             "notes": sorted(notes),
             "upper_bound": upper,
         }
+
+    def _turn_detail(self, model: str, day: str, usage: dict[str, Any]) -> dict[str, Any] | None:
+        """The D-094 detail of a read-only turn's usage (``protocol.turn_detail``), for the
+        provider the price table names for ``model``. Its ``input_tokens`` is the total, cache
+        included (IC-34 (A)), so pricing it without the breakdown would charge every cached token
+        at the uncached rate. None (an upper bound) when the turn reported no cache breakdown or
+        the model has no price row."""
+        table = pricing.table_for(self.tables, day)
+        row = table.models.get(model) if table is not None else None
+        provider = PRICE_PROVIDER.get(str((row or {}).get("provider")))
+        return turn_detail(provider, usage) if provider else None
 
     @staticmethod
     def _aux_ran(plan: dict[str, Any]) -> list[dict[str, Any]]:
@@ -767,10 +811,7 @@ class TrialMetrics:
             "trials": len(items),
             "solved": len(solved),
             "unknown": sum(r["success"] is None for r in items),
-            "tokens_per_solved": _per_solved(
-                [(r["input_tokens"] or 0) + (r["output_tokens"] or 0) for r in items],
-                len(solved),
-            ),
+            "tokens_per_solved": _tokens_per_solved(items, len(solved)),
             "seconds_per_solved": _per_solved(
                 [r["seconds"] for r in items if r.get("seconds") is not None], len(solved)
             ),
@@ -789,10 +830,7 @@ class TrialMetrics:
             "verified_hidden_fail": sum(r["verified_hidden_fail"] for r in items),
             "tests_added": sum(bool(d["tests_added"]) for d in diffs),
             "tests_changed": sum(bool(d["tests_changed"]) for d in diffs),
-            "tokens_per_solved": _per_solved(
-                [(r["input_tokens"] or 0) + (r["output_tokens"] or 0) for r in items],
-                len(solved),
-            ),
+            "tokens_per_solved": _tokens_per_solved(items, len(solved)),
             "seconds_per_solved": _per_solved(seconds, len(solved)),
             "seconds_median": median(seconds) if seconds else None,
             "api_cost_usd_per_solved": (
@@ -886,4 +924,15 @@ class TrialMetrics:
                         f"edit_rate_ratio: x{c_mean / b_mean:.2f} mean edit lines (baseline "
                         f"{b_mean:.1f}, candidate {c_mean:.1f}; threshold x{limit:g})"
                     )
+        # decision (C), 2026-10-08: trials with an answer-lookup attempt (each already failed).
+        # Applied with +1 when a stage plan names no threshold (plans frozen before it).
+        limit = thresholds.get("answer_lookup", 1)
+        if limit is not None:
+            b = sum(1 for g in rows_guards(baseline) if (g.get("answer_lookup") or 0) > 0)
+            c = sum(1 for g in rows_guards(candidate) if (g.get("answer_lookup") or 0) > 0)
+            if c - b >= limit:
+                findings.append(
+                    f"answer_lookup: +{c - b} trials (baseline {b}, candidate {c}; "
+                    f"threshold +{limit:g})"
+                )
         return findings

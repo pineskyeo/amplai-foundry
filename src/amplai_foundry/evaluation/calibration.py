@@ -50,6 +50,9 @@ from .service import (
     effective_parallel,
     is_ref,
     run_bounded,
+    spent_tokens,
+    unknown_usage_charge,
+    usage_unknown,
     validate_observation,
 )
 
@@ -315,12 +318,12 @@ def _cell_summary(case_ids: list[str], trials: list[dict[str, Any]]) -> dict[str
         if len(first) == 2:
             pairs.append(first[0] != first[1])
     discordance = sum(pairs) / len(pairs) if pairs else None
-    tokens = [
-        t["input_tokens"] + t["output_tokens"]
-        if t.get("input_tokens") is not None and t.get("output_tokens") is not None
-        else None
-        for t in trials
-    ]
+    # decision (B): an unknown-usage trial counts its charged tokens (``charged_tokens``, the
+    # reservation or more) toward tokens per solved and is never a solved trial (``success`` null,
+    # or False after an answer lookup); a trial with no tokens recorded at all leaves the value
+    # null (``spent_tokens``: unknown is never fewer)
+    missing_usage = [t for t in trials if t.get("charged_tokens") is not None]
+    tokens = [spent_tokens(t) for t in trials]
     solved = sum(t.get("success") is True for t in trials)
     elapsed = [t["elapsed_ms"] for t in trials if t.get("elapsed_ms") is not None]
     return {
@@ -340,6 +343,7 @@ def _cell_summary(case_ids: list[str], trials: list[dict[str, Any]]) -> dict[str
             else None
         ),
         "median_seconds": median(elapsed) / 1000 if elapsed else None,
+        "usage_unknown_trials": len(missing_usage),
     }
 
 
@@ -689,6 +693,15 @@ class CalibrationService:
                 if observation.input_tokens is not None and observation.output_tokens is not None
                 else None
             )
+            cost = observation.cost_microunits
+            if usage_unknown(observation):
+                # decision (B): charge the reservation, keep running, the outcome is missing
+                fields, tokens, cost = unknown_usage_charge(
+                    observation,
+                    tokens=policy.max_trial_tokens,
+                    cost=policy.max_trial_cost_microunits,
+                )
+                trial.update(fields)
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
                 th = self.store.head(scope, TRIAL_KIND, trial_id, db=db)
@@ -708,7 +721,7 @@ class CalibrationService:
                     root,
                     trial_id,
                     tokens=tokens,
-                    cost=observation.cost_microunits,
+                    cost=cost,
                     uncertain=bool(observation.unknown_effects),
                     cost_required=False,
                 )
@@ -724,8 +737,10 @@ class CalibrationService:
                 )
             refs.append(ref)
             if ctx["composition"] == v1[cell]:
-                known = observation.success is not None and not observation.unknown_effects
-                outcomes[(cell, case["case_id"])].append(observation.success if known else None)
+                # an unknown-usage trial is a missing outcome (``success`` null in its record),
+                # unless it attempted an answer lookup: then it is failed (decision (C))
+                known = trial["success"] is not None and not observation.unknown_effects
+                outcomes[(cell, case["case_id"])].append(trial["success"] if known else None)
             if post_guard:
                 stop(post_guard)
             elif observation.safety_failures or observation.unknown_effects:

@@ -157,19 +157,27 @@ def hold_code(fn: Any, *args: Any, **kwargs: Any) -> str:
 
 
 # -- argv -----------------------------------------------------------------------------------------
+def codex_oracle(model: str, prompt: str) -> list[str]:
+    """The frozen c9f896a planner argv (G4) with operator decision (C)'s one pair, 2026-10-08:
+    `-c web_search="disabled"` right before `--skip-git-repo-check` (as the executor, G2)."""
+    frozen = argv_oracle.codex_planner_argv(model, prompt)
+    at = frozen.index("--skip-git-repo-check")
+    return [*frozen[:at], "-c", 'web_search="disabled"', *frozen[at:]]
+
+
 @pytest.mark.parametrize("effort", [None, "provider-default"])
 def test_codex_turn_argv_equals_the_planner_oracle_without_effort(
     tmp_path: Path, effort: str | None
 ) -> None:
     turn, _, _ = codex_turn(tmp_path, effort=effort)
-    assert turn.argv(PROMPT) == argv_oracle.codex_planner_argv(MODEL, PROMPT)
+    assert turn.argv(PROMPT) == codex_oracle(MODEL, PROMPT)
     assert turn.effort is None  # provider-default is "no flag" (2.4)
 
 
 @pytest.mark.parametrize("effort", ["low", "high", "xhigh"])
 def test_codex_turn_argv_carries_the_effort_after_the_model(tmp_path: Path, effort: str) -> None:
     turn, _, _ = codex_turn(tmp_path, effort=effort)
-    want = argv_oracle.codex_planner_argv(MODEL, PROMPT)
+    want = codex_oracle(MODEL, PROMPT)
     at = want.index("--model") + 2
     assert turn.argv(PROMPT) == [*want[:at], "-c", f"model_reasoning_effort={effort}", *want[at:]]
 
@@ -307,7 +315,9 @@ def test_a_claude_turn_returns_structured_output_and_token_counts(
     turn, sandbox = claude_turn(tmp_path, effort="max")
     result = turn.run(prompt=PROMPT, schema=SCHEMA, workspace=tmp_path)
     assert result.output == {"answer": "ok"}
-    assert result.usage == {"input_tokens": 7, "output_tokens": 2}  # only these two keys
+    # input counts the cache read as a Codex turn does; the cache class is kept by name
+    assert result.usage == {"input_tokens": 7 + 99, "output_tokens": 2,
+                            "cache_read_input_tokens": 99}  # fmt: skip
     (call,) = sandbox.calls
     assert call["argv"] == turn.argv(PROMPT, SCHEMA) and "--effort" in call["argv"]
     assert call["env_names"] == ["CLAUDE_CODE_OAUTH_TOKEN"]  # the token by name, not in argv
@@ -414,7 +424,7 @@ def test_a_planner_draft_keeps_its_result_shape_and_inputs(tmp_path: Path) -> No
 def test_the_planner_cell_defaults_and_effort(tmp_path: Path) -> None:
     codex, claude = planners(tmp_path)
     assert (codex.cell_id, claude.cell_id) == ("codex-cli", "claude-cli")
-    assert codex.argv(PROMPT) == argv_oracle.codex_planner_argv(MODEL, PROMPT)
+    assert codex.argv(PROMPT) == codex_oracle(MODEL, PROMPT)
     assert claude.claude_argv(PROMPT, SCHEMA) == argv_oracle.claude_planner_argv(
         MODEL, PROMPT, SCHEMA
     )

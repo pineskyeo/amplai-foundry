@@ -1,10 +1,13 @@
 """Git commit workspaces and host-computed patches (D-068); not an OS security boundary.
 
 A run's workspace is a ``git archive`` copy of one base commit of a registered repository:
-dotfiles included, ``.git`` never. The agent only ever sees that copy through the container's
-bind mount. After the process is confirmed stopped, the host computes the change as a binary
-patch against the base commit with a temporary index, so the result is what the tree actually
-contains, never a file the agent claims to have written.
+dotfiles included, the source ``.git`` never. The copy gets a fresh ``.git`` of its own whose
+only commit is that tree (``materialize``), so it holds no git object beyond the base commit: no
+other commit, branch, tag, reflog entry, pack or dangling object of the source repository
+(operator decision (D), 2026-10-08; ``tests/v3/test_033_workspace_objects.py``). The agent only
+ever sees that copy through the container's bind mount. After the process is confirmed stopped,
+the host computes the change as a binary patch against the base commit with a temporary index, so
+the result is what the tree actually contains, never a file the agent claims to have written.
 
 The repository path comes from trusted configuration (``repos``), never from an artifact, so a
 snapshot descriptor cannot point the host at another directory.

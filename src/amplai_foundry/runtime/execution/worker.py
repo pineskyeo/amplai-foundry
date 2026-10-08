@@ -643,7 +643,10 @@ class WorkCoordinator:
             if observation["state"] in STOPPED_STATES:
                 raise Hold(
                     "DRIVER_BOUNDARY", "Driver is not a successful completed turn",
-                    details={"state": observation["state"], "followup": k},
+                    details={
+                        "state": observation["state"], "followup": k,
+                        "failure": observation.get("failure"),
+                    },
                 )  # fmt: skip
             time.sleep(self.poll_seconds)
         receipt: dict[str, Any] = port.collect(handle)
@@ -771,7 +774,10 @@ class WorkCoordinator:
             usage=usage,
             process_stopped=True,
         )
-        self._update(worker, did, "verifying", result=result, driver_receipt_digest=digest(receipt))
+        self._update(
+            worker, did, "verifying", result=result, driver_receipt_digest=digest(receipt),
+            **driver_lookups(port, handles, self._state(worker, did)["data"]),
+        )  # fmt: skip
         # Outputs are in the CAS; remove the stopped run's containers (never before collect),
         # every turn's only after the last turn (M3)
         for each in reversed(handles):
@@ -828,9 +834,19 @@ class WorkCoordinator:
                 ok, entries = self._stop_candidates(port, data)
                 stopped = stopped and ok
                 candidates = {"candidates": entries}
+        # the hold's scalar details (DRIVER_BOUNDARY: the driver journal's state and failure) stay
+        # with the code, so a held execution says why its turn ended; nothing else is copied
+        details = getattr(exc, "details", None)
+        scalars = {
+            str(k): v for k, v in details.items()
+            if v is None or (isinstance(v, (str, bool, int)) and len(str(v)) <= 200)
+        } if isinstance(details, dict) else {}  # fmt: skip
+        kept = {"hold_details": scalars} if scalars else {}
+        with contextlib.suppress(Exception):
+            kept.update(driver_lookups(port, handles or [did], self._state(worker, did)["data"]))
         self._update(
             worker, did, "held", hold_code=getattr(exc, "code", type(exc).__name__),
-            process_stopped=stopped, **candidates,
+            process_stopped=stopped, **candidates, **kept,
         )  # fmt: skip
 
     # -- M3 recovery (Work 033 S9b, §14 Q16 (a)) --------------------------------------------------
@@ -1500,7 +1516,10 @@ class WorkCoordinator:
                     raise Hold(
                         "DRIVER_BOUNDARY",
                         "Driver is not a successful completed turn",
-                        details={"state": observation["state"]},
+                        details={
+                            "state": observation["state"],
+                            "failure": observation.get("failure"),
+                        },
                     )
                 time.sleep(self.poll_seconds)
             if not bound:
@@ -1963,7 +1982,10 @@ class WorkCoordinator:
                 usage=self._usage(worker.scope, run_id, used),
                 process_stopped=True,
             )
-            self._update(worker, did, "verifying", dispatch=dispatch, result=result)
+            self._update(
+                worker, did, "verifying", dispatch=dispatch, result=result,
+                **driver_lookups(port, [*handles, handle], data),
+            )  # fmt: skip
             return result
         except Exception as exc:
             if getattr(exc, "code", None) == "EXECUTION_PAUSED":
@@ -1974,11 +1996,45 @@ class WorkCoordinator:
             stopped = False
             with contextlib.suppress(Exception):
                 stopped = port.cancel(handle).get("process_stopped") is True
+            traced = data.get("trace_handles")
+            turns = [t for t in traced if isinstance(t, str)] if isinstance(traced, list) else []
             self._update(
                 worker,
                 did,
                 "held",
                 hold_code=getattr(exc, "code", type(exc).__name__),
                 process_stopped=stopped,
+                **driver_lookups(port, [*turns, handle], data),
             )
             raise
+
+
+def driver_lookups(
+    port: Any, handles: list[str], data: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Operator decision (C), 2026-10-08: ``{"answer_lookup": [...]}`` with the answer-lookup
+    evidence the driver keeps for ``handles`` and for the vote candidates in ``data``
+    (``CliDriver.answer_lookup``, read through the port as ``port_trace`` reads a trace;
+    ``agent_drivers/answer_lookup.py``), each entry with its dispatch id; ``{}`` when there is
+    none. A port without the reader adds nothing; it never raises and never calls the port's
+    lifecycle methods (``poll``, ``collect``). The trial executor reads it from the execution head
+    (``meta_harness/local_executor.py``)."""
+    fn = getattr(port, "answer_lookup", None)
+    if not callable(fn):
+        fn = getattr(getattr(port, "driver", None), "answer_lookup", None)
+    if not callable(fn):
+        return {}
+    wanted = list(dict.fromkeys(h for h in handles if isinstance(h, str)))
+    for entry in (data or {}).get("candidates") or []:
+        if isinstance(entry, dict) and isinstance(entry.get("handle"), str):
+            wanted.append(entry["handle"])
+    found: list[dict[str, Any]] = []
+    for handle in dict.fromkeys(wanted):
+        try:
+            entries = fn(handle)
+        except Exception:
+            continue
+        for entry in entries if isinstance(entries, list) else []:
+            if isinstance(entry, dict):
+                found.append({**entry, "dispatch_id": handle})
+    return {"answer_lookup": found} if found else {}

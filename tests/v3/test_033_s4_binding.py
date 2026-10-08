@@ -197,7 +197,9 @@ def test_default_options_on_the_legacy_profile_run_exactly_as_today(setup: Setup
     goal = setup.goal()
     assert setup.loop.run_goal(goal)["status"] == "published"
     (argv,) = setup.container.argvs
-    assert "-c" not in argv and argv[argv.index("--model") + 1] == MODEL  # no effort flag
+    # no effort flag: the only override is decision (C)'s web search off (2026-10-08)
+    assert argv.count("-c") == 1 and argv[argv.index("-c") + 1] == 'web_search="disabled"'
+    assert argv[argv.index("--model") + 1] == MODEL
 
 
 def test_a_matching_effort_reaches_the_driver_argv(setup: Setup) -> None:
@@ -255,7 +257,8 @@ def test_the_loop_resolves_an_effort_profile_to_its_options(setup: Setup) -> Non
 def test_no_options_on_the_legacy_profile_keeps_working(setup: Setup) -> None:
     goal = setup.goal()
     assert setup.loop.run_goal(goal)["status"] == "published"
-    assert "-c" not in setup.container.argvs[0]
+    argv = setup.container.argvs[0]  # no effort flag; decision (C)'s web search override only
+    assert argv.count("-c") == 1 and argv[argv.index("-c") + 1] == 'web_search="disabled"'
 
 
 def test_a_port_without_options_support_holds_non_default_options(

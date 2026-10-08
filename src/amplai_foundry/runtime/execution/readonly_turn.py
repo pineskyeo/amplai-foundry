@@ -39,6 +39,26 @@ raw events (also in an event the sanitizer drops, or across a cut point) empties
 counts a sanitizer error, so admission writes ``trace-drop`` ``sanitizer_error`` and stores nothing
 (``traces.TraceService.admit``); a captured Codex turn whose credential cannot be read fails closed
 the same way. A partial echo of a credential is not recognised.
+
+Operator decision (C), 2026-10-08 (interfaces.md clarification "Answer Lookup And Workspace
+Objects"), applies to these turns as to the executor's dispatches (``agent_drivers/cli.py``):
+
+- A Codex turn's argv carries ``-c web_search="disabled"`` (``CODEX_WEB_SEARCH_OFF``) as its last
+  config override, right before ``--skip-git-repo-check``; golden G4 is amended by exactly that
+  pair, as G2 is for the executor.
+- Every turn's decoded events go through ``answer_lookup.scan_turn`` (a search outside the
+  workspace, reading git history beyond the base commit, a web search or fetch tool call). The
+  turn's own mounts (Codex ``SCHEMA_MOUNT``, the ``mounts`` it was given, e.g. a multi-app
+  planner's ``/amplai-input/apps/<app>``) are not outside. Evidence holding a secret pattern or
+  the turn's own credential (the Claude token; the leased Codex ``auth.json`` values, as seeded
+  and as left) is withheld. Findings are returned inside the turn's usage as ``answer_lookup``
+  (``LOOKUP_KEY``), so they travel wherever the usage is stored without a caller change: the
+  plan record's ``planner_usage`` (``product.py``) and each ``aux_usage`` entry's ``usage``
+  (``strategy_runner.py``), where ``LocalTrialExecutor._counters`` reads them and fails the
+  trial. A turn without a finding returns exactly the usage it returned before; a turn that
+  reported no usage but has a finding returns ``{"input_tokens": None, "output_tokens": None,
+  "answer_lookup": [...]}`` (its usage stays unknown). A turn that fails (``TURN_FAILED``,
+  ``TURN_OUTPUT``, ``TURN_TIMEOUT``) returns nothing, so its findings are not kept.
 """
 
 from __future__ import annotations
@@ -53,7 +73,14 @@ from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator
 
-from ...agent_drivers.protocol import JsonlDecoder
+from ...agent_drivers import answer_lookup
+from ...agent_drivers.cli import CODEX_WEB_SEARCH_OFF
+from ...agent_drivers.protocol import (
+    CLAUDE_CACHE_INPUT,
+    CLAUDE_CACHE_WRITE_SPLIT,
+    JsonlDecoder,
+    input_total,
+)
 from ...meta_harness.traces import holds_credential, read_credential_file, withhold
 from ...sandbox.container import ContainerSandbox
 from ..contracts.identity import digest, new_id
@@ -63,6 +90,8 @@ from .codex import AUTH, ScopedCredential
 
 SCHEMA_MOUNT = "/amplai-input/plan-schema.json"  # planner_codex.py:224, :275 at c9f896a
 READ_ONLY_TOOLS = "Read,Glob,Grep"  # planner_codex.py:323 at c9f896a
+# decision (C): the key of a turn's usage that holds its answer-lookup findings
+LOOKUP_KEY = "answer_lookup"
 
 
 @dataclass(frozen=True)
@@ -73,6 +102,39 @@ class TurnResult:
     events_digest: str
     # S13: the sanitized events of the turn when it ran with capture_trace, else None
     trace: dict[str, Any] | None = None
+
+
+def _claude_usage(reported: Any) -> dict[str, Any]:
+    """A Claude turn's counts in the shape a Codex turn reports them (``turn.completed``):
+    ``input_tokens`` is every input token, cache included (``protocol.input_total``), and the
+    cache classes it contains are kept under Anthropic's names, with the cache-write lifetime
+    split Anthropic reports under ``cache_creation``. Anthropic's own ``input_tokens`` excludes
+    cache, so the uncached input is ``input_tokens`` minus both cache fields
+    (``protocol.turn_detail`` rebuilds the D-094 detail for pricing)."""
+    usage = reported if isinstance(reported, dict) else {}
+    out: dict[str, Any] = {k: usage.get(k) for k in ("input_tokens", "output_tokens")}
+    if type(out["input_tokens"]) is not int or out["input_tokens"] < 0:
+        return out  # not reported: the turn's usage stays unknown
+    out["input_tokens"] = input_total("claude", usage)
+    for k in CLAUDE_CACHE_INPUT:
+        if type(usage.get(k)) is int and usage[k] >= 0:
+            out[k] = usage[k]
+    creation = usage.get("cache_creation")
+    if isinstance(creation, dict):
+        for k in CLAUDE_CACHE_WRITE_SPLIT:
+            if type(creation.get(k)) is int and creation[k] >= 0:
+                out[k] = creation[k]
+    return out
+
+
+def _with_lookups(usage: dict[str, Any] | None, found: list[dict[str, str]]) -> Any:
+    """Decision (C): ``usage`` with the turn's answer-lookup findings under ``LOOKUP_KEY``;
+    ``usage`` itself when there is none. A turn that reported no usage keeps its counts unknown
+    (None) beside the findings."""
+    if not found:
+        return usage
+    base = dict(usage) if isinstance(usage, dict) else {"input_tokens": None, "output_tokens": None}
+    return {**base, LOOKUP_KEY: [dict(f) for f in found]}
 
 
 def _trace(
@@ -165,10 +227,11 @@ class CodexReadOnlyTurn:
         # effort as a config override of `codex exec` (cli-effort-facts.md, §14 Q1), beside
         # --json/--model as in the executor argv (agent_drivers/cli.py)
         effort = ["-c", "model_reasoning_effort=" + self.effort] if self.effort else []
+        # decision (C): web search off, the last config override (as CliDriver.argv)
         return [
             "codex", "--ask-for-approval", "never", "exec", "--json", "--model", self.model,
-            *effort, "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox",
-            "--output-schema", SCHEMA_MOUNT, prompt,
+            *effort, *CODEX_WEB_SEARCH_OFF, "--skip-git-repo-check",
+            "--dangerously-bypass-approvals-and-sandbox", "--output-schema", SCHEMA_MOUNT, prompt,
         ]  # fmt: skip
 
     def run(
@@ -187,8 +250,10 @@ class CodexReadOnlyTurn:
         schema_path.write_text(json.dumps(schema))
         name = "amplai-plan-" + run.name[-20:].replace("_", "-").lower()
         self.credential.seed(home)
-        # S13: the leased credential's literals, only for a captured turn (as seeded)
-        literals = read_credential_file(home / AUTH) if capture_trace else set()
+        # S13: the leased credential's literals (as seeded), for a captured turn's trace and, by
+        # decision (C), for withholding answer-lookup evidence that holds one
+        literals = read_credential_file(home / AUTH)
+        readonly_mounts = {SCHEMA_MOUNT: schema_path, **(mounts or {})}
         started = time.time()
         try:
             command = self.sandbox.command(
@@ -196,17 +261,19 @@ class CodexReadOnlyTurn:
                 workspace,
                 name,
                 native_home=home,
-                readonly_mounts={SCHEMA_MOUNT: schema_path, **(mounts or {})},
+                readonly_mounts=readonly_mounts,
                 # read-only is the docker mount, not Codex's sandbox (D-073)
                 workspace_readonly=True,
             )
             result = _run(command, name, self.timeout, None)
         finally:
             subprocess.run(["docker", "rm", "-f", name], capture_output=True, check=False)
-            if capture_trace:  # and as left by the run (a refresh rotates the tokens)
-                literals |= read_credential_file(home / AUTH)
+            # and as left by the run (a refresh rotates the tokens)
+            literals |= read_credential_file(home / AUTH)
             self.credential.release(home)
         events = JsonlDecoder().feed(result.stdout, final=True)
+        # decision (C): the turn's answer-lookup attempts; its own mounts are not outside
+        found = answer_lookup.scan_turn("codex", events, literals, inside=readonly_mounts)
         messages = [
             e["item"].get("text", "")
             for e in events
@@ -228,7 +295,7 @@ class CodexReadOnlyTurn:
             raise Hold("TURN_OUTPUT", "Read-only turn reply is not JSON") from None
         return TurnResult(
             _check(output, schema),
-            usage,
+            _with_lookups(usage, found),
             round(time.time() - started, 1),
             digest(events),
             _trace("codex", events, capture_trace, literals),
@@ -308,10 +375,11 @@ class ClaudeReadOnlyTurn:
                 details={"rc": result.returncode, "stderr": result.stderr.decode()[-400:]},
             )
         output = _check(final.get("structured_output"), schema)
-        usage = final.get("usage") or {}
+        # decision (C): the turn's answer-lookup attempts; its own mounts are not outside
+        found = answer_lookup.scan_turn("claude", events, {self.token}, inside=mounts or {})
         return TurnResult(
             output,
-            {k: usage.get(k) for k in ("input_tokens", "output_tokens")},
+            _with_lookups(_claude_usage(final.get("usage")), found),
             round(time.time() - started, 1),
             digest(events),
             _trace("claude", events, capture_trace, {self.token}),

@@ -373,7 +373,7 @@ def test_a_real_trial_carries_the_v2_fields(world: World) -> None:
     assert out["phase"] == "stage" and out["api_cost"]["status"]
     assert out["guards"] == {
         "ask_back": False, "edit_files": 1, "edit_lines": 2, "broken_tool_calls": None,
-        "test_file_edits": 0, "verified_hidden_fail": False,
+        "test_file_edits": 0, "verified_hidden_fail": False, "answer_lookup": 0,
     }  # fmt: skip
     # the D-094 keys stay
     assert out["attempts"] == 1 and out["diff"]["files"] == 1 and out["seconds"] == 2.5
