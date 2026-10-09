@@ -147,24 +147,29 @@ class EvolutionBudget:
             raise RuntimeFault(
                 "META_USAGE", "Observed usage must be nonnegative integers or unknown"
             )
-        # D-088: a plan that does not compare cost has no cost ceiling to overrun; a reported
-        # cost (an API-equivalent estimate, D-094) is recorded, never an overrun (calibration
-        # plan calplan-1bdb0658 stopped on two Claude trials of 0.33 and 0.20 USD, 2026-10-09)
+        # D-088: a plan that does not compare cost keeps the reserved cost in the ledger, so a
+        # reported cost (an API-equivalent estimate, D-094) is neither an overrun nor spending
+        # against the root cost budget; it is kept as ``reported_cost``. Calibration plans
+        # calplan-1bdb0658 (overrun) and calplan-3fd084f0 (META_COST_BUDGET at the next reserve)
+        # stopped on Claude trials of 0.2 to 0.4 USD against a cost budget of 0 (2026-10-09).
+        counted = cost if cost_required else None
         overrun = (tokens is not None and tokens > old["token_ceiling"]) or (
-            cost_required and cost is not None and cost > old["cost_ceiling"]
+            counted is not None and counted > old["cost_ceiling"]
         )
         # D-088: when the plan does not compare cost, a missing cost keeps the reserved amount
         # (never 0) and does not make the allocation uncertain; tokens are still required.
         uncertain = uncertain or tokens is None or (cost is None and cost_required)
-        kept_cost = old["cost"] if cost is None else cost
+        kept_cost = old["cost"] if counted is None else counted
         new = {
             **old,
             "status": "unknown" if uncertain else "settled",
             "tokens": max(old["tokens"], tokens or 0) if uncertain else tokens,
-            "cost": max(old["cost"], cost or 0) if uncertain else kept_cost,
+            "cost": max(old["cost"], counted or 0) if uncertain else kept_cost,
             "overrun": overrun,
             "settled_at": now(),
         }
+        if counted is None and cost is not None:
+            new["reported_cost"] = cost
         self.store.cas(
             db,
             scope,

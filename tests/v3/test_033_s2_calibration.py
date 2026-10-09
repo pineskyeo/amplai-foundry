@@ -7,6 +7,7 @@ budget and state rules of `CalibrationService`, the pure `select_cases` rule of 
 """
 
 import dataclasses
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -28,7 +29,7 @@ from amplai_foundry.evaluation.calibration import (
 )
 from amplai_foundry.evaluation.sequential import noise_band, wilson
 from amplai_foundry.evaluation.service import NOT_RUN_EVIDENCE
-from amplai_foundry.runtime.contracts.identity import digest, now
+from amplai_foundry.runtime.contracts.identity import canonical, digest, now
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 Z95 = 1.959963984540054
@@ -477,6 +478,32 @@ def test_a_safety_failure_fails_the_trial_and_the_run_goes_on(w):
     assert all(t["success"] is False for t in unsafe_trials)
     assert r.summary["cells"]["cell-a"]["tasks"]["dev-00"]["class"] != "saturated"
     assert r.summary["cells"]["cell-b"]["tasks"]["dev-00"]["class"] == "saturated"
+
+
+def test_reported_costs_do_not_stop_a_calibration_with_a_cost_budget_of_zero(w):
+    # D-088 (2026-10-09): the pilot's calibration budget has max_cost_microunits 0 and Claude
+    # trials report estimated costs; calplan-1bdb0658 stopped on an overrun and calplan-3fd084f0
+    # on META_COST_BUDGET at the next reservation
+    c = make(w)
+    svc = service(w, dataclasses.replace(tokens_policy(w, TRIAL_TOKENS),
+                                         max_trial_cost_microunits=0))  # fmt: skip
+    scripted = Scripted(w, c.roles, outcome, tokens=(5, 5))
+
+    def costly(composition, case, repeat, mode):
+        # the receipt and the observation report the same estimated cost, as the executor does
+        obs = scripted(composition, case, repeat, mode)
+        d = w.m.d
+        receipt = json.loads(d.artifacts.read(d.scope, obs.artifact_refs[0], trusted=True))
+        receipt["cost_microunits"] = 331846
+        ref = d.artifacts.admit(d.scope, canonical(receipt), "application/json", trust="verifier")
+        return dataclasses.replace(obs, artifact_refs=(ref,), cost_microunits=331846)
+
+    r = run_plan(w, c, svc=svc, executor=costly, budget={**BUDGET, "max_cost_microunits": 0})
+    assert r.head["data"]["stop_reason"] is None and r.head["state"] == "done"
+    root = w.m.d.store.head(w.scope, "meta-budget", "calibration:" + r.plan_ref["id"])
+    allocations = root["data"]["allocations"].values()
+    assert all(a["cost"] == 0 and a["reported_cost"] == 331846 for a in allocations)
+    assert not any(a["overrun"] for a in allocations)
 
 
 def holding_executor(w, c, evidence, code="TRIAL_VERIFIER"):

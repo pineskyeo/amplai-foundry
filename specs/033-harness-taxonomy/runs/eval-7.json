@@ -1,0 +1,9 @@
+{
+ "version": "eval-7",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "D-088 ledger fix 2026-10-09: when a plan does not compare cost, settlement keeps the reserved cost in the allocation's cost and records the reported cost as reported_cost, so it is neither an overrun nor spending against the root cost budget (calibration plan calplan-3fd084f0 under eval-6 stopped with META_COST_BUDGET at the reservation after two Claude trials reported 394676 and 211386 microunits against max_cost_microunits 0); token budgets, unknown usage and compared-cost plans are unchanged"
+  }
+ ]
+}
