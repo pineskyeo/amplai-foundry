@@ -454,6 +454,31 @@ def test_cost_not_compared_cannot_claim_a_cost_benefit():
         validate_analysis_plan(analysis_plan(cost_basis="free"))
 
 
+def test_a_reported_cost_is_no_overrun_when_cost_is_not_compared(meta03):
+    # D-088 (2026-10-09): calibration plan calplan-1bdb0658 reserved cost 0 and stopped when a
+    # Claude trial reported an estimated 331846 microunits; tokens still overrun as before
+    from amplai_foundry.meta_harness.budget import EvolutionBudget
+
+    d = meta03.d
+    budget = EvolutionBudget(d.store)
+    limits = {"max_attempts": 4, "max_tokens": 1000, "max_cost_microunits": 0,
+              "max_parallel_works": 1, "max_wall_seconds": 3600}  # fmt: skip
+    ref = {"id": "experiment-d088-cost", "revision": 1, "digest": "sha256:" + "0" * 64}
+
+    def settle(proposal, tokens, required):
+        with d.store.tx() as db:
+            budget.freeze(db, d.scope, proposal, ref, limits)
+            budget.reserve(db, d.scope, proposal, "t", tokens=100, cost=0)
+            return budget.settle(db, d.scope, proposal, "t", tokens=tokens, cost=331846,
+                                 cost_required=required)  # fmt: skip
+
+    assert settle("cost-not-compared", 40, False) == {"overrun": False, "uncertain": False}
+    kept = d.store.head(d.scope, "meta-budget", "cost-not-compared")["data"]["allocations"]["t"]
+    assert (kept["status"], kept["cost"], kept["overrun"]) == ("settled", 331846, False)
+    assert settle("cost-not-compared-tokens", 101, False)["overrun"] is True
+    assert settle("cost-compared", 40, True)["overrun"] is True
+
+
 def test_budget_keeps_the_reservation_when_cost_is_not_compared(meta03):
     # D-088: a missing cost settles at the reserved amount (never 0) when cost is not compared;
     # by default it is still uncertain and blocks further spending

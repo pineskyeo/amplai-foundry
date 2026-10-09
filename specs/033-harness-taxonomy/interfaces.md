@@ -3861,3 +3861,21 @@ deployment touched `conftest.py`, `pytest.ini`, `setup.cfg`, `tox.ini`, `pyproje
   `test_a_new_conftest_is_a_safety_failure_and_cannot_skip_the_hidden_tests`,
   `test_grading_restores_an_edited_existing_test`, `test_grading_drops_an_added_test`,
   `test_a_clean_change_is_graded_without_reverting_anything`.
+
+## D-088 Fix 2026-10-09: A Reported Cost Is No Overrun When Cost Is Not Compared
+
+Source: calibration plan `calplan-1bdb065852868e2b88a03023` (eval-5) stopped after 36 trials with
+`budget_overrun_or_unknown_usage`. Its budget has `max_cost_microunits` 0 and every allocation a
+`cost_ceiling` of 0. The first two Claude trials of a fixed-planner task (`bug-comma-grouping`,
+`caltrial-45e6ff9a…` sonnet and `caltrial-56098c10…` opus) reported estimated costs of 331846 and
+200122 microunits; every earlier trial reported no cost (`None`). `EvolutionBudget.settle` counted
+`cost > cost_ceiling` as an overrun although the calibration settles with `cost_required=False`
+(D-088: the plan does not compare cost). Their tokens were 772317 and 194902 against 4000000.
+
+- `EvolutionBudget.settle` (`meta_harness/budget.py`): a cost counts toward `overrun` only when
+  `cost_required` is True. With `cost_required=False` a reported cost is still recorded.
+- Unchanged: token overruns, unknown usage (`uncertain`), and plans that compare cost.
+- Applies to every caller that passes `cost_required=False`: calibration, and experiments with
+  `cost_basis: not_compared` (`evaluation/service.py:906`, `meta_harness/service.py:793`).
+- Test: `test_a_reported_cost_is_no_overrun_when_cost_is_not_compared`
+  (`tests/v3/test_dev03_evaluation.py`).
