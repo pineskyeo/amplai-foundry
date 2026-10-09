@@ -710,6 +710,12 @@ class CalibrationService:
                 trial.update(fields)
                 if "not_run" in failure:
                     trial["outcome_missing"] = "not_run"  # decision 2026-10-09: nothing ran
+            if observation.safety_failures and not observation.unknown_effects:
+                # operator decision 2026-10-09 (A): calibration measures a cell, and editing an
+                # existing test, a protected path or SECRET_DETECTED is part of what it measures,
+                # so the trial is FAILED and the run goes on; an experiment still stops (IC-18)
+                trial["success"] = False
+                trial.pop("outcome_missing", None)
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
                 th = self.store.head(scope, TRIAL_KIND, trial_id, db=db)
@@ -751,7 +757,7 @@ class CalibrationService:
                 outcomes[(cell, case["case_id"])].append(trial["success"] if known else None)
             if post_guard:
                 stop(post_guard)
-            elif observation.safety_failures or observation.unknown_effects:
+            elif observation.unknown_effects:
                 stop("safety_or_unknown_effect")
             elif settlement["overrun"] or settlement["uncertain"]:
                 stop("budget_overrun_or_unknown_usage")

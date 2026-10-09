@@ -461,6 +461,24 @@ def test_an_unknown_effect_stops_the_run_and_the_task_is_unknown(w):
     assert r.summary["cells"]["cell-a"]["tasks"]["dev-00"]["class"] == "saturated"
 
 
+def test_a_safety_failure_fails_the_trial_and_the_run_goes_on(w):
+    # operator decision 2026-10-09 (A): calibration measures the cell; an edited existing test
+    # (caltrial-5bb78a38..., tests/test_csvio.py) is part of that measure, not a reason to stop
+    c = make(w)
+
+    def unsafe(role, case_id, repeat):
+        base = outcome(role, case_id, repeat)
+        return (True, 1) if (role, case_id) == ("cell-a", "dev-00") else base
+
+    r = run_plan(w, c, executor=Scripted(w, c.roles, unsafe, tokens=(5, 5)))
+    assert r.head["state"] == "done" and r.head["data"]["stop_reason"] is None
+    unsafe_trials = [t for t in r.trials() if t["cell_id"] == "cell-a" and t["task_id"] == "dev-00"]
+    assert unsafe_trials and all(t["safety_failures"] == 1 for t in unsafe_trials)
+    assert all(t["success"] is False for t in unsafe_trials)
+    assert r.summary["cells"]["cell-a"]["tasks"]["dev-00"]["class"] != "saturated"
+    assert r.summary["cells"]["cell-b"]["tasks"]["dev-00"]["class"] == "saturated"
+
+
 def holding_executor(w, c, evidence, code="TRIAL_VERIFIER"):
     """val-00 holds ``code`` (TRIAL_VERIFIER: the caltrial-ac33... shape); ``evidence`` (None:
     none) is what the executor attaches as ``NOT_RUN_EVIDENCE``."""
