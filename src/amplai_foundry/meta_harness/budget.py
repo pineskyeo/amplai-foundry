@@ -147,8 +147,11 @@ class EvolutionBudget:
             raise RuntimeFault(
                 "META_USAGE", "Observed usage must be nonnegative integers or unknown"
             )
+        # D-088: a plan that does not compare cost has no cost ceiling to overrun; a reported
+        # cost (an API-equivalent estimate, D-094) is recorded, never an overrun (calibration
+        # plan calplan-1bdb0658 stopped on two Claude trials of 0.33 and 0.20 USD, 2026-10-09)
         overrun = (tokens is not None and tokens > old["token_ceiling"]) or (
-            cost is not None and cost > old["cost_ceiling"]
+            cost_required and cost is not None and cost > old["cost_ceiling"]
         )
         # D-088: when the plan does not compare cost, a missing cost keeps the reserved amount
         # (never 0) and does not make the allocation uncertain; tokens are still required.

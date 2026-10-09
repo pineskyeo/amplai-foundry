@@ -1,0 +1,9 @@
+{
+ "version": "eval-6",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "D-088 fix 2026-10-09: when a plan does not compare cost (calibration, cost_basis not_compared), a reported cost is recorded at settlement but is never a cost overrun; token overruns, unknown usage and compared-cost plans are unchanged (calibration plan calplan-1bdb0658 stopped on two Claude trials that reported 331846 and 200122 microunits against a cost ceiling of 0)"
+  }
+ ]
+}
