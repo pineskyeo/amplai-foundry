@@ -63,12 +63,12 @@ import json
 import re
 import subprocess
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from ..evaluation.service import TrialObservation
+from ..evaluation.service import NOT_RUN_EVIDENCE, TrialObservation
 from ..runtime.contracts.authority import Actor
 from ..runtime.contracts.identity import canonical, digest, digest_bytes, new_id
 from ..runtime.contracts.semantics import resolve_ref
@@ -177,21 +177,33 @@ class TrialPlanner:
             scope = base_scope(corpus.base)
             self.in_scope = {task.contract_text(): list(scope) for task in corpus.tasks}
 
+    def bound_verifier(self, verifiers: Iterable[str]) -> str | None:
+        """The app verifier a corpus task's behaviour acceptance names (operator decision
+        2026-10-09): the configured ``behaviour_verifier`` when the app has it; else the app's
+        only verifier; None (TRIAL_VERIFIER) when the app has none, or several and none is the
+        configured one."""
+        ids = list(verifiers)
+        if self.behaviour_verifier in ids:
+            return self.behaviour_verifier
+        return ids[0] if len(ids) == 1 else None
+
     def draft(
         self, goal: str, app: str, verifiers: dict[str, str], workspace: Path, *, mode: str = "work"
     ) -> dict[str, Any]:
         task = self.by_text.get(goal)
         if task is None:
             raise Hold("TRIAL_TASK", "The goal text is not a corpus task contract")
-        if self.behaviour_verifier not in verifiers:
-            raise Hold("TRIAL_VERIFIER", "The app has no behaviour verifier for corpus tasks")
-        acceptance = [
-            {"statement": s, "verifier": self.behaviour_verifier} for s in task.acceptance
-        ]
+        behaviour = self.bound_verifier(verifiers)
+        if behaviour is None:
+            raise Hold(
+                "TRIAL_VERIFIER", "The app has no behaviour verifier for corpus tasks",
+                details={"configured": self.behaviour_verifier, "verifiers": sorted(verifiers)},
+            )  # fmt: skip
+        acceptance = [{"statement": s, "verifier": behaviour} for s in task.acceptance]
         acceptance += [
             {"statement": description, "verifier": verifier}
             for verifier, description in verifiers.items()
-            if verifier != self.behaviour_verifier
+            if verifier != behaviour
         ]
         draft = {
             "summary": task.task_id,
@@ -301,6 +313,51 @@ class LocalTrialExecutor:
     def __call__(
         self, composition_ref: dict[str, Any], case: dict[str, Any], repeat: int, mode: str
     ) -> TrialObservation:
+        """One trial. An exception it raises carries the store evidence of what the trial
+        started (``evaluation.service.NOT_RUN_EVIDENCE``, operator decision 2026-10-09)."""
+        submitted: dict[str, str] = {}
+        checks_before = getattr(self.service, "base_check_starts", None)
+        try:
+            return self._trial(composition_ref, case, repeat, mode, submitted)
+        except Exception as exc:
+            self._attach_evidence(exc, submitted, checks_before)
+            raise
+
+    def _attach_evidence(
+        self, exc: Exception, submitted: dict[str, str], checks_before: object
+    ) -> None:
+        """Set ``NOT_RUN_EVIDENCE`` on ``exc``: the goal this call submitted (``goal_id``, None:
+        none), its ``planner_mode`` (None: no goal), ``base_checks`` (base-check suite runs the
+        service started during the call, ``ProductService.base_check_starts``; a concurrent
+        trial's count too, which only makes the services more conservative), the runs whose
+        record names the goal as root goal (``runtime/execution/service.py`` claim) and their
+        worker dispatches. Evidence that cannot be read is not attached (the services then keep
+        the trial an unknown effect)."""
+        try:
+            checks_now = getattr(self.service, "base_check_starts", None)
+            if type(checks_before) is not int or type(checks_now) is not int:
+                return
+            store, scope = self.store, self.scope
+            goal_id = submitted.get("goal_id")
+            runs = [] if goal_id is None else trial_metrics.goal_runs(store, scope, goal_id)
+            dispatches = trial_metrics.run_dispatches(store, scope, runs)
+            setattr(
+                exc, NOT_RUN_EVIDENCE,
+                {"goal_id": goal_id, "planner_mode": submitted.get("planner_mode"),
+                 "base_checks": checks_now - checks_before, "runs": runs,
+                 "dispatches": dispatches},
+            )  # fmt: skip
+        except Exception:  # evidence is optional; the original error propagates
+            return
+
+    def _trial(
+        self,
+        composition_ref: dict[str, Any],
+        case: dict[str, Any],
+        repeat: int,
+        mode: str,
+        submitted: dict[str, str],
+    ) -> TrialObservation:
         if self.busy is not None and self.busy():
             raise Hold("TRIAL_BUSY", "Another goal is running; a trial waits for it")
         spec = self._spec(case)
@@ -348,7 +405,7 @@ class LocalTrialExecutor:
                 environment_id=spec.environment_id,
                 domain=self._domain(spec),
             )
-            record = self._run_goal(executed, spec, context)
+            record = self._run_goal(executed, spec, context, submitted)
         finally:
             if bound is not None:
                 with self._lock:
@@ -562,6 +619,9 @@ class LocalTrialExecutor:
                 "mode": context.planner_mode,
                 "questions": len(questions),
                 "usage": plan.get("planner_usage") if real else None,
+                # operator decision 2026-10-09: the verifier the fixed draft bound the task's
+                # behaviour acceptance to (the configured one, or the app's only verifier)
+                "behaviour_verifier": self._behaviour_verifier(spec) if not real else None,
             },
             "counters_source": COUNTERS_SOURCE,
             # decision (C): the answer-lookup evidence of the goal's runs (empty: none)
@@ -613,6 +673,14 @@ class LocalTrialExecutor:
             known_tokens=usage.get("known_tokens"),
             known_cost_microunits=usage.get("known_cost_microunits"),
         )
+
+    def _behaviour_verifier(self, spec: _Spec) -> str | None:
+        """The verifier ``TrialPlanner.draft`` binds behaviour acceptance to for this case's app
+        (the app's verifiers now; ``_run_goal`` planned against the same installed app)."""
+        installed = self.service.apps.get(spec.app_id)
+        if installed is None:
+            return None
+        return self.planner.bound_verifier(v.id for v in installed.config.verifiers)
 
     def _spec(self, case: dict[str, Any]) -> _Spec:
         """What the case is, from the corpus loaded now, checked against the frozen case.
@@ -768,34 +836,42 @@ class LocalTrialExecutor:
         return None
 
     def _run_goal(
-        self, composition_ref: dict[str, Any], spec: _Spec, context: TrialContext
+        self,
+        composition_ref: dict[str, Any],
+        spec: _Spec,
+        context: TrialContext,
+        submitted: dict[str, str],
     ) -> dict[str, Any]:
         """Submit, plan (fixed or real planner), and unless the plan already decides the grade,
         approve and run the goal. A goal that does not run is closed (cancelled); a goal the loop
-        leaves open, or an error leaves approved, is closed too (``_close``)."""
-        submitted = self.goals.submit(
+        leaves open, or an error leaves approved, is closed too (``_close``). An error while
+        planning (a plan-time Hold such as TRIAL_VERIFIER) closes the goal as well. The submitted
+        goal id and the planner mode go into ``submitted`` (the caller's evidence of an
+        error)."""
+        goal = self.goals.submit(
             self.service.actors.service,
             text=spec.task.contract_text(),
             target_hints=[spec.app_id],
             key="trial-" + new_id("key"),
         )
-        goal_id: str = submitted["goal_id"]
-        planned = self.service.plan(
-            goal_id,
-            composition=composition_ref,
-            planner=self.planner if context.planner_mode == "fixed" else None,
-            revision=spec.base_commit,
-            trial=context,
-        )
-        questions = [str(q) for q in (planned.get("draft") or {}).get("questions") or []]
-        # asked back (needs_answers), or an "ask" task graded by its questions: nothing runs
-        at_plan = planned.get("status") != "awaiting_approval" or (
-            spec.grading == "planner_questions" and spec.expected == "ask"
-        )
-        if at_plan:
-            self.loop.cancel(self.operator, goal_id)
-            return {**planned, "goal_id": goal_id, "ran": False, "questions": questions}
+        goal_id: str = goal["goal_id"]
+        submitted.update(goal_id=goal_id, planner_mode=context.planner_mode)
         try:
+            planned = self.service.plan(
+                goal_id,
+                composition=composition_ref,
+                planner=self.planner if context.planner_mode == "fixed" else None,
+                revision=spec.base_commit,
+                trial=context,
+            )
+            questions = [str(q) for q in (planned.get("draft") or {}).get("questions") or []]
+            # asked back (needs_answers), or an "ask" task graded by its questions: nothing runs
+            at_plan = planned.get("status") != "awaiting_approval" or (
+                spec.grading == "planner_questions" and spec.expected == "ask"
+            )
+            if at_plan:
+                self.loop.cancel(self.operator, goal_id)
+                return {**planned, "goal_id": goal_id, "ran": False, "questions": questions}
             self.service.approve(self.operator, goal_id)
             record: dict[str, Any] = self.loop.run_goal(goal_id)
             # M6 (IC-05, Work 033 S9): a cascade that failed its attempts on its cell compiled
@@ -825,9 +901,19 @@ class LocalTrialExecutor:
         run such a goal outside the experiment. So a goal left ``held`` with a valid approval or
         an open runtime goal, or left ``approved``/``running`` by an error, is stopped ``held``
         (approval revoked, runtime goal ended, the loop's reason and attempts kept); a waiting
-        goal is cancelled. A goal the loop already ended is left as it is.
+        goal is cancelled. A goal the loop already ended is left as it is. A goal whose planning
+        failed before any plan record was saved is still ``draft``; its runtime goal is ended
+        cancelled.
         """
-        plan = self.service.plan_record(goal_id)
+        try:
+            plan = self.service.plan_record(goal_id)
+        except RuntimeFault:
+            # planning stopped before it saved a plan record: no approval, no claim, and the
+            # runtime goal is still ``draft``; it ends cancelled so no draft trial goal remains
+            self.service.runtime.end_goal(
+                self.service.actors.service, goal_id, outcome="cancelled", reason=reason[:600]
+            )
+            return
         status = plan.get("status")
         if status in PLAN_ENDED:
             return

@@ -1,0 +1,9 @@
+{
+  "version": "eval-4",
+  "changes": [
+    {
+      "kind": "analysis_code",
+      "detail": "operator decision 2026-10-09: an executor Hold that proves no process started is a missing outcome with its error code (error_type, error_code, not_run, outcome_missing not_run; usage unknown, charged per decision (B)): no run, no worker dispatch, and either no goal with a code in BEFORE_GOAL_HOLDS, or a fixed-planner goal with a code in FIXED_DRAFT_HOLDS and no base check started during the call; any other executor exception, every real-planner trial included, stays an unknown effect (IC-18)"
+    }
+  ]
+}

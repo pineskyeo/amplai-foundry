@@ -191,6 +191,38 @@ def run_executions(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[d
     return out
 
 
+def goal_runs(store: Store, scope: Scope, goal_id: str) -> list[str]:
+    """Every run head whose record names ``goal_id`` as its root goal (the claim writes
+    ``record.root_goal_id``, ``runtime/execution/service.py``), whatever the plan record says;
+    sorted. Used as evidence that a goal never ran (operator decision 2026-10-09)."""
+    with store._lock:
+        rows = store.conn.execute(
+            "SELECT id, data FROM heads WHERE tenant=? AND project=? AND kind='run' "
+            "AND instr(CAST(data AS TEXT), ?) > 0",
+            (*scope.keys(), goal_id),
+        ).fetchall()
+    return sorted(
+        row["id"]
+        for row in rows
+        if (json.loads(row["data"]).get("record") or {}).get("root_goal_id") == goal_id
+    )
+
+
+def run_dispatches(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[str]:
+    """Every ``worker_dispatch`` row of those runs, whatever its state, by dispatch id."""
+    wanted = list(run_ids)
+    if not wanted:
+        return []
+    marks = ",".join("?" for _ in wanted)
+    with store._lock:
+        rows = store.conn.execute(
+            "SELECT dispatch_id FROM worker_dispatch WHERE tenant=? AND project=? "
+            f"AND run_id IN ({marks}) ORDER BY rowid",
+            (*scope.keys(), *wanted),
+        ).fetchall()
+    return [str(row["dispatch_id"]) for row in rows]
+
+
 def open_effects(store: Store, scope: Scope, run_ids: Iterable[str]) -> list[str]:
     """Effect heads of those runs still ``dispatched`` or ``unknown`` (the query of
     ``runtime/execution/service.py:976-985``)."""

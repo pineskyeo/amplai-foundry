@@ -396,6 +396,9 @@ class LocalExecutionService:
         self.apps: dict[str, InstalledApp] = {}
         self._base_checks: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
+        # base-check suite runs started by this service (operator decision 2026-10-09, IC-18): a
+        # trial during whose call one started is never counted as "nothing ran"
+        self.base_check_starts = 0
         # Work 033 S9: the execution strategies (interfaces.md §3.6); the deployment sets one with
         # its read-only turn factory, else strategy_runner() builds one without auxiliary turns
         self.strategies: Any = None
@@ -2139,6 +2142,8 @@ class LocalExecutionService:
         from ..contracts.identity import canonical
 
         suite = self._verifier_refs(installed, environment_id)[installed.config.verifiers[0].id]
+        with self._lock:
+            self.base_check_starts += 1  # counted before the suite process starts
         observation = self.verification.runners[digest(suite)](canonical(change))
         commands = observation.details.get("commands") or []
         result = {

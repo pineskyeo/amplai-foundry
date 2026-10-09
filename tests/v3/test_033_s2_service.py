@@ -36,6 +36,7 @@ from amplai_foundry.evaluation.sequential import (
     min_wins_for_superiority,
 )
 from amplai_foundry.evaluation.service import (
+    NOT_RUN_EVIDENCE,
     EvaluationService,
     TrialObservation,
     arm_order,
@@ -1256,6 +1257,74 @@ def test_q09_a_lost_executor_response_is_an_unknown_effect_and_stops(w):
     assert w.report(report_ref)["verdict"] == "aborted"
     assert w.budget(proposal_id)["data"]["allocations"]
     hold("EXPERIMENT_REPLAY", w.run, ref, executor)
+
+
+class HeldBeforeRun(Scripted):
+    """val-01 holds ``code`` with the executor's ``NOT_RUN_EVIDENCE`` (None: none)."""
+
+    def __init__(self, world, roles, evidence, code="TRIAL_VERIFIER"):
+        super().__init__(world, roles)
+        self.evidence, self.code = evidence, code
+
+    def __call__(self, composition, case, repeat, mode):
+        if case["case_id"] == "val-01":
+            exc = Hold(self.code, "held before the run")
+            if self.evidence is not None:
+                setattr(exc, NOT_RUN_EVIDENCE, self.evidence)
+            raise exc
+        return super().__call__(composition, case, repeat, mode)
+
+
+def held_evidence(planner_mode="fixed", base_checks=0, runs=(), dispatches=()):
+    return {"goal_id": "goal-held", "planner_mode": planner_mode, "base_checks": base_checks,
+            "runs": list(runs), "dispatches": list(dispatches)}  # fmt: skip
+
+
+def test_a_hold_before_any_goal_ran_is_a_missing_outcome_and_the_experiment_continues(w):
+    # operator decision 2026-10-09: the fixed draft held, with no run, no dispatch and no base
+    # check during the call
+    s = w.setup(val=16)
+    evidence = held_evidence()
+    executor = HeldBeforeRun(w, w.roles(s), evidence)
+    proposal_id = s.prop["proposal_id"]
+    ref = w.freeze(w.experiment(s, policy(s.ev)))
+    report_ref = w.run(ref, executor)
+    trials = w.trials(report_ref)
+    held = [t for t in trials if t["task_id"] == "val-01"]
+    assert len(held) == 2  # both arms ran into the Hold; neither stopped the experiment
+    assert len(trials) == 32  # 16 tasks x 2 arms
+    for trial in held:
+        assert trial["error_type"] == "Hold" and trial["error_code"] == "TRIAL_VERIFIER"
+        assert trial["unknown_effects"] == 0 and trial["success"] is None
+        assert trial["not_run"] == {"goal_id": "goal-held", "runs": 0, "dispatches": 0}
+        assert trial["outcome_missing"] == "not_run" and "charged_tokens" in trial
+        head = w.m.d.store.head(w.scope, "eval-trial", trial["trial_id"])
+        assert head["state"] == "observed"
+        allocation = w.budget(proposal_id)["data"]["allocations"][trial["trial_id"]]
+        assert allocation["status"] != "unknown"
+    assert w.report(report_ref)["verdict"] != "aborted"
+    assert "missing_or_unknown_trials" in w.analysis(report_ref)["reasons"]
+
+
+@pytest.mark.parametrize(
+    ("code", "evidence"),
+    [("TRIAL_VERIFIER", None),
+     ("TRIAL_VERIFIER", held_evidence(runs=["run-1"], dispatches=["dispatch-1"])),
+     ("TRIAL_VERIFIER", held_evidence(base_checks=1)),
+     # the IC-18 review finding: a real planner turn timed out (readonly_turn.py docker kill)
+     ("PLANNER_TIMEOUT", held_evidence(planner_mode="real"))],
+)  # fmt: skip
+def test_a_hold_without_evidence_that_nothing_ran_is_an_unknown_effect_and_stops(w, code, evidence):
+    s = w.setup(val=16)
+    executor = HeldBeforeRun(w, w.roles(s), evidence, code)
+    ref = w.freeze(w.experiment(s, policy(s.ev)))
+    report_ref = w.run(ref, executor)
+    trials = w.trials(report_ref)
+    last = trials[-1]
+    assert last["task_id"] == "val-01" and last["error_code"] == code
+    assert last["unknown_effects"] == 1 and "not_run" not in last
+    assert w.m.d.store.head(w.scope, "eval-trial", last["trial_id"])["state"] == "unknown"
+    assert w.report(report_ref)["verdict"] == "aborted"
 
 
 def test_q09_a_proposer_identity_can_neither_freeze_nor_run(w):

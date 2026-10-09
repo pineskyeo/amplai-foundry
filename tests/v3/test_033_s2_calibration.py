@@ -27,8 +27,9 @@ from amplai_foundry.evaluation.calibration import (
     validate_summary,
 )
 from amplai_foundry.evaluation.sequential import noise_band, wilson
+from amplai_foundry.evaluation.service import NOT_RUN_EVIDENCE
 from amplai_foundry.runtime.contracts.identity import digest, now
-from amplai_foundry.runtime.errors import RuntimeFault
+from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
 Z95 = 1.959963984540054
 CELLS = ("cell-a", "cell-b")
@@ -458,6 +459,93 @@ def test_an_unknown_effect_stops_the_run_and_the_task_is_unknown(w):
     assert r.summary["cells"]["cell-a"]["tasks"]["val-00"]["class"] == "unknown"
     assert r.summary["cells"]["cell-a"]["tasks"]["val-03"]["class"] == "unknown"
     assert r.summary["cells"]["cell-a"]["tasks"]["dev-00"]["class"] == "saturated"
+
+
+def holding_executor(w, c, evidence, code="TRIAL_VERIFIER"):
+    """val-00 holds ``code`` (TRIAL_VERIFIER: the caltrial-ac33... shape); ``evidence`` (None:
+    none) is what the executor attaches as ``NOT_RUN_EVIDENCE``."""
+    scripted = Scripted(w, c.roles, outcome, tokens=(5, 5))
+
+    def executor(composition, case, repeat, mode):
+        if case["case_id"] == "val-00":
+            exc = Hold(code, "held before the run")
+            if evidence is not None:
+                setattr(exc, NOT_RUN_EVIDENCE, evidence)
+            raise exc
+        return scripted(composition, case, repeat, mode)
+
+    return executor
+
+
+def evidence_of(goal_id="goal-held", planner_mode="fixed", base_checks=0, runs=(), dispatches=()):
+    return {"goal_id": goal_id, "planner_mode": planner_mode, "base_checks": base_checks,
+            "runs": list(runs), "dispatches": list(dispatches)}  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("code", "evidence"),
+    [("TRIAL_VERIFIER", evidence_of()),
+     ("TRIAL_TASK", evidence_of()),
+     ("TRIAL_BUSY", evidence_of(goal_id=None, planner_mode=None)),
+     # before a goal exists the call itself starts no base check; a concurrent trial's count
+     ("COMPOSITION_PIN", evidence_of(goal_id=None, planner_mode=None, base_checks=2))],
+)  # fmt: skip
+def test_a_hold_before_any_goal_ran_is_a_missing_outcome_with_its_code(w, code, evidence):
+    # operator decision 2026-10-09: the Hold proves that no process started (a fixed draft's
+    # Hold with no base check during the call, or a closed pre-goal Hold): no uncertain effect,
+    # the run continues
+    c = make(w)
+    r = run_plan(w, c, executor=holding_executor(w, c, evidence, code))
+    held = [t for t in r.trials() if t["task_id"] == "val-00"]
+    assert held and all(t["error_type"] == "Hold" for t in held)
+    trial = held[0]
+    assert trial["error_code"] == code
+    assert trial["unknown_effects"] == 0 and trial["success"] is None
+    assert trial["not_run"] == {"goal_id": evidence["goal_id"], "runs": 0, "dispatches": 0}
+    assert trial["outcome_missing"] == "not_run"
+    assert trial["charged_tokens"] == TRIAL_TOKENS  # decision (B): usage unknown, reservation
+    store = w.m.d.store
+    assert store.head(w.scope, "calibration-trial", trial["trial_id"])["state"] == "observed"
+    assert r.head["state"] == "done" and r.head["data"]["stop_reason"] is None
+    root = store.head(w.scope, "meta-budget", "calibration:" + r.plan_ref["id"])
+    assert root["data"]["allocations"][trial["trial_id"]]["status"] != "unknown"
+    assert r.summary["cells"]["cell-a"]["tasks"]["val-00"]["class"] == "unknown"  # no outcome
+    assert r.summary["cells"]["cell-a"]["tasks"]["dev-00"]["class"] == "saturated"
+
+
+@pytest.mark.parametrize(
+    ("code", "evidence"),
+    [("TRIAL_VERIFIER", None),
+     ("TRIAL_VERIFIER", evidence_of(runs=["run-1"], dispatches=["dispatch-1"])),
+     ("TRIAL_VERIFIER", evidence_of(runs=["run-1"])),
+     ("TRIAL_VERIFIER", {"runs": []}),
+     ("TRIAL_VERIFIER", {"goal_id": "goal-held", "runs": [], "dispatches": []}),  # no counts
+     ("TRIAL_VERIFIER", "nothing ran"),
+     # a base check started during the call (product.py base_check: docker kill unconfirmed)
+     ("TRIAL_VERIFIER", evidence_of(base_checks=1)),
+     # the IC-18 review finding: a real planner turn timed out (readonly_turn.py docker kill)
+     ("PLANNER_TIMEOUT", evidence_of(planner_mode="real")),
+     ("PLANNER_FAILED", evidence_of(planner_mode="real")),
+     ("TRIAL_VERIFIER", evidence_of(planner_mode="real")),
+     ("PLANNER_TIMEOUT", evidence_of()),  # not a fixed draft's code
+     ("TRIAL_VERIFIER", evidence_of(goal_id=None, planner_mode=None)),  # not a pre-goal code
+     ("TARGET_UNKNOWN", evidence_of())],  # raised late in plan() too (graph compiler)
+)  # fmt: skip
+def test_a_hold_without_evidence_that_nothing_ran_stays_an_unknown_effect(w, code, evidence):
+    # IC-18 fail closed: no or malformed evidence, a run, dispatch or base check in it, a real
+    # planner, or a code outside the closed sets
+    c = make(w)
+    r = run_plan(w, c, executor=holding_executor(w, c, evidence, code))
+    (trial,) = [t for t in r.trials() if t["task_id"] == "val-00"]
+    assert trial["error_type"] == "Hold" and trial["error_code"] == code
+    assert trial["unknown_effects"] == 1 and trial["success"] is None
+    assert "not_run" not in trial and "outcome_missing" not in trial
+    store = w.m.d.store
+    assert store.head(w.scope, "calibration-trial", trial["trial_id"])["state"] == "unknown"
+    assert r.head["state"] == "stopped"
+    assert r.head["data"]["stop_reason"] == "safety_or_unknown_effect"
+    root = store.head(w.scope, "meta-budget", "calibration:" + r.plan_ref["id"])
+    assert root["data"]["allocations"][trial["trial_id"]]["status"] == "unknown"
 
 
 # --- plan validation (2.8) -------------------------------------------------------------------

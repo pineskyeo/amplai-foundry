@@ -3683,3 +3683,131 @@ before any turn), `test_033_s4_cells.py` (`test_a_probe_runs_with_web_tools_off_
   MCP servers or plugins; choosing between the two is an Open Operator Decision, not taken here, so the flag stays.
 - OpenCode tool calls are not scanned by answer-lookup detection (`answer_lookup.py` has Codex and Claude rules;
   `agent_drivers/http.py` records none), so for OpenCode the config and the egress allowlist are the guards.
+
+## Operator Decision 2026-10-09: Trial Behaviour Verifier, Pre-Run Executor Errors, Plan-Time Close
+
+Source: the diagnosis of calibration trial `caltrial-ac339382…` (codex medium, `bug-comma-grouping`). Its executor
+held `TRIAL_VERIFIER` while planning: every production site builds `LocalTrialExecutor` with the default
+`behaviour_verifier` `"unit"` (`runtime/meta_cli.py:84`, `:143`, `runtime/meta_commands/__init__.py:129`,
+`meta_harness/nightly.py:1171`), and the bench app's only verifier is `suite`. `CalibrationService` then recorded the
+Hold as `unknown_effects` 1, which stopped the run, and the submitted goal stayed `draft`. The operator chose the
+recommended options. Implemented in the working tree (not committed).
+
+**1. Behaviour verifier binding (§3.10).** `TrialPlanner.bound_verifier(verifiers)`
+(`meta_harness/local_executor.py:180`) names the app verifier that a corpus task's behaviour acceptance uses. It is
+the configured `behaviour_verifier` when the app has it, otherwise the app's only verifier. When the app has no
+verifier, or has several and none is the configured one, the result is None and `draft` holds `TRIAL_VERIFIER`
+(details: `configured`, `verifiers`). The §3.10 signature and its default `"unit"` are unchanged, and so is the
+production wiring. The binding is recorded twice. The plan record's `draft.acceptance[*].verifier` holds it, and
+receipt v2 gains `planner.behaviour_verifier` (additive under §2.10). In fixed planner mode that field holds the bound
+id (`_behaviour_verifier`, `:677`, from the installed app's verifiers); in real mode it is null. The `_drift` receipt
+is unchanged. Golden G1 is unchanged: its app has `unit` and `lint`, so `unit` binds exactly as before.
+
+**2. Executor exceptions that prove no process started (IC-18, §8.3).** `evaluation/service.py` defines
+`NOT_RUN_EVIDENCE` (`:113`), `BEFORE_GOAL_HOLDS` (`:117`), `FIXED_DRAFT_HOLDS` (`:124`), `nothing_ran` (`:127`) and
+`failed_trial` (`:164`). `EvaluationService.run` and `CalibrationService.run` call `failed_trial` in their `execute`
+for every executor or observation-validation exception.
+
+- Every failed trial record now carries `error_type` (as before) and `error_code`: the `code` of a `Hold`, a
+  `RuntimeFault` or another coded error, otherwise null.
+- The executor attaches evidence to the exception: `{"goal_id": str | None, "planner_mode": "fixed" | "real" | None,
+  "base_checks": int, "runs": [run id], "dispatches": [dispatch id]}`.
+- Rule: a trial counts as "nothing ran" only when the exception proves that no process started that could outlive
+  the call (`nothing_ran(exc)`). All of these must hold:
+  - `exc` is a `Hold`, and its evidence is well formed: `runs` and `dispatches` are empty lists, and `base_checks`
+    is a non-negative int.
+  - Either no goal was submitted (`goal_id` null) and the code is in `BEFORE_GOAL_HOLDS`: `TRIAL_BUSY`,
+    `TRIAL_TASK`, `CORPUS_CHANGED`, `TRIAL_ENVIRONMENT`, `TARGET_UNKNOWN`, `COMPOSITION_PIN`. `LocalTrialExecutor`
+    raises these in `_trial`/`_spec` before `goals.submit`.
+  - Or the fixed planner planned the goal (`planner_mode` `"fixed"`), the code is in `FIXED_DRAFT_HOLDS`
+    (`TRIAL_TASK`, `TRIAL_VERIFIER`, raised by `TrialPlanner.draft`, which runs no model turn), and no base check
+    started during the call (`base_checks` 0).
+- When the rule holds, the trial is a missing outcome: `success` null, `unknown_effects` 0, `not_run`
+  `{"goal_id", "runs": 0, "dispatches": 0}`. Its usage is unknown, so decision (B) charges the reservation
+  (`charged_tokens`, `reported_success`), and `outcome_missing` is `"not_run"`, not `"usage_unknown"`. The trial head
+  becomes `observed`. The allocation does not settle as uncertain, and the run continues. A calibration task with no
+  other outcome gets class `unknown`.
+- Anything else keeps today's conservative rule: `unknown_effects` 1, head `unknown`, the allocation uncertain, and
+  the run stops with `safety_or_unknown_effect`. That covers:
+  - every real-planner trial: `PLANNER_TIMEOUT`, `PLANNER_FAILED`, `PLANNER_OUTPUT` and `TURN_*`;
+  - every other code, including `TARGET_UNKNOWN` after submission (the graph compiler raises it late in `plan()`,
+    `runtime/execution/strategies.py:71`);
+  - any exception type other than `Hold`;
+  - no evidence (another executor, or an exception from `validate_observation` after the executor returned);
+  - malformed evidence;
+  - evidence that lists a run, a dispatch or a base check.
+- Why plan-time processes exclude the case. A real planner turn, the L1 `replan_ask_first` turn and the strategy
+  runner's plan-time turns run in a docker container. On timeout, `readonly_turn._run` calls `docker kill` with
+  `check=False` and does not confirm the stop (`readonly_turn.py:203-208`). `planner_codex.py:356` maps the resulting
+  Hold to `PLANNER_TIMEOUT`. These turns are neither runs nor dispatches. So the rule admits no real planner, and no
+  code that a turn's caller raises.
+  - In a fixed-planner trial, the only process `plan()` starts before `TrialPlanner.draft` is the base-check suite
+    (`product.py` `plan` calls `base_check` before `_draft`), besides synchronous git. Without `VARIANTS`,
+    `_plan_variant` asks no turn. The suite's timeout path also calls `docker kill`/`docker rm -f` with
+    `check=False` (`verification/runtime/patch_commands.py` `SuiteVerifier._run`).
+  - `ProductService.base_check_starts` (`product.py:401`, incremented at `:2146` before the suite runs) counts the
+    suites the service started. `base_checks` is its growth during the call. A concurrent trial's base check can
+    raise it too, which only keeps more trials unknown.
+- `LocalTrialExecutor.__call__` builds the evidence in `_attach_evidence` (`local_executor.py:326`).
+  - `goal_id` and `planner_mode` are the goal this call submitted and its `TrialContext.planner_mode`. `_run_goal`
+    writes both into the caller's `submitted` mapping right after `goals.submit`. Both are None before submission.
+  - `runs` comes from `trial_metrics.goal_runs` (`trial_metrics.py:194`): every `run` head whose
+    `record.root_goal_id` is that goal, as the claim writes it (`runtime/execution/service.py` run record).
+  - `dispatches` comes from `trial_metrics.run_dispatches` (`:211`): every `worker_dispatch` row of those runs, in
+    any state. The run head and its dispatch row are written in the same claim transaction.
+  - When the evidence cannot be read, nothing is attached, and the trial stays an unknown effect. That includes a
+    service without an int `base_check_starts`.
+- Limit: a systematic pre-run Hold in the closed sets (one per trial) no longer stops a run. Each such trial is
+  charged its reservation until the root budget holds.
+- Evaluator version: `service.py` and `calibration.py` are `SERVICE_FILES` (`evaluation/versions.py:34`), so
+  `service_code_digest` changes and `current_version_ref` no longer matches `eval-3`. Until the operator writes
+  `eval-4`, `CalibrationService.summarize`, `meta_ops` and the nightly preflight hold `EVALUATOR_UNQUALIFIED`. The
+  change target is `specs/033-harness-taxonomy/runs/eval-4.json`, for `amplai meta evaluator propose-change
+  --to-file`, then `qualify-change` and `approve-change` (`runtime/meta_commands/evaluator.py`).
+
+**3. A goal whose planning raises is closed.** `_run_goal` now calls `service.plan()` inside the `try` that reaches
+`_close`. When no plan record exists, `_close` (`local_executor.py:894`) catches the `NOT_FOUND` from `plan_record`
+and ends the runtime goal `cancelled` (`runtime.end_goal`, service actor). The goal state machine allows
+`draft → cancelled`. This is what the docstring already said; it is not a contract change.
+
+**Tests.**
+
+- `tests/v3/test_033_s8_executor.py`:
+  - `test_planner_holds_for_a_goal_that_is_not_a_corpus_task` now expects `TRIAL_VERIFIER` only for several
+    verifiers with none configured, or for no verifier.
+  - `test_the_apps_only_verifier_binds_behaviour_when_the_configured_one_is_absent`.
+  - `test_production_wiring_runs_a_fixed_planner_task_on_an_app_whose_only_verifier_is_suite` reproduces the pilot
+    shape: default `behaviour_verifier`, app verifiers `{suite}`, the fixed-planner `bug-01-value`. The goal runs and
+    verifies, and the receipt and the plan acceptance name `suite`. Under the old rule it fails with `Hold: The app
+    has no behaviour verifier`.
+  - `test_a_hold_while_planning_leaves_no_draft_goal` also checks the evidence. The first held trial on the base
+    started the base check (`base_checks` 1, not "nothing ran"). The next one finds it cached (`base_checks` 0,
+    "nothing ran").
+  - `test_a_real_planner_timeout_never_proves_that_nothing_ran`: a real-planner trial whose turn raises Hold
+    `PLANNER_TIMEOUT`. Its evidence has no run, dispatch or base check, `planner_mode` `"real"`, and `nothing_ran`
+    is false.
+  - `test_a_hold_before_any_goal_carries_evidence_without_a_goal` (TRIAL_BUSY).
+  - `test_an_error_after_the_goal_ran_carries_its_runs_and_dispatches`.
+  - Updated receipt `planner` expectations.
+- `tests/v3/test_033_s2_calibration.py`:
+  - `test_a_hold_before_any_goal_ran_is_a_missing_outcome_with_its_code`: a fixed draft's `TRIAL_VERIFIER` and
+    `TRIAL_TASK`, and the pre-goal `TRIAL_BUSY` and `COMPOSITION_PIN`.
+  - `test_a_hold_without_evidence_that_nothing_ran_stays_an_unknown_effect`: these stay `unknown_effects` 1, head
+    `unknown`:
+    - no evidence, malformed evidence, or evidence without counts;
+    - runs or dispatches, or a base check during the call;
+    - a real planner's `PLANNER_TIMEOUT`, `PLANNER_FAILED` or `TRIAL_VERIFIER`;
+    - `PLANNER_TIMEOUT` under the fixed mode;
+    - `TRIAL_VERIFIER` with no goal;
+    - `TARGET_UNKNOWN` after submission.
+- `tests/v3/test_033_s2_service.py`:
+  - `test_a_hold_before_any_goal_ran_is_a_missing_outcome_and_the_experiment_continues`.
+  - `test_a_hold_without_evidence_that_nothing_ran_is_an_unknown_effect_and_stops`: these stay `unknown_effects` 1,
+    head `unknown`, verdict aborted:
+    - no evidence;
+    - a run and a dispatch;
+    - a base check;
+    - a real planner's `PLANNER_TIMEOUT`.
+
+**Not done.** Stored records are not rewritten. `caltrial-ac339382…` stays `unknown` until the operator reconciles it
+with the receipt the diagnosis gives. The leftover draft goal `goal-0c181408…` of that trial stays as it is.

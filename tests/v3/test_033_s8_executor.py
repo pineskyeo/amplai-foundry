@@ -27,7 +27,7 @@ from amplai_foundry.agent_drivers.cli import CodexCliDriver
 from amplai_foundry.agent_drivers.ports import DriverRegistry
 from amplai_foundry.agent_drivers.protocol import SessionJournal
 from amplai_foundry.evaluation.receipts import read_receipt
-from amplai_foundry.evaluation.service import EvaluationService
+from amplai_foundry.evaluation.service import NOT_RUN_EVIDENCE, EvaluationService, nothing_ran
 from amplai_foundry.meta_harness import corpus_v2, local_corpus, local_executor
 from amplai_foundry.meta_harness.corpus_v2 import CorpusV2
 from amplai_foundry.meta_harness.local_executor import (
@@ -43,8 +43,9 @@ from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution import policies
 from amplai_foundry.runtime.execution.codex import AUTH, SeededCodexPort
 from amplai_foundry.runtime.execution.loop import ExecutionLoop
+from amplai_foundry.runtime.execution.product import AppConfig, VerifierCommand
 from amplai_foundry.runtime.execution.worker import WorkCoordinator
-from rc06_rig import IMAGE, FixedPlanner, ScriptContainer, build_rig, git
+from rc06_rig import CHECK, IMAGE, FixedPlanner, ScriptContainer, build_rig, git
 
 REPO = Path(__file__).resolve().parents[2]
 V2_ROOT = REPO / "specs" / "033-harness-taxonomy" / "corpus"
@@ -541,6 +542,7 @@ def test_an_ask_task_is_graded_from_the_planners_questions_and_nothing_runs(
     assert receipt["grading"] == "planner_questions" and receipt["goal_status"] == "needs_answers"
     assert receipt["planner"] == {
         "mode": "real", "questions": 1, "usage": {"input_tokens": 7, "output_tokens": 3},
+        "behaviour_verifier": None,
     }  # fmt: skip
     assert "detail" in receipt and "hidden_passed" not in receipt
     bound(world, obs, world.baseline, "amb-01-ask", 0)
@@ -724,7 +726,9 @@ def test_a_frozen_case_without_a_readable_digest_is_held(world: World, ref: Any)
 def test_a_plain_task_uses_the_fixed_planner_and_never_asks_the_model(world: World) -> None:
     obs = world.run("bug-01-value")
     receipt = world.receipt(obs)
-    assert receipt["planner"] == {"mode": "fixed", "questions": 0, "usage": None}
+    assert receipt["planner"] == {
+        "mode": "fixed", "questions": 0, "usage": None, "behaviour_verifier": VERIFIER,
+    }  # fmt: skip
     assert world.rig.planner.calls == []  # the rig's planner was never consulted
     assert (obs.input_tokens, obs.output_tokens) == (10, 5)  # runs only
 
@@ -934,6 +938,103 @@ def test_a_task_environment_is_held_for_the_environment_sibling(world: World) ->
     assert len(world.store.list_objects(world.scope, "goal-contract")) == goals_before
 
 
+def goal_states(world: World) -> dict[str, str]:
+    with world.store._lock:
+        rows = world.store.conn.execute(
+            "SELECT id, state FROM heads WHERE tenant=? AND project=? AND kind='goal'",
+            world.scope.keys(),
+        ).fetchall()
+    return {row["id"]: row["state"] for row in rows}
+
+
+def test_a_hold_while_planning_leaves_no_draft_goal(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # the recorded shape (goal-0c18...: head draft, intent.submitted only): the fixed planner held
+    # inside service.plan(), before any plan record, and the submitted goal stayed draft
+    def held(*args: Any, **kwargs: Any) -> Any:
+        raise Hold("TRIAL_VERIFIER", "The app has no behaviour verifier for corpus tasks")
+
+    monkeypatch.setattr(world.executor.planner, "draft", held)
+    before = goal_states(world)
+    with pytest.raises(Hold) as raised:
+        world.run("bug-01-value")
+    assert raised.value.code == "TRIAL_VERIFIER"
+    new = {g: s for g, s in goal_states(world).items() if g not in before}
+    assert list(new.values()) == ["cancelled"]
+    assert "draft" not in goal_states(world).values()
+    assert world.loop.next_goal() is None and world.container.prompts == []
+    # operator decision 2026-10-09: the store evidence of what the trial started. This first
+    # trial on the base started the base-check suite before the draft (product.py base_check),
+    # so it does not prove that nothing ran (IC-18)
+    (goal_id,) = new
+    evidence = getattr(raised.value, NOT_RUN_EVIDENCE)
+    assert evidence == {
+        "goal_id": goal_id, "planner_mode": "fixed", "base_checks": 1, "runs": [],
+        "dispatches": [],
+    }  # fmt: skip
+    assert not nothing_ran(raised.value)
+    # the base check is cached per commit now: the next held trial starts no process
+    with pytest.raises(Hold) as again:
+        world.run("bug-01-value", 1)
+    evidence = getattr(again.value, NOT_RUN_EVIDENCE)
+    assert evidence["base_checks"] == 0 and evidence["planner_mode"] == "fixed"
+    assert evidence["runs"] == [] and evidence["dispatches"] == []
+    assert nothing_ran(again.value)
+
+
+def test_a_real_planner_timeout_never_proves_that_nothing_ran(
+    deployment: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # IC-18 review finding: a real planner turn runs in a container whose stop on timeout is
+    # not confirmed (readonly_turn.py); its Hold leaves no run and no dispatch, yet the trial
+    # must stay an unknown effect
+    world = real_world(deployment, tmp_path, ["Tripled?"])
+    world.run("amb-01-ask")  # the base check is cached: only the planner turn differs below
+
+    def timed_out(*args: Any, **kwargs: Any) -> Any:
+        raise Hold("PLANNER_TIMEOUT", "The planner turn timed out")
+
+    monkeypatch.setattr(world.rig.planner, "draft", timed_out)
+    with pytest.raises(Hold) as raised:
+        world.run("amb-01-ask", 1)
+    evidence = getattr(raised.value, NOT_RUN_EVIDENCE)
+    assert evidence["planner_mode"] == "real" and evidence["base_checks"] == 0
+    assert evidence["runs"] == [] and evidence["dispatches"] == []
+    assert not nothing_ran(raised.value)
+    # nor does the fixed draft's own code under a real planner
+    verifier = Hold("TRIAL_VERIFIER", "x")
+    setattr(verifier, NOT_RUN_EVIDENCE, evidence)
+    assert not nothing_ran(verifier)
+
+
+def test_a_hold_before_any_goal_carries_evidence_without_a_goal(world: World) -> None:
+    world.executor.busy = lambda: True
+    with pytest.raises(Hold) as raised:
+        world.run("bug-01-value")
+    assert raised.value.code == "TRIAL_BUSY"
+    evidence = getattr(raised.value, NOT_RUN_EVIDENCE)
+    assert evidence == {
+        "goal_id": None, "planner_mode": None, "base_checks": 0, "runs": [], "dispatches": [],
+    }  # fmt: skip
+    assert nothing_ran(raised.value)
+
+
+def test_an_error_after_the_goal_ran_carries_its_runs_and_dispatches(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("grader crashed")
+
+    monkeypatch.setattr(world.executor, "_judge", broken)
+    with pytest.raises(RuntimeError) as raised:
+        world.run("bug-01-value")
+    evidence = getattr(raised.value, NOT_RUN_EVIDENCE)
+    assert isinstance(evidence["goal_id"], str)
+    assert len(evidence["runs"]) == 1 and len(evidence["dispatches"]) == 1
+    assert not nothing_ran(raised.value)  # the services keep it an unknown effect (IC-18)
+
+
 def test_a_base_whose_app_is_not_installed_is_held(world: World) -> None:
     assert hold_code(world.run, "bug-03-ghost") == "TARGET_UNKNOWN"
 
@@ -991,8 +1092,51 @@ def test_planner_holds_for_a_goal_that_is_not_a_corpus_task(world: World) -> Non
     verifiers = {VERIFIER: "value() must return 2"}
     assert hold_code(planner.draft, "not a task", "app", verifiers, Path("/")) == "TRIAL_TASK"
     text = world.corpus.task("bug-01-value").contract_text()
-    assert hold_code(planner.draft, text, "app", {"other": "x"}, Path("/")) == "TRIAL_VERIFIER"
+    # operator decision 2026-10-09: TRIAL_VERIFIER only when the binding is ambiguous (several
+    # app verifiers, none the configured one) or the app has no verifier
+    ambiguous = {"other": "x", "lint": "y"}
+    assert hold_code(planner.draft, text, "app", ambiguous, Path("/")) == "TRIAL_VERIFIER"
+    assert hold_code(planner.draft, text, "app", {}, Path("/")) == "TRIAL_VERIFIER"
     assert hold_code(planner.draft_multi, text, {}, {}) == "TRIAL_ONE_APP"
+
+
+def test_the_apps_only_verifier_binds_behaviour_when_the_configured_one_is_absent(
+    world: World,
+) -> None:
+    # operator decision 2026-10-09: one app verifier that is not the configured one binds the
+    # task's behaviour acceptance (before, TRIAL_VERIFIER)
+    task = world.corpus.task("bug-01-value")
+    planner = world.executor.planner
+    assert planner.behaviour_verifier == VERIFIER
+    assert planner.bound_verifier(["other"]) == "other"
+    assert planner.bound_verifier([VERIFIER, "other"]) == VERIFIER
+    assert planner.bound_verifier(["other", "lint"]) is None
+    draft = planner.draft(task.contract_text(), "app", {"other": "x"}, Path("/"))["draft"]
+    assert draft["acceptance"] == [{"statement": task.acceptance[0], "verifier": "other"}]
+
+
+def test_production_wiring_runs_a_fixed_planner_task_on_an_app_whose_only_verifier_is_suite(
+    world: World,
+) -> None:
+    # the pilot shape (caltrial-ac33...): every production site builds the executor with the
+    # default behaviour_verifier ("unit", meta_cli.py, meta_commands/__init__.py, nightly.py) and
+    # the bench app's only verifier is "suite"; a pytest_hidden task plans with the fixed planner
+    service = world.rig.service
+    service.install(AppConfig("app", world.rig.repo, (VerifierCommand("suite", CHECK, "v2", 60),)))
+    executor = LocalTrialExecutor(service, world.loop, world.d.goals, world.rig.operator,
+                                  world.corpus)  # fmt: skip
+    assert executor.planner.behaviour_verifier == local_executor.BEHAVIOUR_VERIFIER == "unit"
+    case = {"case_id": "bug-01-value", "split": "development"}
+    obs = executor(world.baseline, case, 0, "sandbox_rerun")
+    assert obs.success is True and (obs.safety_failures, obs.unknown_effects) == (0, 0)
+    assert len(world.container.prompts) == 1  # the goal ran
+    receipt = world.receipt(obs)
+    assert receipt["goal_status"] == "verified"
+    assert receipt["planner"]["mode"] == "fixed"
+    assert receipt["planner"]["behaviour_verifier"] == "suite"  # recorded which
+    plan = service.plan_record(receipt["goal_id"])
+    task = world.corpus.task("bug-01-value")
+    assert plan["draft"]["acceptance"] == [{"statement": task.acceptance[0], "verifier": "suite"}]
 
 
 def test_fixed_draft_is_the_tasks_contract_with_the_behaviour_verifier_first(world: World) -> None:
