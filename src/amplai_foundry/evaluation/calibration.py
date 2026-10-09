@@ -48,6 +48,7 @@ from .service import (
     ExecutorPolicy,
     TrialObservation,
     effective_parallel,
+    failed_trial,
     is_ref,
     run_bounded,
     spent_tokens,
@@ -634,8 +635,9 @@ class CalibrationService:
                 "trial_id": trial_id,
             }
 
-        def execute(ctx: dict[str, Any]) -> tuple[TrialObservation, str | None, float]:
-            began, error_type = time.monotonic(), None
+        def execute(ctx: dict[str, Any]) -> tuple[TrialObservation, dict[str, Any], float]:
+            began = time.monotonic()
+            failure: dict[str, Any] = {}
             self.store.assert_outside_tx()
             try:
                 observation = executor(ctx["composition"], ctx["case"], ctx["repeat"], MODE)
@@ -649,12 +651,15 @@ class CalibrationService:
                     MODE,
                 )
             except Exception as exc:
-                error_type = type(exc).__name__
-                observation = TrialObservation(None, (), unknown_effects=1, usage_status="unknown")
-            return observation, error_type, began
+                # an unknown effect unless the executor's evidence shows nothing ran
+                # (operator decision 2026-10-09, ``failed_trial``)
+                observation, failure = failed_trial(exc)
+            return observation, failure, began
 
-        def record(ctx: dict[str, Any], result: tuple[TrialObservation, str | None, float]) -> None:
-            observation, error_type, began = result
+        def record(
+            ctx: dict[str, Any], result: tuple[TrialObservation, dict[str, Any], float]
+        ) -> None:
+            observation, failure, began = result
             case, cell, trial_id = ctx["case"], ctx["cell"], ctx["trial_id"]
             post_guard = None
             try:
@@ -685,8 +690,9 @@ class CalibrationService:
                 "usage_status": observation.usage_status,
                 "elapsed_ms": round((time.monotonic() - began) * 1000, 6),
                 "finished_at": now(),
-                "error_type": error_type,
+                "error_type": None,
                 "post_execution_guard": post_guard,
+                **failure,  # error_type, error_code and not_run of an executor exception
             }
             tokens = (
                 observation.input_tokens + observation.output_tokens
@@ -702,6 +708,8 @@ class CalibrationService:
                     cost=policy.max_trial_cost_microunits,
                 )
                 trial.update(fields)
+                if "not_run" in failure:
+                    trial["outcome_missing"] = "not_run"  # decision 2026-10-09: nothing ran
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
                 th = self.store.head(scope, TRIAL_KIND, trial_id, db=db)

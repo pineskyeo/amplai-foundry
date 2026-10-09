@@ -106,6 +106,84 @@ def usage_unknown(observation: TrialObservation) -> bool:
     )
 
 
+# Operator decision 2026-10-09 (IC-18 clarification): the attribute an executor sets on an
+# exception it raises, holding the store evidence of what its trial started:
+# ``{"goal_id": str | None, "planner_mode": "fixed" | "real" | None, "base_checks": int,
+#   "runs": [run id], "dispatches": [dispatch id]}``.
+NOT_RUN_EVIDENCE = "trial_dispatch_evidence"
+
+# Hold codes ``LocalTrialExecutor`` raises before it submits a goal, where it has started no
+# process that could outlive the call (``meta_harness/local_executor.py`` ``_trial``, ``_spec``).
+BEFORE_GOAL_HOLDS = frozenset(
+    {"TRIAL_BUSY", "TRIAL_TASK", "CORPUS_CHANGED", "TRIAL_ENVIRONMENT", "TARGET_UNKNOWN",
+     "COMPOSITION_PIN"}
+)  # fmt: skip
+# Hold codes of the fixed ``TrialPlanner.draft`` (no model turn). In plan() of a fixed-planner
+# trial only git and the base-check suite run before the draft, and nothing else raises these
+# codes once a goal exists. A base check started during the call excludes the case.
+FIXED_DRAFT_HOLDS = frozenset({"TRIAL_TASK", "TRIAL_VERIFIER"})
+
+
+def nothing_ran(exc: BaseException) -> bool:
+    """The exception proves that its trial started no process that could outlive the call
+    (operator decision 2026-10-09, IC-18 clarification). All of these hold:
+
+    - ``exc`` is a ``Hold`` whose ``NOT_RUN_EVIDENCE`` is well formed: ``runs`` and
+      ``dispatches`` empty lists, ``base_checks`` a non-negative int;
+    - either no goal was submitted (``goal_id`` None) and the code is in ``BEFORE_GOAL_HOLDS``,
+      or the fixed planner planned the goal (``planner_mode`` "fixed"), the code is in
+      ``FIXED_DRAFT_HOLDS`` and no base check started during the call (``base_checks`` 0).
+
+    Anything else is not this case: a real planner turn (PLANNER_TIMEOUT, PLANNER_FAILED,
+    TURN_*), an L1 or strategy plan-time turn, a base check, another code or exception type, or
+    missing or malformed evidence."""
+    if not isinstance(exc, Hold):
+        return False
+    evidence = getattr(exc, NOT_RUN_EVIDENCE, None)
+    if not isinstance(evidence, dict):
+        return False
+    checks = evidence.get("base_checks")
+    if (
+        evidence.get("runs") != []
+        or evidence.get("dispatches") != []
+        or type(checks) is not int
+        or checks < 0
+    ):
+        return False
+    goal_id = evidence.get("goal_id")
+    if goal_id is None:
+        return exc.code in BEFORE_GOAL_HOLDS
+    return (
+        isinstance(goal_id, str)
+        and evidence.get("planner_mode") == "fixed"
+        and exc.code in FIXED_DRAFT_HOLDS
+        and checks == 0
+    )
+
+
+def failed_trial(exc: Exception) -> tuple[TrialObservation, dict[str, Any]]:
+    """The observation and the trial-record fields of an executor exception (operator decision
+    2026-10-09, IC-18 clarification).
+
+    The record keeps ``error_type`` (the exception class) and ``error_code`` (a ``Hold`` or
+    ``RuntimeFault`` code, or the ``code`` of another coded error; else None). When the
+    exception proves that no process started (``nothing_ran``), the outcome is missing and no
+    effect is uncertain: ``unknown_effects`` 0, ``not_run`` the goal id with zero runs and
+    dispatches. Otherwise a process may have started, and the trial stays an unknown effect
+    (``unknown_effects`` 1, IC-18). The usage is unknown either way (decision (B) charges the
+    reservation)."""
+    code = getattr(exc, "code", None)
+    fields: dict[str, Any] = {
+        "error_type": type(exc).__name__,
+        "error_code": code if isinstance(code, str) else None,
+    }
+    if nothing_ran(exc):
+        evidence = getattr(exc, NOT_RUN_EVIDENCE)
+        fields["not_run"] = {"goal_id": evidence["goal_id"], "runs": 0, "dispatches": 0}
+        return TrialObservation(None, (), usage_status="unknown"), fields
+    return TrialObservation(None, (), unknown_effects=1, usage_status="unknown"), fields
+
+
 def unknown_usage_charge(
     observation: TrialObservation, *, tokens: int, cost: int
 ) -> tuple[dict[str, Any], int, int]:
@@ -729,8 +807,9 @@ class EvaluationService:
                 return None
             return {"case": case, "repeat": repeat, "arm": arm, "trial_id": trial_id}
 
-        def execute(ctx: dict[str, Any]) -> tuple[TrialObservation, str | None, float]:
-            began, error_type = time.monotonic(), None
+        def execute(ctx: dict[str, Any]) -> tuple[TrialObservation, dict[str, Any], float]:
+            began = time.monotonic()
+            failure: dict[str, Any] = {}
             self.store.assert_outside_tx()
             composition = compositions[ctx["arm"]]
             try:
@@ -744,14 +823,15 @@ class EvaluationService:
                     plan["mode"],
                 )
             except Exception as exc:
-                # The process may already have written; uncertain effects/usage
-                # stay explicit.
-                error_type = type(exc).__name__
-                observation = TrialObservation(None, (), unknown_effects=1, usage_status="unknown")
-            return observation, error_type, began
+                # The process may already have written; uncertain effects/usage stay explicit,
+                # unless the executor's evidence shows nothing ran (``failed_trial``).
+                observation, failure = failed_trial(exc)
+            return observation, failure, began
 
-        def record(ctx: dict[str, Any], result: tuple[TrialObservation, str | None, float]) -> None:
-            observation, error_type, began = result
+        def record(
+            ctx: dict[str, Any], result: tuple[TrialObservation, dict[str, Any], float]
+        ) -> None:
+            observation, failure, began = result
             case, arm, trial_id = ctx["case"], ctx["arm"], ctx["trial_id"]
             post_guard = None
             try:
@@ -785,8 +865,9 @@ class EvaluationService:
                 "usage_status": observation.usage_status,
                 "elapsed_ms": round((time.monotonic() - began) * 1000, 6),
                 "finished_at": now(),
-                "error_type": error_type,
+                "error_type": None,
                 "post_execution_guard": post_guard,
+                **failure,  # error_type, error_code and not_run of an executor exception
             }
             tokens = (
                 observation.input_tokens + observation.output_tokens
@@ -800,6 +881,8 @@ class EvaluationService:
                     observation, tokens=trial_tokens, cost=policy.max_trial_cost_microunits
                 )
                 trial.update(fields)
+                if "not_run" in failure:
+                    trial["outcome_missing"] = "not_run"  # decision 2026-10-09: nothing ran
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, "eval-trial", trial_id, 1, trial)
                 th = self.store.head(scope, "eval-trial", trial_id, db=db)
