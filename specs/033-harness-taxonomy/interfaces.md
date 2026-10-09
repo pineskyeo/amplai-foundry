@@ -3879,3 +3879,20 @@ Source: calibration plan `calplan-1bdb065852868e2b88a03023` (eval-5) stopped aft
   `cost_basis: not_compared` (`evaluation/service.py:906`, `meta_harness/service.py:793`).
 - Test: `test_a_reported_cost_is_no_overrun_when_cost_is_not_compared`
   (`tests/v3/test_dev03_evaluation.py`).
+
+## D-088 Ledger Fix 2026-10-09: A Reported Cost Is Not Spent When Cost Is Not Compared
+
+Source: calibration plan `calplan-3fd084f06ddef570fe3df976` (eval-6) stopped after 36 trials with
+`META_COST_BUDGET`. eval-6 settled the first Claude fixed-planner trials (394676 and 211386
+microunits) without an overrun, but stored their cost in the allocation's `cost`; the next
+`EvolutionBudget.reserve` (`meta_harness/budget.py:100-108`) summed those costs against the root
+`max_cost_microunits` 0 and refused the reservation.
+
+- `EvolutionBudget.settle` with `cost_required=False`: the allocation's `cost` stays the reserved
+  amount (as D-088 states), and a reported cost is kept as `reported_cost`. Neither the overrun
+  check nor the root cost budget sees it.
+- With `cost_required=True` nothing changes: the reported cost is the allocation's `cost`.
+- Tests: `test_a_reported_cost_is_no_overrun_when_cost_is_not_compared`
+  (`tests/v3/test_dev03_evaluation.py`, extended) and
+  `test_reported_costs_do_not_stop_a_calibration_with_a_cost_budget_of_zero`
+  (`tests/v3/test_033_s2_calibration.py`, which fails on the eval-6 code with `META_COST_BUDGET`).

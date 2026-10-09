@@ -474,9 +474,14 @@ def test_a_reported_cost_is_no_overrun_when_cost_is_not_compared(meta03):
 
     assert settle("cost-not-compared", 40, False) == {"overrun": False, "uncertain": False}
     kept = d.store.head(d.scope, "meta-budget", "cost-not-compared")["data"]["allocations"]["t"]
-    assert (kept["status"], kept["cost"], kept["overrun"]) == ("settled", 331846, False)
+    assert (kept["status"], kept["cost"], kept["overrun"]) == ("settled", 0, False)
+    assert kept["reported_cost"] == 331846  # recorded, not spent against the cost budget
+    with d.store.tx() as db:  # calplan-3fd084f0: the next reservation is not META_COST_BUDGET
+        budget.reserve(db, d.scope, "cost-not-compared", "u", tokens=100, cost=0)
     assert settle("cost-not-compared-tokens", 101, False)["overrun"] is True
     assert settle("cost-compared", 40, True)["overrun"] is True
+    compared = d.store.head(d.scope, "meta-budget", "cost-compared")["data"]["allocations"]["t"]
+    assert compared["cost"] == 331846 and "reported_cost" not in compared
 
 
 def test_budget_keeps_the_reservation_when_cost_is_not_compared(meta03):
