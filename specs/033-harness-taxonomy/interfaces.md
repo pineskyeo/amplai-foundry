@@ -3896,3 +3896,25 @@ microunits) without an overrun, but stored their cost in the allocation's `cost`
   (`tests/v3/test_dev03_evaluation.py`, extended) and
   `test_reported_costs_do_not_stop_a_calibration_with_a_cost_budget_of_zero`
   (`tests/v3/test_033_s2_calibration.py`, which fails on the eval-6 code with `META_COST_BUDGET`).
+
+## D-088 Reconcile Fix 2026-10-09 (PR #65 Review)
+
+Source: a Codex review of PR #65. `EvolutionBudget.reconcile` (`meta_harness/budget.py`) wrote the
+receipt's cost into the allocation's `cost` and judged `cost > cost_ceiling` as an overrun. For an
+uncertain allocation of a plan that does not compare cost (cost ceiling 0), any reported cost made
+it an overrun, and the next `reserve` held `META_PRIOR_OVERRUN`. `reconcile` is reached through
+`meta_ops.reconcile` (`runtime/execution/meta_ops.py`, the stages command); calibration does not
+call it.
+
+- `EvolutionBudget.reserve(..., cost_compared=True)`: a False value is kept on the allocation as
+  `cost_compared: false`. `CalibrationService` passes False; `EvaluationService` passes its
+  analysis plan's `cost_basis == "compared"`; the canary passes its policy's.
+- `settle(..., cost_required=False)` also writes `cost_compared: false`, so an allocation reserved
+  before this change is covered.
+- `reconcile` of an allocation with `cost_compared: false` keeps the reserved cost, records the
+  receipt's cost as `reported_cost` and judges overrun on tokens only. A compared allocation is
+  unchanged.
+- Tests (`tests/v3/test_dev03_evaluation.py`):
+  `test_reconciling_an_uncertain_allocation_keeps_a_cost_not_compared_out_of_the_ledger` (both
+  paths; on the eval-7 code the settle-only path settles cost 331846 with overrun True) and
+  `test_reconciling_a_compared_cost_still_overruns_its_ceiling`.

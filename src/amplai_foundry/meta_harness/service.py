@@ -675,6 +675,7 @@ class MetaHarness:
                 allocation_id,
                 tokens=policy["max_trial_tokens"],
                 cost=policy["max_trial_cost_microunits"],
+                cost_compared=compared,
             )
             self.store.cas(
                 db,
