@@ -1,0 +1,9 @@
+{
+ "version": "eval-8",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "D-088 reconcile fix 2026-10-09 (PR #65 review): reserve() keeps cost_compared false on the allocation of a plan that does not compare cost (calibration, cost_basis not_compared, a not-compared canary), settle() records it too, and reconcile() of such an allocation keeps the reserved cost in the ledger, records the receipt's cost as reported_cost and judges overrun on tokens only; before, reconcile() wrote the receipt cost into the ledger and compared it with the cost ceiling 0, so the next reserve held META_PRIOR_OVERRUN"
+  }
+ ]
+}

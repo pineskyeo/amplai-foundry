@@ -786,6 +786,7 @@ class EvaluationService:
                         trial_id,
                         tokens=trial_tokens,
                         cost=policy.max_trial_cost_microunits,
+                        cost_compared=analysis.get("cost_basis", "compared") == "compared",
                     )
                     self.store.cas(
                         db,

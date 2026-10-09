@@ -484,6 +484,101 @@ def test_a_reported_cost_is_no_overrun_when_cost_is_not_compared(meta03):
     assert compared["cost"] == 331846 and "reported_cost" not in compared
 
 
+@pytest.mark.parametrize("at_reserve", [True, False])
+def test_reconciling_an_uncertain_allocation_keeps_a_cost_not_compared_out_of_the_ledger(
+    meta03, at_reserve
+):
+    # PR #65 review: reconcile() wrote the receipt's cost into the ledger and compared it with the
+    # cost ceiling 0, so the next reserve held META_PRIOR_OVERRUN. The plan's cost basis is kept
+    # on the allocation by reserve() (at_reserve) or, for an older reservation, by settle()
+    from dataclasses import replace
+
+    from amplai_foundry.meta_harness.budget import EvolutionBudget
+    from amplai_foundry.runtime.contracts.identity import canonical
+
+    d = meta03.d
+    budget = EvolutionBudget(d.store)
+    limits = {"max_attempts": 4, "max_tokens": 1000, "max_cost_microunits": 0,
+              "max_parallel_works": 1, "max_wall_seconds": 3600}  # fmt: skip
+    ref = {"id": "experiment-d088-reconcile", "revision": 1, "digest": "sha256:" + "0" * 64}
+    proposal = f"reconcile-not-compared-{at_reserve}"
+    with d.store.tx() as db:
+        budget.freeze(db, d.scope, proposal, ref, limits)
+        if at_reserve:
+            budget.reserve(db, d.scope, proposal, "t", tokens=100, cost=0, cost_compared=False)
+        else:
+            budget.reserve(db, d.scope, proposal, "t", tokens=100, cost=0)
+        budget.settle(db, d.scope, proposal, "t", tokens=None, cost=None, uncertain=True,
+                      cost_required=False)  # fmt: skip
+    receipt = d.artifacts.admit(
+        d.scope,
+        canonical(
+            {
+                "allocation_id": "t",
+                "tokens": 40,
+                "cost_microunits": 331846,
+                "process_stopped": True,
+                "unknown_effects": 0,
+            }
+        ),
+        "application/json",
+        trust="operator",
+    )
+    reconciler = replace(
+        meta03.reviewer, permissions=meta03.reviewer.permissions | {"experiment.reconcile"}
+    )
+    budget.reconcile(reconciler, proposal, "t", tokens=40, cost=331846, evidence_ref=receipt,
+                     artifacts=d.artifacts)  # fmt: skip
+    kept = d.store.head(d.scope, "meta-budget", proposal)["data"]["allocations"]["t"]
+    assert (kept["status"], kept["cost"], kept["overrun"]) == ("settled", 0, False)
+    assert kept["reported_cost"] == 331846 and kept["cost_compared"] is False
+    with d.store.tx() as db:  # neither META_PRIOR_OVERRUN nor META_COST_BUDGET
+        budget.reserve(db, d.scope, proposal, "u", tokens=100, cost=0, cost_compared=False)
+
+
+def test_reconciling_a_compared_cost_still_overruns_its_ceiling(meta03):
+    from dataclasses import replace
+
+    from amplai_foundry.meta_harness.budget import EvolutionBudget
+    from amplai_foundry.runtime.contracts.identity import canonical
+
+    d = meta03.d
+    budget = EvolutionBudget(d.store)
+    limits = {"max_attempts": 4, "max_tokens": 1000, "max_cost_microunits": 1000,
+              "max_parallel_works": 1, "max_wall_seconds": 3600}  # fmt: skip
+    ref = {
+        "id": "experiment-d088-reconcile-compared",
+        "revision": 1,
+        "digest": "sha256:" + "0" * 64,
+    }
+    with d.store.tx() as db:
+        budget.freeze(db, d.scope, "reconcile-compared", ref, limits)
+        budget.reserve(db, d.scope, "reconcile-compared", "t", tokens=100, cost=10)
+        budget.settle(db, d.scope, "reconcile-compared", "t", tokens=None, cost=None,
+                      uncertain=True)  # fmt: skip
+    receipt = d.artifacts.admit(
+        d.scope,
+        canonical(
+            {
+                "allocation_id": "t",
+                "tokens": 40,
+                "cost_microunits": 11,
+                "process_stopped": True,
+                "unknown_effects": 0,
+            }
+        ),
+        "application/json",
+        trust="operator",
+    )
+    reconciler = replace(
+        meta03.reviewer, permissions=meta03.reviewer.permissions | {"experiment.reconcile"}
+    )
+    budget.reconcile(reconciler, "reconcile-compared", "t", tokens=40, cost=11,
+                     evidence_ref=receipt, artifacts=d.artifacts)  # fmt: skip
+    kept = d.store.head(d.scope, "meta-budget", "reconcile-compared")["data"]["allocations"]["t"]
+    assert (kept["cost"], kept["overrun"]) == (11, True) and "reported_cost" not in kept
+
+
 def test_budget_keeps_the_reservation_when_cost_is_not_compared(meta03):
     # D-088: a missing cost settles at the reserved amount (never 0) when cost is not compared;
     # by default it is still uncertain and blocks further spending

@@ -74,7 +74,10 @@ class EvolutionBudget:
         *,
         tokens: int,
         cost: int,
+        cost_compared: bool = True,
     ) -> None:
+        """``cost_compared`` False (D-088) is kept on the allocation, so settlement and a later
+        reconciliation both treat a reported cost as ``reported_cost``, never as spending."""
         if any(type(x) is not int or x < 0 for x in (tokens, cost)):
             raise RuntimeFault("META_RESERVATION", "Executor ceilings must be nonnegative integers")
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
@@ -115,6 +118,8 @@ class EvolutionBudget:
             "owner_epoch": self.store.epoch,
             "issued_at": now(),
         }
+        if not cost_compared:
+            allocation["cost_compared"] = False
         self.store.cas(
             db,
             scope,
@@ -168,6 +173,8 @@ class EvolutionBudget:
             "overrun": overrun,
             "settled_at": now(),
         }
+        if not cost_required:
+            new["cost_compared"] = False  # a later reconcile() applies the same rule
         if counted is None and cost is not None:
             new["reported_cost"] = cost
         self.store.cas(
@@ -230,15 +237,21 @@ class EvolutionBudget:
             old = a.get(allocation_id)
             if not old or old["status"] not in {"reserved", "unknown"}:
                 raise Hold("RECONCILIATION_STATE", "No unresolved allocation")
+            # D-088 (PR #65 review): an allocation whose plan does not compare cost keeps its
+            # reserved cost here too; the receipt's cost is ``reported_cost``, never an overrun
+            compared = old.get("cost_compared", True) is not False
             new = {
                 **old,
                 "status": "settled",
                 "tokens": tokens,
-                "cost": cost,
-                "overrun": tokens > old["token_ceiling"] or cost > old["cost_ceiling"],
+                "cost": cost if compared else old["cost"],
+                "overrun": tokens > old["token_ceiling"]
+                or (compared and cost > old["cost_ceiling"]),
                 "reconciliation_ref": evidence_ref,
                 "settled_at": now(),
             }
+            if not compared:
+                new["reported_cost"] = cost
             self.store.cas(
                 db,
                 actor.scope,

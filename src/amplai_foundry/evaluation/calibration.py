@@ -608,6 +608,7 @@ class CalibrationService:
                         trial_id,
                         tokens=policy.max_trial_tokens,
                         cost=policy.max_trial_cost_microunits,
+                        cost_compared=False,  # calibration compares no cost (D-088)
                     )
                     self.store.cas(
                         db,
