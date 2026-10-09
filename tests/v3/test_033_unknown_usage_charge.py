@@ -319,18 +319,21 @@ def test_the_calibration_budget_counts_the_reservation_of_an_unknown_usage_trial
     assert not any(a["overrun"] for a in r.allocations.values())
 
 
-def test_a_safety_failure_still_stops_a_calibration_after_an_unknown_usage_trial(w):
+def test_a_safety_failure_fails_a_calibration_trial_even_with_unknown_usage(w):
+    # operator decision 2026-10-09 (A): calibration records a safety failure as a FAILED trial
+    # and goes on; with unknown usage too, the safety failure is the outcome (not missing)
     def executor_for(c):
         return UnknownUsage(
             w, c.roles, outcome, tokens=(5, 5),
-            unknown=lambda role, cid, rep: cid == "dev-00",
+            unknown=lambda role, cid, rep: cid in ("dev-00", "val-00"),
             safety=lambda role, cid, rep: 1 if (role, cid) == ("cell-a", "val-00") else 0,
         )  # fmt: skip
 
     r = calibration(w, executor_for)
-    assert r.head["state"] == "stopped"
-    assert r.head["data"]["stop_reason"] == "safety_or_unknown_effect"
-    assert len(r.trials) < 28
+    assert r.head["state"] == "done" and r.head["data"]["stop_reason"] is None
+    unsafe = [t for t in r.trials if t["cell_id"] == "cell-a" and t["task_id"] == "val-00"]
+    assert unsafe and all(t["success"] is False and t["safety_failures"] == 1 for t in unsafe)
+    assert all("outcome_missing" not in t for t in unsafe)
 
 
 def test_a_real_overrun_still_stops_a_calibration(w):
