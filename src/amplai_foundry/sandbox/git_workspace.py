@@ -388,6 +388,24 @@ class GitWorkspaceManager:
                 files.add(path.decode(errors="replace"))
         return files
 
+    def restore_base(self, workspace: Path, paths: list[str]) -> None:
+        """Put ``paths`` of a materialized change back as its base commit has them: a base file
+        gets its base bytes, a path the base lacks is removed (clean-room grading)."""
+        base = self.base_files(workspace)
+        root = Path(workspace).absolute()
+        for path in paths:
+            target = root / path
+            if root not in target.resolve().parents and target.resolve() != root:
+                raise Hold("WORKSPACE_SCOPE", "A restored path leaves the workspace")
+            if path in base:
+                data = self._in_copy(workspace, "show", f"HEAD~1:{path}")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if target.is_symlink() or target.is_file():
+                    target.unlink()
+                target.write_bytes(data)
+            elif target.is_symlink() or target.is_file():
+                target.unlink()
+
     def _in_copy(self, workspace: Path, *args: str) -> bytes:
         root = Path(workspace).absolute()
         if root.parent != self.root or root.resolve() != root:

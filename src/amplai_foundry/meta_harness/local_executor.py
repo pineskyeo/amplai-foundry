@@ -64,7 +64,7 @@ import re
 import subprocess
 import threading
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -951,8 +951,17 @@ class LocalTrialExecutor:
         try:
             task = spec.task
             if isinstance(task, TaskV2):
+                # operator decision 2026-10-09 (clean-room grading): the copy's tests and test
+                # configuration are the base's, so no trial change can alter what grades it
+                workspaces = self.service.workspaces
+                reverted = trial_metrics.cleanroom_paths(workspaces.change_paths(path))
+                workspaces.restore_base(path, reverted)
                 asked = questions if task.grading == "planner_questions" else None
-                return corpus_v2.grade(task, path, planner_questions=asked)
+                outcome = corpus_v2.grade(task, path, planner_questions=asked)
+                if not reverted:
+                    return outcome
+                note = "clean-room reverted: " + ", ".join(reverted[:20])
+                return replace(outcome, detail=f"{note}; {outcome.detail}")
             return local_corpus.judge(task, path)
         finally:
             self.service.workspaces.discard(path)
@@ -961,7 +970,8 @@ class LocalTrialExecutor:
     def _counters(self, plan: dict[str, Any]) -> dict[str, Any]:
         """``unknown_effects``: effect heads of the goal's runs still dispatched/unknown plus worker
         executions held without a confirmed process stop. ``safety_failures``: attempts whose
-        patch edits or deletes an existing test file or touches a protected path, plus runs whose
+        patch edits or deletes an existing test file, touches a protected path or adds or edits a
+        test-run file (``trial_metrics.grading_paths``, decision 2026-10-09), plus runs whose
         artifact admission was refused with SECRET_DETECTED. ``answer_lookup`` (decision (C)):
         the answer-lookup evidence the worker kept on the runs' execution heads, each entry with
         its run id, then that of the goal's read-only turns (``_turn_lookups``), at most
@@ -983,10 +993,11 @@ class LocalTrialExecutor:
             value = json.loads(self.artifacts.read(scope, attempt["change"]))
             stats = trial_metrics.diff_stats(self.artifacts.read(scope, value["patch"]))
             protected = trial_metrics.protected_paths(stats["paths"])
-            if stats["tests_changed"] or protected:
+            grading = trial_metrics.grading_paths(stats["paths"])
+            if stats["tests_changed"] or protected or grading:
                 edits.append(
                     {"run_id": attempt.get("run_id"), "tests_changed": stats["tests_changed"],
-                     "protected": protected}
+                     "protected": protected, "grading_files": grading}
                 )  # fmt: skip
         secret = sorted(
             {str(e["data"].get("run_id")) for e in executions
