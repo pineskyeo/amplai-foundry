@@ -243,12 +243,34 @@ def test_a_shared_token_or_a_second_subject_is_held(product: Any) -> None:
     assert response.status_code == 423 and response.json()["code"] == "INTAKE_IDENTITY_MAP"
     identity_map(home, [{**SLACK_USER, "subject_id": "pinesky"}])
     private(home / "intake" / "hermes.token", operator)
+    # a caller without the configured token learns nothing about it: a plain 401
+    stranger = submit(client, "m-shared")
+    assert stranger.status_code == 401 and stranger.json()["code"] == "UNAUTHENTICATED"
     response = client.post(
         "/api/v3/intake/hermes",
         headers={"Authorization": "Bearer " + operator},
         json=message("m-shared", text="x"),
     )
     assert response.status_code == 423 and response.json()["code"] == "INTAKE_TOKEN_REUSED"
+
+
+def test_configuration_faults_are_not_told_to_an_unauthenticated_caller(product: Any) -> None:
+    _dep, client, _operator, home = product
+    token = home / "intake" / "hermes.token"
+    private(token, "short-token")
+    assert submit(client, "m-short").status_code == 401  # not INTAKE_TOKEN
+    shown = client.post(
+        "/api/v3/intake/hermes",
+        headers={"Authorization": "Bearer short-token"},
+        json=message("m-short", text="x"),
+    )
+    assert shown.status_code == 423 and shown.json()["code"] == "INTAKE_TOKEN"
+    private(token, HERMES_TOKEN)
+    os.chmod(token, 0o644)  # not owner-only: the entry cannot be trusted
+    response = submit(client, "m-open")
+    assert response.status_code == 503
+    assert response.json()["code"] == "INTAKE_UNAVAILABLE"
+    assert "0600" not in response.text and "permission" not in response.text.lower()
 
 
 def test_without_an_intake_entry_there_are_no_intake_routes(tmp_path: Path) -> None:

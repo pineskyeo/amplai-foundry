@@ -336,6 +336,8 @@ def create_app(services: ApiServices) -> FastAPI:
             status = 404
         if exc.code == "RATE_LIMITED":  # design/18 §5
             status = 429
+        if exc.code == "INTAKE_UNAVAILABLE":  # an untrusted front-agent entry (intake.py)
+            status = 503
         return JSONResponse(
             {"code": exc.code, "message": exc.message, "outcome": exc.outcome}, status_code=status
         )
