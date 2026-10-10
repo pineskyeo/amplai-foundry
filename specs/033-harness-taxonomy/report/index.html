@@ -10,7 +10,7 @@
   --gate: #6a49c2; --gate-soft: #ece6fa;
   --ok: #1d7549; --ok-soft: #dff1e7;
   --warn: #9a5806; --warn-soft: #fbeed6;
-  --crit: #ad2a22; --crit-soft: #f8e0dd;
+  --crit: #ad2a22; --crit-soft: #f8e0dd; --surface-2: #eef1f5;
   --font-sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --radius: 10px;
@@ -22,7 +22,7 @@
     --gate: #b8a2ff; --gate-soft: #2a2243;
     --ok: #6dd19c; --ok-soft: #163026;
     --warn: #efb35b; --warn-soft: #382812;
-    --crit: #ff8b80; --crit-soft: #3a1a17;
+    --crit: #ff8b80; --crit-soft: #3a1a17; --surface-2: #1c242b;
     color-scheme: dark;
   }
 }
@@ -32,7 +32,7 @@
   --gate: #b8a2ff; --gate-soft: #2a2243;
   --ok: #6dd19c; --ok-soft: #163026;
   --warn: #efb35b; --warn-soft: #382812;
-  --crit: #ff8b80; --crit-soft: #3a1a17;
+  --crit: #ff8b80; --crit-soft: #3a1a17; --surface-2: #1c242b;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -104,69 +104,193 @@ ul.clean li { max-width: 72ch; }
 footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--line); padding-top: 14px; }
 @media (max-width: 520px) { h1 { font-size: 1.6rem; } .wrap { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+.heat td.h-hi { background: var(--ok-soft); }
+.heat td.h-mid { background: var(--surface-2); }
+.heat td.h-lo { background: var(--warn-soft); }
+.need { stroke: var(--crit); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.need-label { fill: var(--crit); font-size: 11px; font-family: var(--font-mono); }
+.ask ul.clean { margin-top: 8px; }
 </style>
 
 <div class="wrap">
 <header class="top">
-  <div class="eyebrow">Work 033 · amplai-foundry · 2026-10-02 01:00 KST 기준</div>
+  <div class="eyebrow">Work 033 · amplai-foundry · 2026-10-11 05:00 KST 기준</div>
   <h1>AMPLAI Meta-Harness</h1>
   <p class="lede">하네스(에이전트를 감싸는 실행 방식: 지시문, 실행 전략, 컨텍스트, 검증, 예산)를 부품으로 쪼개고, 모델×추론강도 칸(cell)마다 부품 조합을 실험으로 비교해, <strong>측정으로 이긴 조합만 사람이 승인해 배포하는</strong> 자가개선 시스템이다.</p>
   <div class="chips">
-    <span class="chip ok">코드 완료, PR 9건 merge</span>
-    <span class="chip info">문서 갱신 PR 진행 중</span>
-    <span class="chip warn">실제 파일럿(S16) 미실행</span>
+    <span class="chip ok">PR 26건 merge (#46–#72)</span>
+    <span class="chip ok">파일럿 calibration 2회 완료, 564 trial</span>
+    <span class="chip warn">개선안 확정 단계가 과제 포화로 막힘</span>
     <span class="chip gate">운영자 결정 4건 대기</span>
   </div>
-  <p class="meta-line">이 페이지는 중간 보고다. 실제 개선 결과(파일럿)와 legacy 제거가 끝나면 같은 주소로 갱신한다.</p>
+  <p class="meta-line">실제 칸 4개로 파일럿을 돌렸다. 모델별·영역별 실력 차이는 측정됐고, 파일럿이 찾은 결함은 PR 13건(#58–#68, #71, #72)으로 고쳤다. 개선안을 확정하는 단계는 과제가 너무 쉬워 아직 돌 수 없다. 이 결정이 다음 단계의 관문이다.</p>
 </header>
 
 <nav class="toc" aria-label="목차">
-  <a href="#ask">결정 요청</a><a href="#status">현황</a><a href="#loop">자가개선 루프</a><a href="#layers">레이어와 판단</a><a href="#components">부품</a><a href="#strategies">실행 전략</a><a href="#evaluation">평가</a><a href="#corpus">과제 목록</a><a href="#authority">권한과 안전</a><a href="#dashboard">대시보드</a><a href="#decisions">결정 기록</a><a href="#delivery">진행 기록</a><a href="#next">다음 단계</a>
+  <a href="#ask">결정 요청</a><a href="#status">현황</a><a href="#results">파일럿 결과</a><a href="#fixes">파일럿이 찾은 결함</a><a href="#loop">자가개선 루프</a><a href="#layers">레이어와 판단</a><a href="#components">부품</a><a href="#strategies">실행 전략</a><a href="#evaluation">평가</a><a href="#corpus">과제 목록</a><a href="#authority">권한과 안전</a><a href="#dashboard">대시보드</a><a href="#work034">Work 034</a><a href="#decisions">결정 기록</a><a href="#delivery">진행 기록</a><a href="#next">다음 단계</a>
 </nav>
 
 <section id="ask">
   <div class="section-head"><div class="eyebrow">Operator</div><h2>What Needs Your Decision</h2></div>
   <div class="ask">
-    <p>코드는 끝났고, 이제 실제로 성능이 오르는지를 보여 줄 차례다. 그 전에 운영자(사람)만 할 수 있는 결정 네 가지가 남아 있다.</p>
+    <p><strong>요약.</strong> 지금 모델들이 우리 과제 묶음보다 강하다. 개선안이 정말 나은지 확정하려면 칸마다 "가끔 맞히는" 과제가 16개 이상 필요한데, 실제로는 3–8개뿐이다. 과제를 더 어렵게 늘릴지(추천), 확정 기준을 낮출지를 정해야 개선안 실험과 야간 루프가 의미 있게 돈다. 나머지 셋은 그 뒤 순서와 설정에 관한 것이다.</p>
     <ol>
-      <li><strong>파일럿 시작과 예산.</strong> 칸 4개 calibration, 그다음 3일 밤 동안 밤마다 약 150 trial. 승인 명령(<code>calibrate</code>, <code>nightly approve</code>, 단계 gate)은 운영자가 직접 실행한다. 사람 승인을 agent 가 대신 쓰지 않는 것이 이 설계의 원칙이다(IC-17).</li>
-      <li><strong>Legacy 제거 목록 승인.</strong> V1·V2 와 V3 미사용 부분. 사람이 정할 항목은 knowledge CLI·vault(D1), Slack/Hermes governance와 <code>ops serve</code>(D2·D3), Kit 2.x 배포 중단(D9)이다. 근거 목록은 <code>specs/033-harness-taxonomy/legacy-inventory.md</code>.</li>
-      <li><strong>IC-30: 밤에 새 제안을 스스로 screen 해도 되는가.</strong> 지금은 낮에 사람이 screen 한 제안만 밤이 돌린다. 추천은 class A 부품에 한해 기계적 screen(보호 영역 검사와 leak gate)을 허용하는 것이다. 보호 영역(class C) 권한이 바뀌므로 결정 전에는 구현하지 않았다.</li>
-      <li><strong>잠정 결정 확인.</strong> IC-15–IC-29, IC-31, IC-32 는 추천안으로 잠정 구현됐다. 각각은 제약을 더하거나 내부 필드만 더한다. 야간 루프를 켜기 전에 확인이 필요하다(<a href="#decisions">결정 기록</a>).</li>
+      <li><strong>과제 포화 (다음 단계를 막는 결정).</strong> 확정(focused) 단계는 칸마다 validation split 의 informative 과제(정답률 0.2–0.9)를 <code>max(16, n_min)</code>개 요구한다(IC-20, <code>stages.confirmatory_tasks</code>). 측정값은 opus 3, sonnet 4, codex high 8, codex medium 5개다. development 를 합쳐도 7–14개라 split 을 바꿔도 못 채운다. 그래서 제안 2건의 <code>meta search</code> 가 계획 단계에서 <code>NO_INFORMATIVE_TASKS</code> 로 멈췄다(trial 0).
+        <ul class="clean">
+          <li><b>A. 어려운 과제를 직접 추가 (추천).</b> bench 앱 6개 영역에 어려운 과제를 더 쓰고, fairness 검사 → 새 corpus freeze → 재calibration(칸 4개 약 6.5시간, calibration 9 기준) 순서로 간다. 이미지와 파이프라인을 그대로 쓴다. 어느 칸에서 informative 가 될지는 돌려 봐야 안다.</li>
+          <li><b>B. Terminal-Bench 2.0 과제 채택.</b> 설계의 원래 경로다(§10.5, 약 40개 목표). 과제마다 docker 이미지, 통과 검증(admission), 이미지별 자격 시험이 필요하다. VM 은 CPU 2·4 GiB 이고, TB2 test 실행 명령은 확인 필요(§14 Q7)다. 가장 오래 걸린다.</li>
+          <li><b>C. 확정 최소 과제 수를 낮춤 (추천하지 않음).</b> IC-20 변경과 eval-10 이 필요하다. 16 은 margin 0.25·신뢰 0.95 에서 나온 최소치라, 낮추면 같은 판정의 근거가 약해진다.</li>
+        </ul>
+      </li>
+      <li><strong>야간 파일럿 3일의 시작 시점.</strong> 설정(밤당 150 trial, 칸 2개, 07:00 종료)은 넣었고 상시 승인만 남았다. 지금 켜면 search 가 1번 때문에 멈춰 trial 이 거의 없고, 파일럿의 목적인 quota 여유 측정이 안 된다. 추천: 1번을 해결한 뒤 시작.</li>
+      <li><strong>drift 점검 몫.</strong> calibration 은 split 의 모든 과제를 고정하므로 drift 는 칸당 회귀 과제 20개가 필요하다. 밤 예산 150 의 10% 는 15라 drift trial 은 건너뛰고 finding 만 남는다(드라이버·이미지·모델 변화 감지는 그대로 동작). 추천: drift 용 calibration 에 일부 과제를 허용하는 계약 변경(eval-10). 비교 기준(band)은 이미 <code>drift_tasks</code> 행만 합산한다(<code>nightly.py</code> snapshot). 대안은 drift 몫을 0.27 이상으로 키우는 설정 변경이다.</li>
+      <li><strong>Work 034 확인 두 가지.</strong> 메신저를 Slack 으로 확정할지(OD-9), 지식 공간의 git 서버 승인을 사람 승인 증거로 쓰는 대응(D-115)을 확정할지.</li>
     </ol>
+  </div>
+  <div class="panel">
+    <h3>운영자 권한으로 실행한 것 (이번 지시 "전부 진행" 범위, meta 배포만)</h3>
+    <ul class="clean">
+      <li>eval-9 제안·자격시험·승인(Q-suite 400개 통과), 회귀 calibration, 제안자 실행, 대시보드 생성.</li>
+      <li>meta 설정 변경(백업 <code>~/.amplai/meta/local.json.bak-20261011*</code>): demo 앱 등록, demo 앱이 bench 이미지와 그 자격 보고서를 공유, <code>meta.nightly</code> 추가. 야간 칸은 드라이버마다 하나(codex medium, opus high)로 골랐다. 파일럿의 quota 측정이 드라이버별이기 때문이며, 운영자가 바꿀 수 있는 가정이다.</li>
+      <li>서버 배포 <code>~/.amplai/local</code> 은 건드리지 않았다.</li>
+    </ul>
   </div>
 </section>
 
 <section id="status">
   <div class="section-head"><div class="eyebrow">Status</div><h2>Where It Stands</h2></div>
   <div class="kpis">
-    <div class="kpi"><span class="v">9</span><span class="k">merge 된 PR (#46–#54)</span></div>
-    <div class="kpi"><span class="v">6,813</span><span class="k">통과한 test (PR #52 CI, 3.11·3.12)</span></div>
+    <div class="kpi"><span class="v">26</span><span class="k">merge 된 PR (#46–#72, #69 설계 초안 제외)</span></div>
+    <div class="kpi"><span class="v">564</span><span class="k">파일럿 calibration trial (본 396 + 회귀 168)</span></div>
+    <div class="kpi"><span class="v">eval-9</span><span class="k">승인된 평가기 버전 (Q-suite 실패 0)</span></div>
     <div class="kpi"><span class="v">91</span><span class="k">평가 과제 (자체 71 + 회귀 20)</span></div>
-    <div class="kpi"><span class="v">10</span><span class="k">실행 전략</span></div>
-    <div class="kpi"><span class="v">8+1</span><span class="k">판단 레이어 L1–L8, 야간 운영 L10</span></div>
-    <div class="kpi"><span class="v">4</span><span class="k">파일럿 칸 (Codex 2, Claude 2)</span></div>
+    <div class="kpi"><span class="v">4</span><span class="k">측정한 칸 (Codex 2, Claude 2)</span></div>
+    <div class="kpi"><span class="v">2</span><span class="k">대기 중 개선안 (실험 대기)</span></div>
   </div>
   <div class="grid2">
     <div class="panel">
-      <h3>완성된 것</h3>
+      <h3>된 것</h3>
       <ul class="clean">
-        <li>부품 manifest: 부품마다 버전·켜고 끄기·class(A/B/C), 기본 조합은 지금 프롬프트와 byte 단위로 같다(golden test).</li>
-        <li>칸(cell) = 드라이버×모델×추론강도. Codex <code>model_reasoning_effort</code>, Claude <code>--effort</code> 를 실제 argv 로 넘기고, 측정 안 된 강도는 거부한다.</li>
-        <li>평가기 v2, 적응형 calibration, 4단계 실험(screening → focused → ablation → holdout), 통계 판정.</li>
-        <li>레이어별 판단기(decider): 상황 특징 → 부분 pooling 추정 → 선택 규칙 → 사전값. 판단 방식 자체도 버전 있는 부품이다.</li>
-        <li>제안자(proposer): 개발 split trace 만 읽고, 싼 칸이 넓게 초안을 만들고 강한 칸이 다듬는다. 예측을 함께 내고, 실험 뒤 그 예측을 채점한다.</li>
-        <li>야간 루프, 정적 대시보드, 평가 품질 지표, 실행 전략 10종.</li>
+        <li>별도 meta 배포에서 칸 4개(Codex gpt-5.6-sol medium·high, Claude sonnet-5 high, opus-5-5 high)의 자격 시험, 추론강도 probe, calibration 2회.</li>
+        <li>파일럿이 찾은 결함을 고치고 평가기를 eval-5 → eval-9 로 올렸다. 평가기 코드가 바뀔 때마다 Q-suite 를 다시 돌려 code digest 에 묶었다.</li>
+        <li>제안자가 실제 trace 로 개선안 2건을 냈다(예측 +0.06, +0.01).</li>
+        <li>실제 데이터로 대시보드를 만들었다(<a href="dashboard/index.html">대시보드 열기</a>).</li>
+        <li>legacy(V1, V2, 미사용 V3) 제거(#56), 야간 class A 기계 screen(IC-30, #57).</li>
       </ul>
     </div>
     <div class="panel">
       <h3>아직 아닌 것</h3>
       <ul class="clean">
-        <li><strong>실제 개선 증거.</strong> 파일럿(S16)을 돌려야 생긴다. 지금까지의 test 는 가짜 드라이버와 scripted 실행으로 동작을 증명한 것이다.</li>
-        <li>Terminal-Bench 2.0 과제 채택: docker 로 과제별 reference 를 돌려 보는 admission 이 필요하고, 과제의 test 실행 명령은 아직 확인 필요(§14 Q7)다.</li>
-        <li>split 고정: 자체 과제만으로는 validation 이 13개라 기준(24) 미달. TB2 채택 뒤 고정한다.</li>
+        <li><strong>개선안의 확정 판정.</strong> 과제 포화로 focused 단계를 채울 수 없다(<a href="#ask">결정 1</a>).</li>
+        <li><strong>야간 파일럿 3일.</strong> 설정만 넣었다(<a href="#ask">결정 2</a>).</li>
+        <li><strong>canary·promote 실전 한 바퀴.</strong> 확정 판정 뒤에 가능하다.</li>
+        <li>Terminal-Bench 2.0 과제는 아직 채택하지 않았다.</li>
       </ul>
     </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="section-head"><div class="eyebrow">Pilot</div><h2>Pilot Results</h2></div>
+  <p>정답률은 과제마다 반복 결과를 평균한 뒤 과제끼리 평균한 값이다(과제 평균, Wilson 95% 구간). 칸끼리 의견이 갈리거나 경계인 과제만 최대 3회까지 반복했다. 안전 위반은 기존 test 수정처럼 금지된 변경이 있어 실패로 처리한 trial 수다.</p>
+  <div class="panel scroll">
+    <h3>본 과제 묶음 (calibration 9, development + validation 49과제, 396 trial, 약 6.5시간)</h3>
+    <table>
+      <thead><tr><th>칸</th><th class="num">정답률</th><th class="num">95% 구간</th><th class="num">해결당 token</th><th class="num">중앙 시간</th><th class="num">안전 위반</th><th class="num">informative / saturated / unsolved</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">claude opus-5-5 · high</td><td class="num">82.3%</td><td class="num">72.8–91.9</td><td class="num">380,685</td><td class="num">70 s</td><td class="num">18</td><td class="num">7 / 36 / 6</td></tr>
+        <tr><td class="mono">claude sonnet-5 · high</td><td class="num">80.3%</td><td class="num">70.8–89.8</td><td class="num">1,231,864</td><td class="num">107 s</td><td class="num">6</td><td class="num">10 / 34 / 5</td></tr>
+        <tr><td class="mono">codex gpt-5.6-sol · high</td><td class="num">74.1%</td><td class="num">64.0–84.3</td><td class="num">290,957</td><td class="num">86 s</td><td class="num">1</td><td class="num">14 / 29 / 6</td></tr>
+        <tr><td class="mono">codex gpt-5.6-sol · medium</td><td class="num">74.1%</td><td class="num">63.8–84.5</td><td class="num">267,506</td><td class="num">79 s</td><td class="num">2</td><td class="num">13 / 29 / 7</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel scroll">
+    <h3>영역별 성공 (trial 기준, 성공/관측)</h3>
+    <table class="heat">
+      <thead><tr><th>영역</th><th class="num">opus-5-5 high</th><th class="num">sonnet-5 high</th><th class="num">codex high</th><th class="num">codex medium</th></tr></thead>
+      <tbody>
+        <tr><td>ambiguity</td><td class="num h-hi">16/20 · 80%</td><td class="num h-lo">7/20 · 35%</td><td class="num h-lo">4/20 · 20%</td><td class="num h-lo">3/20 · 15%</td></tr>
+        <tr><td>bug</td><td class="num h-mid">16/19 · 84%</td><td class="num h-hi">17/19 · 89%</td><td class="num h-lo">11/19 · 57%</td><td class="num h-lo">10/19 · 52%</td></tr>
+        <tr><td>cli_ops</td><td class="num h-hi">15/16 · 93%</td><td class="num h-hi">14/16 · 87%</td><td class="num h-mid">12/16 · 75%</td><td class="num h-mid">12/16 · 75%</td></tr>
+        <tr><td>data</td><td class="num h-mid">8/12 · 66%</td><td class="num h-mid">9/12 · 75%</td><td class="num h-hi">12/12 · 100%</td><td class="num h-hi">12/12 · 100%</td></tr>
+        <tr><td>feature</td><td class="num h-lo">11/20 · 55%</td><td class="num h-hi">18/20 · 90%</td><td class="num h-mid">16/20 · 80%</td><td class="num h-hi">19/20 · 95%</td></tr>
+        <tr><td>refactor</td><td class="num h-hi">11/12 · 91%</td><td class="num h-mid">9/12 · 75%</td><td class="num h-mid">10/12 · 83%</td><td class="num h-mid">9/12 · 75%</td></tr>
+      </tbody>
+    </table>
+    <div class="legend"><span style="--c: var(--ok-soft)">85% 이상</span><span style="--c: var(--surface-2)">60–84%</span><span style="--c: var(--warn-soft)">60% 미만</span></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>읽을 점</h3>
+      <ul class="clean">
+        <li>전체 정답률은 칸끼리 구간이 겹친다. 차이는 영역에서 크다. 모호한 요청(ambiguity)은 opus 80%, codex 15–20%이고, data·feature 는 codex 가 앞선다. 과제 종류에 따라 칸을 고르는 L3 판단이 필요한 근거다.</li>
+        <li>codex 는 medium 과 high 의 정답률이 같고 medium 이 token 을 덜 쓴다.</li>
+        <li>sonnet 은 해결당 token 이 opus 의 약 3.2배다(1,231,864 / 380,685).</li>
+        <li>Claude 칸은 안전 위반이 더 잦다(opus 18, sonnet 6, codex 1–2). 대부분 기존 test 를 고친 경우로, 결정 A 에 따라 실패로 센다.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>확정 단계에 필요한 과제 수</h3>
+      <svg viewBox="0 0 420 170" width="100%" role="img" aria-labelledby="inf-title">
+        <title id="inf-title">칸별 validation informative 과제 수와 필요한 16개: opus 3, sonnet 4, codex high 8, codex medium 5</title>
+        <line class="axis" x1="120" y1="10" x2="120" y2="130"/>
+        <line class="axis" x1="120" y1="130" x2="400" y2="130"/>
+        <text class="tick" x="120" y="148" text-anchor="middle">0</text>
+        <text class="tick" x="190" y="148" text-anchor="middle">5</text>
+        <text class="tick" x="260" y="148" text-anchor="middle">10</text>
+        <text class="tick" x="330" y="148" text-anchor="middle">15</text>
+        <text class="tick" x="400" y="148" text-anchor="middle">20</text>
+        <text class="bar-label" x="112" y="30" text-anchor="end">opus high</text><rect class="bar" x="120" y="18" width="42" height="16" rx="3"/><text class="bar-value" x="168" y="31">3</text>
+        <text class="bar-label" x="112" y="58" text-anchor="end">sonnet high</text><rect class="bar" x="120" y="46" width="56" height="16" rx="3"/><text class="bar-value" x="182" y="59">4</text>
+        <text class="bar-label" x="112" y="86" text-anchor="end">codex high</text><rect class="bar" x="120" y="74" width="112" height="16" rx="3"/><text class="bar-value" x="238" y="87">8</text>
+        <text class="bar-label" x="112" y="114" text-anchor="end">codex medium</text><rect class="bar" x="120" y="102" width="70" height="16" rx="3"/><text class="bar-value" x="196" y="115">5</text>
+        <line class="need" x1="344" y1="10" x2="344" y2="130"/>
+        <text class="need-label" x="340" y="166" text-anchor="end">필요 16</text>
+      </svg>
+      <p class="note">validation 25과제 중 14–18개는 모든 반복에서 성공(saturated)했다.</p>
+    </div>
+  </div>
+  <div class="panel scroll">
+    <h3>회귀 과제 묶음 (Work 030 의 20과제, demo 앱, 168 trial, 56분) · 야간 drift 기준선</h3>
+    <table>
+      <thead><tr><th>칸</th><th class="num">정답률</th><th class="num">95% 구간</th><th class="num">해결당 token</th><th class="num">중앙 시간</th><th class="num">안전 위반</th><th class="num">informative / saturated / unsolved</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">codex gpt-5.6-sol · medium</td><td class="num">86.7%</td><td class="num">76.7–96.6</td><td class="num">86,146</td><td class="num">34 s</td><td class="num">0</td><td class="num">6 / 14 / 0</td></tr>
+        <tr><td class="mono">claude opus-5-5 · high</td><td class="num">85.0%</td><td class="num">68.9–100</td><td class="num">129,960</td><td class="num">30 s</td><td class="num">9</td><td class="num">0 / 17 / 3</td></tr>
+        <tr><td class="mono">codex gpt-5.6-sol · high</td><td class="num">83.3%</td><td class="num">70.4–96.3</td><td class="num">110,287</td><td class="num">40 s</td><td class="num">2</td><td class="num">5 / 14 / 1</td></tr>
+        <tr><td class="mono">claude sonnet-5 · high</td><td class="num">81.7%</td><td class="num">64.9–98.4</td><td class="num">342,644</td><td class="num">33 s</td><td class="num">8</td><td class="num">1 / 16 / 3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <h3>개선안 2건 (제안자 실행 proprun-b7a13a6c, codex medium 칸)</h3>
+    <ul class="clean">
+      <li><span class="mono">harness-proposal-3fbeaf9a</span>: 요청에서 명시적 계약을 뽑고, 실제 CLI·API 로 확인하고, 같은 유형의 버그 위치를 찾게 한다. 예측 정답률 +0.06.</li>
+      <li><span class="mono">harness-proposal-e04c831b</span>: 실행자에게 압축된 저장소 트리(깊이 2, 150개, 3000자)와 검증 명령, 도구 버전을 준다. 예측 +0.01.</li>
+      <li>둘 다 class A(기계 검사로 실험 가능), 보호 영역 finding 0. 결정 1 뒤에 screening 부터 돈다.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="fixes">
+  <div class="section-head"><div class="eyebrow">Pilot</div><h2>What The Pilot Caught</h2></div>
+  <p>가짜 드라이버 test 로는 보이지 않던 문제들이다. 평가기 코드가 바뀐 것은 eval 버전으로 묶어 사람이 승인했다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>PR</th><th>찾은 문제</th><th>고친 방식</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">#58</td><td>split 고정과 TB2 채점 경로 미비</td><td>파일럿 split 고정(dev 24, validation 25, holdout 22), TB2 채점</td></tr>
+        <tr><td class="mono">#59, #63</td><td>에이전트가 기존 test 를 고쳐 통과시키는 경우, test 추가까지 위반으로 셈</td><td>test 추가는 허용. 채점 전에 test 와 채점 영향 파일을 기준 commit 으로 되돌리는 clean-room 채점(eval-5). 안전 위반은 실패로 세고 calibration 은 계속(결정 A)</td></tr>
+        <tr><td class="mono">#60, #61</td><td>입력 token 을 일부만 집계, 사용량 미상 trial 을 청구하지 않음, 웹 검색으로 답 찾기</td><td>전체 입력 token, 미상은 예약분 청구, 모든 드라이버에서 웹 도구 끔, 답 검색이 보이면 실패</td></tr>
+        <tr><td class="mono">#62</td><td>verifier 연결 누락, 실행 전 오류의 근거 부족</td><td>verifier binding, 근거가 있는 실행 전 오류</td></tr>
+        <tr><td class="mono">#64–#66</td><td>구독 요금제의 보고 비용이 상한 0 초과로 잡혀 중단</td><td>비용을 비교하지 않는 계획은 보고 비용을 기록만(D-088, eval-6–eval-8)</td></tr>
+        <tr><td class="mono">#67, #68</td><td>provider 가 실패해도 9시간 계속 dispatch, 세션 종료로 프로세스가 죽으면 실행이 "running" 으로 남아 평가기 변경을 막음</td><td>사용량 미상 4연속이면 중단, rate-limit 필드 보존, 세션과 분리 실행, <code>calibration recover</code></td></tr>
+        <tr><td class="mono">#71</td><td>Codex 가 제안자 출력 형식을 거부(<code>invalid_json_schema</code>)</td><td>모델용 schema 를 strict 형식으로, 내용은 JSON 문자열로</td></tr>
+        <tr><td class="mono">#72</td><td>회귀 과제 50 trial 이 모두 "고정 과제와 다름"으로 실행 전 Hold, 예약분 청구로 2억 token 예산이 몇 초 만에 소진</td><td>과제가 속한 set 의 corpus 로 계산, 같은 실행 전 오류 4연속이면 중단(eval-9)</td></tr>
+        <tr><td class="mono">설정</td><td>effort probe 가 칸당 이미지 하나라, demo 이미지로 probe 하자 bench 앱에서 칸이 빠짐(설계 명시, interfaces.md "Effort cells and images")</td><td>demo 앱이 bench 이미지를 공유(bench 이미지에서 demo test 통과 확인)</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -307,30 +431,23 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
 
 <section id="corpus">
   <div class="section-head"><div class="eyebrow">Corpus</div><h2>Evaluation Tasks</h2></div>
-  <p>자체 과제는 결함을 심은 재고관리 앱(bench app)에서 만들었다. 91개 모두 기준을 통과했다(원본은 실패, 정답은 숨긴 test 통과). leak gate 는 과제 id, 숨긴 test 이름, 정답 고유 식별자가 제안에 들어오면 막는다.</p>
+  <p>자체 과제는 결함을 심은 재고관리 앱(bench app)에서 만들었다. 모두 기준을 통과했다(원본은 실패, 정답은 숨긴 test 통과). leak gate 는 과제 id, 숨긴 test 이름, 정답 고유 식별자가 제안에 들어오면 막는다. 회귀 과제 20개는 Work 030 의 demo 앱 과제이고, 따로 <code>amplai-regression-v1</code> 로 고정해 야간 drift 기준선으로 쓴다.</p>
   <div class="panel scroll">
-    <svg viewBox="0 0 640 250" width="640" height="250" role="img" aria-labelledby="corpus-title">
-      <title id="corpus-title">영역별 과제 수: bug 13, feature 12, refactor 11, cli_ops 12, data 11, ambiguity 12, regression 20</title>
-      <line class="axis" x1="130" y1="12" x2="130" y2="222"/>
-      <line class="axis" x1="130" y1="222" x2="610" y2="222"/>
-      <text class="tick" x="130" y="240" text-anchor="middle">0</text>
-      <text class="tick" x="250" y="240" text-anchor="middle">5</text>
-      <text class="tick" x="370" y="240" text-anchor="middle">10</text>
-      <text class="tick" x="490" y="240" text-anchor="middle">15</text>
-      <text class="tick" x="610" y="240" text-anchor="middle">20</text>
-      <g>
-        <text class="bar-label" x="120" y="30" text-anchor="end">bug</text><rect class="bar" x="130" y="18" width="312" height="18" rx="3"/><text class="bar-value" x="448" y="31">13</text>
-        <text class="bar-label" x="120" y="60" text-anchor="end">feature</text><rect class="bar" x="130" y="48" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="61">12</text>
-        <text class="bar-label" x="120" y="90" text-anchor="end">refactor</text><rect class="bar" x="130" y="78" width="264" height="18" rx="3"/><text class="bar-value" x="400" y="91">11</text>
-        <text class="bar-label" x="120" y="120" text-anchor="end">cli_ops</text><rect class="bar" x="130" y="108" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="121">12</text>
-        <text class="bar-label" x="120" y="150" text-anchor="end">data</text><rect class="bar" x="130" y="138" width="264" height="18" rx="3"/><text class="bar-value" x="400" y="151">11</text>
-        <text class="bar-label" x="120" y="180" text-anchor="end">ambiguity</text><rect class="bar" x="130" y="168" width="288" height="18" rx="3"/><text class="bar-value" x="424" y="181">12</text>
-        <text class="bar-label" x="120" y="210" text-anchor="end">regression</text><rect class="bar reg" x="130" y="198" width="480" height="18" rx="3"/><text class="bar-value" x="616" y="211">20</text>
-      </g>
-    </svg>
+    <table>
+      <thead><tr><th>영역</th><th class="num">development</th><th class="num">validation</th><th class="num">holdout</th><th class="num">합계</th></tr></thead>
+      <tbody>
+        <tr><td>ambiguity</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">12</td></tr>
+        <tr><td>bug</td><td class="num">4</td><td class="num">5</td><td class="num">4</td><td class="num">13</td></tr>
+        <tr><td>cli_ops</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">12</td></tr>
+        <tr><td>data</td><td class="num">4</td><td class="num">4</td><td class="num">3</td><td class="num">11</td></tr>
+        <tr><td>feature</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">12</td></tr>
+        <tr><td>refactor</td><td class="num">4</td><td class="num">4</td><td class="num">3</td><td class="num">11</td></tr>
+        <tr><td><b>자체 합계</b></td><td class="num"><b>24</b></td><td class="num"><b>25</b></td><td class="num"><b>22</b></td><td class="num"><b>71</b></td></tr>
+        <tr><td>regression (demo 앱)</td><td class="num">—</td><td class="num">20</td><td class="num">—</td><td class="num">20</td></tr>
+      </tbody>
+    </table>
   </div>
-  <div class="legend"><span style="--c: var(--accent)">자체 과제 (6개 영역, 71개)</span><span style="--c: var(--muted)">Work 030 회귀 과제 (20개)</span></div>
-  <p class="note">split 은 영역별 층화로 나눈다(자체 과제의 30% 를 holdout: 22개). validation 은 13개로 기준 24개에 못 미쳐, Terminal-Bench 2.0 과제 채택 뒤 <code>splits.json</code> 을 고정한다. TB2 는 Apache-2.0, 89개 과제이며, V3 격리 환경(network none, uid 65534, 쓰기는 workspace 만)에서 reference 가 통과하는 과제만 받는다.</p>
+  <p class="note">파일럿에서 칸마다 validation 25과제 중 14–18개가 saturated 였다. 확정 단계에 필요한 informative 과제를 채우려면 더 어려운 과제가 필요하다(<a href="#ask">결정 1</a>). Terminal-Bench 2.0 adapter 도구는 있지만 과제는 아직 가져오지 않았다.</p>
 </section>
 
 <section id="authority">
@@ -359,20 +476,39 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
 
 <section id="dashboard">
   <div class="section-head"><div class="eyebrow">Dashboard</div><h2>Operator Dashboard</h2></div>
-  <p><code>amplai meta dashboard --out &lt;dir&gt;</code> 가 저장된 기록만 읽어 정적 HTML 을 만든다. script 없음, CSP 적용, 모든 페이지가 접근성 검사(<code>inspect_page</code>)를 통과한다. trace 본문, holdout 과제 내용, 숨긴 test 는 나오지 않는다.</p>
+  <p><code>amplai meta dashboard --out &lt;dir&gt;</code> 가 저장된 기록만 읽어 정적 HTML 을 만든다. script 없음, CSP 적용. trace 본문, holdout 과제 내용, 숨긴 test 는 나오지 않는다. 아래는 2026-10-11 04:48 KST 에 meta 배포의 실제 기록(calibration 요약 11, trial 지표 768, 제안 2)으로 만든 판이다.</p>
   <div class="panel scroll">
     <table>
       <thead><tr><th>페이지</th><th>보여 주는 것</th></tr></thead>
       <tbody>
-        <tr><td class="mono">index.html</td><td>모델·드라이버 × 추론강도 행렬: 보정된 성공률과 구간, pass^k, 중앙 시간, 해결당 token, API 환산 비용, 칸별 최선 조합과 차이</td></tr>
-        <tr><td class="mono">cell-*.html</td><td>칸의 조합별 부품 on/off/버전, 성공 대 token frontier, ablation 기여도, 단계 이력</td></tr>
-        <tr><td class="mono">lineage.html</td><td>제안 → 후보 → 실험 → 판정 → release</td></tr>
-        <tr><td class="mono">approvals.html</td><td>사람을 기다리는 모든 것: 단계 gate, 리뷰, canary·promote, 평가기 변경, 대기 중 확정 실험, reconcile 대기, 상시 승인과 기간</td></tr>
-        <tr><td class="mono">layers / strategies / judges / budget / evaluation / corpus / experiments</td><td>레이어별 regret, 전략별 성적, judge 자격, 야간 예산과 quota, 평가 품질, 과제 분포, 실험별 판정</td></tr>
+        <tr><td><a class="mono" href="dashboard/index.html">index.html</a></td><td>모델·드라이버 × 추론강도 행렬: 보정된 성공률과 구간, pass^k, 중앙 시간, 해결당 token, 칸별 최선 조합</td></tr>
+        <tr><td><a class="mono" href="dashboard/cell-claude-cli.claude-opus-5-5.high.html">cell-*.html</a></td><td>칸의 조합별 부품 on/off/버전, 성공 대 token frontier, ablation 기여도, 단계 이력</td></tr>
+        <tr><td><a class="mono" href="dashboard/evaluation.html">evaluation.html</a></td><td>평가 품질: 변별력, 포화, 채점 흔들림, 평가기 버전과 재자격</td></tr>
+        <tr><td><a class="mono" href="dashboard/corpus.html">corpus.html</a></td><td>과제 분포와 split</td></tr>
+        <tr><td><a class="mono" href="dashboard/approvals.html">approvals.html</a></td><td>사람을 기다리는 것: 단계 gate, 리뷰, 평가기 변경, 상시 승인</td></tr>
+        <tr><td><a class="mono" href="dashboard/lineage.html">lineage.html</a> · <a class="mono" href="dashboard/budget.html">budget.html</a> · <a class="mono" href="dashboard/layers.html">layers.html</a></td><td>제안 계보, 야간 예산과 quota, 레이어별 판단</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">실제 데이터로 만든 대시보드는 파일럿 뒤 이 보고서에 붙인다.</p>
+</section>
+
+<section id="work034">
+  <div class="section-head"><div class="eyebrow">Next Work</div><h2>Work 034: Hermes And Modules</h2></div>
+  <p>Hermes 를 사용자와 직접 대화하는 창구이자 오케스트레이터로 붙이고, 기능을 모듈로 떼었다 붙일 수 있게 하며, 사내 설치와 한 방향 업그레이드를 준비하는 작업이다. 설계는 PR #69(초안, r5)에 있다.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>슬라이스</th><th>내용</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">S0</td><td>모듈 레지스트리 핵심: 고정 배포물(wheel RECORD digest) 검증, 내장 모듈, conformance</td><td><span class="chip ok">merge #70</span></td></tr>
+        <tr><td class="mono">S1a</td><td><code>intake</code> actor, store 밖 토큰·연결표, 접수 경로, steering·질문 종류 제한, 일시정지·취소(재개는 Hermes 가 멈춘 goal 만), 알림 projection, 승인 CLI digest</td><td><span class="chip info">구현 중</span></td></tr>
+        <tr><td class="mono">S1b</td><td>passkey 승인 페이지</td><td>S1a 뒤</td></tr>
+        <tr><td class="mono">S2a · S2b</td><td>지식 모듈(별도 저장소, 3층, 프로젝트별 선택 연결), 문서 최신성 모듈</td><td>S0 뒤</td></tr>
+        <tr><td class="mono">S3</td><td>3층 업그레이드: 동결, 미리보기, 승인, 백업, 명시적 이전, 되돌리기</td><td>S0 뒤</td></tr>
+        <tr><td class="mono">S4 · S5</td><td>사내 설치(OpenCode, 사내 LLM, 모델 게이트웨이), Jev</td><td>S3 뒤</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Hermes 모델은 Claude Opus 5.5(기본 high, 대화별 <code>/reasoning max</code>, cron·하위 agent 는 medium). 승인된 운영 결정: OD-1–OD-8(2026-10-11). 확인 대기: OD-9 Slack, D-115 지식 승인 매핑.</p>
 </section>
 
 <section id="decisions">
@@ -387,7 +523,7 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
         <tr><td class="mono">IC-17</td><td>상시 승인 <code>nightly.explore</code> + 야간 identity 는 탐색 승인만.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-18</td><td>사람만 쓰는 <code>amplai meta reconcile</code>.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-19</td><td>ablation 변형 제안은 screen·promote 없이 부모 ablation 안에서만.</td><td><span class="chip warn">확인 필요</span></td></tr>
-        <tr><td class="mono">IC-20</td><td>informative validation 과제가 max(16, n_min) 미만이면 focused 를 멈춘다.</td><td><span class="chip warn">확인 필요</span></td></tr>
+        <tr><td class="mono">IC-20</td><td>informative validation 과제가 max(16, n_min) 미만이면 focused 를 멈춘다. 파일럿에서 실제로 걸렸다(칸별 3–8개).</td><td><span class="chip gate">결정 1 과 연결</span></td></tr>
         <tr><td class="mono">IC-21</td><td>운영 goal 의 보조 turn 상한 기본 0.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-22</td><td>승인 때 L3 가 고른 조합을 다시 검사.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-23</td><td>trial 에 과제 영역(domain)을 실어 L1/L2 판단에 쓴다.</td><td><span class="chip warn">확인 필요</span></td></tr>
@@ -397,7 +533,7 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
         <tr><td class="mono">IC-27</td><td>과제 종류 → 영역 대응표(품질 지표용).</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-28</td><td>trace 에 그 turn 의 credential 값이 보이면 trace 전체를 버린다.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-29</td><td>실행자 자격 기록을 저장해, launchd 로 시작한 밤도 preflight 를 통과.</td><td><span class="chip warn">확인 필요</span></td></tr>
-        <tr><td class="mono">IC-30</td><td>야간에 class A 초안의 기계적 screen 허용 (추천 A).</td><td><span class="chip gate">결정 대기 · 미구현</span></td></tr>
+        <tr><td class="mono">IC-30</td><td>야간에 class A 초안의 기계적 screen 허용 (추천 A).</td><td><span class="chip ok">결정됨 · 구현 #57</span></td></tr>
         <tr><td class="mono">IC-31</td><td>calibration plan 과 stage plan 은 앱 하나씩.</td><td><span class="chip warn">확인 필요</span></td></tr>
         <tr><td class="mono">IC-32</td><td>환경 sibling id 는 <code>:env-</code> (고정 schema 가 <code>@</code> 를 허용하지 않음).</td><td><span class="chip warn">확인 필요</span></td></tr>
       </tbody>
@@ -426,33 +562,57 @@ footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--li
     </table>
   </div>
   <p class="note">리뷰가 잡아 고친 것 중 중요한 예: 동시 pause 와 resume 사이의 실제 race(CI 에서만 재현, 순서를 강제한 test 로 고정), trace 의 secret 이 잘림 경계를 넘어 저장되던 문제, 제안자 입력으로 validation/holdout id 가 새던 경로, 야간 루프가 실제 배포에서 탐색을 못 하던 배선.</p>
+  <div class="panel scroll">
+    <h3>파일럿과 그 뒤 (merge 시각 KST)</h3>
+    <table>
+      <thead><tr><th>PR</th><th>내용</th><th class="num">merge (KST)</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">#55</td><td>V3 문서에 meta-harness 설계와 운영</td><td class="num">10-02 01:27</td></tr>
+        <tr><td class="mono">#56</td><td>V1, V2, 미사용 V3 제거, 파일럿 준비</td><td class="num">10-07 12:21</td></tr>
+        <tr><td class="mono">#57</td><td>IC-30: 야간 identity 의 class A 초안 screen</td><td class="num">10-07 13:34</td></tr>
+        <tr><td class="mono">#58</td><td>파일럿 split 과 Terminal-Bench 2.0 채점</td><td class="num">10-08 09:48</td></tr>
+        <tr><td class="mono">#59</td><td>기존 test 파일에 test 추가는 안전 위반이 아님</td><td class="num">10-08 11:37</td></tr>
+        <tr><td class="mono">#60</td><td>파일럿 무결성: 전체 입력 token, 미상 사용량 청구, 웹 검색 끔, 답 검색은 실패</td><td class="num">10-08 16:36</td></tr>
+        <tr><td class="mono">#61</td><td>모든 드라이버에서 웹 도구 끔</td><td class="num">10-08 19:20</td></tr>
+        <tr><td class="mono">#62</td><td>verifier 연결과 근거 있는 실행 전 오류</td><td class="num">10-09 12:27</td></tr>
+        <tr><td class="mono">#63</td><td>안전 위반에도 calibration 계속(결정 A), clean-room 채점, eval-5</td><td class="num">10-09 14:03</td></tr>
+        <tr><td class="mono">#64</td><td>비용 비교 안 할 때 보고 비용은 초과 아님(D-088), eval-6</td><td class="num">10-09 15:30</td></tr>
+        <tr><td class="mono">#65</td><td>같은 경우 장부에도 넣지 않음, eval-7</td><td class="num">10-09 16:22</td></tr>
+        <tr><td class="mono">#66</td><td>reconcile 경로도 같게(리뷰 지적), eval-8</td><td class="num">10-09 19:41</td></tr>
+        <tr><td class="mono">#67</td><td>provider 실패 4연속이면 중단, rate-limit 필드 보존</td><td class="num">10-10 11:13</td></tr>
+        <tr><td class="mono">#68</td><td>프로세스가 사라진 calibration 복구</td><td class="num">10-10 11:37</td></tr>
+        <tr><td class="mono">#71</td><td>제안자 schema 를 strict 형식으로(Codex 거부)</td><td class="num">10-11 03:33</td></tr>
+        <tr><td class="mono">#72</td><td>회귀 과제를 자기 set corpus 로 실행, 실행 전 실패 중단, eval-9, demo 앱 증거</td><td class="num">10-11 03:48</td></tr>
+        <tr><td class="mono">#70</td><td>Work 034 S0: 모듈 레지스트리 핵심</td><td class="num">10-11 03:48</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section id="next">
   <div class="section-head"><div class="eyebrow">Next</div><h2>What Happens Next</h2></div>
   <div class="grid2">
     <div class="panel">
-      <h3>1. 파일럿 (S16)</h3>
+      <h3>결정 1 을 받은 뒤 (A 기준)</h3>
       <ul class="clean">
-        <li>별도 meta deployment 준비, 칸 4개 자격 측정과 추론강도 probe</li>
-        <li>TB2 admission, split 고정</li>
-        <li>calibration → 제안자 실행 → screening → focused → holdout → canary → promote 또는 reject 한 바퀴</li>
-        <li>야간 루프 3일(밤마다 약 150 trial), quota 측정으로 다음 예산 B 결정</li>
-        <li>절차: <code>specs/033-harness-taxonomy/runs/pilot-runbook.md</code>, 명령 설명: <code>docs/v3/USING_AMPLAI_WORK.ko.md</code></li>
+        <li>어려운 과제 작성과 fairness 검사 → corpus 새 판 freeze → 칸 4개 재calibration</li>
+        <li>개선안 2건: screening → focused(운영자 승인) → ablation → holdout(운영자 승인) → canary → promote 또는 reject</li>
+        <li>야간 파일럿 3일(밤마다 약 150 trial), quota 여유로 다음 예산 B 결정</li>
+        <li>이 보고서에 칸별 최선 조합과 개선 폭 추가</li>
       </ul>
     </div>
     <div class="panel">
-      <h3>2. 정리와 보고 (S17, S18)</h3>
+      <h3>병행</h3>
       <ul class="clean">
-        <li>승인된 목록대로 legacy 제거: 참조 → 결합 끊기 → 코드 → test → 문서 순서, CI 녹색까지</li>
-        <li>문서와 결정 기록 갱신</li>
-        <li>이 보고서에 실제 결과(칸별 최선 조합과 개선 폭) 추가</li>
+        <li>Work 034 S1a 를 PR 단위로 merge, 그다음 S1b, S2a, S3</li>
+        <li>S0 의 열린 질문 8개(내장 모듈 권한·버전, RECORD 설치 위치 등)를 후속 PR 로 처리</li>
+        <li>Hermes 설치 점검표: 코딩 스킬과 terminal 도구 끄기, 메모리·스킬 쓰기 승인, 메신저 허용 사용자</li>
       </ul>
     </div>
   </div>
 </section>
 
 <footer>
-  근거: <code>specs/033-harness-taxonomy/</code> (spec.md, plan.md, interfaces.md, legacy-inventory.md), merge 된 PR #46–#52, PR #52 CI 기록. 숫자는 저장소와 CI 기록에서 가져왔고, 확인되지 않은 것은 "확인 필요"로 적었다.
+  근거: <code>specs/033-harness-taxonomy/</code> (spec.md, plan.md, interfaces.md), meta 배포 store 의 calibration 요약 <code>calsum-calplan-6a0695bd…</code>, <code>calsum-calplan-fe434858…</code>, merge 된 PR #46–#72 와 CI 기록. 숫자는 저장소, store, CI 기록에서 가져왔고, 확인되지 않은 것은 "확인 필요"로 적었다.
 </footer>
 </div>
