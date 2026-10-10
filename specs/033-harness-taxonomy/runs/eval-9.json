@@ -1,0 +1,13 @@
+{
+ "version": "eval-9",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "pilot 2026-10-11: four trials in a row not run with one error code stop a calibration (stop_reason pre_run_failures); calplan-75196f2d held all 50 regression trials CORPUS_CHANGED within seconds and only the token budget (each not-run trial charged the reservation, decision (B)) ended it"
+  },
+  {
+   "kind": "analysis_code",
+   "detail": "pilot 2026-10-11: LocalTrialExecutor computes a frozen case's payload in the corpus of the task's set (corpus_v2.for_set; the regression set is amplai-regression-v1), as the freeze did, and the receipt names that corpus; before, every regression-set trial (calibration --set regression and the nightly drift calibration) was held CORPUS_CHANGED"
+  }
+ ]
+}

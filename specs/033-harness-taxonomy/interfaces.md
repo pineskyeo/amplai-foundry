@@ -3973,3 +3973,22 @@ command could close the run.
 - Tests (`tests/v3/test_033_s2_calibration.py`):
   `test_a_run_a_previous_owner_left_running_is_recovered_as_owner_lost`,
   `test_a_run_this_store_owner_started_is_never_recovered`, `test_a_finished_run_is_not_recovered`.
+
+## Pilot Fix 2026-10-11: Regression-Set Trials, Pre-Run Failure Stop; eval-9
+
+Source: the regression calibration `calplan-75196f2df4efa1e9120116da` (`--set regression`, eval-8)
+stopped after 50 trials with `META_TOKEN_BUDGET`. Every trial was held `CORPUS_CHANGED` before any
+goal (`outcome_missing: not_run`). `meta corpus freeze --set regression` computes each case payload
+in `corpus_v2.for_set(corpus, "regression")` (corpus id `amplai-regression-v1`), while
+`LocalTrialExecutor._spec` computed it in the whole loaded corpus (`amplai-bench-v2`); the payloads
+differ only in `corpus_id`. The nightly drift calibration uses the same executor and set
+(`meta_harness/nightly.py`), so it was affected too. Each not-run trial was charged the 4M token
+reservation (decision (B)), so 50 trials exhausted the 200M budget in seconds.
+
+- `LocalTrialExecutor._spec` computes the payload of a task whose `set` is not `main` in
+  `corpus_v2.for_set(corpus, task.set)`; receipts name the case payload's `corpus_id`.
+- `CalibrationService.run` stops with `pre_run_failures` after `PRE_RUN_FAILURE_STREAK` (4) trials in
+  a row with `outcome_missing: not_run` and the same `error_code`.
+- Tests: `test_a_frozen_regression_case_runs_against_its_set_corpus`
+  (`tests/v3/test_033_s8_executor.py`), `test_four_trials_in_a_row_not_run_with_one_code_stop_a_calibration`
+  (`tests/v3/test_033_s2_calibration.py`).

@@ -72,6 +72,11 @@ MAX_PARALLEL = 4
 # providers began failing: 65 trials in a row, each up to its 30-minute deadline, each charged
 # the full token reservation (decision (B)).
 PROVIDER_FAILURE_STREAK = 4
+# Pilot 2026-10-11: this many not-run trials in a row with the same error code stop a calibration
+# (``pre_run_failures``). Plan calplan-75196f2d held all 50 regression trials CORPUS_CHANGED in
+# seconds; each not-run trial is charged the token reservation (decision (B)), so the token
+# budget, not the cause, ended the run.
+PRE_RUN_FAILURE_STREAK = 4
 SPLITS = ("development", "validation")
 # §8.2: summary class `informative` = pass rate in [0.2, 0.9].
 INFORMATIVE = (0.2, 0.9)
@@ -586,7 +591,12 @@ class CalibrationService:
         max_repeats = plan["adaptive"]["max_repeats"]
         wall = plan["budget"]["max_wall_seconds"]
         started = time.monotonic()
-        state: dict[str, Any] = {"stop": None, "adaptive": False, "unknown_usage_streak": 0}
+        state: dict[str, Any] = {
+            "stop": None,
+            "adaptive": False,
+            "unknown_usage_streak": 0,
+            "not_run": (None, 0),  # (error code, trials in a row not run with it)
+        }
         outcomes: dict[tuple[str, str], list[bool | None]] = {
             (cell, c["case_id"]): [] for cell in cells for c in cases
         }
@@ -765,6 +775,12 @@ class CalibrationService:
             state["unknown_usage_streak"] = (
                 state["unknown_usage_streak"] + 1 if unknown_usage else 0
             )
+            code = trial.get("error_code") if trial.get("outcome_missing") == "not_run" else None
+            last, count = state["not_run"]
+            state["not_run"] = (
+                code,
+                count + 1 if code is not None and code == last else int(code is not None),
+            )
             if post_guard:
                 stop(post_guard)
             elif observation.unknown_effects:
@@ -773,6 +789,8 @@ class CalibrationService:
                 stop("budget_overrun_or_unknown_usage")
             elif state["unknown_usage_streak"] >= PROVIDER_FAILURE_STREAK:
                 stop("provider_failures")
+            elif state["not_run"][1] >= PRE_RUN_FAILURE_STREAK:
+                stop("pre_run_failures")
 
         def rate(cell: str, case_id: str) -> float | None:
             known = [x for x in outcomes[(cell, case_id)] if x is not None]

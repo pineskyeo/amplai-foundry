@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "engine": "docker",
+  "runtime": "colima (lima VM) on macOS",
+  "image": "localhost:5000/amplai-worker-app-amplai-demo-app@sha256:c96e0d12098b7b3acdf942d9ed776f55c0cbc368016efd5e6c2271459e4442ea",
+  "base_image": "localhost:5000/amplai-worker@sha256:d666cef51a40ebd39f721ad811b6639552201c5227aecc2a385b34277a0e8d41",
+  "app": "amplai-demo-app",
+  "extras": "dev",
+  "pyproject_sha256": "073a5f3109b2f778d0639224d3ffa6ee7de8a688cbf06116e6fd43a397080685",
+  "uid": 65534,
+  "gid": 65534,
+  "memory": "2g",
+  "cpus": 2.0,
+  "pids": 256,
+  "network": "none",
+  "tools": {
+    "codex": "codex-cli 0.155.1",
+    "claude": "2.1.292 (Claude Code)",
+    "opencode": "1.17.13",
+    "python": "Python 3.11.2"
+  },
+  "built_at": "2026-10-10T18:11:59Z",
+  "qualification": "local development profile; requalify the driver in this image before use"
+}
