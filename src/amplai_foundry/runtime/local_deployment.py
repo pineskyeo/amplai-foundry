@@ -97,7 +97,9 @@ SERVICE_PERMISSIONS = frozenset(
         "execution.approve",
     }
 )
-OPERATOR_PERMISSIONS = frozenset({"goal.submit", "runtime.read", "execution.approve", "goal.steer"})
+OPERATOR_PERMISSIONS = frozenset(
+    {"goal.submit", "runtime.read", "execution.approve", "goal.steer", "goal.cancel"}
+)
 
 
 class VerifierConfig(BaseModel):
@@ -875,18 +877,34 @@ class LocalProductDeployment:
             except RuntimeFault:
                 pass
             self._planning.add(goal_id)
-        self.service._save_plan(goal_id, {"goal_id": goal_id, "status": "planning"})
+        try:  # a cancel that landed after the read above stays (PLAN_ENDED)
+            self.service._save_plan(
+                goal_id, {"goal_id": goal_id, "status": "planning"}, unless_ended=True
+            )
+        except Hold as exc:
+            with self._planning_lock:
+                self._planning.discard(goal_id)
+            if exc.code != "PLAN_ENDED":
+                raise
+            return self.service.plan_record(goal_id)
 
         def run() -> None:
             try:
                 self.service.plan(goal_id)
             except Exception as exc:
-                self.service._save_plan(
-                    goal_id,
-                    {"goal_id": goal_id, "status": "plan_failed",
-                     "reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
-                     "details": str(getattr(exc, "details", ""))[:1500]},
-                )  # fmt: skip
+                code = str(getattr(exc, "code", type(exc).__name__))
+                try:  # a goal cancelled while it was planned keeps its cancel (PLAN_ENDED)
+                    self.service._save_plan(
+                        goal_id,
+                        {"goal_id": goal_id, "status": "plan_failed",
+                         "reason": f"{code}: {exc}"[:600],
+                         "details": str(getattr(exc, "details", ""))[:1500]},
+                        ("planning.failed", {"code": code[:128]}),
+                        unless_ended=True,
+                    )  # fmt: skip
+                except Hold as held:
+                    if held.code != "PLAN_ENDED":
+                        raise
             finally:
                 with self._planning_lock:
                     self._planning.discard(goal_id)

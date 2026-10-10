@@ -126,7 +126,7 @@ contract_notes: dict[str, Any] = {
             (W, 1644, "def abort"),
             ("src/amplai_foundry/runtime/execution/service.py", 682, "DISPATCH_BINDING"),
             ("src/amplai_foundry/tool_broker/native.py", 88, "session_handle"),
-            ("src/amplai_foundry/runtime/execution/steering.py", 191, "session_handle"),
+            ("src/amplai_foundry/runtime/execution/steering.py", 215, "session_handle"),
         ],
     },
 }

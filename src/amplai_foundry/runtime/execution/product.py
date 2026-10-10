@@ -30,7 +30,7 @@ from ...sandbox.git_workspace import CHANGE_MEDIA, GitWorkspaceManager
 from ...verification.runtime.design_check import DESIGN_ROOT, DesignDocumentCheck
 from ..contracts.authority import Actor
 from ..contracts.identity import ID, digest, new_id, now
-from ..errors import Hold, RuntimeFault
+from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from . import context_assembly, policies, prompts, releases
 from .cells import LEGACY_CELLS, Cell, model_slug
@@ -50,6 +50,9 @@ READINESS_AREAS = (
 )
 APPROVAL_KIND = "operator-approval"
 PLAN_KIND = "execution-plan"
+# A plan in one of these states is over: a planner, a replan or an approval that finishes
+# after it never writes over it (a cancel during planning stays a cancel, Work 034).
+PLAN_ENDED = frozenset({"cancelled", "failed", "timed_out", "held", "verified", "published"})
 TASK_CLASS_KIND = "task-class"
 # Initial task-class baseline order, every class: operator decision 2026-09-28 (D-079);
 # OpenCode appended by the operator 2026-09-29 (Work 031 D4).
@@ -1002,7 +1005,10 @@ class LocalExecutionService:
             record["aux_usage"] = list(aux_entries)
         if asked:
             record.update(status="needs_answers", contract_ref=None, graph_ref=None)
-            self._save_plan(goal_id, record, ("question.asked", {"count": len(draft["questions"])}))
+            self._save_plan(
+                goal_id, record, ("question.asked", {"count": len(draft["questions"])}),
+                unless_ended=True,
+            )  # fmt: skip
             self._admit_planner_trace(goal_id, trial, planning["driver_id"], planner_traces)
             return record
         entries = []
@@ -1079,7 +1085,10 @@ class LocalExecutionService:
         record["acceptance_map"] = acceptance_map
         record["composition"] = chosen
         record.update(status="awaiting_approval", contract_ref=contract_ref, graph_ref=graph_ref)
-        self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
+        self._save_plan(
+            goal_id, record, ("approval.requested", {"contract_ref": contract_ref}),
+            unless_ended=True,
+        )  # fmt: skip
         # §9.1: once, after the plan is saved, with every plan-time snapshot in the order the turns
         # ran (never raises: trace capture does not change the plan)
         self._admit_planner_trace(goal_id, trial, planning["driver_id"], planner_traces)
@@ -1198,7 +1207,10 @@ class LocalExecutionService:
             "reason": None,
             "updated_at": now(),
         }  # fmt: skip
-        self._save_plan(goal_id, record, ("approval.requested", {"contract_ref": contract_ref}))
+        self._save_plan(
+            goal_id, record, ("approval.requested", {"contract_ref": contract_ref}),
+            unless_ended=True,
+        )  # fmt: skip
         return record
 
     # -- strategies (Work 033 S9, interfaces.md §3.6, §5) -------------------------------------
@@ -2016,6 +2028,7 @@ class LocalExecutionService:
         self._save_plan(
             goal_id, record,
             ("approval.requested", {"contract_ref": contract_ref, "escalation": to_cell}),
+            unless_ended=True,
         )  # fmt: skip
         return record
 
@@ -2562,6 +2575,8 @@ class LocalExecutionService:
         goal_id: str,
         record: dict[str, Any],
         event: tuple[str, dict[str, Any]] | list[tuple[str, dict[str, Any]]] | None = None,
+        *,
+        unless_ended: bool = False,
     ) -> None:
         """Save the plan record; ``event`` (one or a list) goes on the goal's audit trail in
         the same tx.
@@ -2569,13 +2584,22 @@ class LocalExecutionService:
         ``question.*`` and ``approval.*`` events are what the Observatory counts as human
         intervention and measures human wait and queue time from; ``publication.*`` events are
         what happened to the draft PR.
+
+        ``unless_ended``: a step that started before the plan ended (planning, a replan, an
+        approval) refuses to write over an ended plan (``PLAN_ENDED``): a cancel that landed
+        meanwhile stays the record.
         """
         events = [event] if isinstance(event, tuple) else list(event or [])
         with self.store.tx() as db:
             try:
-                version = self.store.head(self.scope, PLAN_KIND, goal_id, db=db)["row_version"]
+                head = self.store.head(self.scope, PLAN_KIND, goal_id, db=db)
+                version = head["row_version"]
             except RuntimeFault:
-                version = 0  # cas with expected 0 creates the head
+                head, version = None, 0  # cas with expected 0 creates the head
+            if unless_ended and head is not None and head["state"] in PLAN_ENDED:
+                raise Hold(
+                    "PLAN_ENDED", "The goal ended while this step ran", details=head["state"]
+                )
             self.store.cas(db, self.scope, PLAN_KIND, goal_id, version, record["status"], record)
             for event_type, payload in events:
                 self.store.event(db, self.scope, "goal", goal_id, event_type, payload)
@@ -2603,6 +2627,8 @@ class LocalExecutionService:
             raise RuntimeFault(
                 "APPROVER_KIND", "The nightly identity approves experiment trial goals only"
             )
+        if plan.get("status") == "cancelled":
+            raise Hold("GOAL_CANCELLED", "The goal was cancelled; submit it again to run it")
         if plan.get("status") != "awaiting_approval":
             raise Hold(
                 "PLAN_NOT_READY",
@@ -2725,15 +2751,21 @@ class LocalExecutionService:
             "expires_at": (current + timedelta(hours=hours)).isoformat().replace("+00:00", "Z"),
             "decision_ref": decision_ref,
         }
-        grant_ref = self.authority.issue(service, grant)
-        self.runtime.activate(
-            service,
-            plan["contract_ref"],
-            plan["graph_ref"],
-            grant_ref,
-            profile,
-            expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
-        )
+        try:
+            grant_ref = self.authority.issue(service, grant)
+            self.runtime.activate(
+                service,
+                plan["contract_ref"],
+                plan["graph_ref"],
+                grant_ref,
+                profile,
+                expected_version=self.store.head(scope, "goal", goal_id)["row_version"],
+            )
+        except Exception:
+            # a cancel that ended the goal meanwhile: the approval just made is revoked
+            if self.plan_record(goal_id).get("status") in PLAN_ENDED:
+                self._revoke_decision(goal_id, decision_ref, service)
+            raise
         return self._approved(goal_id, plan, decision_ref, grant_ref)
 
     def _approved(
@@ -2743,6 +2775,8 @@ class LocalExecutionService:
         decision_ref: dict[str, Any],
         grant_ref: dict[str, Any],
     ) -> dict[str, Any]:
+        if self.plan_record(goal_id).get("status") in PLAN_ENDED:
+            self._approval_stopped(goal_id, decision_ref)
         steering_id: str = (plan.get("replan") or {}).get("steering_id") or ""
         if steering_id and self.store.head(self.scope, "steering", steering_id)["state"] == (
             "queued"
@@ -2756,15 +2790,33 @@ class LocalExecutionService:
             "grant_ref": grant_ref,
             "approved_at": now(),
         }
-        self._save_plan(goal_id, plan, ("approval.granted", {"decision_ref": decision_ref}))
+        try:
+            self._save_plan(
+                goal_id, plan, ("approval.granted", {"decision_ref": decision_ref}),
+                unless_ended=True,
+            )  # fmt: skip
+        except Hold as exc:  # cancelled between the check above and this write
+            if exc.code != "PLAN_ENDED":
+                raise
+            self._approval_stopped(goal_id, decision_ref)
         return plan
 
+    def _approval_stopped(self, goal_id: str, decision_ref: dict[str, Any]) -> None:
+        self._revoke_decision(goal_id, decision_ref, self.actors.service)
+        raise Conflict(
+            "GOAL_STOPPED", "The goal was cancelled or ended during approval; it is not approved"
+        )
+
     def revoke(self, operator: Actor, goal_id: str) -> None:
-        operator.require("execution.approve")
+        # stopping a goal revokes its approval: the cancel permission suffices (Work 034 D-112)
+        operator.require_any("goal.cancel", "execution.approve")
         plan = self.plan_record(goal_id)
         ref = plan.get("decision_ref")
         if not ref:
             raise Hold("NOT_APPROVED", "Goal has no approval to revoke")
+        self._revoke_decision(goal_id, ref, operator)
+
+    def _revoke_decision(self, goal_id: str, ref: dict[str, Any], operator: Actor) -> None:
         decision = self.store.get(self.scope, APPROVAL_KIND, ref)
         state = {"revoked": True, "by": operator.wire(), "at": now()}
         with self.store.tx() as db:

@@ -30,10 +30,11 @@ from typing import Any
 from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
 from ..contracts.identity import canonical, digest, new_id, now
+from ..contracts.intake import check_goal_access, is_intake, stop_requested
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
-from .product import PORT, LocalExecutionService
+from .product import PLAN_ENDED, PORT, LocalExecutionService
 from .steering import SteeringService
 from .strategy_runner import StrategyChoice, node_app
 
@@ -86,16 +87,28 @@ class ExecutionLoop:
         self._in_attempt: set[str] = set()  # goals whose attempt process is running
 
     # -- operator controls --------------------------------------------------------------------
-    def cancel(self, operator: Actor, goal_id: str) -> dict[str, Any]:
-        operator.require("execution.approve")
+    def cancel(self, operator: Actor, goal_id: str, *, reason: str = "") -> dict[str, Any]:
+        """Stop the goal. ``goal.cancel`` (Work 034 D-112) or, as before, ``execution.approve``.
+        A front agent (intake actor) cancels only its linked operator's goals and states why; that
+        stop is recorded for the operator (``intake.stop_requested``)."""
+        operator.require_any("goal.cancel", "execution.approve")
+        check_goal_access(self.store, operator, goal_id)
+        why = reason.strip()[:4096]
+        if is_intake(operator) and not why:
+            raise Hold("CANCEL_REASON", "A cancel through the front agent states why")
         plan = self.service.plan_record(goal_id)
         if plan["status"] in {"verified", "published", "failed", "cancelled", "timed_out", "held"}:
             return plan
+        if is_intake(operator):
+            with self.store.tx() as db:
+                stop_requested(self.store, db, operator, goal_id, "cancel", why)
         with self._lock:
             self._cancel.add(goal_id)
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
         if plan["status"] in {
+            "planning",  # a planner still running cannot write over the cancel (PLAN_ENDED)
+            "plan_failed",
             "awaiting_approval",
             "needs_answers",
             "replan_failed",
@@ -145,6 +158,7 @@ class ExecutionLoop:
             queued = self.steering.receive(
                 operator, goal_id, steering_kind, text,
                 expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id(kind),
+                guidance=kind == "steer",  # a steer's pause is a checkpoint, not a stop
             )  # fmt: skip
             self._steering[goal_id] = {
                 "operator": operator, "pause_id": queued["steering_id"], "text": text,
@@ -268,7 +282,11 @@ class ExecutionLoop:
         plan = self.service.plan_record(goal_id)
         entry = {"text": steer["text"], "kind": steer["kind"], "at": now(), "applied": False,
                  "reason": reason}  # fmt: skip
-        self._update(goal_id, steering=[*(plan.get("steering") or []), entry])
+        withdrawn = {"steering_id": steer["pause_id"], "kind": steer["kind"], "reason": reason}
+        self._update(
+            goal_id, event=("steering.withdrawn", withdrawn),
+            steering=[*(plan.get("steering") or []), entry],
+        )  # fmt: skip
 
     def _apply_steering(
         self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]
@@ -302,6 +320,8 @@ class ExecutionLoop:
         - a stopped plan whose runtime goal is still open: end it (releases its claims)
         - a plan left ``running`` by a dead process: the attempt is lost; end it failed
         - a plan ``held`` before any attempt with a valid approval: back to ``approved``
+        - a plan left ``planning`` (its thread died): ``plan_failed``, with a ``planning.failed``
+          event so a feed reader sees it
         """
         actions: list[dict[str, Any]] = []
         with self.store._lock:
@@ -316,7 +336,13 @@ class ExecutionLoop:
             except RuntimeFault:
                 continue
             plan = self.service.plan_record(goal_id)
-            if status == "running":
+            if status == "planning":  # its planning thread died with the process
+                self._update(
+                    goal_id, status="plan_failed", reason="planning interrupted by a restart",
+                    event=("planning.failed", {"code": "INTERRUPTED"}),
+                )  # fmt: skip
+                actions.append({"goal_id": goal_id, "action": "planning_interrupted"})
+            elif status == "running":
                 self._stop_goal(
                     goal_id, "failed", "interrupted by a server restart", plan.get("attempts") or []
                 )
@@ -690,6 +716,9 @@ class ExecutionLoop:
         try:
             record: dict[str, Any] = self.service.escalate(goal_id, to_cell=to_cell, reason=reason)
         except (Hold, RuntimeFault) as exc:
+            current = self.service.plan_record(goal_id)
+            if current.get("status") in PLAN_ENDED:  # a cancel landed meanwhile: it stays
+                return current
             return self._finish(
                 goal_id, "failed", reason=f"escalation: {exc.code}: {exc.message}"[:600]
             )
