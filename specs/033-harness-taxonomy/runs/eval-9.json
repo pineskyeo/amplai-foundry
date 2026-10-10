@@ -1,0 +1,13 @@
+{
+ "version": "eval-9",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "operator decision 2026-10-10: four unknown-usage calibration trials in a row stop the calibration with stop_reason provider_failures (calplan-0034e3f6 dispatched 65 failing trials in a row for nine hours after both providers began failing, each up to its 30-minute deadline and charged the full token reservation)"
+  },
+  {
+   "kind": "analysis_code",
+   "detail": "§14 Q5 measured 2026-10-10 (Claude Code 2.1.296, codex-cli 0.155.1): the driver journal keeps a Claude rate_limit_event's rate_limit_info scalars (status, rateLimitType, resetsAt, isUsingOverage, each unified window's utilization and resetsAt) and a Codex error or turn.failed event's provider_error (status, error_type) parsed from its JSON message; numbers, booleans and short lower-case tokens only, never text"
+  }
+ ]
+}

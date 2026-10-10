@@ -3918,3 +3918,33 @@ call it.
   `test_reconciling_an_uncertain_allocation_keeps_a_cost_not_compared_out_of_the_ledger` (both
   paths; on the eval-7 code the settle-only path settles cost 331846 with overrun True) and
   `test_reconciling_a_compared_cost_still_overruns_its_ceiling`.
+
+## Operator Decision 2026-10-10: Provider Failure Stop, Rate-Limit Fields (§14 Q5), Detached Calibration
+
+Source: calibration plan `calplan-0034e3f688c84dfa1d9a8eed` (eval-7, 49 tasks x 4 cells, parallel 2)
+finished 488 trials. From 2026-10-09T14:30Z every trial failed: 33 Claude runs held
+`DRIVER_BOUNDARY` (`provider_completion_not_established`, the `result` event `failed`), 32 Codex
+runs held `WORKER_DEADLINE` after repeated `error` events. The calibration kept dispatching for nine
+hours, about 8 trials an hour, each charged the 4M token reservation (decision (B)). The process was
+gone by 2026-10-09T23:32Z, with the run head still `running` and two trials `dispatching`; it was
+started with `nohup` from an agent session (that the session's end stopped it is (추정)). The
+journals kept no rate-limit field (every allowlist was empty, §14 Q5), so a usage limit could not be
+told from another provider failure. On 2026-10-10 a one-turn probe of each provider answered.
+
+- `CalibrationService.run` stops with `stop_reason` `provider_failures` after
+  `PROVIDER_FAILURE_STREAK` (4) trials in a row whose `outcome_missing` is `usage_unknown`; a trial
+  with known usage resets the streak.
+- §14 Q5 measured with Claude Code 2.1.296 and codex-cli 0.155.1. `EventNormalizer` keeps a Claude
+  `rate_limit_event` as `rate_limit` from its `rate_limit_info` (`status`, `rateLimitType`,
+  `resetsAt`, `isUsingOverage`, `<window>.utilization`, `<window>.resetsAt`), and a Codex `error`
+  or `turn.failed` event as `provider_error` (`parsed`, `status`, `error_type`) from the JSON in its
+  message. Numbers, booleans, null and tokens matching `[a-z0-9_]{1,40}` only; text is dropped.
+- `runs/calibrate-pilot.sh` starts the calibration in its own session (`perl -MPOSIX=setsid`),
+  with `--max-repeats 3` (operator decision 2026-10-10) and log `calibration-9.log`.
+- Tests: `test_four_unknown_usage_trials_in_a_row_stop_a_calibration`,
+  `test_unknown_usage_trials_that_are_not_in_a_row_do_not_stop_a_calibration`
+  (`tests/v3/test_033_unknown_usage_charge.py`);
+  `test_a_claude_rate_limit_event_keeps_its_window_status_and_utilization`,
+  `test_rate_limit_fields_keep_scalars_and_tokens_never_text`,
+  `test_a_codex_error_keeps_its_status_and_error_type_never_its_text`
+  (`tests/v3/test_033_s4_binding.py`, replacing the empty-allowlist test).

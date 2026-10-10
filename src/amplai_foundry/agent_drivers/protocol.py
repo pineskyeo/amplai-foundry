@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import math
 import os
+import re
 import threading
 from collections.abc import Iterator
 from fractions import Fraction
@@ -60,6 +62,68 @@ class JsonlDecoder:
         return output
 
 
+_TOKEN = re.compile(r"[a-z0-9_]{1,40}")
+
+
+def _scalar(value: Any) -> Any:
+    """A number, boolean, null or short lower-case token; anything else (text) is dropped."""
+    if value is None or isinstance(value, bool) or type(value) is int:
+        return value
+    if type(value) is float and math.isfinite(value):
+        return value
+    if isinstance(value, str) and _TOKEN.fullmatch(value):
+        return value
+    return _DROP
+
+
+_DROP = object()
+
+
+def claude_rate_limit(event: dict[str, Any]) -> dict[str, Any]:
+    """The scalar fields of a Claude ``rate_limit_event``'s ``rate_limit_info`` (§14 Q5): status,
+    window type, reset time, overage use and each unified window's utilization and reset."""
+    info = event.get("rate_limit_info")
+    if not isinstance(info, dict):
+        return {}
+    kept: dict[str, Any] = {}
+    for key in ("status", "rateLimitType", "resetsAt", "isUsingOverage"):
+        value = _scalar(info.get(key))
+        if key in info and value is not _DROP:
+            kept[key] = value
+    windows = info.get("unifiedWindows")
+    if isinstance(windows, dict):
+        for name, window in sorted(windows.items()):
+            if not (isinstance(name, str) and _TOKEN.fullmatch(name) and isinstance(window, dict)):
+                continue
+            for key in ("utilization", "resetsAt"):
+                value = _scalar(window.get(key))
+                if key in window and value is not _DROP:
+                    kept[f"{name}.{key}"] = value
+    return kept
+
+
+def codex_error(event: dict[str, Any]) -> dict[str, Any]:
+    """``status`` and ``error_type`` of a Codex ``error``/``turn.failed`` event (§14 Q5): its
+    message is the provider's error as a JSON string; free text is never kept."""
+    message = event.get("message")
+    if message is None and isinstance(event.get("error"), dict):
+        message = event["error"].get("message")
+    try:
+        parsed = json.loads(message) if isinstance(message, str) else None
+    except ValueError:
+        parsed = None
+    if not isinstance(parsed, dict):
+        return {"parsed": False}
+    status = parsed.get("status")
+    inner = parsed.get("error")
+    error_type = _scalar(inner.get("type")) if isinstance(inner, dict) else _DROP
+    return {
+        "parsed": True,
+        "status": status if type(status) is int else None,
+        "error_type": None if error_type is _DROP else error_type,
+    }
+
+
 class EventNormalizer:
     CODEX = frozenset(
         {
@@ -80,9 +144,13 @@ class EventNormalizer:
          "tool_progress"}
     )  # fmt: skip
     # Work 033 S4 (interfaces.md §4.1 row protocol.py, §8.6): rate-limit signals are kept as
-    # "rate_limit" with allowlisted scalar fields only, never payload text. The field names of
-    # Claude rate_limit_event payloads and the shape of Codex usage-limit errors are 확인 필요
-    # (§14 Q5), so every allowlist is empty: the signal is counted, no field is kept.
+    # "rate_limit" with allowlisted scalar fields only, never payload text. §14 Q5 measured
+    # 2026-10-10 (Claude Code 2.1.296, codex-cli 0.155.1): a Claude rate_limit_event carries a
+    # ``rate_limit_info`` object (``status``, ``rateLimitType``, ``resetsAt``, ``isUsingOverage``
+    # and ``unifiedWindows.<window>.utilization``/``resetsAt``), kept by ``claude_rate_limit``;
+    # a Codex ``error``/``turn.failed`` event carries the provider's error as a JSON string
+    # (``status``, ``error.type``), kept as "provider_error" by ``codex_error``. Only numbers,
+    # booleans and short lower-case tokens are kept.
     RATE_LIMIT_EVENTS: ClassVar[dict[str, frozenset[str]]] = {
         "claude": frozenset({"rate_limit_event"}),
         "codex": frozenset(),
@@ -221,7 +289,11 @@ class EventNormalizer:
         }
         if kind in self.RATE_LIMIT_EVENTS[self.provider]:
             self.rate_limit_events += 1
-            normalized["rate_limit"] = self.rate_limit(event)
+            normalized["rate_limit"] = (
+                claude_rate_limit(event) if self.provider == "claude" else self.rate_limit(event)
+            )
+        if self.provider == "codex" and kind in {"error", "turn.failed"}:
+            normalized["provider_error"] = codex_error(event)
         return normalized
 
     def rate_limit(self, event: dict[str, Any]) -> dict[str, Any]:

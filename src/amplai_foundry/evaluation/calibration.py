@@ -67,6 +67,11 @@ SUMMARY_SCHEMA = "amplai.calibration-summary.v1"
 RULE = "disagree_or_borderline_v1"
 MAX_REPEATS = 5
 MAX_PARALLEL = 4
+# Operator decision 2026-10-10: this many unknown-usage trials in a row stop a calibration
+# (``provider_failures``). Plan calplan-0034e3f6 kept dispatching for nine hours after both
+# providers began failing: 65 trials in a row, each up to its 30-minute deadline, each charged
+# the full token reservation (decision (B)).
+PROVIDER_FAILURE_STREAK = 4
 SPLITS = ("development", "validation")
 # §8.2: summary class `informative` = pass rate in [0.2, 0.9].
 INFORMATIVE = (0.2, 0.9)
@@ -581,7 +586,7 @@ class CalibrationService:
         max_repeats = plan["adaptive"]["max_repeats"]
         wall = plan["budget"]["max_wall_seconds"]
         started = time.monotonic()
-        state: dict[str, Any] = {"stop": None, "adaptive": False}
+        state: dict[str, Any] = {"stop": None, "adaptive": False, "unknown_usage_streak": 0}
         outcomes: dict[tuple[str, str], list[bool | None]] = {
             (cell, c["case_id"]): [] for cell in cells for c in cases
         }
@@ -756,12 +761,18 @@ class CalibrationService:
                 # unless it attempted an answer lookup: then it is failed (decision (C))
                 known = trial["success"] is not None and not observation.unknown_effects
                 outcomes[(cell, case["case_id"])].append(trial["success"] if known else None)
+            unknown_usage = trial.get("outcome_missing") == "usage_unknown"
+            state["unknown_usage_streak"] = (
+                state["unknown_usage_streak"] + 1 if unknown_usage else 0
+            )
             if post_guard:
                 stop(post_guard)
             elif observation.unknown_effects:
                 stop("safety_or_unknown_effect")
             elif settlement["overrun"] or settlement["uncertain"]:
                 stop("budget_overrun_or_unknown_usage")
+            elif state["unknown_usage_streak"] >= PROVIDER_FAILURE_STREAK:
+                stop("provider_failures")
 
         def rate(cell: str, case_id: str) -> float | None:
             known = [x for x in outcomes[(cell, case_id)] if x is not None]
