@@ -18,9 +18,16 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from amplai_foundry.control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
+from amplai_foundry.control_plane.api_v3.server import (
+    ApiCommands,
+    ApiServices,
+    BearerAuthenticator,
+    create_app,
+)
 from amplai_foundry.runtime import cli
+from amplai_foundry.runtime.contracts.identity import digest, now
 from amplai_foundry.runtime.contracts.intake import STOP_EVENT, intake_actor
+from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.runtime.execution.codex import AUTH
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
 from amplai_foundry.runtime.recovery.service import RecoveryService
@@ -361,3 +368,81 @@ def test_operator_read_routes_refuse_an_intake_actor(deployment: Any) -> None:
                      "/api/v3/objects/goal/x?revision=1&digest=sha256:" + "0" * 64):  # fmt: skip
             response = c.get(path)
             assert response.status_code == 403, (path, response.text)
+
+
+# -- review fixes: a cancel while planning, receipts never stuck ---------------------------------
+
+
+def test_a_front_agent_cancel_while_planning_stays_cancelled(product: Any) -> None:
+    from test_034_s1a_cancel_durability import GatedPlanner
+
+    dep, client, _operator, _home = product
+    planner = GatedPlanner()
+    for installed in dep.service.apps.values():
+        installed.planners["codex-cli"] = planner
+    goal = submit(client, "m-plan").json()["goal_id"]
+    assert planner.entered.wait(20)
+    url = f"/api/v3/intake/hermes/goals/{goal}/cancel"
+    body = message("m-stop", reason="not now, the operator said")
+    first = client.post(url, headers=HERMES, json=body).json()
+    assert first["status"] == "cancelled"
+    planner.release.set()  # the planner finishes after the cancel
+    settle(dep)
+    assert client.post(url, headers=HERMES, json=body).json() == first  # a resend replays
+    assert wait_status(client, goal, set())["status"] == "cancelled"
+    with pytest.raises(RuntimeFault) as exc:
+        dep.service.approve(dep.operator(), goal)
+    assert exc.value.code == "GOAL_CANCELLED"
+
+
+def test_a_non_domain_failure_is_recorded_not_left_running(deployment: Any) -> None:
+    d = deployment
+    commands = ApiCommands(d.store)
+    calls: list[int] = []
+
+    def broken() -> Any:
+        calls.append(1)
+        raise ValueError("disk path /secret said no")
+
+    with pytest.raises(ValueError):
+        commands.run(d.actor, "k-broken", "route", {}, broken)
+    receipt = commands.receipt(d.actor, "k-broken")
+    assert receipt is not None and receipt["state"] == "unknown"
+    error = receipt["data"]["error"]
+    assert error["code"] == "COMMAND_FAILED" and "/secret" not in error["message"]
+    # its outcome is unknown: this process does not repeat it (test_api: inflight crash)
+    with pytest.raises(Hold) as held:
+        commands.run(d.actor, "k-broken", "route", {}, broken)
+    assert held.value.code == "COMMAND_OUTCOME_UNKNOWN" and calls == [1]
+    # a later store owner (after a restart) runs the resend
+    d.store.epoch += 1
+    assert commands.run(d.actor, "k-broken", "route", {}, lambda: {"ok": True}) == {"ok": True}
+    receipt = commands.receipt(d.actor, "k-broken")
+    assert receipt is not None and receipt["state"] == "completed"
+    assert receipt["data"]["interrupted"][0]["state"] == "unknown"
+
+
+def running_receipt(d: Any, key: str, owner_epoch: int) -> None:
+    with d.store.tx() as db:
+        d.store.cas(
+            db, d.scope, "api-command", ApiCommands.identity(d.actor, key), 0, "running",
+            {"fingerprint": digest({"route": "route", "payload": {}}), "route": "route",
+             "actor": d.actor.subject_id, "started_at": now(), "owner_epoch": owner_epoch},
+        )  # fmt: skip
+
+
+def test_a_receipt_left_running_by_an_earlier_owner_runs_again(deployment: Any) -> None:
+    d = deployment
+    commands = ApiCommands(d.store)
+    running_receipt(d, "k-crashed", d.store.epoch - 1)  # its process is gone
+    assert commands.run(d.actor, "k-crashed", "route", {}, lambda: {"ok": True}) == {"ok": True}
+    receipt = commands.receipt(d.actor, "k-crashed")
+    assert receipt is not None and receipt["state"] == "completed"
+    (interrupted,) = receipt["data"]["interrupted"]
+    assert interrupted["code"] == "COMMAND_INTERRUPTED"
+    assert interrupted["owner_epoch"] == d.store.epoch - 1
+    # one still running in this process is not repeated
+    running_receipt(d, "k-in-flight", d.store.epoch)
+    with pytest.raises(Hold) as held:
+        commands.run(d.actor, "k-in-flight", "route", {}, lambda: {"ok": True})
+    assert held.value.code == "COMMAND_OUTCOME_UNKNOWN"

@@ -948,12 +948,19 @@ class LocalProductDeployment:
             try:
                 self.service.plan(goal_id)
             except Exception as exc:
-                self.service._save_plan(
-                    goal_id,
-                    {"goal_id": goal_id, "status": "plan_failed",
-                     "reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
-                     "details": str(getattr(exc, "details", ""))[:1500]},
-                )  # fmt: skip
+                code = str(getattr(exc, "code", type(exc).__name__))
+                try:  # a goal cancelled while it was planned keeps its cancel (PLAN_ENDED)
+                    self.service._save_plan(
+                        goal_id,
+                        {"goal_id": goal_id, "status": "plan_failed",
+                         "reason": f"{code}: {exc}"[:600],
+                         "details": str(getattr(exc, "details", ""))[:1500]},
+                        ("planning.failed", {"code": code[:128]}),
+                        unless_ended=True,
+                    )  # fmt: skip
+                except Hold as held:
+                    if held.code != "PLAN_ENDED":
+                        raise
             finally:
                 with self._planning_lock:
                     self._planning.discard(goal_id)
