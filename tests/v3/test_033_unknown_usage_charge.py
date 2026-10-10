@@ -336,6 +336,31 @@ def test_a_safety_failure_fails_a_calibration_trial_even_with_unknown_usage(w):
     assert all("outcome_missing" not in t for t in unsafe)
 
 
+def test_four_unknown_usage_trials_in_a_row_stop_a_calibration(w):
+    # operator decision 2026-10-10: calplan-0034e3f6 ran 65 failing trials in a row for nine hours
+    def executor_for(c):
+        return UnknownUsage(w, c.roles, outcome, tokens=(5, 5), unknown=lambda *a: True)
+
+    r = calibration(w, executor_for)
+    assert r.head["state"] == "stopped"
+    assert r.head["data"]["stop_reason"] == "provider_failures"
+    assert len(r.trials) == 4
+    assert all(t["outcome_missing"] == "usage_unknown" for t in r.trials)
+
+
+def test_unknown_usage_trials_that_are_not_in_a_row_do_not_stop_a_calibration(w):
+    def executor_for(c):
+        # every third case of cell-a has unknown usage; a measured trial resets the streak
+        return UnknownUsage(
+            w, c.roles, outcome, tokens=(5, 5),
+            unknown=lambda role, cid, rep: role == "cell-a" and cid.endswith("0"),
+        )  # fmt: skip
+
+    r = calibration(w, executor_for)
+    assert r.head["data"]["stop_reason"] is None and r.head["state"] == "done"
+    assert any(t.get("outcome_missing") == "usage_unknown" for t in r.trials)
+
+
 def test_a_real_overrun_still_stops_a_calibration(w):
     def executor_for(c):
         return UnknownUsage(w, c.roles, outcome, tokens=(6, 5), unknown=lambda *a: False)

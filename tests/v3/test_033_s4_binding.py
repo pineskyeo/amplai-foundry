@@ -9,6 +9,7 @@ execution loop; stand-in: the scripted host-process "container" of the rc06 rig.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -297,16 +298,55 @@ def test_a_claude_rate_limit_event_is_counted_without_its_payload() -> None:
     assert "rate_limit" not in other and normalizer.rate_limit_events == 1
 
 
-def test_allowlisted_rate_limit_fields_are_scalars_never_text(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        EventNormalizer, "RATE_LIMIT_FIELDS",
-        {"claude": frozenset({"message", "resets_at", "status", "flag", "nothing", "ratio"}),
-         "codex": frozenset()},
-    )  # fmt: skip
-    kept = EventNormalizer("claude").accept(dict(RATE_EVENT))["rate_limit"]
-    assert kept == {"resets_at": 1234, "flag": True, "nothing": None, "ratio": 0.5}  # no strings
+# §14 Q5 measured 2026-10-10 with Claude Code 2.1.296 (`claude -p --output-format stream-json`)
+MEASURED_RATE_EVENT = {
+    "type": "rate_limit_event", "session_id": "s", "uuid": "u",
+    "rate_limit_info": {
+        "status": "allowed", "resetsAt": 1791606600, "rateLimitType": "five_hour",
+        "overageStatus": "rejected", "overageDisabledReason": "org_level_disabled",
+        "isUsingOverage": False,
+        "unifiedWindows": {"five_hour": {"utilization": 0.04, "resetsAt": 1791606600},
+                           "seven_day": {"utilization": 0.19, "resetsAt": 1791781200}},
+    },
+}  # fmt: skip
+
+
+def test_a_claude_rate_limit_event_keeps_its_window_status_and_utilization() -> None:
+    kept = EventNormalizer("claude").accept(dict(MEASURED_RATE_EVENT))["rate_limit"]
+    assert kept == {
+        "status": "allowed", "rateLimitType": "five_hour", "resetsAt": 1791606600,
+        "isUsingOverage": False,
+        "five_hour.utilization": 0.04, "five_hour.resetsAt": 1791606600,
+        "seven_day.utilization": 0.19, "seven_day.resetsAt": 1791781200,
+    }  # fmt: skip
+
+
+def test_rate_limit_fields_keep_scalars_and_tokens_never_text() -> None:
+    windows = {"Five Hour!": {"utilization": 1.0}, "weekly": {"utilization": "very high"}}
+    info = {"status": "You hit the limit: secret text", "resetsAt": "in 3 hours",
+            "isUsingOverage": None, "unifiedWindows": windows}  # fmt: skip
+    event = {**MEASURED_RATE_EVENT, "rate_limit_info": info}
+    kept = EventNormalizer("claude").accept(event)["rate_limit"]
+    assert kept == {"isUsingOverage": None}  # text, a non-token name and strings are dropped
+    assert EventNormalizer("claude").accept(dict(RATE_EVENT))["rate_limit"] == {}
+
+
+# §14 Q5 measured 2026-10-10 with codex-cli 0.155.1 (`codex exec --json`, an unsupported model)
+CODEX_ERROR_MESSAGE = (
+    '{"type":"error","status":400,"error":{"type":"invalid_request_error",'
+    '"message":"The model is not supported when using Codex with a ChatGPT account."}}'
+)
+
+
+def test_a_codex_error_keeps_its_status_and_error_type_never_its_text() -> None:
+    normalizer = EventNormalizer("codex")
+    error = normalizer.accept({"type": "error", "message": CODEX_ERROR_MESSAGE})
+    failed = normalizer.accept({"type": "turn.failed", "error": {"message": CODEX_ERROR_MESSAGE}})
+    expected = {"parsed": True, "status": 400, "error_type": "invalid_request_error"}
+    assert error["provider_error"] == expected and failed["provider_error"] == expected
+    assert "supported" not in json.dumps([error, failed])
+    plain = EventNormalizer("codex").accept({"type": "error", "message": "stream disconnected"})
+    assert plain["provider_error"] == {"parsed": False}
 
 
 def test_a_codex_stream_has_no_rate_limit_event() -> None:
