@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
+from amplai_foundry.control_plane.api_v3.intake import CancelBody
 from amplai_foundry.control_plane.api_v3.server import (
     ApiCommands,
     ApiServices,
@@ -408,9 +409,16 @@ def test_a_non_domain_failure_is_recorded_not_left_running(deployment: Any) -> N
     with pytest.raises(Hold) as held:
         commands.run(d.actor, "k-broken", "route", {}, broken)
     assert held.value.code == "COMMAND_OUTCOME_UNKNOWN" and calls == [1]
-    # a later store owner (after a restart) runs the resend
+    # after a restart: still held for a route that did not declare itself idempotent
     d.store.epoch += 1
-    assert commands.run(d.actor, "k-broken", "route", {}, lambda: {"ok": True}) == {"ok": True}
+    with pytest.raises(Hold):
+        commands.run(d.actor, "k-broken", "route", {}, broken)
+    assert calls == [1]
+    # an idempotent operation (the intake relay) runs the resend
+    rerun = commands.run(
+        d.actor, "k-broken", "route", {}, lambda: {"ok": True}, rerun_interrupted=True
+    )
+    assert rerun == {"ok": True}
     receipt = commands.receipt(d.actor, "k-broken")
     assert receipt is not None and receipt["state"] == "completed"
     assert receipt["data"]["interrupted"][0]["state"] == "unknown"
@@ -429,7 +437,13 @@ def test_a_receipt_left_running_by_an_earlier_owner_runs_again(deployment: Any) 
     d = deployment
     commands = ApiCommands(d.store)
     running_receipt(d, "k-crashed", d.store.epoch - 1)  # its process is gone
-    assert commands.run(d.actor, "k-crashed", "route", {}, lambda: {"ok": True}) == {"ok": True}
+    with pytest.raises(Hold) as held:  # not declared idempotent: main's behaviour
+        commands.run(d.actor, "k-crashed", "route", {}, lambda: {"ok": True})
+    assert held.value.code == "COMMAND_OUTCOME_UNKNOWN"
+    rerun = commands.run(
+        d.actor, "k-crashed", "route", {}, lambda: {"ok": True}, rerun_interrupted=True
+    )
+    assert rerun == {"ok": True}
     receipt = commands.receipt(d.actor, "k-crashed")
     assert receipt is not None and receipt["state"] == "completed"
     (interrupted,) = receipt["data"]["interrupted"]
@@ -438,5 +452,58 @@ def test_a_receipt_left_running_by_an_earlier_owner_runs_again(deployment: Any) 
     # one still running in this process is not repeated
     running_receipt(d, "k-in-flight", d.store.epoch)
     with pytest.raises(Hold) as held:
-        commands.run(d.actor, "k-in-flight", "route", {}, lambda: {"ok": True})
+        commands.run(
+            d.actor, "k-in-flight", "route", {}, lambda: {"ok": True}, rerun_interrupted=True
+        )
     assert held.value.code == "COMMAND_OUTCOME_UNKNOWN"
+
+
+def interrupt(dep: Any, actor: Any, key: str) -> None:
+    """Make a finished receipt look left running by the process before a restart."""
+    identity = ApiCommands.identity(actor, key)
+    head = dep.store.head(dep.scope, "api-command", identity)
+    with dep.store.tx() as db:
+        dep.store.cas(
+            db, dep.scope, "api-command", identity, head["row_version"], "running",
+            {**head["data"], "owner_epoch": dep.store.epoch - 1},
+        )  # fmt: skip
+
+
+def test_after_a_restart_only_the_intake_relay_reruns_an_interrupted_command(
+    product: Any,
+) -> None:
+    dep, client, operator, _home = product
+    # an operator route (POST /api/v3/intents): resent after a restart, not run again
+    headers = {"Authorization": "Bearer " + operator, "Idempotency-Key": "op-1"}
+    body = {"text": "make value return 2", "target_hints": ["app"]}
+    assert client.post("/api/v3/intents", headers=headers, json=body).status_code == 202
+    interrupt(dep, dep.operator(), "op-1")
+    goals = dep.store.conn.execute("SELECT COUNT(*) FROM heads WHERE kind='goal'").fetchone()[0]
+    resent = client.post("/api/v3/intents", headers=headers, json=body)
+    assert resent.status_code == 423 and resent.json()["code"] == "COMMAND_OUTCOME_UNKNOWN"
+    assert dep.store.conn.execute(
+        "SELECT COUNT(*) FROM heads WHERE kind='goal'"
+    ).fetchone()[0] == goals  # fmt: skip
+    # the intake relay (cancel): resent after a restart, run again and recorded
+    goal = submit(client, "m-relay").json()["goal_id"]
+    wait_status(client, goal, {"planning"})
+    url = f"/api/v3/intake/hermes/goals/{goal}/cancel"
+    stop = message("m-relay-stop", reason="stop")
+    assert client.post(url, headers=HERMES, json=stop).json()["status"] == "cancelled"
+    hermes = intake_actor("pinesky", dep.scope)
+    interrupt(dep, hermes, CancelBody.model_validate(stop).key())
+    again = client.post(url, headers=HERMES, json=stop)
+    assert again.status_code == 200 and again.json()["status"] == "cancelled"
+    receipt = ApiCommands(dep.store).receipt(hermes, CancelBody.model_validate(stop).key())
+    assert receipt is not None and receipt["state"] == "completed"
+    assert receipt["data"]["interrupted"][0]["code"] == "COMMAND_INTERRUPTED"
+
+
+def test_the_identity_map_is_read_on_every_request(product: Any) -> None:
+    _dep, client, _operator, home = product
+    listed = client.get("/api/v3/intake/hermes/goals", headers=HERMES, params=SLACK_USER)
+    assert listed.status_code == 200
+    # the operator unlinks this messenger user (another of the operator's accounts stays)
+    identity_map(home, [{"provider": "slack", "user_id": "U0OTHER", "subject_id": "pinesky"}])
+    refused = client.get("/api/v3/intake/hermes/goals", headers=HERMES, params=SLACK_USER)
+    assert refused.status_code == 403 and refused.json()["code"] == "FORBIDDEN"
