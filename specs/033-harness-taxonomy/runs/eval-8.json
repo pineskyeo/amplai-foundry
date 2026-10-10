@@ -4,6 +4,18 @@
   {
    "kind": "analysis_code",
    "detail": "D-088 reconcile fix 2026-10-09 (PR #65 review): reserve() keeps cost_compared false on the allocation of a plan that does not compare cost (calibration, cost_basis not_compared, a not-compared canary), settle() records it too, and reconcile() of such an allocation keeps the reserved cost in the ledger, records the receipt's cost as reported_cost and judges overrun on tokens only; before, reconcile() wrote the receipt cost into the ledger and compared it with the cost ceiling 0, so the next reserve held META_PRIOR_OVERRUN"
+  },
+  {
+   "kind": "analysis_code",
+   "detail": "operator decision 2026-10-10: four unknown-usage calibration trials in a row stop the calibration with stop_reason provider_failures (calplan-0034e3f6 dispatched 65 failing trials in a row for nine hours after both providers began failing, each up to its 30-minute deadline and charged the full token reservation)"
+  },
+  {
+   "kind": "analysis_code",
+   "detail": "§14 Q5 measured 2026-10-10 (Claude Code 2.1.296, codex-cli 0.155.1): the driver journal keeps a Claude rate_limit_event's rate_limit_info scalars (status, rateLimitType, resetsAt, isUsingOverage, each unified window's utilization and resetsAt) and a Codex error or turn.failed event's provider_error (status, error_type) parsed from its JSON message; numbers, booleans and short lower-case tokens only, never text"
+  },
+  {
+   "kind": "analysis_code",
+   "detail": "operator decision 2026-10-10: CalibrationService.recover (amplai meta calibration recover) closes a calibration run a previous store owner left running: the run ends stopped with owner_lost, its trials still dispatching become unknown (no process-stop claim, IC-18), no summary is written; calplan-0034e3f6 stayed running after its process was gone and held every evaluator change with EVALUATOR_CHANGE_ACTIVE"
   }
  ]
 }

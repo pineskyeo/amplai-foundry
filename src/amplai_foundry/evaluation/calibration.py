@@ -415,7 +415,7 @@ class CalibrationService:
         *,
         approval_check: Callable[..., Any],
         executor_id: str,
-        executor_policy: ExecutorPolicy,
+        executor_policy: ExecutorPolicy | None,
     ) -> None:
         self.store, self.contracts, self.artifacts = store, contracts, artifacts
         self.approval_check, self.executor_id = approval_check, executor_id
@@ -846,6 +846,67 @@ class CalibrationService:
         if not refs:
             raise Hold(reason or "NO_TRIALS", "No calibration trial dispatched")
         return self.summarize(scope, plan_ref)
+
+    def recover(self, actor: Actor, plan_ref: dict[str, Any]) -> dict[str, Any]:
+        """Close a calibration run whose owner process is gone (design 08 recovery, 20 §5 "CP
+        crash"). Operator decision 2026-10-10: calplan-0034e3f6 lost its process and stayed
+        ``running``, which held every evaluator change with ``EVALUATOR_CHANGE_ACTIVE``.
+
+        Only a run a previous store owner started qualifies (its ``owner_epoch`` differs from this
+        store's), so a run this process owns is never closed. Trials still ``dispatching`` become
+        ``unknown``: no process-stop claim is made for them (IC-18) and their allocations stay
+        reserved. The run ends ``stopped`` with ``owner_lost``. No summary is written: a summary
+        pins the evaluator version current when it is written, not the one the trials ran under.
+        """
+        self._independent(actor, "experiment.run")
+        scope, pid = actor.scope, plan_ref["id"]
+        with self.store.tx() as db:
+            head = self.store.head(scope, RUN_KIND, pid, db=db)
+            if (
+                head["state"] != "running"
+                or head["data"]["plan_ref"] != plan_ref
+                or head["data"].get("owner_epoch") == self.store.epoch
+            ):
+                raise Hold(
+                    "CALIBRATION_RECOVERY_STATE",
+                    "Recovery needs a running calibration a previous store owner started",
+                )
+            rows = db.execute(
+                "SELECT id,row_version,data FROM heads WHERE tenant=? AND project=? AND kind=? "
+                "AND state='dispatching' ORDER BY id",
+                (*scope.keys(), TRIAL_KIND),
+            ).fetchall()
+            unknown = []
+            for row in rows:
+                data = json.loads(row["data"])
+                if data.get("calibration_plan_ref") != plan_ref:
+                    continue
+                self.store.cas(
+                    db, scope, TRIAL_KIND, row["id"], row["row_version"], "unknown",
+                    {**data, "recovered": "owner_lost"},
+                )  # fmt: skip
+                unknown.append(row["id"])
+            self.store.cas(
+                db,
+                scope,
+                RUN_KIND,
+                pid,
+                head["row_version"],
+                "stopped",
+                {
+                    **head["data"],
+                    "state": "stopped",
+                    "stop_reason": "owner_lost",
+                    "recovered_trials": unknown,
+                },
+            )
+        return {
+            "plan_id": pid,
+            "state": "stopped",
+            "stop_reason": "owner_lost",
+            "trials": len(head["data"]["trial_refs"]),
+            "unknown_trials": unknown,
+        }
 
     def summarize(self, scope: Scope, plan_ref: dict[str, Any]) -> dict[str, Any]:
         """Write (once) and return the `calibration-summary` of a finished run (§2.8)."""

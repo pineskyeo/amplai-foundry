@@ -12,7 +12,7 @@ nohup perl -MPOSIX=setsid -e 'setsid(); exec @ARGV or die "exec: $!"' -- \
   --cells codex-cli.gpt-5.6-sol.medium,codex-cli.gpt-5.6-sol.high,claude-cli.claude-sonnet-5.high,claude-cli.claude-opus-5-5.high \
   --max-repeats 3 --max-trials 980 --max-tokens 650000000 --max-wall-seconds 172800 \
   --per-trial-tokens 4000000 \
-  --basis "bench app driver qualifications 2026-10-08 with offline argv; eval-9 (provider failure stop, rate-limit fields); max repeats 3; per-trial ceiling 4M" \
+  --basis "bench app driver qualifications 2026-10-08 with offline argv; eval-8 (PRs #66-#68); max repeats 3; per-trial ceiling 4M" \
   --evidence "$R/qualification-bench-codex.json" \
   --evidence "$R/qualification-bench-claude-sonnet-5.json" \
   --evidence "$R/qualification-bench-claude-opus-5-5.json" \
