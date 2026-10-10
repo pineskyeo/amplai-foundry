@@ -1631,6 +1631,27 @@ class LocalMetaOps:
             "summary": json.loads(json.dumps(summary)) if summary is not None else None,
         }
 
+    def calibration_recover(self, plan_id: str) -> dict[str, Any]:
+        """Close a calibration run whose owner process is gone (``CalibrationService.recover``)."""
+        from ...evaluation import calibration
+
+        refs = [
+            ref
+            for ref, _ in self.store.list_objects(self.scope, calibration.PLAN_KIND)
+            if ref["id"] == plan_id
+        ]
+        if not refs:
+            raise RuntimeFault("NOT_FOUND", "No calibration plan with this id", details=plan_id)
+        service = calibration.CalibrationService(
+            self.store,
+            self.dep.contracts,
+            self.dep.artifacts,
+            approval_check=self.local.approvals.check,
+            executor_id=EXECUTOR_ID,
+            executor_policy=self.local.evaluation.executor_policy,
+        )
+        return service.recover(self.operator, max(refs, key=lambda r: r["revision"]))
+
     # -- 8. reconcile (IC-18, provisional) ------------------------------------------------------
     def reconcile(
         self,

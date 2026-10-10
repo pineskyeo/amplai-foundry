@@ -65,7 +65,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
 
         guarded(call)
 
-    group = typer.Typer(help="Calibration runs: show one summary")
+    group = typer.Typer(help="Calibration runs: show one, or recover one whose process is gone")
     meta.add_typer(group, name="calibration")
 
     @group.command("show")
@@ -80,5 +80,20 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         def call() -> Any:
             with opened_v2(config, corpus, app=app) as ops:
                 return ops.calibration_show(plan_id)
+
+        guarded(call)
+
+    @group.command("recover")
+    def recover(
+        plan_id: str,
+        config: ConfigOption = DEFAULT_CONFIG,
+        corpus: CorpusOption = None,
+        app: AppOption = None,
+    ) -> None:
+        """Close a calibration run a previous process left running (it ends ``owner_lost``)."""
+
+        def call() -> Any:
+            with opened_v2(config, corpus, app=app) as ops:
+                return ops.calibration_recover(plan_id)
 
         guarded(call)

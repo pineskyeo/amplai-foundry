@@ -506,6 +506,56 @@ def test_reported_costs_do_not_stop_a_calibration_with_a_cost_budget_of_zero(w):
     assert not any(a["overrun"] for a in allocations)
 
 
+def orphaned_run(w, c, *, epoch_offset=-1):
+    """A frozen plan whose run head says ``running`` for another store owner, with one trial left
+    ``dispatching`` (calplan-0034e3f6 after its process was gone, 2026-10-10)."""
+    svc = service(w)
+    plan_ref = svc.freeze(w.m.reviewer, plan_for(w, c))
+    store, scope = w.m.d.store, w.scope
+    with store.tx() as db:
+        head = store.head(scope, "calibration-run", plan_ref["id"], db=db)
+        store.cas(db, scope, "calibration-run", plan_ref["id"], head["row_version"], "running",
+                  {**head["data"], "state": "running",
+                   "owner_epoch": store.epoch + epoch_offset})  # fmt: skip
+        store.cas(db, scope, "calibration-trial", "caltrial-left", 0, "dispatching",
+                  {"calibration_plan_ref": plan_ref, "cell_id": "cell-a",
+                   "task_id": "dev-00", "repeat": 0})  # fmt: skip
+        store.cas(db, scope, "calibration-trial", "caltrial-other-plan", 0, "dispatching",
+                  {"calibration_plan_ref": {**plan_ref, "id": "calplan-other"},
+                   "cell_id": "cell-a", "task_id": "dev-00", "repeat": 0})  # fmt: skip
+    return svc, plan_ref
+
+
+def test_a_run_a_previous_owner_left_running_is_recovered_as_owner_lost(w):
+    c = make(w)
+    svc, plan_ref = orphaned_run(w, c)
+    out = svc.recover(w.m.reviewer, plan_ref)
+    assert out == {"plan_id": plan_ref["id"], "state": "stopped", "stop_reason": "owner_lost",
+                   "trials": 0, "unknown_trials": ["caltrial-left"]}  # fmt: skip
+    store = w.m.d.store
+    head = store.head(w.scope, "calibration-run", plan_ref["id"])
+    assert head["state"] == "stopped" and head["data"]["stop_reason"] == "owner_lost"
+    left = store.head(w.scope, "calibration-trial", "caltrial-left")
+    assert left["state"] == "unknown" and left["data"]["recovered"] == "owner_lost"
+    other = store.head(w.scope, "calibration-trial", "caltrial-other-plan")
+    assert other["state"] == "dispatching"  # another plan's trial is not touched
+    hold("CALIBRATION_RECOVERY_STATE", svc.recover, w.m.reviewer, plan_ref)  # once
+
+
+def test_a_run_this_store_owner_started_is_never_recovered(w):
+    c = make(w)
+    svc, plan_ref = orphaned_run(w, c, epoch_offset=0)
+    hold("CALIBRATION_RECOVERY_STATE", svc.recover, w.m.reviewer, plan_ref)
+    store = w.m.d.store
+    assert store.head(w.scope, "calibration-run", plan_ref["id"])["state"] == "running"
+    assert store.head(w.scope, "calibration-trial", "caltrial-left")["state"] == "dispatching"
+
+
+def test_a_finished_run_is_not_recovered(w):
+    r = run_plan(w, make(w))
+    hold("CALIBRATION_RECOVERY_STATE", r.svc.recover, w.m.reviewer, r.plan_ref)
+
+
 def holding_executor(w, c, evidence, code="TRIAL_VERIFIER"):
     """val-00 holds ``code`` (TRIAL_VERIFIER: the caltrial-ac33... shape); ``evidence`` (None:
     none) is what the executor attaches as ``NOT_RUN_EVIDENCE``."""

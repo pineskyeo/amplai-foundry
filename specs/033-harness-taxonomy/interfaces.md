@@ -3948,3 +3948,28 @@ told from another provider failure. On 2026-10-10 a one-turn probe of each provi
   `test_rate_limit_fields_keep_scalars_and_tokens_never_text`,
   `test_a_codex_error_keeps_its_status_and_error_type_never_its_text`
   (`tests/v3/test_033_s4_binding.py`, replacing the empty-allowlist test).
+
+## Operator Decision 2026-10-10: Calibration Recovery; eval-8 Covers PRs #66-#68
+
+Source: calibration plan `calplan-0034e3f688c84dfa1d9a8eed` stayed `running` (owner epoch 34) after
+its process was gone, with two trials `dispatching`. `QualityService` holds every evaluator change
+while any calibration run is `running` (`evaluation/quality.py`, `EVALUATOR_CHANGE_ACTIVE`), and no
+command could close the run.
+
+- `CalibrationService.recover(actor, plan_ref)` (`amplai meta calibration recover <plan-id>`):
+  only a `running` run whose `owner_epoch` differs from the store's epoch qualifies, so a run the
+  current process owns is never closed (`CALIBRATION_RECOVERY_STATE`). Its `dispatching` trials of
+  that plan become `unknown` with `recovered: owner_lost` (no process-stop claim, IC-18; their
+  allocations stay reserved), and the run ends `stopped` with `stop_reason` `owner_lost` and
+  `recovered_trials`. No summary is written: `summarize` pins the evaluator version current at
+  write time, which need not be the one the trials ran under.
+- `CalibrationService(executor_policy=...)` is typed `ExecutorPolicy | None`, as the existing
+  `QUALIFIED_EXECUTOR_REQUIRED` check already handles.
+- Evaluator versions pin the running code digests (`evaluation/versions.py`), so the code of PRs
+  #66 (reconcile), #67 (provider failure stop, rate-limit fields) and this change is one version:
+  `runs/eval-8.json` lists all four changes; `eval-9.json` and its scripts are removed, and the
+  eval-8 change proposed for PR #66 alone is rejected rather than approved with digests that would
+  include later code.
+- Tests (`tests/v3/test_033_s2_calibration.py`):
+  `test_a_run_a_previous_owner_left_running_is_recovered_as_owner_lost`,
+  `test_a_run_this_store_owner_started_is_never_recovered`, `test_a_finished_run_is_not_recovered`.
