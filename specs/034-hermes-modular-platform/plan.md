@@ -1,6 +1,6 @@
 # Work 034 Plan: 구조, 인터페이스, 순서
 
-- 상태: 설계 초안 r6 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 운영자 지시 2026-10-11 반영 r6: 야간 루프 제어 OD-12, 앞단 에이전트·메신저 모듈 OD-13; r6 의 코드 근거는 main `76e2874`). spec: `spec.md`.
+- 상태: 설계 초안 r7 (Q-8 = B 반영 r7; 독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 운영자 지시 2026-10-11 반영 r6: 야간 루프 제어 OD-12, 앞단 에이전트·메신저 모듈 OD-13; r6 의 코드 근거는 main `76e2874`). spec: `spec.md`.
 
 ## 0. 검토 이력
 
@@ -231,16 +231,19 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 
 | 층 | 누가 | 하는 일 |
 |---|---|---|
-| 시계 | launchd | 정해진 시각에 `amplai meta nightly run` 한 번 (`deployment/launchd/ai.amplai.meta-nightly.plist.template`) |
+| 시계 | launchd | 5분마다 `amplai meta nightly tick` (지금은 01:00 에 `run` 한 번, `deployment/launchd/ai.amplai.meta-nightly.plist.template`). tick 은 예정 시각 또는 유효한 시작 요청(N-9)일 때만 그날 밤을 시작하고, 밤이 이미 돌고 있으면(`ACTIVE_OWNER`) 바로 끝난다 |
 | 밤 진행 | `NightlyRunner` | preflight → drift → 설계 → search → confirmation → dreaming → dashboard, 결정적 (`meta_harness/nightly.py:89-91`) |
-| 제어 요청 | 앞단 에이전트·운영자 | 멈춤·건너뛰기·조이기 → 제품 authority service → `nightly-control` 기록 |
+| 제어 요청 | 앞단 에이전트·운영자 | 멈춤·건너뛰기·조이기·시작(N-9) → 제품 authority service → `nightly-control` 기록 |
 | 승인 | 사람 | 상시 허락 발급·연장, 단계 gate (CLI, 승인 페이지) |
 
 - **제어 기록** `nightly-control` (제품 store, 새 내부 kind):
-  `{control_id, action: stop|skip|tighten|clear, dates, limits: {budget_trials?, stop_at?}, issued_by, reason, at, clears?}`.
+  `{control_id, action: stop|skip|tighten|start|clear, dates, limits: {budget_trials?, stop_at?}, issued_by, reason, at, clears?}`.
   - 가장 엄격한 것이 이긴다.
   - `clear` 는 같은 actor 가 건 것만 지운다(사람은 모두 지운다).
   - 앞단 에이전트의 `tighten` 은 줄이는 방향만 받는다.
+  - `start` 는 접수 때 N-9 의 조건(허락, 시간대, 사람 정지, 빈도)을 검사하고, tick 이 시작 직전에 다시 검사한다(그 사이 바뀐
+    허락·정지를 반영). 날짜당 한 번은 기존 `NIGHT_STATE` 가 막는다. 시작 가능 시간대는 설정 `meta.nightly.agent_start_window`
+    이고 사람만 바꾼다.
 - **밤 쪽 적용**:
   - 설정 `meta.control_store` 가 제품 runtime root 를 가리킨다.
   - `NightlyRunner` 는 preflight, 단계 사이 검사(`_night_reason`, `nightly.py:686-687`), trial guard 에서
@@ -281,7 +284,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | unapproved migration | 재시작·야간 작업이 이전 실행 | 동결, 명시적 `migrate`, local-update 제한 | AC-U4, AC-U8 |
 | shadowed upgrade | 승격 부품이 새 검증 정책을 가림 | 기준 digest, stale 표시 | AC-U7 |
 | VM compromise | Hermes VM 침해 | 영향 범위 문서, 빈도 제한, 토큰 즉시 폐기 | AC-H5, AC-H7 |
-| 야간 루프 남용 | 앞단 에이전트가 밤을 늘리거나 다시 켬 | 조이는 방향만, 시작·연장·해제는 사람, 자기가 건 것만 해제 | AC-N2, AC-N3 |
+| 야간 루프 남용 | 앞단 에이전트가 밤을 늘리거나 낮에 켬 | 시작은 허락·날짜당 한 번·시간대·사람 정지·빈도 안에서만, 시작마다 notifier 알림, 연장·해제는 사람, 자기가 건 것만 해제 | AC-N2, AC-N3, AC-N6 |
 | 알림 차단 | 침해된 앞단 에이전트가 경고를 숨김 | 앞단 에이전트와 독립된 `notifier` | AC-F3, AC-N1 |
 | adapter 혼동 | 한 adapter 토큰으로 다른 adapter 행세 | adapter 별 토큰·연결표·경로 | AC-F2 |
 | 제어 채널 장애 | 제어 기록을 못 읽어 멈춤 요청이 무시됨 | 읽지 못하면 밤을 멈춤 (fail closed) | AC-N5 |
@@ -294,7 +297,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | S1a | `intake` actor, store 밖 토큰·연결표, 접수 경로, steering·질문 종류 제한, 조회 필터, projection, 세대 cursor, 승인 CLI digest, 빈도 제한, MCP 서버, cron 알림, VM runbook | AC-H1~H10 | — | S0 |
 | S1b | 승인 페이지 (OD-6), 원격 listener (OD-8 이 원격일 때) | AC-H11 | — | S1a |
 | S1c | 앞단 에이전트·메신저 모듈: adapter 별 intake 설정, 경로·표지 일반화, `notifier` kind + Slack, 도구 계약 v1, MCP 서버, Hermes 키트 | AC-F1~F3, AC-H8, AC-H9 | — | S1a |
-| S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N5 | class C(권한) | S1c |
+| S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, launchd tick, 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N6 | class C(권한) | S1c |
 | S2a | 지식 모듈 | AC-K1, AC-K3 | G-04 | S0 |
 | S2b | 문서 최신성 모듈 | AC-K2 | — | S2a |
 | S3 | 배포 릴리스·Q-suite 자산, 동결, 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한 | AC-U1~U8 | G-07, G-15, G-20 | S0 |
@@ -316,7 +319,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 - D-114 Q-suite 배포 자산화 (OD-7).
 - D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확인 대기).
 - D-116 앞단 에이전트·메신저는 세 층 모듈(접수 어댑터, 앞단 에이전트 키트, notifier)이다. wire `source_channel=hermes` 는 앞단 에이전트 채널 이름으로 두고, adapter 는 `authn_context_ref` 로 구분한다 (OD-13).
-- D-117 야간 루프 제어: 시계 launchd, 진행 NightlyRunner, 앞단 에이전트는 조이는 방향만(`nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12).
+- D-117 야간 루프 제어: 시계 launchd tick, 진행 NightlyRunner, 앞단 에이전트는 조이기와 조건부 시작(N-9, `nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12, Q-8 = B).
 
 ## 7. 열린 질문
 
@@ -329,7 +332,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | Q-5 | OD-4~OD-7 | S1a, S1b, S3, S4 |
 | Q-6 | 사내 LLM 서버 사양 (OpenAI 호환, 도구 호출, 컨텍스트, 스트리밍 사용량) | S4 |
 | Q-7 | design/16 §3 pack 조합 class A 와 코드 B 의 차이 | S0 이후 |
-| Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 (추천: 아니오, 시작은 launchd 시각 또는 사람) | S1d |
+| Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 → 결정: B, N-9 조건부 (2026-10-11) | S1d |
 | Q-9 | 제어 기록 위치: 제품 store (추천) / meta 제어 파일 / meta 상주 서버 (§3.8 대안) | S1d |
 | Q-10 | notifier 의 Slack 방식: incoming webhook / bot token (OD-9 확정 뒤) | S1c |
 
