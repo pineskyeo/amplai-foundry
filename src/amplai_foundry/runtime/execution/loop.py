@@ -121,6 +121,7 @@ class ExecutionLoop:
         boundary, checkpointed, and its exact session resumes with the message. The contract and
         acceptance do not change; to change them, replan."""
         operator.require("goal.steer")
+        check_goal_access(self.store, operator, goal_id)
         message = text.strip()[:4000]
         if not message:
             raise Hold("STEER_TEXT", "Steering needs a message")
@@ -131,6 +132,7 @@ class ExecutionLoop:
         goal is blocked, the planner drafts the next contract revision with the reason, and
         nothing runs until the operator approves that revision."""
         operator.require("goal.steer")
+        check_goal_access(self.store, operator, goal_id)
         why = reason.strip()[:4000]
         if not why:
             raise Hold("REPLAN_REASON", "Replanning needs a reason")

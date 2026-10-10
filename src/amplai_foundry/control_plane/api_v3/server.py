@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import canonical, digest, now
+from amplai_foundry.runtime.contracts.intake import is_intake
 from amplai_foundry.runtime.contracts.semantics import check_refs
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
@@ -353,6 +354,13 @@ def create_app(services: ApiServices) -> FastAPI:
             )
         return int(raw)
 
+    def reader(a: Actor) -> None:
+        a.require("runtime.read")
+        if is_intake(a):  # these reads are not filtered to the linked operator's goals (AC-H3)
+            raise RuntimeFault(
+                "FORBIDDEN", "A front agent reads its operator's goals through the intake routes"
+            )
+
     def require_service(value: Any, name: str) -> Any:
         if value is None:
             raise Hold(
@@ -407,7 +415,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/goals")
     def list_goals(a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         with store._lock:
             rows = store.conn.execute(
                 "SELECT id,state,row_version FROM heads WHERE tenant=? AND project=? "
@@ -418,7 +426,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/goals/{goal_id}")
     def get_goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         value = store.head(a.scope, "goal", goal_id)
         return JSONResponse(
             {"goal_id": goal_id, **value, "budget": runtime.budgets.totals(a.scope, goal_id)},
@@ -662,7 +670,7 @@ def create_app(services: ApiServices) -> FastAPI:
     def read_object(
         kind: str, object_id: str, revision: int, digest: str, a: Actor = Depends(actor)
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         if kind in {
             "eval-corpus",
             "corpus-case",
@@ -707,7 +715,7 @@ def create_app(services: ApiServices) -> FastAPI:
         until: str | None = None,
         a: Actor = Depends(actor),
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         filters = {
             k: v
             for k, v in {
@@ -724,7 +732,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/telemetry/events")
     def telemetry_events(after: int = 0, limit: int = 100, a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         safe: list[dict[str, Any]] = []
 
         def collect(batch: list[dict[str, Any]]) -> bool:
@@ -790,7 +798,7 @@ def create_app(services: ApiServices) -> FastAPI:
         last_event_id: str = Header(default="", alias="Last-Event-ID"),
         a: Actor = Depends(actor),
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         if after < 0 or not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event cursor/limit")
         if last_event_id:
