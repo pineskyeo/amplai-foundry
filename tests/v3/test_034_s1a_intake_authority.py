@@ -24,6 +24,7 @@ from amplai_foundry.runtime.contracts.intake import (
     INTAKE_PERMISSIONS,
     INTAKE_QUESTION_KINDS,
     INTAKE_STEERING_KINDS,
+    STEER_EVENT,
     STOP_EVENT,
     intake_actor,
 )
@@ -39,10 +40,10 @@ ALL_QUESTION_KINDS = (
 )  # fmt: skip
 
 
-def stop_events(d: Any, goal: str) -> list[dict[str, Any]]:
+def stop_events(d: Any, goal: str, event_type: str = STOP_EVENT) -> list[dict[str, Any]]:
     rows = d.store.conn.execute(
         "SELECT data FROM events WHERE aggregate_type='goal' AND aggregate_id=? AND event_type=?",
-        (goal, STOP_EVENT),
+        (goal, event_type),
     ).fetchall()
     return [json.loads(r["data"]) for r in rows]
 
@@ -304,3 +305,22 @@ def test_cancel_needs_a_cancel_permission_and_an_own_goal(deployment: Any, tmp_p
     # a human with only goal.cancel stops it too (the operator's own path)
     human = Actor("pinesky", deployment.scope, frozenset({"goal.cancel"}), "human", "local-token")
     assert loop.cancel(human, goal)["status"] == "cancelled"
+
+
+def test_a_steer_through_the_front_agent_is_guidance_not_a_stop(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig, loop, hermes, goal = cancel_rig(deployment, tmp_path)
+    rig.service.approve(rig.operator, goal)
+    rig.service._save_plan(goal, {**rig.service.plan_record(goal), "status": "running"})
+    loop._in_attempt.add(goal)  # the loop marks a goal so while its attempt's process runs
+    assert loop.steer(hermes, goal, "value() must return 2")["status"] == "steering"
+    # the steer's pause is the checkpoint of a pause -> resume pair, recorded as guidance
+    assert stop_events(rig.d, goal) == []
+    (guidance,) = stop_events(rig.d, goal, STEER_EVENT)
+    assert guidance["text"] == "value() must return 2"
+    assert guidance["actor"]["authn_context_ref"] == "intake:hermes"
+    loop._in_attempt.discard(goal)
+    loop.cancel(hermes, goal, reason="stop it now")
+    (stop,) = stop_events(rig.d, goal)
+    assert stop["kind"] == "cancel" and stop["reason"] == "stop it now"

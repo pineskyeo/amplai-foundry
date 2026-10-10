@@ -156,6 +156,7 @@ class ExecutionLoop:
             queued = self.steering.receive(
                 operator, goal_id, steering_kind, text,
                 expected_contract_ref=goal["data"]["active_contract_ref"], key=new_id(kind),
+                guidance=kind == "steer",  # a steer's pause is a checkpoint, not a stop
             )  # fmt: skip
             self._steering[goal_id] = {
                 "operator": operator, "pause_id": queued["steering_id"], "text": text,

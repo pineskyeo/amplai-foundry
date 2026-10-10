@@ -8,7 +8,8 @@ identity map; no request field supplies it. Its permissions are the front agent'
 
 On the wire an actor is ``human`` or ``service`` (frozen 3.0.0 ``common.schema.json``
 ``$defs/actor``), so an intake actor is written as ``service`` and marked by its
-``authn_context_ref`` (``intake:<adapter>``); persisted records are checked by that mark.
+``authn_context_ref`` (``intake:<adapter>``). Who paused a goal is read back by that mark
+(``latest_applied_pause``).
 
 Rules every path applies, whatever route reached the service:
 
@@ -84,11 +85,6 @@ def is_intake(actor: Actor) -> bool:
     return actor.kind == INTAKE_KIND
 
 
-def is_intake_wire(actor: dict[str, Any]) -> bool:
-    """A persisted actor (``Actor.wire()``) written by an intake actor."""
-    return str(actor.get("authn_context_ref", "")).startswith(INTAKE_CONTEXT_PREFIX)
-
-
 def check_steering_kind(actor: Actor, kind: str, *, paused_by: dict[str, Any] | None) -> None:
     """Refuse a steering kind this actor kind may not send (H-3). ``paused_by`` is the wire actor
     of the goal's latest applied pause, or None when the goal has none."""
@@ -144,6 +140,7 @@ def check_goal_access(store: Store, actor: Actor, goal_id: str) -> None:
 
 
 STOP_EVENT = "intake.stop_requested"
+STEER_EVENT = "intake.steer_requested"
 
 
 def stop_requested(
@@ -156,8 +153,8 @@ def stop_requested(
     *,
     steering_ref: dict[str, Any] | None = None,
 ) -> None:
-    """Record, in the caller's transaction, that the front agent paused or cancelled a goal: who
-    (the intake actor) and why (its reason). H-3: every such stop leaves an operator record."""
+    """Record, in the caller's transaction, that the front agent asked to pause or cancel a goal:
+    who (the intake actor) and why (its reason). H-3: every such stop leaves an operator record."""
     store.event(
         db,
         actor.scope,
@@ -165,6 +162,27 @@ def stop_requested(
         goal_id,
         STOP_EVENT,
         {"kind": kind, "actor": actor.wire(), "reason": reason, "steering_ref": steering_ref},
+    )
+
+
+def steer_requested(
+    store: Store,
+    db: sqlite3.Connection,
+    actor: Actor,
+    goal_id: str,
+    text: str,
+    *,
+    steering_ref: dict[str, Any],
+) -> None:
+    """Record guidance the front agent relayed to a running attempt (``amplai steer``). Its pause
+    is only the checkpoint before the same session resumes with the message, not a stop."""
+    store.event(
+        db,
+        actor.scope,
+        "goal",
+        goal_id,
+        STEER_EVENT,
+        {"actor": actor.wire(), "text": text, "steering_ref": steering_ref},
     )
 
 
