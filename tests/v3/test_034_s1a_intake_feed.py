@@ -142,6 +142,11 @@ def test_a_cursor_past_the_newest_event_or_of_another_generation_is_expired(
     for malformed in ("12", "abc:", ":12", f"{incarnation}:\u00b2", f"{incarnation}:\u0661\u0662"):
         response = feed(client, malformed)  # other-script digits too: 400, never a 500
         assert response.status_code == 400 and response.json()["code"] == "EVENT_CURSOR"
+    # the seq is at most 18 digits: 19 digits or a very long one is 400, never a 500
+    for long_seq in ("1" * 19, "9" * 5000):
+        response = feed(client, f"{incarnation}:{long_seq}")
+        assert response.status_code == 400 and response.json()["code"] == "EVENT_CURSOR"
+    assert feed(client, f"{incarnation}:{'9' * 18}").json()["code"] == "CURSOR_EXPIRED"
 
 
 def test_after_a_restore_old_cursors_expire_and_a_revoked_token_stays_revoked(
