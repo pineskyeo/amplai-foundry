@@ -14,6 +14,13 @@ from typing import TYPE_CHECKING, Any
 from ..contracts.authority import Actor
 from ..contracts.gates import Observation
 from ..contracts.identity import new_id, now
+from ..contracts.intake import (
+    check_goal_access,
+    check_steering_kind,
+    is_intake,
+    latest_applied_pause,
+    stop_requested,
+)
 from ..contracts.semantics import check_context, check_refs
 from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope
@@ -101,6 +108,11 @@ class SteeringService:
     ) -> dict[str, Any]:
         actor.require("goal.steer")
         scope = actor.scope
+        # every path that queues steering comes here: the kind is checked per actor kind (H-3)
+        check_goal_access(self.store, actor, goal_id)
+        with self.store._lock:
+            paused_by = latest_applied_pause(self.store.conn, scope, goal_id)
+        check_steering_kind(actor, kind, paused_by=paused_by)
         goal = self.store.head(scope, "goal", goal_id)
         if goal["data"].get("active_contract_ref") != expected_contract_ref:
             raise Conflict("STALE_CONTRACT", "Steering must target the exact active revision")
@@ -141,6 +153,8 @@ class SteeringService:
             h = self.store.head(scope, "goal", goal_id, db=db)
             if h["data"]["active_contract_ref"] != expected_contract_ref:
                 raise Conflict("STALE_CONTRACT", "Concurrent revision activation")
+            if kind == "resume":  # who paused the goal is read again inside the transaction
+                check_steering_kind(actor, kind, paused_by=latest_applied_pause(db, scope, goal_id))
             sid = event["steering_id"]
             ref = self.store.put(db, scope, "steering-event", sid, 1, event)
             self.store.cas(db, scope, "steering", sid, 0, "received", {"event": event, "ref": ref})
@@ -156,6 +170,9 @@ class SteeringService:
             else:
                 data["priority"] = priority
             self.store.cas(db, scope, "goal", goal_id, h["row_version"], h["state"], data)
+            if is_intake(actor) and kind in {"pause", "cancel"}:
+                # the operator's record of who stopped the goal through the front agent, and why
+                stop_requested(self.store, db, actor, goal_id, kind, text, steering_ref=ref)
             return {"steering_id": sid, "steering_ref": ref, "status": "queued"}
 
         return self.store.command(scope, actor.subject_id, key, request, apply)

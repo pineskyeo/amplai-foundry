@@ -2760,7 +2760,8 @@ class LocalExecutionService:
         return plan
 
     def revoke(self, operator: Actor, goal_id: str) -> None:
-        operator.require("execution.approve")
+        # stopping a goal revokes its approval: the cancel permission suffices (Work 034 D-112)
+        operator.require_any("goal.cancel", "execution.approve")
         plan = self.plan_record(goal_id)
         ref = plan.get("decision_ref")
         if not ref:

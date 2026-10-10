@@ -97,7 +97,9 @@ SERVICE_PERMISSIONS = frozenset(
         "execution.approve",
     }
 )
-OPERATOR_PERMISSIONS = frozenset({"goal.submit", "runtime.read", "execution.approve", "goal.steer"})
+OPERATOR_PERMISSIONS = frozenset(
+    {"goal.submit", "runtime.read", "execution.approve", "goal.steer", "goal.cancel"}
+)
 
 
 class VerifierConfig(BaseModel):

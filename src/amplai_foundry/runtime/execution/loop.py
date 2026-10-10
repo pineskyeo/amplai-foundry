@@ -30,6 +30,7 @@ from typing import Any
 from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
 from ..contracts.identity import canonical, digest, new_id, now
+from ..contracts.intake import check_goal_access, is_intake, stop_requested
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
@@ -86,11 +87,21 @@ class ExecutionLoop:
         self._in_attempt: set[str] = set()  # goals whose attempt process is running
 
     # -- operator controls --------------------------------------------------------------------
-    def cancel(self, operator: Actor, goal_id: str) -> dict[str, Any]:
-        operator.require("execution.approve")
+    def cancel(self, operator: Actor, goal_id: str, *, reason: str = "") -> dict[str, Any]:
+        """Stop the goal. ``goal.cancel`` (Work 034 D-112) or, as before, ``execution.approve``.
+        A front agent (intake actor) cancels only its linked operator's goals and states why; that
+        stop is recorded for the operator (``intake.stop_requested``)."""
+        operator.require_any("goal.cancel", "execution.approve")
+        check_goal_access(self.store, operator, goal_id)
+        why = reason.strip()[:4096]
+        if is_intake(operator) and not why:
+            raise Hold("CANCEL_REASON", "A cancel through the front agent states why")
         plan = self.service.plan_record(goal_id)
         if plan["status"] in {"verified", "published", "failed", "cancelled", "timed_out", "held"}:
             return plan
+        if is_intake(operator):
+            with self.store.tx() as db:
+                stop_requested(self.store, db, operator, goal_id, "cancel", why)
         with self._lock:
             self._cancel.add(goal_id)
         if plan.get("decision_ref"):
