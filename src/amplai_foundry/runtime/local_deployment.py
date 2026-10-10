@@ -877,7 +877,16 @@ class LocalProductDeployment:
             except RuntimeFault:
                 pass
             self._planning.add(goal_id)
-        self.service._save_plan(goal_id, {"goal_id": goal_id, "status": "planning"})
+        try:  # a cancel that landed after the read above stays (PLAN_ENDED)
+            self.service._save_plan(
+                goal_id, {"goal_id": goal_id, "status": "planning"}, unless_ended=True
+            )
+        except Hold as exc:
+            with self._planning_lock:
+                self._planning.discard(goal_id)
+            if exc.code != "PLAN_ENDED":
+                raise
+            return self.service.plan_record(goal_id)
 
         def run() -> None:
             try:

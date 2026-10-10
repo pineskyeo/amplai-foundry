@@ -26,7 +26,9 @@ from amplai_foundry.runtime.contracts.intake import (
     INTAKE_STEERING_KINDS,
     STEER_EVENT,
     STOP_EVENT,
+    check_steering_kind,
     intake_actor,
+    latest_applied_pause,
 )
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.runtime.execution.loop import ExecutionLoop
@@ -324,3 +326,34 @@ def test_a_steer_through_the_front_agent_is_guidance_not_a_stop(
     loop.cancel(hermes, goal, reason="stop it now")
     (stop,) = stop_events(rig.d, goal)
     assert stop["kind"] == "cancel" and stop["reason"] == "stop it now"
+
+
+def steering_head(d: Any, goal: str, actor: Actor, state: str, received_at: str) -> None:
+    event = {"goal_id": goal, "kind": "pause", "actor": actor.wire(), "received_at": received_at}
+    with d.store.tx() as db:
+        d.store.cas(db, d.scope, "steering", new_id("steer"), 0, state, {"event": event})
+
+
+def paused_by(d: Any, goal: str) -> Any:
+    with d.store._lock:
+        return latest_applied_pause(d.store.conn, d.scope, goal)
+
+
+def test_who_paused_is_the_most_recent_pause_that_took_effect(deployment: Any) -> None:
+    d = deployment
+    hermes = intake_actor("demo-owner", d.scope)
+    goal = d.goals.submit(d.actor, text="alpha 결과 JSON 생성", key="g-pauses")["goal_id"]
+    assert paused_by(d, goal) is None
+    steering_head(d, goal, hermes, "applied", "2026-10-11T01:00:00.000000Z")
+    steering_head(d, goal, d.actor, "applied", "2026-10-11T02:00:00.000000Z")
+    # the later applied pause is the operator's: the front agent may not resume
+    assert paused_by(d, goal) == d.actor.wire()
+    with pytest.raises(RuntimeFault):
+        check_steering_kind(hermes, "resume", paused_by=paused_by(d, goal))
+    # a later pause that has not taken effect (queued) does not count
+    steering_head(d, goal, hermes, "queued", "2026-10-11T03:00:00.000000Z")
+    assert paused_by(d, goal) == d.actor.wire()
+    steering_head(d, goal, hermes, "applied", "2026-10-11T04:00:00.000000Z")
+    steering_head(d, goal, d.actor, "queued", "2026-10-11T05:00:00.000000Z")
+    assert paused_by(d, goal) == hermes.wire()
+    check_steering_kind(hermes, "resume", paused_by=paused_by(d, goal))  # its own: allowed

@@ -34,7 +34,7 @@ from ..contracts.intake import check_goal_access, is_intake, stop_requested
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
-from .product import PORT, LocalExecutionService
+from .product import PLAN_ENDED, PORT, LocalExecutionService
 from .steering import SteeringService
 from .strategy_runner import StrategyChoice, node_app
 
@@ -716,6 +716,9 @@ class ExecutionLoop:
         try:
             record: dict[str, Any] = self.service.escalate(goal_id, to_cell=to_cell, reason=reason)
         except (Hold, RuntimeFault) as exc:
+            current = self.service.plan_record(goal_id)
+            if current.get("status") in PLAN_ENDED:  # a cancel landed meanwhile: it stays
+                return current
             return self._finish(
                 goal_id, "failed", reason=f"escalation: {exc.code}: {exc.message}"[:600]
             )
