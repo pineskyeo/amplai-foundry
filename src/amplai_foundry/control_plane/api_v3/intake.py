@@ -16,9 +16,15 @@ Routes under ``/api/v3/intake/hermes``:
     POST /goals/{goal_id}/steer  guidance for the running attempt (``amplai steer``)
     POST /goals/{goal_id}/replan change a running goal's plan; the operator approves the revision
     POST /goals/{goal_id}/cancel stop the goal, saying why
+    GET  /events                 notifications after a cursor (fixed schema, H-8, AC-H10)
 
 A message is accepted once: the server derives the idempotency key from the message's transport
-identity (``hermes:<digest>``, H-7). A goal of another subject is not found (AC-H3).
+identity (``hermes:<digest>``, H-7). A goal of another subject is not found (AC-H3). Submissions and
+controls are rate limited per actor and operation with the operator's configured limits (H-3, H-7).
+
+The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8). A cursor of another
+incarnation (the store was restored) or past the newest event is ``CURSOR_EXPIRED`` and carries a
+snapshot of the goals and a fresh cursor (design/18 §4, AC-H6).
 """
 
 from __future__ import annotations
@@ -26,12 +32,16 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
+import threading
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, Header
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -182,9 +192,45 @@ def _unavailable() -> RuntimeFault:
     return RuntimeFault("INTAKE_UNAVAILABLE", "The front agent entry is unavailable")
 
 
+OPERATIONS = ("submit", "steer", "replan", "cancel")
+
+
+class RateLimiter:
+    """At most ``count`` requests per ``window`` seconds for each (actor, operation) (H-3, H-7).
+
+    Every authenticated new message counts; a resent message (its command or receipt exists) is
+    a replay and does not. The windows live in this process on a monotonic clock: a server
+    restart starts them again.
+    """
+
+    def __init__(self, limits: dict[str, tuple[int, float]], clock: Callable[[], float]) -> None:
+        if set(limits) != set(OPERATIONS):
+            raise Hold("INTAKE_RATE_LIMITS", "Every intake operation needs a configured limit")
+        self.limits, self.clock = dict(limits), clock
+        self._seen: dict[tuple[str, str, str], deque[float]] = {}
+        self._lock = threading.Lock()
+
+    def check(self, actor: Actor, operation: str) -> None:
+        count, window = self.limits[operation]
+        key = (actor.subject_id, actor.authn_context_ref, operation)
+        with self._lock:
+            moment = self.clock()
+            seen = self._seen.setdefault(key, deque())
+            while seen and seen[0] <= moment - window:
+                seen.popleft()
+            if len(seen) >= count:
+                raise RuntimeFault(
+                    "RATE_LIMITED",
+                    f"At most {count} {operation} requests per {window:g} seconds",
+                    outcome="hold",
+                )
+            seen.append(moment)
+
+
 @dataclass
 class IntakeServices:
     gate: IntakeGate
+    limits: RateLimiter
     store: Store
     goals: Any  # GoalService
     plan: Callable[[str], dict[str, Any]]  # draft the contract (background)
@@ -226,9 +272,32 @@ def project(store: Store, scope: Scope, goal_id: str, record: dict[str, Any]) ->
     }
 
 
+_EVENT_TYPE = re.compile(r"[a-z][a-z0-9_]*(\.[a-z0-9_]+)*")
+_SEQ = re.compile(r"[0-9]{1,18}")  # ASCII digits only: str.isdigit() takes other scripts too
+
+
+def submitted_before(store: Store, actor: Actor, key: str) -> bool:
+    """A submission with this key was accepted already (``GoalService.submit``'s command)."""
+    with store._lock:
+        row = store.conn.execute(
+            "SELECT 1 FROM commands WHERE tenant=? AND project=? AND actor=? "
+            "AND operation='command' AND key=?",
+            (*actor.scope.keys(), actor.subject_id, key),
+        ).fetchone()
+    return row is not None
+
+
+def newest_seq(store: Store, scope: Scope) -> int:
+    with store._lock:
+        row = store.conn.execute(
+            "SELECT COALESCE(MAX(seq),0) FROM events WHERE tenant=? AND project=?", scope.keys()
+        ).fetchone()
+    return int(row[0])
+
+
 def intake_router(services: IntakeServices) -> APIRouter:
     router = APIRouter(prefix=PREFIX)
-    gate, store = services.gate, services.store
+    gate, store, limits = services.gate, services.store, services.limits
     commands = ApiCommands(store)
 
     def owned(actor: Actor, goal_id: str) -> dict[str, Any]:
@@ -242,6 +311,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
     @router.post("", status_code=202)
     def submit(body: SubmitBody, authorization: str = Header(default="")) -> Any:
         actor = gate.actor(authorization, body.provider, body.user_id)
+        if not submitted_before(store, actor, body.key()):  # a resend replays, never limited
+            limits.check(actor, "submit")
         submitted = services.goals.submit(
             actor,
             text=body.text,
@@ -254,9 +325,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
         services.plan(goal_id)  # a resent message finds the same goal and its plan
         return owned(actor, goal_id)
 
-    @router.get("/goals")
-    def goals(provider: str, user_id: str, authorization: str = Header(default="")) -> Any:
-        actor = gate.actor(authorization, provider, user_id)
+    def listing(actor: Actor) -> list[dict[str, Any]]:
+        """The linked operator's 20 most recent goals."""
         with store._lock:
             rows = store.conn.execute(
                 "SELECT id FROM heads WHERE tenant=? AND project=? AND kind='execution-plan' "
@@ -273,7 +343,11 @@ def intake_router(services: IntakeServices) -> APIRouter:
                 items.append(owned(actor, row["id"]))
             if len(items) == 20:
                 break
-        return {"items": items}
+        return items
+
+    @router.get("/goals")
+    def goals(provider: str, user_id: str, authorization: str = Header(default="")) -> Any:
+        return {"items": listing(gate.actor(authorization, provider, user_id))}
 
     @router.get("/goals/{goal_id}")
     def goal(
@@ -290,6 +364,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
     ) -> Any:
         actor = gate.actor(authorization, body.provider, body.user_id)
         owned(actor, goal_id)
+        if commands.receipt(actor, body.key()) is None:  # a resend replays, never limited
+            limits.check(actor, route)
 
         def execute() -> Any:
             operation(actor)
@@ -328,5 +404,68 @@ def intake_router(services: IntakeServices) -> APIRouter:
             "cancel",
             lambda a: services.cancel(a, goal_id, reason=body.reason),
         )
+
+    @router.get("/events")
+    def events(
+        provider: str,
+        user_id: str,
+        cursor: str | None = None,
+        limit: int = 100,
+        authorization: str = Header(default=""),
+    ) -> Any:
+        """Notifications for the linked operator's goals after ``cursor``. Each names the goal, the
+        event type (an AMPLAI identifier), the goal's current status and the event time; never an
+        event payload. Without a cursor: a snapshot and the cursor to follow from."""
+        actor = gate.actor(authorization, provider, user_id)
+        if not 1 <= limit <= 1000:
+            raise RuntimeFault("EVENT_BOUNDS", "Invalid event limit")
+        newest = newest_seq(store, actor.scope)
+        fresh = f"{store.incarnation}:{newest}"
+        if cursor is None:
+            return {"items": [], "snapshot": listing(actor), "cursor": fresh}
+        incarnation, _, seq = cursor.rpartition(":")
+        if not incarnation or not _SEQ.fullmatch(seq):
+            raise RuntimeFault("EVENT_CURSOR", "A cursor is <incarnation>:<seq>")
+        if incarnation != store.incarnation or int(seq) > newest:
+            return JSONResponse(
+                {
+                    "code": "CURSOR_EXPIRED",
+                    "message": "The cursor is from another store generation; start again from "
+                    "the snapshot",
+                    "outcome": "rejected",
+                    "snapshot": listing(actor),
+                    "cursor": fresh,
+                },
+                status_code=409,
+            )
+        owners: dict[str, bool] = {}
+        items, last = [], int(seq)
+        for event in store.events(actor.scope, after=int(seq), limit=limit):
+            last = event["seq"]
+            goal_id = event["aggregate_id"]
+            if event["aggregate_type"] != "goal":
+                continue
+            if goal_id not in owners:
+                try:
+                    owners[goal_id] = goal_owner(store, actor.scope, goal_id) == actor.subject_id
+                except RuntimeFault:
+                    owners[goal_id] = False
+            if not owners[goal_id]:
+                continue
+            try:
+                status = project(store, actor.scope, goal_id, services.plan_record(goal_id))
+            except RuntimeFault:
+                status = {"status": "unknown"}
+            kind = event["event_type"]
+            items.append(
+                {
+                    "seq": event["seq"],
+                    "goal_id": goal_id,
+                    "event": kind if _EVENT_TYPE.fullmatch(kind) else "other",
+                    "status": status["status"],
+                    "at": event["created_at"],
+                }
+            )
+        return {"items": items, "cursor": f"{store.incarnation}:{last}"}
 
     return router

@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -29,7 +30,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
-from ..control_plane.api_v3.intake import IntakeGate, IntakeServices, intake_router
+from ..control_plane.api_v3.intake import (
+    OPERATIONS,
+    IntakeGate,
+    IntakeServices,
+    RateLimiter,
+    intake_router,
+)
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -296,6 +303,23 @@ class IntegrationEntry(BaseModel):
     timeout_seconds: int = 900
 
 
+class RateLimitEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    count: int = Field(ge=1, le=10_000)
+    window_seconds: int = Field(ge=1, le=86_400)
+
+
+class IntakeRateLimits(BaseModel):
+    """Per front-agent actor (H-3, H-7). No defaults: the design gives no numbers, so the
+    operator sets each one."""
+
+    model_config = ConfigDict(extra="forbid")
+    submit: RateLimitEntry
+    steer: RateLimitEntry
+    replan: RateLimitEntry
+    cancel: RateLimitEntry
+
+
 class IntakeEntry(BaseModel):
     """The messenger front agent's credentials (Work 034 S1a, spec H-5, H-6). Both files live
     outside the store and are read on every request: removing or rotating the token revokes it at
@@ -304,6 +328,7 @@ class IntakeEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
     token_file: str  # 0600 file with the front agent's bearer token (32+ characters)
     identity_map_file: str  # 0600 JSON (intake-identity-1): messenger user -> the operator
+    rate_limits: IntakeRateLimits
 
 
 class LocalConfig(BaseModel):
@@ -890,8 +915,13 @@ class LocalProductDeployment:
             operator_token=self._operator_token,
             read=private_bytes,
         )
+        limits: dict[str, tuple[int, float]] = {}
+        for op in OPERATIONS:
+            limit = getattr(entry.rate_limits, op)
+            limits[op] = (limit.count, limit.window_seconds)
         return IntakeServices(
             gate=gate,
+            limits=RateLimiter(limits, time.monotonic),  # windows ignore wall-clock steps
             store=self.store,
             goals=self.goals,
             plan=self.request_plan,
