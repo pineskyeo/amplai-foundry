@@ -1,6 +1,6 @@
 # Work 034 Plan: 구조, 인터페이스, 순서
 
-- 상태: 설계 초안 r5 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영). spec: `spec.md`.
+- 상태: 설계 초안 r6 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 운영자 지시 2026-10-11 반영 r6: 야간 루프 제어 OD-12, 앞단 에이전트·메신저 모듈 OD-13; r6 의 코드 근거는 main `76e2874`). spec: `spec.md`.
 
 ## 0. 검토 이력
 
@@ -73,14 +73,15 @@ API·권한
 ## 2. 전체 구조
 
 ```text
-운영자 ── 메신저 ──▶ Hermes (전용 VM, Docker 터미널, 버전 고정, 외부 스킬·자체 코딩 끔)
-   ▲                  │ cron 이 알림 projection 을 가져가 보고
-   │                  ▼
-   │           AMPLAI MCP 서버 (별도 프로세스, Hermes 토큰은 여기만)
-   │                  │ 접수 listener (원격이면 TLS): intake, 필터된 조회, 종류 제한 steer·답변
-   │ 승인: CLI(계약·digest 표시) / 페이지(passkey, S1b)
-   ▼                  ▼
-AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → PR · 메타하네스
+운영자 ── 메신저(첫 구현 Slack, 교체 가능) ──▶ 앞단 에이전트(첫 구현 Hermes, 키트로 교체; 전용 VM, 버전 고정)
+   ▲                                              │ cron: 아침 보고, feed 가져오기
+   │ notifier(운영자 직접 알림, 첫 구현 Slack)       ▼
+   │                                       접수 어댑터 intake_adapter (MCP 서버, 별도 프로세스, adapter 토큰은 여기만)
+   │ 승인: CLI(계약·digest 표시) / 페이지(passkey, S1b)   │ /api/v3/intake/{adapter_id}: 접수, 필터 조회, 종류 제한 steer·답변,
+   │                                              │ 야간 제어(조이는 방향만)
+   ▼                                              ▼
+AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검증 → PR
+   │  nightly-control 기록 ──읽기 전용──▶ 야간 루프 (meta 배포: launchd 시계 → NightlyRunner → 메타하네스)
    │ 설정 부품 ─가리킴─▶ 코드 모듈 (고정 배포물, 외부 입력 kind 는 프로세스 밖)
    ▼
 작업 에이전트 (샌드박스) ── (사내) 모델 게이트웨이(별도 프로세스) ──▶ 사내 LLM
@@ -124,7 +125,7 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 11. 원격 Hermes(OD-8): 접수 listener 를 따로 띄워 위 경로만 열고 TLS 또는 출발지 고정 토큰 (H-12). 운영자 API 는 loopback 유지.
 
 **Hermes 쪽 (S1a)**
-- AMPLAI MCP 서버 (`integrations/hermes/`, `intake_adapter`, 별도 프로세스): 도구 `submit_work`, `submit_design`, `goal_status`,
+- AMPLAI MCP 서버 (`integrations/intake_mcp/`, `intake_adapter`, 별도 프로세스, 앞단 에이전트와 무관 §3.7): 도구 `submit_work`, `submit_design`, `goal_status`,
   `list_goals`, `steer`(허용 종류), `replan`, `pause_goal`, `cancel_goal`, `resume_goal`(Hermes 가 멈춘 goal 만), `answer_question`(허용 종류),
   `propose_knowledge`, `pending_events`(projection),
   `meta_summary`. 토큰은 MCP 서버 환경에만, Hermes 모델 문맥 밖 (design/10 §6).
@@ -195,6 +196,72 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 
 - `judge` kind. 외부 환경에서 접근 권한 확보 후, 질문 유형별 자격 시험 통과 전 사용 금지. 사내는 데이터 정책 허용 시만.
 
+### 3.7 앞단 에이전트·메신저 모듈 (S1c, OD-13)
+
+| 층 | 모듈 | 첫 구현 | 바꿀 때 |
+|---|---|---|---|
+| 접수 어댑터 | `intake_adapter` (코드, 별도 프로세스) | AMPLAI MCP 서버 `integrations/intake_mcp/` | 같은 도구 계약을 구현한 다른 어댑터 |
+| 앞단 에이전트 키트 | 설정 묶음 (버전, 설치 영수증) | Hermes 키트 `integrations/front_agents/hermes/` | 다른 에이전트 키트 |
+| 대화 메신저 | 키트 안 gateway 설정 | Slack (OD-9 가정) | 키트 설정만 |
+| 운영자 직접 알림 | `notifier` (코드) | Slack | 다른 notifier |
+
+- **코어 일반화 (S1a 고정값 제거)**: adapter 마다 intake gate 를 만든다. 설정 `intake.adapters[]` 의 필드는 `adapter_id`,
+  `token_file`, `identity_map_file`, `permissions`(H-2 이하로만), `rate_limits` 다.
+  - 경로 `/api/v3/intake/{adapter_id}`, actor 표지 `intake:<adapter_id>`, 중복 key `<adapter_id>:<digest>`.
+  - wire `source_channel` 은 `hermes` 그대로 둔다 (F-3).
+  - 지금 `intake_actor(..., adapter=HERMES)` 는 이미 adapter 를 인자로 받는다 (`runtime/contracts/intake.py:78`).
+    경로·key·channel 은 고정이다 (`control_plane/api_v3/intake.py:50,89,249`).
+- **도구 계약 v1**: §3.2 의 도구에 `night_status`, `night_stop`, `night_skip`, `night_tighten`, `night_clear_own`(S1d)을 더한다.
+  이름과 입력·출력 schema 를 계약 파일 하나에 고정하고 적합성 시험을 둔다.
+- **Hermes 키트**:
+  - config 틀: 모델과 `agent.reasoning_effort`, 끈 toolset, `skills.write_approval`, `memory.write_approval`.
+  - 지시문: AMPLAI 에서의 역할과 금지 사항(승인 불가, 코드 직접 수정 불가).
+  - MCP 연결: 토큰은 MCP 서버 환경에만 둔다.
+  - cron: 아침 보고, feed 가져오기.
+  - 메신저 gateway 설정: Slack Socket Mode, 허용 사용자.
+  - VM 점검표 (H-9).
+  - Hermes 의 MCP 호출은 Hermes 자체 승인 단계를 거치지 않는다(외부 조사 2026-10-10, Hermes issue #49167). 그래서 권한은
+    AMPLAI 서버가 판정한다.
+- **notifier v1**: `send(event_id, projection) -> receipt`.
+  - 같은 event_id 를 다시 보내면 receipt 를 재생한다.
+  - 실패하면 제품 store outbox 에서 재시도한다.
+  - Slack 구현은 운영자 채널 하나에만 보낸다.
+
+### 3.8 야간 메타 루프 제어 (S1d, OD-12)
+
+| 층 | 누가 | 하는 일 |
+|---|---|---|
+| 시계 | launchd | 정해진 시각에 `amplai meta nightly run` 한 번 (`deployment/launchd/ai.amplai.meta-nightly.plist.template`) |
+| 밤 진행 | `NightlyRunner` | preflight → drift → 설계 → search → confirmation → dreaming → dashboard, 결정적 (`meta_harness/nightly.py:89-91`) |
+| 제어 요청 | 앞단 에이전트·운영자 | 멈춤·건너뛰기·조이기 → 제품 authority service → `nightly-control` 기록 |
+| 승인 | 사람 | 상시 허락 발급·연장, 단계 gate (CLI, 승인 페이지) |
+
+- **제어 기록** `nightly-control` (제품 store, 새 내부 kind):
+  `{control_id, action: stop|skip|tighten|clear, dates, limits: {budget_trials?, stop_at?}, issued_by, reason, at, clears?}`.
+  - 가장 엄격한 것이 이긴다.
+  - `clear` 는 같은 actor 가 건 것만 지운다(사람은 모두 지운다).
+  - 앞단 에이전트의 `tighten` 은 줄이는 방향만 받는다.
+- **밤 쪽 적용**:
+  - 설정 `meta.control_store` 가 제품 runtime root 를 가리킨다.
+  - `NightlyRunner` 는 preflight, 단계 사이 검사(`_night_reason`, `nightly.py:686-687`), trial guard 에서
+    `Store(readonly=True)` 로 제어 기록을 읽는다.
+  - 적용한 제어는 밤 기록 `data.controls` 에 남긴다.
+  - 멈춤 이유 `front_agent_stop`, `operator_stop`, `skipped`, `control_unreadable` 을 `HOLD_REASONS` 에 더한다
+    (`nightly.py:94-97`).
+  - 지금 쓰는 meta store 의 kill switch(`runtime-control/kill`, `nightly.py:1178-1184`)는 밤이 store 를 잡고 있어 밖에서 켤 수 없다.
+- **상태**: `meta nightly status` 는 읽기 전용으로 연다. 앞단 에이전트용 요약은 제품 서버가 meta store 를 읽기 전용으로 열어
+  고정 schema 로 만든다.
+- **알림**:
+  - 제품 서버가 meta store event 를 읽기 전용으로 읽어 앞단 에이전트 feed 로 준다(`/api/v3/intake/{adapter_id}/meta/feed`,
+    cursor `<meta incarnation>:<seq>`).
+  - notifier 대상: 앞단 에이전트가 건 멈춤, unknown effect, drift, 상시 허락 만료 임박.
+- **검토한 대안**:
+  - (a) meta 상주 서버가 meta store 를 소유하고 밤을 안에서 돌린다. meta CLI 전체를 client 로 바꿔야 해서 크다.
+  - (b) meta 폴더의 제어 파일. 트랜잭션 store 밖이고 쓰는 쪽이 둘이다.
+  - (c) 제품 store 기록(추천, Q-9). S1a 의 authority service, 감사, 중복 방지를 그대로 쓴다.
+- **평가기 digest**: `nightly.py` 는 평가기 digest 범위 밖이다(`evaluation/versions.py:33-34`). 새 권한 `nightly.control` 은
+  권한 코드 변경이라 class C 다.
+
 ## 4. 위협·통제 (design/29 §1, design/10 §8)
 
 | 위협 | 경로 | 통제 | test |
@@ -214,6 +281,10 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 | unapproved migration | 재시작·야간 작업이 이전 실행 | 동결, 명시적 `migrate`, local-update 제한 | AC-U4, AC-U8 |
 | shadowed upgrade | 승격 부품이 새 검증 정책을 가림 | 기준 digest, stale 표시 | AC-U7 |
 | VM compromise | Hermes VM 침해 | 영향 범위 문서, 빈도 제한, 토큰 즉시 폐기 | AC-H5, AC-H7 |
+| 야간 루프 남용 | 앞단 에이전트가 밤을 늘리거나 다시 켬 | 조이는 방향만, 시작·연장·해제는 사람, 자기가 건 것만 해제 | AC-N2, AC-N3 |
+| 알림 차단 | 침해된 앞단 에이전트가 경고를 숨김 | 앞단 에이전트와 독립된 `notifier` | AC-F3, AC-N1 |
+| adapter 혼동 | 한 adapter 토큰으로 다른 adapter 행세 | adapter 별 토큰·연결표·경로 | AC-F2 |
+| 제어 채널 장애 | 제어 기록을 못 읽어 멈춤 요청이 무시됨 | 읽지 못하면 밤을 멈춤 (fail closed) | AC-N5 |
 
 ## 5. 슬라이스와 순서 (OD-3)
 
@@ -222,6 +293,8 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 | S0 | 모듈 레지스트리, 신뢰 루트, 프로세스 밖 실행, 내장 모듈 감싸기(작은 PR), `classify`·digest 범위(eval-N) | AC-M1~M6, AC-X1 | G-07 | — |
 | S1a | `intake` actor, store 밖 토큰·연결표, 접수 경로, steering·질문 종류 제한, 조회 필터, projection, 세대 cursor, 승인 CLI digest, 빈도 제한, MCP 서버, cron 알림, VM runbook | AC-H1~H10 | — | S0 |
 | S1b | 승인 페이지 (OD-6), 원격 listener (OD-8 이 원격일 때) | AC-H11 | — | S1a |
+| S1c | 앞단 에이전트·메신저 모듈: adapter 별 intake 설정, 경로·표지 일반화, `notifier` kind + Slack, 도구 계약 v1, MCP 서버, Hermes 키트 | AC-F1~F3, AC-H8, AC-H9 | — | S1a |
+| S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N5 | class C(권한) | S1c |
 | S2a | 지식 모듈 | AC-K1, AC-K3 | G-04 | S0 |
 | S2b | 문서 최신성 모듈 | AC-K2 | — | S2a |
 | S3 | 배포 릴리스·Q-suite 자산, 동결, 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한 | AC-U1~U8 | G-07, G-15, G-20 | S0 |
@@ -242,6 +315,8 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
   D-113 승인 페이지 passkey (OD-6).
 - D-114 Q-suite 배포 자산화 (OD-7).
 - D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확인 대기).
+- D-116 앞단 에이전트·메신저는 세 층 모듈(접수 어댑터, 앞단 에이전트 키트, notifier)이다. wire `source_channel=hermes` 는 앞단 에이전트 채널 이름으로 두고, adapter 는 `authn_context_ref` 로 구분한다 (OD-13).
+- D-117 야간 루프 제어: 시계 launchd, 진행 NightlyRunner, 앞단 에이전트는 조이는 방향만(`nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12).
 
 ## 7. 열린 질문
 
@@ -254,6 +329,9 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 | Q-5 | OD-4~OD-7 | S1a, S1b, S3, S4 |
 | Q-6 | 사내 LLM 서버 사양 (OpenAI 호환, 도구 호출, 컨텍스트, 스트리밍 사용량) | S4 |
 | Q-7 | design/16 §3 pack 조합 class A 와 코드 B 의 차이 | S0 이후 |
+| Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 (추천: 아니오, 시작은 launchd 시각 또는 사람) | S1d |
+| Q-9 | 제어 기록 위치: 제품 store (추천) / meta 제어 파일 / meta 상주 서버 (§3.8 대안) | S1d |
+| Q-10 | notifier 의 Slack 방식: incoming webhook / bot token (OD-9 확정 뒤) | S1c |
 
 ## 8. 위험
 

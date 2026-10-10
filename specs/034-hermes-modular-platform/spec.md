@@ -26,10 +26,12 @@
 | OD-9 | 메신저는 Slack (운영자 확인 대기, 가정) | 가정 |
 | OD-10 | 지식은 별도 git 저장소. 3층: Markdown 파일(정본) / 지식 모듈(유일한 쓰기·승인·색인) / MCP(읽기·검색·제안 창구). 사내는 지식 공간(Knowledge Space) 단위로 관리 주체·승인자를 두고 프로젝트가 골라 연결한다 (K-5~K-9) | 방향 확정, 세부 확인 대기 |
 | OD-11 | Hermes 가 쓸 모델·비용: 구독 연결 가능 여부를 먼저 확인한 뒤 결정 | 확인 중 |
+| OD-12 | 야간 메타 루프는 앞단 에이전트로 제어한다: 상태 보고, 멈춤·건너뛰기·조이기는 앞단 에이전트, 시작·확장·승인은 사람 (N-1~N-8) | 방향 확정 (2026-10-11), 세부 결정 대기 (Q-8, Q-9) |
+| OD-13 | 앞단 에이전트와 메신저는 교체 가능한 모듈이다. Hermes·Slack 은 첫 구현이다 (F-1~F-6) | 확정 (2026-10-11) |
 
 ## 3. 범위
 
-포함: 모듈 체계, Hermes 연결(S1a, S1b), 지식·문서 최신성 모듈, 3층 업그레이드, 사내 구성, Jev.
+포함: 모듈 체계, Hermes 연결(S1a, S1b), 앞단 에이전트·메신저 모듈(S1c), 야간 메타 루프 제어(S1d), 지식·문서 최신성 모듈, 3층 업그레이드, 사내 구성, Jev.
 제외: 사내 → upstream 반출, Hermes 경유 코드 변경, 웹 대시보드를 Core Runtime 필수 의존으로 만들기 (design/17 §5),
 3.0.0 wire schema·design-reference 변경, 상용 VM 에이전트 연동, 다중 사용자 권한 모델(사내 다중 사용자는 S4 이후 별도 설계).
 
@@ -79,7 +81,7 @@
 - H-9 Hermes 는 전용 VM 에서 Docker 터미널로 돌고 버전이 고정된다. 허용 통신은 메신저, 모델 API(또는 사내 게이트웨이),
   AMPLAI 접수 경로뿐. 외부 스킬 설치·자체 코딩 위임은 끈다 (design/02 §7).
 - H-10 Hermes 개인 메모리와 AMPLAI 프로젝트 지식은 분리한다. 지식 변경은 제안 제출로만.
-- H-11 Hermes 를 다른 앞단 에이전트로 바꿔도 AMPLAI 쪽은 바뀌지 않는다.
+- H-11 Hermes 를 다른 앞단 에이전트로 바꿔도 AMPLAI 쪽은 바뀌지 않는다 (구체화: F-1~F-6).
 - H-12 Hermes 가 다른 기기에 있으면(OD-8) 접수·필터 조회만 여는 별도 listener 를 TLS(또는 출발지 고정 토큰)로 둔다.
   지금 서버는 loopback 전용, 운영자 토큰 1개, TLS 없음 (`runtime/cli.py:926-941`).
 - H-13 승인은 운영자 본인 인증 + 현재 revision + 내용 digest 로만 (design/10 §4). S1a 의 `amplai approve` 는 AMPLAI 가 렌더한
@@ -87,6 +89,58 @@
   `control_plane/api_v3/client.py:104-105`). Hermes 가 보여 준 카드는 참고일 뿐 승인 근거가 아니다.
 - H-14 Hermes VM 침해 시 영향 범위를 문서화한다: 연결된 사용자 사칭, goal 조회, 실행 중 에이전트에 steer 문장 주입,
   메신저를 통한 피싱. 승인·grant·권한 질문·취소는 범위 밖.
+
+### F. 앞단 에이전트·메신저 교체 (OD-13)
+- F-1 세 층으로 나눈다.
+  1. 접수 어댑터: `intake_adapter` 코드 모듈(별도 프로세스). 첫 구현은 AMPLAI MCP 서버이고, 도구 계약은 앞단 에이전트와 무관하다.
+  2. 앞단 에이전트 키트: 설정 묶음(에이전트 설정 틀, 지시문, MCP 연결, 끌 도구 목록, cron 작업, 점검표). 첫 구현은 Hermes 키트.
+  3. 메신저: 대화 채널은 앞단 에이전트의 gateway 설정(키트 안)이고, 운영자 직접 알림은 `notifier` 코드 모듈이다. 첫 구현은 Slack.
+- F-2 코어에는 앞단 에이전트·메신저 이름이 없다. 설정 `intake.adapters[]` 가 adapter id 마다 토큰 파일, 연결표, 권한 상한을
+  정한다. 경로는 `/api/v3/intake/{adapter_id}`, actor 표지는 `authn_context_ref = intake:<adapter_id>`, 중복 방지 key 는
+  `<adapter_id>:<digest>`, 연결표 항목은 (메신저, workspace, 사용자 id) 다. 지금은 `hermes` 가 고정돼 있다
+  (`control_plane/api_v3/intake.py:50,89,249`, `runtime/contracts/intake.py:33-35`).
+- F-3 wire `source_channel` 은 3.0.0 에서 `cli|api|hermes|import` 로 고정이다
+  (`runtime/contracts/data/schemas/intent-envelope.schema.json:31-37`). 값 `hermes` 를 "앞단 에이전트 접수 채널" 의 wire 이름으로
+  문서화하고, 실제 adapter 는 `authn_context_ref` 로 구분한다. wire 는 바꾸지 않는다.
+- F-4 도구 계약(도구 이름, 입력·출력 schema)에 버전과 적합성 시험이 있다. 다른 앞단 에이전트는 같은 MCP 서버에 키트만 바꿔
+  붙인다. MCP 를 못 쓰는 에이전트는 같은 도구 계약을 구현한 다른 `intake_adapter`(예: webhook)를 쓴다.
+- F-5 `notifier` kind 를 S0 의 kind 목록에 더한다(인터페이스 v1, `runtime/modules/spec.py:24-30`). 입력은 고정 schema
+  projection 과 이벤트 id 뿐이고(원문 없음, H-8), 같은 이벤트 id 는 한 번만 보내며, 받는 곳은 설정된 운영자 연결뿐이다.
+  앞단 에이전트가 꺼지거나 침해돼도 운영자 알림은 간다 (H-3, S1a contract review P2-2).
+- F-6 교체 절차: 새 키트·구현 → 적합성 시험(AC-H9 의 stub client 포함) → 설정 전환 → 이전 adapter 토큰 폐기. 두 adapter 를
+  함께 켤 수 있고 서로 분리된다 (AC-F2).
+
+### N. 야간 메타 루프 제어 (OD-12)
+- N-1 역할을 나눈다.
+  - 시계: launchd. 정해진 시각에 `amplai meta nightly run` 을 한 번 실행한다
+    (`deployment/launchd/ai.amplai.meta-nightly.plist.template`).
+  - 밤 진행: `NightlyRunner`. 결정적 절차다 (`meta_harness/nightly.py`).
+  - 대화·보고·요청: 앞단 에이전트.
+  - 시작·확장·승인: 사람.
+  - 스케줄러는 LLM 으로 목표를 만들지 않는다 (design/02 §2).
+- N-2 새 권한 `nightly.control` 은 앞단 에이전트용 좁은 권한이다.
+  - 할 수 있는 것:
+    - 지금 멈춤. 실행 중인 밤은 다음 trial guard 에서 멈춘다.
+    - 날짜 건너뛰기.
+    - 오늘 밤 조이기. 밤 예산을 줄이거나 종료 시각을 앞당긴다.
+    - 자기가 건 건너뛰기·조이기를 밤 시작 전에 되돌리기 (OD-5 와 같은 원칙).
+  - 할 수 없는 것: 밤 시작, 상시 허락 발급·연장, 예산·시간 늘리기, 사람이 건 정지 해제,
+    focused·holdout·canary·promote·평가기 승인.
+- N-3 제어 요청은 제품 Control Plane 의 authority service 를 거쳐 제품 store 의 `nightly-control` 기록으로 남는다
+  (design/17 §5). 감사·중복 방지는 S1a 경로를 그대로 쓴다. 운영자는 같은 경로를 CLI 로 쓴다
+  (`amplai meta nightly stop|skip|tighten`).
+- N-4 실행 중인 밤도 멈출 수 있어야 한다.
+  - 지금은 밤 프로세스가 meta store 를 배타적으로 잡는다 (`runtime/storage/store.py:166-173`; 제품 배포 객체는 store 를 쓰기
+    모드로 연다, `runtime/local_deployment.py:378`). 그래서 밤 동안에는 `meta nightly revoke`·`status` 도 `ACTIVE_OWNER` 로 막힌다.
+  - 밤 프로세스는 preflight 와 모든 trial guard 에서 제품 store 를 읽기 전용으로 열어 제어 기록을 읽고, 가장 엄격한 것을
+    적용한다. 읽지 못하면 멈춘다.
+- N-5 상태 조회는 meta store 를 읽기 전용으로 연다 (대시보드 방식, `runtime/meta_commands/dashboard.py:48`). 앞단 에이전트에는
+  고정 schema 요약만 준다.
+- N-6 알림: 밤 시작, 멈춤(이유), 끝, drift, 승인 대기를 앞단 에이전트 feed 로 보낸다(meta 세대 cursor). 그중 앞단 에이전트가 건
+  멈춤, unknown effect, drift 는 `notifier` 로도 보낸다.
+- N-7 아침 보고는 키트의 cron 이 요약을 가져와 보낸다. 승인 대기 항목은 승인 페이지 링크(S1b)로만 넘긴다. 앞단 에이전트는
+  승인하지 못한다 (H-13).
+- N-8 일정·예산·칸 변경은 앞단 에이전트가 초안을 낼 수 있다. 효력은 사람이 상시 허락을 다시 발급해야 생긴다.
 
 ### K. 지식·문서 최신성
 - K-1 메모리 8종과 Source→Proposal→Decision→Apply 를 `knowledge` 모듈로 (design/12 §1, design/02 §4). G-04.
@@ -154,6 +208,14 @@
 | AC-H9 | 같은 도구 계약을 쓰는 stub 클라이언트가 Hermes 없이 AC-H1 을 통과한다 |
 | AC-H10 | 알림 projection 에 PR 제목·로그 원문이 없다 |
 | AC-H11 | (S1b) 만료·사용된·다른 revision 의 링크, GET 요청, CSRF 없는 POST 는 승인되지 않는다 |
+| AC-F1 | 다른 adapter id 의 stub 앞단 에이전트가 설정만 바꿔 AC-H1 을 통과한다. 코어 코드는 바뀌지 않는다 |
+| AC-F2 | adapter 두 개를 함께 켜면 토큰·연결표·권한 상한이 분리되고, 한 adapter 의 토큰은 다른 adapter 경로에서 401 이다 |
+| AC-F3 | `notifier` 는 같은 이벤트를 한 번만 보내고 projection 밖 텍스트를 받지 않는다. 앞단 에이전트를 꺼도 운영자 알림이 간다 |
+| AC-N1 | 실행 중인 밤에 앞단 에이전트가 멈춤을 요청하면 다음 trial guard 에서 밤이 멈추고(이유 기록) 운영자 알림이 간다 |
+| AC-N2 | 앞단 에이전트의 시작·연장·예산 증가·사람이 건 정지 해제 요청은 거부된다 |
+| AC-N3 | 건너뛴 날짜의 밤은 preflight 에서 멈춘다. 앞단 에이전트는 자기가 건 건너뛰기만 해제한다 |
+| AC-N4 | 밤이 도는 동안 `amplai meta nightly status` 와 앞단 에이전트 요약 조회가 된다 |
+| AC-N5 | 제어 기록을 읽을 수 없으면 밤이 멈춘다 |
 | AC-K1 | Source→Proposal→Decision→Apply 가 사람 승인으로 끝까지 되고, 승인 없이는 canonical 이 안 바뀐다 |
 | AC-K2 | 문서 영향 분석이 바뀐 코드·계약을 언급한 문서를 찾고 검토 기록이 남는다 |
 | AC-K3 | 지식·문서 모듈을 끈 부품 제안이 측정된다 |
