@@ -126,18 +126,32 @@ class IntakeGate:
         self.scope, self.operator_subject = scope, operator_subject
         self.operator_token, self.read = operator_token, read
 
-    def _token(self) -> str:
+    def _authenticate(self, authorization: str) -> None:
+        """Check the presented credential before saying anything about the configuration: an
+        unauthenticated caller gets the same 401 whether the token file is missing (revoked),
+        short or shared with the operator, and a bare 503 when the file cannot be trusted."""
         try:
             token = self.read(self.token_file).decode().strip()
         except OSError as exc:  # removed: revoked
-            raise RuntimeFault("UNAUTHENTICATED", "The front agent credential is revoked") from exc
+            raise _denied() from exc
+        except (RuntimeFault, ValueError) as exc:  # not owner-only, a symlink, not text
+            raise _unavailable() from exc
+        presented = authorization[7:] if authorization.startswith("Bearer ") else ""
+        if not token or not hmac.compare_digest(
+            hashlib.sha256(presented.encode()).digest(), hashlib.sha256(token.encode()).digest()
+        ):
+            raise _denied()
+        # the caller holds the configured token: configuration faults may be named now
         if len(token) < 32:
             raise Hold("INTAKE_TOKEN", "The front agent token file needs a token of 32+ characters")
-        if hmac.compare_digest(token, self.operator_token()):
+        try:
+            operator = self.operator_token()
+        except (OSError, RuntimeFault, ValueError) as exc:
+            raise _unavailable() from exc
+        if hmac.compare_digest(token, operator):
             raise Hold(
                 "INTAKE_TOKEN_REUSED", "The front agent token must differ from the operator's"
             )
-        return token
 
     def identities(self) -> list[IdentityEntry]:
         try:
@@ -152,14 +166,20 @@ class IntakeGate:
         return parsed.entries
 
     def actor(self, authorization: str, provider: str, user_id: str) -> Actor:
-        presented = authorization[7:] if authorization.startswith("Bearer ") else ""
-        expected = hashlib.sha256(self._token().encode()).digest()
-        if not hmac.compare_digest(hashlib.sha256(presented.encode()).digest(), expected):
-            raise RuntimeFault("UNAUTHENTICATED", "A valid front agent credential is required")
+        self._authenticate(authorization)
         for entry in self.identities():
             if entry.provider == provider and entry.user_id == user_id:
                 return intake_actor(entry.subject_id, self.scope)
         raise RuntimeFault("FORBIDDEN", "The messenger user is not linked to an operator")
+
+
+def _denied() -> RuntimeFault:
+    return RuntimeFault("UNAUTHENTICATED", "A valid front agent credential is required")
+
+
+def _unavailable() -> RuntimeFault:
+    # 503, no detail: the caller is not yet known to be the front agent
+    return RuntimeFault("INTAKE_UNAVAILABLE", "The front agent entry is unavailable")
 
 
 @dataclass
