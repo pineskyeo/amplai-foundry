@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Lineage - Meta-Harness Dashboard</title><style>
+:root{--bg:#fff;--fg:#1b1f24;--muted:#57606a;--line:#d0d7de;--panel:#f6f8fa;--link:#0550ae;
+--ok:#1a7f37;--bad:#cf222e;--warn:#9a6700;--accent:#0969da;--point:#0969da;--front:#1a7f37}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1117;--fg:#e6edf3;
+--muted:#8b949e;--line:#30363d;--panel:#161b22;--link:#58a6ff;--ok:#3fb950;--bad:#f85149;
+--warn:#d29922;--accent:#58a6ff;--point:#58a6ff;--front:#3fb950}}
+:root[data-theme="dark"]{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--line:#30363d;--panel:#161b22;
+--link:#58a6ff;--ok:#3fb950;--bad:#f85149;--warn:#d29922;--accent:#58a6ff;--point:#58a6ff;
+--front:#3fb950}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--link)}.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;
+background:var(--panel);padding:6px 10px;z-index:2}
+header,nav,main,footer{max-width:1180px;margin:0 auto;padding:0 16px}
+header{padding-top:20px}h1{font-size:1.6rem;margin:.2em 0}h2{font-size:1.2rem;margin:1.6em 0 .4em;
+border-bottom:1px solid var(--line);padding-bottom:.2em}h3{font-size:1rem;margin:1.2em 0 .3em}
+nav ul{list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 0;margin:0;
+border-bottom:1px solid var(--line)}nav a[aria-current]{font-weight:700;color:var(--fg);
+text-decoration:none}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;margin:.5em 0;font-size:.9rem}
+caption{text-align:left;color:var(--muted);padding:4px 0}th,td{border:1px solid var(--line);
+padding:5px 8px;text-align:left;vertical-align:top}thead th{background:var(--panel)}
+tbody th{font-weight:600;background:var(--panel)}dl{margin:0}dt{color:var(--muted);font-size:.8rem}
+dd{margin:0 0 .3em}.cellbox dt{float:left;clear:left;margin-right:.4em}.cellbox dd{margin:0}
+.nodata{color:var(--muted);font-style:italic}.muted{color:var(--muted)}.ok{color:var(--ok)}
+.bad{color:var(--bad)}.warn{color:var(--warn)}code{font-size:.85em}
+.chart{max-width:100%;height:auto;border:1px solid var(--line);background:var(--panel)}
+.chart text{fill:var(--muted);font-size:11px}.chart .axis{stroke:var(--line);fill:none}
+.chart .pt{fill:var(--point)}.chart .fr{fill:var(--front)}.chart .ln{stroke:var(--front);
+fill:none;stroke-width:1.5}footer{padding-bottom:30px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;
+font-size:.78rem;margin-right:3px}
+</style></head><body><a class="skip" href="#content">Skip to content</a><header><h1>Lineage</h1><p class="muted">Scope local/amplai-bench-app · generated 2026-10-10T19:48:15.578236Z · read-only build</p></header><nav aria-label="Dashboard pages"><ul><li><a href="index.html">Matrix</a></li><li><a href="lineage.html" aria-current="page">Lineage</a></li><li><a href="approvals.html">Approvals</a></li><li><a href="corpus.html">Corpus</a></li><li><a href="experiments.html">Experiments</a></li><li><a href="layers.html">Layers</a></li><li><a href="strategies.html">Strategies</a></li><li><a href="judges.html">Judges</a></li><li><a href="budget.html">Budget</a></li><li><a href="evaluation.html">Evaluation</a></li></ul></nav><main id="content" tabindex="-1"><h2>Release</h2><p>Active release <code>local-baseline-1c08ca7cc83f</code> (baseline).</p><h2>Proposal to release</h2><div class="scroll"><table><caption>Proposal → candidate → experiments → verdict → release</caption><thead><tr><th scope="col">proposal</th><th scope="col">cell</th><th scope="col">class</th><th scope="col">state</th><th scope="col">derived of</th><th scope="col">baseline → candidate</th><th scope="col">hypothesis</th><th scope="col">experiments</th><th scope="col">verdict</th><th scope="col">release</th></tr></thead><tbody><tr><th scope="row">harness-proposal-3fbeaf9a4283468fa6965eeef9ea5c3a</th><td>—</td><td>A</td><td>draft</td><td>—</td><td>amplai-bench-app-codex-gpt-5.6-sol-medium → amplai-bench-app-codex-gpt-5.6-sol-medium__prop-af80e5026a92</td><td>Pulling an explicit contract out of the request, checking it with real CLI and API probes, and searching for sibling bug sites will cut hidden-test failures in tasks where the visible suite already passes. The biggest gains should come in bug and ambiguity, and in cli_ops where exact streams, exit codes and precedence matter. Routing, limits and attempt policy are unchanged, so the main cost is s…</td><td>—</td><td>—</td><td>—</td></tr><tr><th scope="row">harness-proposal-e04c831b19014775a434d8303e582a2f</th><td>—</td><td>A</td><td>draft</td><td>—</td><td>amplai-bench-app-codex-gpt-5.6-sol-medium → amplai-bench-app-codex-gpt-5.6-sol-medium__prop-70f8247abc2d</td><td>Giving each implementer a compact tree (depth 2, at most 150 entries, at most 3000 characters) plus the authoritative verifier and fast-test commands and tool versions will cut orientation turns and input tokens on the multi-file cli_ops, refactor and feature tasks. That frees budget and attention for the edge cases in the contract. Success on tasks that are already solved should stay the same, a…</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div></main><footer><p>Calibrated figures come from calibration summaries; best compositions and ablation contributions from development trial-metrics. API-equivalent cost is descriptive (D-094): a subscription run is not billed per token. Tasks of the validation and holdout splits are named by a pseudonym.</p></footer></body></html>
