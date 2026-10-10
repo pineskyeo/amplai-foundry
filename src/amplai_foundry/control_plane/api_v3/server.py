@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import canonical, digest, now
+from amplai_foundry.runtime.contracts.intake import is_intake
 from amplai_foundry.runtime.contracts.semantics import check_refs
 from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
@@ -201,13 +202,41 @@ class ApiServices:
 class ApiCommands:
     """Durable ingress receipts, including the 'outcome unknown' crash window.
 
-    A repeated in-flight command is not blindly re-executed. Domain commands are
-    independently transactional/idempotent; operator reconciliation can inspect
-    their receipts after an interrupted HTTP response.
+    A domain fault is recorded ``rejected`` and replayed. A non-domain exception leaves the
+    outcome unknown (it may have happened midway, design/18 §5): the receipt is ``unknown`` with
+    the exception class, and a resend in this process is not repeated (COMMAND_OUTCOME_UNKNOWN),
+    the same as a command still in flight, and after a restart too. Only a caller that declares
+    its operation idempotent (``rerun_interrupted``: the intake relay, Work 034) has a receipt
+    left ``running`` or ``unknown`` by an earlier store owner (its ``owner_epoch`` is older: that
+    process is gone) run again on a resend; the receipt keeps the interruption.
     """
 
     def __init__(self, store: Store) -> None:
         self.store = store
+
+    @staticmethod
+    def identity(actor: Actor, key: str) -> str:
+        return digest({"actor": actor.subject_id, "key": key})[7:]
+
+    def receipt(self, actor: Actor, key: str) -> dict[str, Any] | None:
+        """The receipt of ``key`` for this actor, if a request with it was received."""
+        try:
+            head: dict[str, Any] = self.store.head(
+                actor.scope, "api-command", self.identity(actor, key)
+            )
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            return None
+        return head
+
+    def _close(self, actor: Actor, identity: str, state: str, extra: dict[str, Any]) -> None:
+        with self.store.tx() as db:
+            h = self.store.head(actor.scope, "api-command", identity, db=db)
+            self.store.cas(
+                db, actor.scope, "api-command", identity, h["row_version"], state,
+                {**h["data"], **extra},
+            )  # fmt: skip
 
     def run(
         self,
@@ -216,10 +245,12 @@ class ApiCommands:
         route: str,
         payload: Any,
         operation: Callable[[], Any],
+        *,
+        rerun_interrupted: bool = False,
     ) -> Any:
         if not key or len(key) > 256:
             raise RuntimeFault("IDEMPOTENCY_REQUIRED", "Idempotency-Key is required")
-        identity = digest({"actor": actor.subject_id, "key": key})[7:]
+        identity = self.identity(actor, key)
         fingerprint = digest({"route": route, "payload": payload})
         with self.store.tx() as db:
             try:
@@ -236,56 +267,58 @@ class ApiCommands:
                 if old["state"] == "rejected":
                     err = old["data"]["error"]
                     raise RuntimeFault(err["code"], err["message"], outcome=err["outcome"])
-                raise Hold(
-                    "COMMAND_OUTCOME_UNKNOWN",
-                    "The command is in flight or requires receipt reconciliation; "
-                    "it was not repeated",
-                )
-            self.store.cas(
-                db,
-                actor.scope,
-                "api-command",
-                identity,
-                0,
-                "running",
-                {
-                    "fingerprint": fingerprint,
-                    "route": route,
-                    "actor": actor.subject_id,
-                    "started_at": now(),
-                    "owner_epoch": self.store.epoch,
-                },
-            )
-        try:
-            result = operation()
-            canonical(result)
-        except RuntimeFault as exc:
-            with self.store.tx() as db:
-                h = self.store.head(actor.scope, "api-command", identity, db=db)
+                earlier_owner = old["data"].get("owner_epoch", self.store.epoch) < self.store.epoch
+                if not (rerun_interrupted and earlier_owner):
+                    # in flight, failed with an unknown outcome, or not declared idempotent
+                    raise Hold(
+                        "COMMAND_OUTCOME_UNKNOWN",
+                        "The command is in flight or requires receipt reconciliation; "
+                        "it was not repeated",
+                    )
+                # left by an earlier store owner: interrupted; this resend runs it
+                interrupted = {
+                    "code": "COMMAND_INTERRUPTED",
+                    "state": old["state"],
+                    "owner_epoch": old["data"].get("owner_epoch"),
+                    "started_at": old["data"].get("started_at"),
+                }
+                self.store.cas(
+                    db, actor.scope, "api-command", identity, old["row_version"], "running",
+                    {**old["data"], "started_at": now(), "owner_epoch": self.store.epoch,
+                     "interrupted": [*old["data"].get("interrupted", []), interrupted]},
+                )  # fmt: skip
+            else:
                 self.store.cas(
                     db,
                     actor.scope,
                     "api-command",
                     identity,
-                    h["row_version"],
-                    "rejected",
+                    0,
+                    "running",
                     {
-                        **h["data"],
-                        "error": {"code": exc.code, "message": exc.message, "outcome": exc.outcome},
+                        "fingerprint": fingerprint,
+                        "route": route,
+                        "actor": actor.subject_id,
+                        "started_at": now(),
+                        "owner_epoch": self.store.epoch,
                     },
                 )
+        try:
+            result = operation()
+            canonical(result)
+        except RuntimeFault as exc:
+            error = {"code": exc.code, "message": exc.message, "outcome": exc.outcome}
+            self._close(actor, identity, "rejected", {"error": error})
             raise
-        with self.store.tx() as db:
-            h = self.store.head(actor.scope, "api-command", identity, db=db)
-            self.store.cas(
-                db,
-                actor.scope,
-                "api-command",
-                identity,
-                h["row_version"],
-                "completed",
-                {**h["data"], "result": result},
-            )
+        except Exception as exc:  # not a domain fault: outcome unknown, recorded as such
+            error = {
+                "code": "COMMAND_FAILED",
+                "message": "The command failed: " + type(exc).__name__,
+                "outcome": "hold",
+            }
+            self._close(actor, identity, "unknown", {"error": error})
+            raise
+        self._close(actor, identity, "completed", {"result": result})
         return result
 
 
@@ -333,6 +366,8 @@ def create_app(services: ApiServices) -> FastAPI:
             status = 403
         if exc.code == "NOT_FOUND":
             status = 404
+        if exc.code == "INTAKE_UNAVAILABLE":  # an untrusted front-agent entry (intake.py)
+            status = 503
         return JSONResponse(
             {"code": exc.code, "message": exc.message, "outcome": exc.outcome}, status_code=status
         )
@@ -352,6 +387,13 @@ def create_app(services: ApiServices) -> FastAPI:
                 "IF_MATCH_REQUIRED", "Use the exact row_version from the latest scoped read"
             )
         return int(raw)
+
+    def reader(a: Actor) -> None:
+        a.require("runtime.read")
+        if is_intake(a):  # these reads are not filtered to the linked operator's goals (AC-H3)
+            raise RuntimeFault(
+                "FORBIDDEN", "A front agent reads its operator's goals through the intake routes"
+            )
 
     def require_service(value: Any, name: str) -> Any:
         if value is None:
@@ -407,7 +449,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/goals")
     def list_goals(a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         with store._lock:
             rows = store.conn.execute(
                 "SELECT id,state,row_version FROM heads WHERE tenant=? AND project=? "
@@ -418,7 +460,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/goals/{goal_id}")
     def get_goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         value = store.head(a.scope, "goal", goal_id)
         return JSONResponse(
             {"goal_id": goal_id, **value, "budget": runtime.budgets.totals(a.scope, goal_id)},
@@ -662,7 +704,7 @@ def create_app(services: ApiServices) -> FastAPI:
     def read_object(
         kind: str, object_id: str, revision: int, digest: str, a: Actor = Depends(actor)
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         if kind in {
             "eval-corpus",
             "corpus-case",
@@ -707,7 +749,7 @@ def create_app(services: ApiServices) -> FastAPI:
         until: str | None = None,
         a: Actor = Depends(actor),
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         filters = {
             k: v
             for k, v in {
@@ -724,7 +766,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.get("/api/v3/telemetry/events")
     def telemetry_events(after: int = 0, limit: int = 100, a: Actor = Depends(actor)) -> Any:
-        a.require("runtime.read")
+        reader(a)
         safe: list[dict[str, Any]] = []
 
         def collect(batch: list[dict[str, Any]]) -> bool:
@@ -790,7 +832,7 @@ def create_app(services: ApiServices) -> FastAPI:
         last_event_id: str = Header(default="", alias="Last-Event-ID"),
         a: Actor = Depends(actor),
     ) -> Any:
-        a.require("runtime.read")
+        reader(a)
         if after < 0 or not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event cursor/limit")
         if last_event_id:

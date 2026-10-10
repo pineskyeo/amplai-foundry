@@ -29,6 +29,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
+from ..control_plane.api_v3.intake import IntakeGate, IntakeServices, intake_router
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -295,6 +296,16 @@ class IntegrationEntry(BaseModel):
     timeout_seconds: int = 900
 
 
+class IntakeEntry(BaseModel):
+    """The messenger front agent's credentials (Work 034 S1a, spec H-5, H-6). Both files live
+    outside the store and are read on every request: removing or rotating the token revokes it at
+    once, and a store restore never brings it back. Absent: no intake routes."""
+
+    model_config = ConfigDict(extra="forbid")
+    token_file: str  # 0600 file with the front agent's bearer token (32+ characters)
+    identity_map_file: str  # 0600 JSON (intake-identity-1): messenger user -> the operator
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -316,6 +327,7 @@ class LocalConfig(BaseModel):
     roles: RolesEntry | None = None
     meta: MetaEntry | None = None
     jev: JevEntry | None = None
+    intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -858,12 +870,36 @@ class LocalProductDeployment:
 
     def authenticate(self, authorization: str | None) -> Actor:
         # Read on every request: rotating the token file revokes the old one.
-        token = private_bytes(self.local(self.config.operator_token_file)).decode().strip()
+        token = self._operator_token()
         bindings = {hashlib.sha256(token.encode()).hexdigest(): "operator"}
         actor: Actor = BearerAuthenticator(bindings, lambda _b: self.operator())(
             authorization or ""
         )
         return actor
+
+    def _operator_token(self) -> str:
+        return private_bytes(self.local(self.config.operator_token_file)).decode().strip()
+
+    def _intake(self, entry: IntakeEntry) -> IntakeServices:
+        """The front agent's routes over the same services the operator uses (Work 034 S1a)."""
+        gate = IntakeGate(
+            self.local(entry.token_file),
+            self.local(entry.identity_map_file),
+            scope=self.scope,
+            operator_subject=self.config.operator_subject,
+            operator_token=self._operator_token,
+            read=private_bytes,
+        )
+        return IntakeServices(
+            gate=gate,
+            store=self.store,
+            goals=self.goals,
+            plan=self.request_plan,
+            plan_record=self.service.plan_record,
+            steer=self.loop.steer,
+            replan=self.loop.replan,
+            cancel=self.loop.cancel,
+        )
 
     # -- planning in the background --------------------------------------------------------------
     def request_plan(self, goal_id: str) -> dict[str, Any]:
@@ -973,6 +1009,8 @@ class LocalProductDeployment:
             return {"recorded": self.tracker.sync()}
 
         app.include_router(router)
+        if self.config.intake is not None:
+            app.include_router(intake_router(self._intake(self.config.intake)))
         if start_loop:
             original = app.router.lifespan_context
 
