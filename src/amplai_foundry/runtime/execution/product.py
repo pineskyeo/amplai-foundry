@@ -30,7 +30,7 @@ from ...sandbox.git_workspace import CHANGE_MEDIA, GitWorkspaceManager
 from ...verification.runtime.design_check import DESIGN_ROOT, DesignDocumentCheck
 from ..contracts.authority import Actor
 from ..contracts.identity import ID, digest, new_id, now
-from ..errors import Hold, RuntimeFault
+from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope, Store
 from . import context_assembly, policies, prompts, releases
 from .cells import LEGACY_CELLS, Cell, model_slug
@@ -2585,7 +2585,16 @@ class LocalExecutionService:
         return value
 
     # -- approve / revoke --------------------------------------------------------------------
-    def approve(self, operator: Actor, goal_id: str, *, hours: int = 2) -> dict[str, Any]:
+    def approve(
+        self,
+        operator: Actor,
+        goal_id: str,
+        *,
+        hours: int = 2,
+        expected_contract_ref: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """``expected_contract_ref``: the revision and digest the operator was shown (design/10
+        §4, Work 034 H-13). A different current contract is refused, never approved instead."""
         operator.require("execution.approve")
         # IC-17 (Work 033 S12, provisional): the nightly service identity approves the trial
         # goals of the experiments it runs under its standing approval, and nothing else
@@ -2608,6 +2617,11 @@ class LocalExecutionService:
                 "PLAN_NOT_READY",
                 "Goal has no contract awaiting approval",
                 details=plan.get("status"),
+            )
+        if expected_contract_ref is not None and expected_contract_ref != plan["contract_ref"]:
+            raise Conflict(
+                "STALE_CONTRACT",
+                "The contract awaiting approval is not the one shown; read it again",
             )
         installed = self.apps[plan["app"]]
         service, scope = self.actors.service, self.scope

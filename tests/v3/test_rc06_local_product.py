@@ -95,7 +95,10 @@ def test_submit_plan_approve_and_cancel_over_http(product: Any) -> None:
     record = wait_status(client, goal, {"planning"})
     assert record["status"] == "awaiting_approval"
     assert record["draft"]["acceptance"] == DRAFT["acceptance"]
-    approved = client.post(f"/api/v3/local/goals/{goal}/approve").json()
+    approved = client.post(
+        f"/api/v3/local/goals/{goal}/approve",
+        json={"expected_contract_ref": record["contract_ref"]},  # the revision shown (H-13)
+    ).json()
     assert approved["status"] == "approved"
     decision = dep.store.get(
         dep.scope, "operator-approval", dep.service.plan_record(goal)["decision_ref"]
