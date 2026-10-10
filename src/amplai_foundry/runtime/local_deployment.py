@@ -9,7 +9,8 @@ credential presence. Everything the operator can do goes through the existing V3
     POST /api/v3/intents                        submit (existing route)
     POST /api/v3/local/goals/{id}/plan          read-only Codex plan (background, 202)
     GET  /api/v3/local/goals[/{id}]             plan / attempts / verification / publication
-    POST /api/v3/local/goals/{id}/approve       human approval → grant → activation
+    POST /api/v3/local/goals/{id}/approve       human approval of the exact contract shown
+                                                (expected_contract_ref) → grant → activation
     POST /api/v3/local/goals/{id}/cancel        revoke + stop
 
 The execution loop runs in this process (the store has a single owner).
@@ -350,6 +351,13 @@ class LocalConfig(BaseModel):
         if set(named) - known:
             raise ValueError(f"unknown cells {sorted(set(named) - known)}")
         return self
+
+
+class ApproveBody(BaseModel):
+    """The contract revision and digest the operator was shown (Work 034 H-13, design/10 §4)."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    expected_contract_ref: dict[str, Any]
 
 
 class LocalProductDeployment:
@@ -932,8 +940,9 @@ class LocalProductDeployment:
             return self.service.plan_record(goal_id)
 
         @router.post("/goals/{goal_id}/approve")
-        def approve(goal_id: str, a: Actor = Depends(actor)) -> Any:
-            return _summary(self.service.approve(a, goal_id))
+        def approve(goal_id: str, body: ApproveBody, a: Actor = Depends(actor)) -> Any:
+            expected = body.expected_contract_ref
+            return _summary(self.service.approve(a, goal_id, expected_contract_ref=expected))
 
         @router.post("/goals/{goal_id}/cancel")
         def cancel(goal_id: str, a: Actor = Depends(actor)) -> Any:
