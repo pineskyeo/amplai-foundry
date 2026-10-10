@@ -20,10 +20,11 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from amplai_foundry.runtime import cli
-from amplai_foundry.runtime.errors import RuntimeFault
+from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.runtime.execution.codex import AUTH
+from amplai_foundry.runtime.execution.loop import ExecutionLoop
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
-from rc06_rig import FixedPlanner, codex_inputs, make_repo
+from rc06_rig import FixedPlanner, approved, build_rig, codex_inputs, make_repo
 
 
 class GatedPlanner(FixedPlanner):
@@ -208,3 +209,76 @@ def test_a_cancel_during_approval_wins_and_the_new_approval_is_revoked(
         assert revoked_decisions(dep) == ["revoked"]
     finally:
         dep.close()
+
+
+def test_a_planner_that_succeeds_after_the_cancel_does_not_write_over_it(home: Path) -> None:
+    """The cancel could not end the runtime goal (end_goal failed), so the planner drafts and
+    freezes the contract to the end: only the guard on its final save keeps the cancel."""
+    planner = GatedPlanner()
+    dep = start(home, planner)
+
+    def refused(*_args: Any, **_kwargs: Any) -> str:
+        raise Hold("EFFECT_PENDING", "stand-in: the runtime goal could not end")
+
+    try:
+        goal = dep.goals.submit(dep.operator(), text="make value return 2", key="g-late")["goal_id"]
+        dep.request_plan(goal)
+        assert planner.entered.wait(20)
+        dep.runtime.end_goal = refused  # type: ignore[method-assign]
+        assert dep.loop.cancel(dep.operator(), goal)["status"] == "cancelled"
+        planner.release.set()
+        settle(dep)
+        record = dep.service.plan_record(goal)
+        assert record["status"] == "cancelled" and record.get("end_error") == "EFFECT_PENDING"
+        assert "approval.requested" not in [t for t, _ in goal_events(dep, goal)]
+    finally:
+        dep.close()
+
+
+def test_a_cancel_racing_a_new_plan_request_stays_cancelled(home: Path) -> None:
+    planner = GatedPlanner(broken=True)
+    planner.release.set()
+    dep = start(home, planner)
+    try:
+        goal = dep.goals.submit(dep.operator(), text="make value return 2", key="g-again")[
+            "goal_id"
+        ]
+        dep.request_plan(goal)
+        settle(dep)
+        assert dep.service.plan_record(goal)["status"] == "plan_failed"
+        save, fired = dep.service._save_plan, []
+
+        def cancel_first(goal_id: str, record: dict[str, Any], *args: Any, **kwargs: Any) -> None:
+            if record["status"] == "planning" and not fired:  # the cancel lands just before
+                fired.append(1)
+                dep.loop.cancel(dep.operator(), goal)
+            save(goal_id, record, *args, **kwargs)
+
+        dep.service._save_plan = cancel_first  # type: ignore[method-assign]
+        assert dep.request_plan(goal)["status"] == "cancelled"
+        assert fired == [1] and not dep._planning
+        assert dep.service.plan_record(goal)["status"] == "cancelled"
+    finally:
+        dep.close()
+
+
+def test_a_cancel_during_escalation_is_not_turned_into_a_failure(
+    deployment: Any, tmp_path: Path
+) -> None:
+    rig = build_rig(deployment, tmp_path)
+    loop = ExecutionLoop(rig.service, coordinator=None)
+    goal = approved(rig)
+    operator = rig.operator
+
+    def escalate(goal_id: str, **_kwargs: Any) -> dict[str, Any]:
+        loop.cancel(operator, goal_id)  # the operator cancels while the next cell is compiled
+        raise Hold("PLAN_ENDED", "The goal ended while this step ran")
+
+    class Runner:
+        def next_cell(self, _plan: dict[str, Any]) -> str:
+            return "claude-cli"
+
+    rig.service.escalate = escalate  # type: ignore[method-assign]
+    record = loop._escalate(goal, [], Runner())
+    assert record["status"] == "cancelled"
+    assert rig.service.plan_record(goal)["status"] == "cancelled"
