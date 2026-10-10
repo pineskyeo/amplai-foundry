@@ -7,6 +7,7 @@ product with an ``intake`` entry, the store, ``RecoveryService`` backup and rest
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -138,8 +139,9 @@ def test_a_cursor_past_the_newest_event_or_of_another_generation_is_expired(
         body = response.json()
         assert body["code"] == "CURSOR_EXPIRED" and body["cursor"] == fresh
         assert [g["goal_id"] for g in body["snapshot"]] == [goal]
-    for malformed in ("12", "abc:", ":12"):
-        assert feed(client, malformed).status_code == 400
+    for malformed in ("12", "abc:", ":12", f"{incarnation}:\u00b2", f"{incarnation}:\u0661\u0662"):
+        response = feed(client, malformed)  # other-script digits too: 400, never a 500
+        assert response.status_code == 400 and response.json()["code"] == "EVENT_CURSOR"
 
 
 def test_after_a_restore_old_cursors_expire_and_a_revoked_token_stays_revoked(
@@ -202,6 +204,32 @@ def test_the_intake_entry_needs_every_limit() -> None:
             {"token_file": "t", "identity_map_file": "m",
              "rate_limits": {"submit": {"count": 1, "window_seconds": 1}}}
         )  # fmt: skip
+
+
+def test_a_resent_message_is_a_replay_and_is_never_limited(tmp_path: Path) -> None:
+    home = init_home(tmp_path)
+    one = {"count": 1, "window_seconds": 3600}
+    with_intake(home, {"submit": one, "cancel": one})
+    dep = start(home)
+    try:
+        assert dep._intake(dep.config.intake).limits.clock is time.monotonic
+        with TestClient(dep.app) as client:
+            first = submit(client, "m-1")
+            goal = first.json()["goal_id"]
+            wait_status(client, goal, {"planning"})
+            again = submit(client, "m-1")  # the same message: a replay, not a new submission
+            assert again.status_code == 202 and again.json()["goal_id"] == goal
+            assert submit(client, "m-2").status_code == 429
+            url = f"/api/v3/intake/hermes/goals/{goal}/cancel"
+            body = message("c-1", reason="stop")
+            done = client.post(url, headers=HERMES, json=body)
+            assert done.status_code == 200
+            assert client.post(url, headers=HERMES, json=body).json() == done.json()
+            other = client.post(url, headers=HERMES, json=message("c-2", reason="stop"))
+            assert other.status_code == 429
+    finally:
+        settle(dep)
+        dep.close()
 
 
 def test_submissions_and_controls_over_the_limit_are_refused(tmp_path: Path) -> None:

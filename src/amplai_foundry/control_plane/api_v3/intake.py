@@ -198,8 +198,9 @@ OPERATIONS = ("submit", "steer", "replan", "cancel")
 class RateLimiter:
     """At most ``count`` requests per ``window`` seconds for each (actor, operation) (H-3, H-7).
 
-    Every authenticated request counts, a resent message too. The windows live in this process:
-    a server restart starts them again.
+    Every authenticated new message counts; a resent message (its command or receipt exists) is
+    a replay and does not. The windows live in this process on a monotonic clock: a server
+    restart starts them again.
     """
 
     def __init__(self, limits: dict[str, tuple[int, float]], clock: Callable[[], float]) -> None:
@@ -272,6 +273,18 @@ def project(store: Store, scope: Scope, goal_id: str, record: dict[str, Any]) ->
 
 
 _EVENT_TYPE = re.compile(r"[a-z][a-z0-9_]*(\.[a-z0-9_]+)*")
+_SEQ = re.compile(r"[0-9]{1,18}")  # ASCII digits only: str.isdigit() takes other scripts too
+
+
+def submitted_before(store: Store, actor: Actor, key: str) -> bool:
+    """A submission with this key was accepted already (``GoalService.submit``'s command)."""
+    with store._lock:
+        row = store.conn.execute(
+            "SELECT 1 FROM commands WHERE tenant=? AND project=? AND actor=? "
+            "AND operation='command' AND key=?",
+            (*actor.scope.keys(), actor.subject_id, key),
+        ).fetchone()
+    return row is not None
 
 
 def newest_seq(store: Store, scope: Scope) -> int:
@@ -298,7 +311,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
     @router.post("", status_code=202)
     def submit(body: SubmitBody, authorization: str = Header(default="")) -> Any:
         actor = gate.actor(authorization, body.provider, body.user_id)
-        limits.check(actor, "submit")
+        if not submitted_before(store, actor, body.key()):  # a resend replays, never limited
+            limits.check(actor, "submit")
         submitted = services.goals.submit(
             actor,
             text=body.text,
@@ -350,7 +364,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
     ) -> Any:
         actor = gate.actor(authorization, body.provider, body.user_id)
         owned(actor, goal_id)
-        limits.check(actor, route)
+        if commands.receipt(actor, body.key()) is None:  # a resend replays, never limited
+            limits.check(actor, route)
 
         def execute() -> Any:
             operation(actor)
@@ -405,7 +420,7 @@ def intake_router(services: IntakeServices) -> APIRouter:
         if cursor is None:
             return {"items": [], "snapshot": listing(actor), "cursor": fresh}
         incarnation, _, seq = cursor.rpartition(":")
-        if not incarnation or not seq.isdigit():
+        if not incarnation or not _SEQ.fullmatch(seq):
             raise RuntimeFault("EVENT_CURSOR", "A cursor is <incarnation>:<seq>")
         if incarnation != store.incarnation or int(seq) > newest:
             return JSONResponse(

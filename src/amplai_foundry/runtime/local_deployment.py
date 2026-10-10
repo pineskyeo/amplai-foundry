@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -920,7 +921,7 @@ class LocalProductDeployment:
             limits[op] = (limit.count, limit.window_seconds)
         return IntakeServices(
             gate=gate,
-            limits=RateLimiter(limits, self.store.clock),
+            limits=RateLimiter(limits, time.monotonic),  # windows ignore wall-clock steps
             store=self.store,
             goals=self.goals,
             plan=self.request_plan,
