@@ -138,7 +138,13 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 - S2a `knowledge`: `CanonicalMemoryPort`, 메모리 8종, Source→Proposal→Decision→Apply, Markdown 정본 + 출처. `f06a8e5^` 의
   `foundry.py`·`readiness.py` 를 V3 store·권한으로 옮김. `governed_submit` 연결, G-04. `memory_notes` 를 이 모듈 위로.
 - S2b `doc_freshness`: 영향 분석 + 검토 기록만.
-- 지식 저장소 위치 Q-4.
+- 지식 저장소 (OD-10): 프로젝트별 **별도 git 저장소**. 3층으로 나눈다.
+  - 파일(정본): Markdown, 메모리 8종 폴더, 각 문서에 출처·결정 ref. git 이력이 감사 기록.
+  - 지식 모듈(메모리 레이어): 저장소에 쓰는 유일한 주체. 제안 → 사람 승인 → 적용(commit), 출처 검증, 검색 색인(파일에서 재생성
+    가능한 파생물), 준비도 점검, 작업별 context-bundle. 되돌리기는 governed revert commit (U-4).
+  - MCP(창구): `intake_adapter` 와 같은 별도 프로세스. 도구는 `knowledge_search`, `knowledge_read`, `knowledge_propose` 뿐.
+    직접 쓰기 없음. Hermes·작업 에이전트·다른 클라이언트가 같은 창구를 쓴다.
+  - Hermes 개인 기억(선호, 대화)은 이 저장소에 넣지 않는다 (H-10).
 
 ### 3.4 3층 업그레이드 (S3)
 
