@@ -107,6 +107,8 @@ class ExecutionLoop:
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
         if plan["status"] in {
+            "planning",  # a planner still running cannot write over the cancel (PLAN_ENDED)
+            "plan_failed",
             "awaiting_approval",
             "needs_answers",
             "replan_failed",
@@ -282,7 +284,11 @@ class ExecutionLoop:
         plan = self.service.plan_record(goal_id)
         entry = {"text": steer["text"], "kind": steer["kind"], "at": now(), "applied": False,
                  "reason": reason}  # fmt: skip
-        self._update(goal_id, steering=[*(plan.get("steering") or []), entry])
+        withdrawn = {"steering_id": steer["pause_id"], "kind": steer["kind"], "reason": reason}
+        self._update(
+            goal_id, event=("steering.withdrawn", withdrawn),
+            steering=[*(plan.get("steering") or []), entry],
+        )  # fmt: skip
 
     def _apply_steering(
         self, goal_id: str, dispatch: dict[str, Any], steer: dict[str, Any]
@@ -316,6 +322,8 @@ class ExecutionLoop:
         - a stopped plan whose runtime goal is still open: end it (releases its claims)
         - a plan left ``running`` by a dead process: the attempt is lost; end it failed
         - a plan ``held`` before any attempt with a valid approval: back to ``approved``
+        - a plan left ``planning`` (its thread died): ``plan_failed``, with a ``planning.failed``
+          event so a feed reader sees it
         """
         actions: list[dict[str, Any]] = []
         with self.store._lock:
@@ -330,7 +338,13 @@ class ExecutionLoop:
             except RuntimeFault:
                 continue
             plan = self.service.plan_record(goal_id)
-            if status == "running":
+            if status == "planning":  # its planning thread died with the process
+                self._update(
+                    goal_id, status="plan_failed", reason="planning interrupted by a restart",
+                    event=("planning.failed", {"code": "INTERRUPTED"}),
+                )  # fmt: skip
+                actions.append({"goal_id": goal_id, "action": "planning_interrupted"})
+            elif status == "running":
                 self._stop_goal(
                     goal_id, "failed", "interrupted by a server restart", plan.get("attempts") or []
                 )
