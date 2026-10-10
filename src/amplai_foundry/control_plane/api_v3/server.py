@@ -202,13 +202,41 @@ class ApiServices:
 class ApiCommands:
     """Durable ingress receipts, including the 'outcome unknown' crash window.
 
-    A repeated in-flight command is not blindly re-executed. Domain commands are
-    independently transactional/idempotent; operator reconciliation can inspect
-    their receipts after an interrupted HTTP response.
+    A domain fault is recorded ``rejected`` and replayed. A non-domain exception leaves the
+    outcome unknown (it may have happened midway, design/18 §5): the receipt is ``unknown`` with
+    the exception class, and a resend in this process is not repeated (COMMAND_OUTCOME_UNKNOWN),
+    the same as a command still in flight. A receipt left ``running`` or ``unknown`` by an earlier
+    store owner (its ``owner_epoch`` is older: that process is gone) was interrupted; a resend
+    runs it again and the receipt keeps the interruption. Domain commands are independently
+    transactional/idempotent.
     """
 
     def __init__(self, store: Store) -> None:
         self.store = store
+
+    @staticmethod
+    def identity(actor: Actor, key: str) -> str:
+        return digest({"actor": actor.subject_id, "key": key})[7:]
+
+    def receipt(self, actor: Actor, key: str) -> dict[str, Any] | None:
+        """The receipt of ``key`` for this actor, if a request with it was received."""
+        try:
+            head: dict[str, Any] = self.store.head(
+                actor.scope, "api-command", self.identity(actor, key)
+            )
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            return None
+        return head
+
+    def _close(self, actor: Actor, identity: str, state: str, extra: dict[str, Any]) -> None:
+        with self.store.tx() as db:
+            h = self.store.head(actor.scope, "api-command", identity, db=db)
+            self.store.cas(
+                db, actor.scope, "api-command", identity, h["row_version"], state,
+                {**h["data"], **extra},
+            )  # fmt: skip
 
     def run(
         self,
@@ -220,7 +248,7 @@ class ApiCommands:
     ) -> Any:
         if not key or len(key) > 256:
             raise RuntimeFault("IDEMPOTENCY_REQUIRED", "Idempotency-Key is required")
-        identity = digest({"actor": actor.subject_id, "key": key})[7:]
+        identity = self.identity(actor, key)
         fingerprint = digest({"route": route, "payload": payload})
         with self.store.tx() as db:
             try:
@@ -237,56 +265,57 @@ class ApiCommands:
                 if old["state"] == "rejected":
                     err = old["data"]["error"]
                     raise RuntimeFault(err["code"], err["message"], outcome=err["outcome"])
-                raise Hold(
-                    "COMMAND_OUTCOME_UNKNOWN",
-                    "The command is in flight or requires receipt reconciliation; "
-                    "it was not repeated",
-                )
-            self.store.cas(
-                db,
-                actor.scope,
-                "api-command",
-                identity,
-                0,
-                "running",
-                {
-                    "fingerprint": fingerprint,
-                    "route": route,
-                    "actor": actor.subject_id,
-                    "started_at": now(),
-                    "owner_epoch": self.store.epoch,
-                },
-            )
-        try:
-            result = operation()
-            canonical(result)
-        except RuntimeFault as exc:
-            with self.store.tx() as db:
-                h = self.store.head(actor.scope, "api-command", identity, db=db)
+                if old["data"].get("owner_epoch", self.store.epoch) >= self.store.epoch:
+                    # still in flight here, or failed here with an unknown outcome
+                    raise Hold(
+                        "COMMAND_OUTCOME_UNKNOWN",
+                        "The command is in flight or requires receipt reconciliation; "
+                        "it was not repeated",
+                    )
+                # left by an earlier store owner: interrupted; this resend runs it
+                interrupted = {
+                    "code": "COMMAND_INTERRUPTED",
+                    "state": old["state"],
+                    "owner_epoch": old["data"].get("owner_epoch"),
+                    "started_at": old["data"].get("started_at"),
+                }
+                self.store.cas(
+                    db, actor.scope, "api-command", identity, old["row_version"], "running",
+                    {**old["data"], "started_at": now(), "owner_epoch": self.store.epoch,
+                     "interrupted": [*old["data"].get("interrupted", []), interrupted]},
+                )  # fmt: skip
+            else:
                 self.store.cas(
                     db,
                     actor.scope,
                     "api-command",
                     identity,
-                    h["row_version"],
-                    "rejected",
+                    0,
+                    "running",
                     {
-                        **h["data"],
-                        "error": {"code": exc.code, "message": exc.message, "outcome": exc.outcome},
+                        "fingerprint": fingerprint,
+                        "route": route,
+                        "actor": actor.subject_id,
+                        "started_at": now(),
+                        "owner_epoch": self.store.epoch,
                     },
                 )
+        try:
+            result = operation()
+            canonical(result)
+        except RuntimeFault as exc:
+            error = {"code": exc.code, "message": exc.message, "outcome": exc.outcome}
+            self._close(actor, identity, "rejected", {"error": error})
             raise
-        with self.store.tx() as db:
-            h = self.store.head(actor.scope, "api-command", identity, db=db)
-            self.store.cas(
-                db,
-                actor.scope,
-                "api-command",
-                identity,
-                h["row_version"],
-                "completed",
-                {**h["data"], "result": result},
-            )
+        except Exception as exc:  # not a domain fault: outcome unknown, recorded as such
+            error = {
+                "code": "COMMAND_FAILED",
+                "message": "The command failed: " + type(exc).__name__,
+                "outcome": "hold",
+            }
+            self._close(actor, identity, "unknown", {"error": error})
+            raise
+        self._close(actor, identity, "completed", {"result": result})
         return result
 
 
