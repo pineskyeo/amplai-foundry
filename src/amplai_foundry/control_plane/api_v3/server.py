@@ -334,6 +334,8 @@ def create_app(services: ApiServices) -> FastAPI:
             status = 403
         if exc.code == "NOT_FOUND":
             status = 404
+        if exc.code == "RATE_LIMITED":  # design/18 §5
+            status = 429
         return JSONResponse(
             {"code": exc.code, "message": exc.message, "outcome": exc.outcome}, status_code=status
         )

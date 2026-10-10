@@ -68,7 +68,10 @@ def init_home(tmp_path: Path) -> Path:
     return home
 
 
-def with_intake(home: Path) -> None:
+GENEROUS = {"count": 1000, "window_seconds": 60}
+
+
+def with_intake(home: Path, limits: dict[str, dict[str, int]] | None = None) -> None:
     private(home / "intake" / "hermes.token", HERMES_TOKEN + "\n")
     identity_map(home, [{**SLACK_USER, "subject_id": "pinesky"}])
     config = home / "local.json"
@@ -76,6 +79,9 @@ def with_intake(home: Path) -> None:
     value["intake"] = {
         "token_file": "intake/hermes.token",
         "identity_map_file": "intake/identities.json",
+        "rate_limits": {
+            op: (limits or {}).get(op, GENEROUS) for op in ("submit", "steer", "replan", "cancel")
+        },
     }
     private(config, json.dumps(value))
 
