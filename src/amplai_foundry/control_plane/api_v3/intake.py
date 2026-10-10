@@ -371,9 +371,13 @@ def intake_router(services: IntakeServices) -> APIRouter:
             operation(actor)
             return owned(actor, goal_id)
 
+        # steer, replan and cancel are idempotent at the loop (a steer or replan after a
+        # restart finds no running attempt; a cancel of an ended goal returns it), so a
+        # receipt interrupted by a restart runs again on a resend
         return commands.run(
-            actor, body.key(), "intake." + route + ":" + goal_id, body.model_dump(), execute
-        )
+            actor, body.key(), "intake." + route + ":" + goal_id, body.model_dump(), execute,
+            rerun_interrupted=True,
+        )  # fmt: skip
 
     @router.post("/goals/{goal_id}/steer", status_code=202)
     def steer(goal_id: str, body: SteerBody, authorization: str = Header(default="")) -> Any:

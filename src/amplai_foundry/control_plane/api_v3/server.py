@@ -205,10 +205,10 @@ class ApiCommands:
     A domain fault is recorded ``rejected`` and replayed. A non-domain exception leaves the
     outcome unknown (it may have happened midway, design/18 §5): the receipt is ``unknown`` with
     the exception class, and a resend in this process is not repeated (COMMAND_OUTCOME_UNKNOWN),
-    the same as a command still in flight. A receipt left ``running`` or ``unknown`` by an earlier
-    store owner (its ``owner_epoch`` is older: that process is gone) was interrupted; a resend
-    runs it again and the receipt keeps the interruption. Domain commands are independently
-    transactional/idempotent.
+    the same as a command still in flight, and after a restart too. Only a caller that declares
+    its operation idempotent (``rerun_interrupted``: the intake relay, Work 034) has a receipt
+    left ``running`` or ``unknown`` by an earlier store owner (its ``owner_epoch`` is older: that
+    process is gone) run again on a resend; the receipt keeps the interruption.
     """
 
     def __init__(self, store: Store) -> None:
@@ -245,6 +245,8 @@ class ApiCommands:
         route: str,
         payload: Any,
         operation: Callable[[], Any],
+        *,
+        rerun_interrupted: bool = False,
     ) -> Any:
         if not key or len(key) > 256:
             raise RuntimeFault("IDEMPOTENCY_REQUIRED", "Idempotency-Key is required")
@@ -265,8 +267,9 @@ class ApiCommands:
                 if old["state"] == "rejected":
                     err = old["data"]["error"]
                     raise RuntimeFault(err["code"], err["message"], outcome=err["outcome"])
-                if old["data"].get("owner_epoch", self.store.epoch) >= self.store.epoch:
-                    # still in flight here, or failed here with an unknown outcome
+                earlier_owner = old["data"].get("owner_epoch", self.store.epoch) < self.store.epoch
+                if not (rerun_interrupted and earlier_owner):
+                    # in flight, failed with an unknown outcome, or not declared idempotent
                     raise Hold(
                         "COMMAND_OUTCOME_UNKNOWN",
                         "The command is in flight or requires receipt reconciliation; "
