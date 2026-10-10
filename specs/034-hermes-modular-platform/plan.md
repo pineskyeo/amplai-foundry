@@ -1,6 +1,6 @@
 # Work 034 Plan: 구조, 인터페이스, 순서
 
-- 상태: 설계 초안 r3 (독립 검토 2회 반영, 2026-10-10). spec: `spec.md`.
+- 상태: 설계 초안 r5 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영). spec: `spec.md`.
 
 ## 0. 검토 이력
 
@@ -110,7 +110,9 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
    연결표는 운영자 1인 (H-5).
 3. 접수 경로 `POST /api/v3/intake/hermes` (API DTO): 메신저 사용자 id·메시지 id → 연결표 → `intake` actor(귀속: 운영자),
    `source_channel = hermes`, idempotency key.
-4. steering 종류 허용 목록: actor 종류별, `/goals/{id}/steering` 와 로컬 `steer` 두 경로 모두 (H-3, AC-H2).
+4. steering 종류 허용 목록: actor 종류별, `/goals/{id}/steering` 와 로컬 `steer`·`cancel` 경로 모두 (H-3, AC-H2).
+   Hermes 는 `pause`·`cancel` 가능 (OD-5), `resume` 은 Hermes 가 멈춘 goal 만. 로컬 취소 경로는 새 `goal.cancel` 권한을 받는다
+   (권한 코드 변경, class C). 일시정지·취소마다 운영자 알림(누가, 왜), 취소는 단계 표현(design/17 §4), 빈도 제한.
 5. 질문·의도 보정: `intake` actor 는 비권한 종류만 (H-4, AC-H4). 의도 보정(pre-contract) 경로도 같은 검사.
 6. 조회 필터: `intake` actor 는 연결된 운영자의 goal·event 만 (AC-H3).
 7. 알림 projection: 고정 schema (goal id, 사용자 상태, 시각, AMPLAI 생성 요약). 원문 텍스트 없음 (H-8, AC-H10).
@@ -123,7 +125,8 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 
 **Hermes 쪽 (S1a)**
 - AMPLAI MCP 서버 (`integrations/hermes/`, `intake_adapter`, 별도 프로세스): 도구 `submit_work`, `submit_design`, `goal_status`,
-  `list_goals`, `steer`(허용 종류), `replan`, `answer_question`(허용 종류), `propose_knowledge`, `pending_events`(projection),
+  `list_goals`, `steer`(허용 종류), `replan`, `pause_goal`, `cancel_goal`, `resume_goal`(Hermes 가 멈춘 goal 만), `answer_question`(허용 종류),
+  `propose_knowledge`, `pending_events`(projection),
   `meta_summary`. 토큰은 MCP 서버 환경에만, Hermes 모델 문맥 밖 (design/10 §6).
 - 알림: Hermes cron 이 `pending_events` 를 주기적으로 가져와 보낸다. push 는 확인 후.
 - VM: Docker 터미널, 호스트 mount 없음, egress 허용 목록(메신저, 모델 API, AMPLAI listener), 버전 고정·staged 업그레이드,
@@ -138,6 +141,14 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 - S2a `knowledge`: `CanonicalMemoryPort`, 메모리 8종, Source→Proposal→Decision→Apply, Markdown 정본 + 출처. `f06a8e5^` 의
   `foundry.py`·`readiness.py` 를 V3 store·권한으로 옮김. `governed_submit` 연결, G-04. `memory_notes` 를 이 모듈 위로.
 - S2b `doc_freshness`: 영향 분석 + 검토 기록만.
+- **지식 공간** (K-5~K-9, OD-10): 공간 하나 = git 저장소 하나. 공간 manifest(`space.json`: id, owner, approvers, contributors,
+  readers, data_class)와 `CODEOWNERS`(경로별 승인자)를 저장소에 둔다. 프로젝트는 `knowledge_bindings`(공간 id, follow|pin, revision)로
+  연결한다. 지식 모듈은 연결된 공간만 색인·검색하고 context-bundle 에 넣는다.
+  - 변경: 제안 → 지식 모듈 검증(형식·출처·모순) → 공간 저장소에 merge request → 승인자 승인(사내 git 서버 리뷰) → merge → 지식 모듈이
+    git 서버 API 로 승인자 신원·승인 commit 을 확인하고 Decision·Apply 를 기록 → 연결 프로젝트에 알림 (follow 면 다음 run 부터 반영).
+  - 동시 수정: 제안의 기준 revision 이 바뀌면 재검증·재승인 (stale). 모순 제안은 표시.
+  - 외부(개인) 환경은 같은 구조를 GitHub 저장소와 운영자 1인 승인으로 쓴다.
+  - git 서버 승인을 사람 승인 증거로 쓰는 것은 계약 결정 (D-115).
 - 지식 저장소 (OD-10): 프로젝트별 **별도 git 저장소**. 3층으로 나눈다.
   - 파일(정본): Markdown, 메모리 8종 폴더, 각 문서에 출처·결정 ref. git 이력이 감사 기록.
   - 지식 모듈(메모리 레이어): 저장소에 쓰는 유일한 주체. 제안 → 사람 승인 → 적용(commit), 출처 검증, 검색 색인(파일에서 재생성
@@ -227,8 +238,10 @@ AMPLAI Control Plane ── 계약 → 승인(human) → 실행 → 검증 → P
 - D-108 두 층 모듈 체계, 고정 배포물만, 신뢰 루트, 외부 입력 kind 는 프로세스 밖.
 - D-109 지식·문서 최신성 V3 모듈 복원 (S17 `f06a8e5` 의 D1·X9 삭제를 정정, design/12 §1).
 - D-110 3층 업그레이드: 동결, 명시적 이전, 승인 후 백업, 되돌리기 순서, 기준 digest·stale.
-- D-111 모델 게이트웨이 (OD-4). D-112 Hermes 일시정지·취소 (OD-5). D-113 승인 페이지 인증 (OD-6).
+- D-111 모델 게이트웨이 (OD-4). D-112 Hermes 일시정지·취소 허용, 재개는 Hermes 가 멈춘 goal 만, `goal.cancel` 신설 (OD-5).
+  D-113 승인 페이지 passkey (OD-6).
 - D-114 Q-suite 배포 자산화 (OD-7).
+- D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확인 대기).
 
 ## 7. 열린 질문
 

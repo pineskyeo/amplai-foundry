@@ -1,6 +1,6 @@
 # Work 034 Spec: Hermes 오케스트레이터, 모듈 체계, 사내 설치
 
-- 상태: 설계 초안 r3 (독립 검토 2회 반영, 2026-10-10). 구현 없음. 운영자 결정 대기.
+- 상태: 설계 초안 r5 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영). 구현 없음.
 - 근거 표기: `file:line` 은 HEAD `5e38d6b`, design-reference 는 `design/NN §k`. 추정은 "(추정)", 미확인은 "확인 필요".
 
 ## 1. 목적
@@ -19,12 +19,12 @@
 | OD-2 | 배포는 upstream → 사내 한 방향 | 확정 |
 | OD-3 | 순서: 모듈 체계 → Hermes → 지식·문서 → 업그레이드 → 사내 구성 → Jev | 확정 |
 | OD-4 | 사내 LLM 사용량은 모델 게이트웨이로 측정 | 확정 (2026-10-11) |
-| OD-5 | Hermes 는 일시정지·취소를 할 수 없다 (운영자 CLI) | 확정 (2026-10-11) |
+| OD-5 | Hermes 는 연결된 운영자의 goal 을 일시정지·취소할 수 있다. 재개는 Hermes 가 멈춘 goal 만 (운영자가 멈춘 goal 은 운영자가 재개) | 확정 (2026-10-11, 변경) |
 | OD-6 | 승인 페이지(S1b) 인증은 passkey 만, POST + CSRF | 확정 (2026-10-11) |
 | OD-7 | 사내 평가기 재승인용 Q-suite 를 배포 릴리스 자산으로 싣는다 | 확정 (2026-10-11) |
 | OD-8 | Hermes VM 은 처음에 이 Mac 의 VM (loopback 접근, H-12 원격 listener 는 옮길 때) | 확정 (2026-10-11) |
 | OD-9 | 메신저는 Slack (운영자 확인 대기, 가정) | 가정 |
-| OD-10 | 지식 저장소는 별도 git 저장소. 3층: Markdown 파일(정본) / 지식 모듈(유일한 쓰기·승인·색인) / MCP(읽기·검색·제안 창구) | 방향 확정, 3층 구조 확인 대기 |
+| OD-10 | 지식은 별도 git 저장소. 3층: Markdown 파일(정본) / 지식 모듈(유일한 쓰기·승인·색인) / MCP(읽기·검색·제안 창구). 사내는 지식 공간(Knowledge Space) 단위로 관리 주체·승인자를 두고 프로젝트가 골라 연결한다 (K-5~K-9) | 방향 확정, 세부 확인 대기 |
 | OD-11 | Hermes 가 쓸 모델·비용: 구독 연결 가능 여부를 먼저 확인한 뒤 결정 | 확인 중 |
 
 ## 3. 범위
@@ -56,9 +56,13 @@
 ### H. Hermes
 - H-1 Hermes 는 `/api/v3` 만 쓴다 (design/18 §1).
 - H-2 Hermes 서비스 actor 권한: `goal.submit`, `runtime.read`(연결된 사용자의 goal 만), `goal.steer`(종류 제한, H-3),
-  `question.answer`(종류 제한, H-4), `knowledge.propose`, `meta.read`(요약). 없음: `execution.approve`, grant 발급.
+  `question.answer`(종류 제한, H-4), `knowledge.propose`, `meta.read`(요약), `goal.cancel`(신설, 좁은 권한, OD-5).
+  없음: `execution.approve`, grant 발급.
 - H-3 steering 종류는 actor 종류별 허용 목록으로 모든 경로에서 검사한다. Hermes 허용: `constraint_add`, `priority_change`,
-  `new_evidence`, `acceptance_change`(새 contract revision → 재승인). `pause`·`cancel` 은 OD-5 전까지 불가.
+  `new_evidence`, `acceptance_change`(새 contract revision → 재승인), `pause`, `cancel`(OD-5). `resume` 은 그 goal 을 멈춘
+  actor 가 Hermes 일 때만 (멈추기는 쉽게, 다시 켜기는 신중하게). 로컬 취소 경로는 `execution.approve` 대신 새 `goal.cancel` 권한도
+  받는다 (`runtime/execution/loop.py:89-90`, 권한 코드 변경이라 class C). Hermes 의 일시정지·취소는 즉시 운영자에게 알리고(누가, 왜),
+  취소는 design/17 §4 의 단계 표현을 쓰며, 빈도 제한을 둔다.
   지금 `POST /api/v3/goals/{id}/steering` 은 `goal.steer` 만으로 모든 종류를 받고 `pause`·`cancel` 은 사전 확인을 건너뛴다
   (`control_plane/api_v3/server.py:498-506`, `runtime/execution/steering.py:126-127`).
 - H-4 Hermes 경유 답변은 `ambiguous_target`, `subjective_direction`, `conflicting_constraint`, `business_intent` 만.
@@ -89,6 +93,17 @@
 - K-2 `KnowledgeService.governed_submit` 연결 (지금 `GOVERNANCE_REQUIRED`, `knowledge_runtime/service.py:84-93`).
 - K-3 `doc_freshness` 모듈은 영향 분석과 검토 기록만 (V2 `scripts/amplai_docs.py` 약 5,000줄 전체 이식 안 함).
 - K-4 두 모듈을 켜고 끌 수 있고, 메타하네스가 효과를 측정한다.
+- K-5 **지식 공간(Knowledge Space)**: 지식 관리 단위. 공간 하나 = git 저장소 하나 (예: 결제 도메인, 사내 코딩 표준). 공간마다
+  관리 주체(owner), 승인자(approver), 기여자(contributor, 제안 가능), 독자(reader), 데이터 등급을 둔다 (design/10 §2 governor 역할).
+- K-6 프로젝트(app)는 쓸 공간을 골라 연결한다. 연결은 "최신 따라가기" 또는 "revision 고정". 작업 context 는 연결된 공간에서만 고른다
+  (design/02 §4 교차 프로젝트 무제한 검색 금지, design/12 §3-§4).
+- K-7 변경 흐름: 제안(사람·Hermes·작업 에이전트의 관찰) → 지식 모듈 검증(형식, 출처, 기존 지식과 모순 검사, design/12 §6) →
+  공간 저장소에 변경 요청(merge request) → 승인자 승인 → 반영 → AMPLAI 가 Decision·Apply 와 승인자·commit digest 를 기록 →
+  연결된 프로젝트에 새 revision 알림. 승인 없이는 정본이 안 바뀐다.
+- K-8 여러 명이 동시에 고칠 때: 제안은 기준 revision 을 갖는다. 승인 전 대상이 바뀌면 다시 검증·재승인한다 (stale). 서로 모순되는
+  제안은 모순 검사에서 표시한다.
+- K-9 승인 경로: 사내 git 서버의 리뷰·승인(CODEOWNERS, 보호 브랜치)을 쓰고, 지식 모듈이 git 서버 API 로 승인자 신원과 승인된 commit 을
+  확인해 사람 승인 증거로 기록한다. 이 대응은 계약 결정이다 (D-115, 운영자 확인 대기).
 
 ### U. 업그레이드
 - U-1 배포 릴리스는 별도 kind `distribution-release`. 부품 릴리스 포인터와 섞지 않는다 (`runtime/execution/releases.py:241-242`).
@@ -129,7 +144,7 @@
 | AC-M5 | 권한·평가·검증 kind 변경은 class C 이고, `composition.py` 변경은 새 평가기 버전 없이 실험을 막는다 |
 | AC-M6 | `intake_adapter`·`model_gateway` 는 authority 키에 접근할 수 없는 프로세스에서 돈다 |
 | AC-H1 | 메시지 → intent → 계약 → CLI 승인(계약·digest 표시, `expected_contract_ref`) → 실행 → 완료 알림 (S1a e2e) |
-| AC-H2 | Hermes 토큰으로 승인, grant 발급, `pause`·`cancel` steering(두 경로 모두)을 호출하면 거부된다 |
+| AC-H2 | Hermes 토큰으로 승인·grant 발급은 거부된다. `pause`·`cancel` 은 연결된 운영자의 goal 에만 되고, 운영자가 멈춘 goal 의 `resume` 은 거부된다. 일시정지·취소마다 운영자 알림이 남는다 |
 | AC-H3 | JSON actor 위조, 연결표에 없는 사용자, 다른 사용자의 goal·event 조회가 거부된다 |
 | AC-H4 | Hermes 대리 actor 가 `authority`·`destructive_change` 질문에 답하거나 의도 보정하면 거부된다 |
 | AC-H5 | 같은 메시지 재전송은 goal 하나만 만든다. steer 빈도 제한이 작동한다 |
