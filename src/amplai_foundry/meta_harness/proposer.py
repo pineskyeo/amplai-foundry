@@ -31,9 +31,11 @@ edit is checked again. Only refined edits are submitted: ``ComponentService.regi
 ``proposer``), ``LocalMetaOps.propose_components`` with the prediction (a ``proposal-prediction``
 record). Proposals stay ``draft`` until screened.
 
-Model-facing schemas carry no count or length keywords (as the S9 schemas; whether Codex
-``--output-schema`` strict mode accepts them or a free-form ``content`` object is 확인 필요); the
-bounds of §9.5 are checked here.
+Model-facing schemas carry no count or length keywords (as the S9 schemas); the bounds of §9.5
+are checked here. Codex ``--output-schema`` strict mode refuses a free-form object (pilot
+2026-10-11: ``invalid_json_schema``, "'additionalProperties' is required to be supplied and to be
+false" at ``edits.items.content``), so ``content`` is a string holding the JSON object, decoded in
+``parse_edit``; every model-facing schema is strict (``tests/v3/test_033_s13_proposer.py``).
 
 Prediction scoring (§9.6, IC-11): after screening, task level (improved = candidate unit passes
 and baseline fails; regressed = the reverse; precision and recall over the predicted tasks that
@@ -168,7 +170,12 @@ _BUCKETS: dict[str, Any] = {
     "items": {
         "type": "object",
         "additionalProperties": False,
-        "properties": {"domain": {"type": "string"}, "task_class": {"type": "string"}},
+        # strict mode: every property required; an absent one is null (``_buckets`` drops it)
+        "required": ["domain", "task_class"],
+        "properties": {
+            "domain": {"type": ["string", "null"]},
+            "task_class": {"type": ["string", "null"]},
+        },
     },
 }
 PREDICTION_FIELDS = (
@@ -193,7 +200,7 @@ EDIT_SCHEMA: dict[str, Any] = {
     "properties": {
         "kind": {"type": "string", "enum": list(PROPOSER_KINDS)},
         "component_id": {"type": "string"},
-        "content": {"type": "object"},
+        "content": {"type": "string"},  # the component content: one JSON object, encoded
         "rationale": {"type": "string"},
         "hypothesis": {"type": "string"},
         "predictions": {
@@ -255,6 +262,7 @@ def _buckets(value: Any) -> list[dict[str, str]] | None:
     for bucket in value:
         if not isinstance(bucket, dict) or not set(bucket) <= {"domain", "task_class"}:
             return None
+        bucket = {k: v for k, v in bucket.items() if v is not None}
         if any(not isinstance(v, str) or not v.strip() for v in bucket.values()):
             return None
         if bucket and bucket not in out:
@@ -269,6 +277,11 @@ def parse_edit(raw: Any, *, development: set[str]) -> tuple[dict[str, Any] | Non
     if not isinstance(raw, dict):
         return None, 0
     kind, component_id, content = raw.get("kind"), raw.get("component_id"), raw.get("content")
+    if isinstance(content, str):  # the model-facing schema carries the object as JSON text
+        try:
+            content = json.loads(content)
+        except ValueError:
+            return None, 0
     rationale, hypothesis = raw.get("rationale"), raw.get("hypothesis")
     predictions, risk = raw.get("predictions"), raw.get("risk")
     if (
@@ -837,7 +850,8 @@ class ProposerEnsemble:
             "(sanitized development traces, failures first).\n"
             f"Propose at most {drafts} edits. Each edit gives one component of the champion new "
             'content of the same kind: kind (a catalogue kind), component_id "<kind>.<name>", '
-            "content valid for that kind (shaped like the champion's or the v1 content), "
+            "content valid for that kind (shaped like the champion's or the v1 content) "
+            "written as one JSON object encoded in a string, "
             f"rationale (at most {RATIONALE_MAX} characters), hypothesis (at most "
             f"{HYPOTHESIS_MAX} characters), predictions and risk (low, medium or high).\n"
             f"predictions: improve_task_ids and regress_task_ids name at most {MAX_TASK_IDS} "
