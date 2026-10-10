@@ -556,6 +556,22 @@ def test_a_finished_run_is_not_recovered(w):
     hold("CALIBRATION_RECOVERY_STATE", r.svc.recover, w.m.reviewer, r.plan_ref)
 
 
+def test_four_trials_in_a_row_not_run_with_one_code_stop_a_calibration(w):
+    # pilot 2026-10-11: calplan-75196f2d held all 50 regression trials CORPUS_CHANGED and only the
+    # token budget ended it; the same pre-run Hold four times in a row now stops the run
+    c = make(w)
+
+    def executor(composition, case, repeat, mode):
+        exc = Hold("CORPUS_CHANGED", "held before any goal")
+        setattr(exc, NOT_RUN_EVIDENCE, evidence_of(goal_id=None, planner_mode=None))
+        raise exc
+
+    r = run_plan(w, c, executor=executor)
+    assert r.head["state"] == "stopped" and r.head["data"]["stop_reason"] == "pre_run_failures"
+    assert len(r.trials()) == 4
+    assert all(t["outcome_missing"] == "not_run" for t in r.trials())
+
+
 def holding_executor(w, c, evidence, code="TRIAL_VERIFIER"):
     """val-00 holds ``code`` (TRIAL_VERIFIER: the caltrial-ac33... shape); ``evidence`` (None:
     none) is what the executor attaches as ``NOT_RUN_EVIDENCE``."""

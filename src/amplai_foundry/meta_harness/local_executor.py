@@ -478,7 +478,7 @@ class LocalTrialExecutor:
             "goal_id": None,
             "goal_status": None,
             "goal_reason": "environment_drift",
-            "corpus_id": self.corpus.corpus_id,
+            "corpus_id": spec.payload.get("corpus_id", self.corpus.corpus_id),
             "base_commit": spec.base_commit,
             "executed_composition_ref": composition_ref,  # nothing ran in a sibling
             "escalation_chain": [],
@@ -601,7 +601,7 @@ class LocalTrialExecutor:
             "goal_id": record.get("goal_id"),
             "goal_status": status,
             "goal_reason": record.get("reason"),
-            "corpus_id": self.corpus.corpus_id,
+            "corpus_id": spec.payload.get("corpus_id", self.corpus.corpus_id),
             "base_commit": spec.base_commit,
             **detail,
             # receipt v2 (interfaces.md §2.10), descriptive. After an escalation (M6) the graded
@@ -697,7 +697,12 @@ class LocalTrialExecutor:
         try:
             if isinstance(corpus, CorpusV2):
                 task_v2 = corpus.task(case["case_id"])
-                payload = corpus_v2.case_payload(corpus, task_v2)
+                # a task of another set is frozen in that set's corpus (``corpus_v2.for_set``: the
+                # regression set is amplai-regression-v1, §10.6), so its payload names that corpus;
+                # pilot 2026-10-11: computed from the whole corpus, every regression trial was
+                # held CORPUS_CHANGED
+                source = corpus if task_v2.set == "main" else corpus_v2.for_set(corpus, task_v2.set)
+                payload = corpus_v2.case_payload(source, task_v2)
             else:
                 task = corpus.task(case["case_id"])
                 payload = _legacy_payload(corpus, task)

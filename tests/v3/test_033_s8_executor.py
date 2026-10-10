@@ -345,6 +345,7 @@ def make_world(
     tmp_path: Path,
     mode: str = "right",
     planner: FixedPlanner | None = None,
+    regression: bool = False,
 ) -> World:
     rig = build_rig(deployment, tmp_path, planner)
     # an existing visible test the agent must not touch (the base commit is this repo's HEAD)
@@ -369,6 +370,11 @@ def make_world(
     coordinator = WorkCoordinator(deployment.runtime, registry, rig.workspaces, poll_seconds=0.05)
     loop = ExecutionLoop(rig.service, coordinator, publisher=None)
     corpus = write_corpus(tmp_path / "corpus", base_commit)
+    if regression:  # one task of the regression set (§10.6), before the planner reads the corpus
+        add_task(
+            corpus.root, "reg-01-value", set="regression", objective="Make value() return 2 (reg)."
+        )
+        corpus = corpus_v2.load(corpus.root)
     executor = LocalTrialExecutor(
         rig.service, loop, deployment.goals, rig.operator, corpus, behaviour_verifier=VERIFIER
     )
@@ -722,6 +728,25 @@ def test_a_frozen_case_equal_to_the_loaded_task_runs(world: World) -> None:
     assert obs.success is True
     # the cache key binds the frozen task artifact
     assert world.receipt(obs)["cache_key"].startswith("sha256:")
+
+
+def test_a_frozen_regression_case_runs_against_its_set_corpus(
+    deployment: Any, tmp_path: Path
+) -> None:
+    # pilot 2026-10-11: the regression set is frozen as amplai-regression-v1 (corpus_v2.for_set)
+    # while the executor loads the whole corpus; every regression trial was held CORPUS_CHANGED
+    world = make_world(deployment, tmp_path, regression=True)
+    corpus = world.corpus
+    regression = corpus_v2.for_set(corpus, "regression")
+    payload = corpus_v2.case_payload(regression, regression.task("reg-01-value"))
+    assert payload["corpus_id"] != corpus.corpus_id  # the frozen payload names the set corpus
+    ref = world.d.artifacts.admit(
+        world.scope, canonical(payload), "application/json", trust="operator"
+    )
+    case = {"case_id": "reg-01-value", "split": "validation", "artifact_ref": ref}
+    obs = world.executor(world.baseline, case, 0, "sandbox_rerun")
+    assert obs.success is True
+    assert world.receipt(obs)["corpus_id"] == regression.corpus_id  # the case's corpus
 
 
 def test_a_frozen_case_whose_task_changed_on_disk_is_held_before_any_goal(world: World) -> None:
