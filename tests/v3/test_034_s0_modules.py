@@ -206,6 +206,32 @@ def test_installed_file_that_differs_from_record_is_rejected(world: World) -> No
     assert code_of(excinfo) == "MODULE_FILE_MISMATCH"
 
 
+def test_record_entry_naming_a_missing_file_is_rejected(world: World) -> None:
+    # Python 3.12+ ``Distribution.files`` drops such entries; RECORD is parsed directly instead.
+    (world.root / "acme_dep/__init__.py").unlink()
+    with pytest.raises(RuntimeFault) as excinfo:
+        world.registry()
+    assert code_of(excinfo) == "MODULE_FILE_MISSING"
+    assert excinfo.value.details == {"package": DEP, "path": "acme_dep/__init__.py"}
+
+
+def test_malformed_record_row_is_rejected(tmp_path: Path) -> None:
+    root = tmp_path / "ext"
+    root.mkdir()
+    write_dist(root, DEP, "1.2.0", {"acme_dep/__init__.py": b""})
+    record = next(root.glob("*.dist-info")) / "RECORD"
+    data = record.read_bytes() + b"acme_dep/extra.py,sha256=x\n"
+    record.write_bytes(data)
+    manifest = {
+        "manifest_version": 1,
+        "packages": [{"name": DEP, "version": "1.2.0", "record_digest": digest_bytes(data)}],
+        "modules": [],
+    }
+    with pytest.raises(RuntimeFault) as excinfo:
+        World(root, manifest).registry()
+    assert code_of(excinfo) == "MODULE_RECORD_FORMAT"
+
+
 def test_file_not_listed_by_any_record_is_rejected(world: World) -> None:
     (world.root / "acme_modules/extra.py").write_bytes(b"")
     with pytest.raises(RuntimeFault) as excinfo:

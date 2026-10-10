@@ -9,9 +9,10 @@ fail-closed and all-or-nothing; any finding rejects the whole manifest:
   or compiled files would change the digest);
 - no ``.pth`` file anywhere under a root, listed or not, and no symlink;
 - every distribution under a root is pinned, every pinned one is installed once at its version;
-- ``RECORD`` bytes match the pinned digest, every listed file matches its sha256 and size, and no
-  file under a root is unlisted (``__pycache__`` included: loading from a verified read-only copy,
-  plan.md §3.1, is a later PR);
+- ``RECORD`` bytes match the pinned digest, every listed file exists and matches its sha256 and
+  size, and no file under a root is unlisted (``__pycache__`` included: loading from a verified
+  read-only copy, plan.md §3.1, is a later PR). ``RECORD`` is parsed from those same bytes, never
+  through ``Distribution.files``, which drops entries whose file is missing on Python 3.12+;
 - every ``Requires-Dist`` of a pinned distribution names a pinned distribution. Requirements gated
   on an ``extra`` are not part of the closure; every other marker counts as true (fail-closed);
 - a module's code location comes from the manifest ``entry`` and must be a file of its package.
@@ -31,12 +32,13 @@ Manifest shape (signature and trust root, M-4, are not checked in this PR)::
 from __future__ import annotations
 
 import base64
+import csv
 import hashlib
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from importlib.metadata import PathDistribution
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 from jsonschema import Draft202012Validator
@@ -203,39 +205,78 @@ def _file_digest(data: bytes) -> str:
     return base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode()
 
 
-def _verify_files(installed: _Installed) -> set[Path]:
+def _record_rows(installed: _Installed, record: bytes) -> list[tuple[str, str, str]]:
+    """Parse ``RECORD`` (csv: path, hash, size) from the digest-checked bytes, every row kept."""
+    try:
+        text = record.decode("utf-8")
+    except UnicodeDecodeError:
+        raise _fault(
+            "MODULE_RECORD_FORMAT", "RECORD is not UTF-8", package=installed.name
+        ) from None
+    rows: list[tuple[str, str, str]] = []
+    for row in csv.reader(text.splitlines()):
+        if not row:
+            continue
+        if len(row) != 3:
+            raise _fault(
+                "MODULE_RECORD_FORMAT", "RECORD row is not path,hash,size", package=installed.name
+            )
+        rows.append((row[0], row[1], row[2]))
+    return rows
+
+
+def _verify_files(installed: _Installed, record: bytes) -> set[Path]:
     """Check every ``RECORD`` entry; return the absolute paths the distribution owns."""
-    files = installed.dist.files
-    if files is None:
-        raise _fault("MODULE_RECORD_MISSING", "distribution has no RECORD", package=installed.name)
-    record = f"{installed.dist_info.name}/RECORD"
+    record_rel = f"{installed.dist_info.name}/RECORD"
     owned: set[Path] = set()
-    for entry in files:
-        rel = entry.as_posix()
-        if entry.is_absolute() or ".." in entry.parts or rel.startswith("/"):
+    for rel, hash_field, size_field in _record_rows(installed, record):
+        entry = PurePosixPath(rel)
+        if (
+            not rel
+            or "\\" in rel
+            or "\x00" in rel
+            or entry.is_absolute()
+            or ".." in entry.parts
+            or entry.as_posix() != rel
+        ):
             raise _fault(
                 "MODULE_RECORD_PATH",
-                "RECORD entry leaves the root",
+                "RECORD entry leaves the root or is not a normalized path",
                 package=installed.name,
                 path=rel,
             )
         path = installed.root / rel
         if path.suffix == ".pth":
             raise _fault("MODULE_PTH", "RECORD lists a .pth file", package=installed.name, path=rel)
+        if path in owned:
+            raise _fault(
+                "MODULE_RECORD_FORMAT",
+                "RECORD lists a path twice",
+                package=installed.name,
+                path=rel,
+            )
         owned.add(path)
-        if rel == record:
+        if rel == record_rel:
             continue
-        if entry.hash is None or entry.hash.mode != "sha256":
+        mode, _, expected = hash_field.partition("=")
+        if mode != "sha256" or not expected:
             raise _fault(
                 "MODULE_FILE_HASH", "RECORD entry without sha256", package=installed.name, path=rel
             )
+        if size_field and not (size_field.isascii() and size_field.isdigit()):
+            raise _fault(
+                "MODULE_RECORD_FORMAT",
+                "RECORD size is not a count",
+                package=installed.name,
+                path=rel,
+            )
         if not path.is_file():
             raise _fault(
-                "MODULE_FILE_MISMATCH", "listed file is missing", package=installed.name, path=rel
+                "MODULE_FILE_MISSING", "listed file is missing", package=installed.name, path=rel
             )
         data = path.read_bytes()
-        size_ok = entry.size is None or entry.size == len(data)
-        if not size_ok or _file_digest(data) != entry.hash.value:
+        size_ok = not size_field or int(size_field) == len(data)
+        if not size_ok or _file_digest(data) != expected:
             raise _fault(
                 "MODULE_FILE_MISMATCH",
                 "installed file differs from RECORD",
@@ -286,7 +327,8 @@ def verify_extensions(manifest: PinnedManifest, roots: Sequence[Path]) -> tuple[
         record = dist.dist_info / "RECORD"
         if not record.is_file():
             raise _fault("MODULE_RECORD_MISSING", "distribution has no RECORD", package=name)
-        actual = digest_bytes(record.read_bytes())
+        record_bytes = record.read_bytes()
+        actual = digest_bytes(record_bytes)
         if actual != pin.record_digest:
             raise _fault(
                 "MODULE_RECORD_DIGEST",
@@ -295,7 +337,7 @@ def verify_extensions(manifest: PinnedManifest, roots: Sequence[Path]) -> tuple[
                 pinned=pin.record_digest,
                 installed=actual,
             )
-        owned[name] = _verify_files(dist)
+        owned[name] = _verify_files(dist, record_bytes)
     every: set[Path] = set()
     for paths in owned.values():
         every |= paths
