@@ -188,3 +188,10 @@ def test_approve_without_a_drafted_contract_is_held(product: Any) -> None:
     dep.service._save_plan(goal, {"goal_id": goal, "status": "needs_answers"})
     result = CliRunner().invoke(cli.app, ["approve", goal])
     assert result.exit_code == 3 and "PLAN_NOT_READY" in result.output
+
+
+def test_status_without_a_contract_ref_names_no_digest() -> None:
+    shown = cli.render_plan({"goal_id": "goal-x", "status": "awaiting_approval"})
+    assert "None" not in shown and "--expected-contract-ref" not in shown
+    assert "contract  :" not in shown
+    assert "next: amplai status goal-x   (no contract digest recorded" in shown

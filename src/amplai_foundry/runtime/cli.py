@@ -195,9 +195,14 @@ def render_plan(record: dict[str, Any]) -> str:
     if outcome:
         edited = ", changed by a human" if outcome.get("revised") else ""
         lines.append(f"  PR state  : {outcome['state']}{edited} (checked {outcome['checked_at']})")
+    approve_next = (
+        f"next: amplai approve {goal} --expected-contract-ref {ref['digest']}"
+        f"   (or amplai cancel {goal})"
+        if ref.get("digest")
+        else f"next: amplai status {goal}   (no contract digest recorded; nothing to approve yet)"
+    )
     nxt = {
-        "awaiting_approval": f"next: amplai approve {goal} --expected-contract-ref "
-        f"{ref.get('digest')}   (or amplai cancel {goal})",
+        "awaiting_approval": approve_next,
         "needs_answers": "next: answer the questions in a refined `amplai work` goal",
         "approved": f"next: amplai status {goal}",
         "running": f'next: amplai status {goal}   (guide it: amplai steer {goal} "..."; '
