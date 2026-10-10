@@ -19,6 +19,7 @@ from ..contracts.intake import (
     check_steering_kind,
     is_intake,
     latest_applied_pause,
+    steer_requested,
     stop_requested,
 )
 from ..contracts.semantics import check_context, check_refs
@@ -105,7 +106,11 @@ class SteeringService:
         key: str,
         evidence_refs: list[dict[str, Any]] | None = None,
         priority: int | None = None,
+        guidance: bool = False,
     ) -> dict[str, Any]:
+        """``guidance``: this pause is the checkpoint of an operator guidance pair (the loop's
+        ``steer``: pause, then resume the same session with the message), not a stop request.
+        It changes only what is recorded for an intake actor."""
         actor.require("goal.steer")
         scope = actor.scope
         # every path that queues steering comes here: the kind is checked per actor kind (H-3)
@@ -170,7 +175,9 @@ class SteeringService:
             else:
                 data["priority"] = priority
             self.store.cas(db, scope, "goal", goal_id, h["row_version"], h["state"], data)
-            if is_intake(actor) and kind in {"pause", "cancel"}:
+            if is_intake(actor) and kind == "pause" and guidance:
+                steer_requested(self.store, db, actor, goal_id, text, steering_ref=ref)
+            elif is_intake(actor) and kind in {"pause", "cancel"}:
                 # the operator's record of who stopped the goal through the front agent, and why
                 stop_requested(self.store, db, actor, goal_id, kind, text, steering_ref=ref)
             return {"steering_id": sid, "steering_ref": ref, "status": "queued"}
