@@ -1,0 +1,56 @@
+# AMPLAI front-agent kit for Hermes Agent v0.21.6 (Work 034 S1c, spec F-1, H-9, H-10).
+# Copy to $HERMES_HOME/config.yaml (default ~/.hermes/config.yaml) on the Hermes VM and fill <...>.
+#
+# Every key below was checked against the Hermes v0.21.6 source (tag v0.21.6, commit 818c13be);
+# the evidence is in README.ko.md "Hermes 설정 근거". Do not add keys that are not checked there.
+# No secret goes in this file: tokens are in $HERMES_HOME/.env (see env.template).
+
+model:
+  provider: <provider>          # 확인 필요: OD-11 (Hermes 가 쓸 모델·비용) 미결정
+  default: <model>
+
+agent:
+  # empty = medium. Options: none, minimal, low, medium, high, xhigh, max, ultra
+  reasoning_effort: ""
+  # H-9: no self-coding delegation, no code execution, no agent-made cron jobs, no browser,
+  # no catalog (hub) installs, no web search or page fetch (H-9 egress). The terminal stays, in
+  # Docker without network (below).
+  disabled_toolsets:
+    - delegation
+    - code_execution
+    - cronjob
+    - browser
+    - catalog
+    - web
+    - search
+
+skills:
+  write_approval: true          # skills the agent writes are staged for the operator (H-10)
+
+memory:
+  write_approval: true          # memory writes are staged for the operator (H-10)
+
+terminal:
+  backend: docker               # H-9: never the default `local`
+  docker_volumes: []            # no host mount
+  docker_network: false         # --network=none
+
+mcp_servers:
+  amplai:
+    command: <python on the VM with amplai-foundry[intake-mcp] installed>
+    args: ["-m", "amplai_foundry.integrations.intake_mcp"]
+    env:
+      AMPLAI_INTAKE_URL: <AMPLAI API URL reachable from the VM>   # 확인 필요: README "열린 항목"
+      AMPLAI_INTAKE_ADAPTER: hermes
+      # interpolated from $HERMES_HOME/.env when the server starts; never written here
+      AMPLAI_INTAKE_TOKEN: ${AMPLAI_INTAKE_TOKEN}
+    tools:
+      include:                  # tool contract amplai-intake-tools v1, exactly
+        - submit_work
+        - submit_design
+        - list_goals
+        - goal_status
+        - steer
+        - replan
+        - cancel_goal
+        - pending_events
