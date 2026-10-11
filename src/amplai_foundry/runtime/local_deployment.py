@@ -33,6 +33,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ..agent_drivers.ports import DriverRegistry
 from ..control_plane.api_v3.intake import (
     OPERATIONS,
+    PLAN_STATUSES,
     IntakeGate,
     IntakeServices,
     RateLimiter,
@@ -89,6 +90,8 @@ from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
+from .notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
+from .notifier.slack import spec as slack_spec
 from .storage.store import Scope, Store
 
 SERVICE_PERMISSIONS = frozenset(
@@ -332,6 +335,17 @@ class IntakeEntry(BaseModel):
     rate_limits: IntakeRateLimits
 
 
+class NotifierEntry(BaseModel):
+    """The operator's direct alert (Work 034 S1c, spec F-5, OD-9, Q-10): a Slack Incoming Webhook
+    of a Slack app separate from the front agent's. Absent: no direct alerts. Independent of
+    ``intake``: alerts keep going with the front agent turned off (AC-F3)."""
+
+    model_config = ConfigDict(extra="forbid")
+    module: Literal["notifier.slack_webhook"]
+    webhook_url_file: str  # 0600 file outside the store with the webhook URL, read on every send
+    interval_seconds: int = Field(default=5, ge=1, le=3600)  # outbox poll interval
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -354,6 +368,7 @@ class LocalConfig(BaseModel):
     meta: MetaEntry | None = None
     jev: JevEntry | None = None
     intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
+    notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -763,6 +778,25 @@ class LocalProductDeployment:
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
+        self.notifier_pump = self._notifier(cfg.notifier) if cfg.notifier is not None else None
+
+    def _notifier(self, entry: NotifierEntry) -> NotifierPump:
+        """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
+        receipts = StoreReceipts(self.store, self.scope, slack_spec().ref)
+        notifier = SlackWebhookNotifier(
+            self.local(entry.webhook_url_file), read=private_bytes, receipts=receipts
+        )
+
+        def status(goal_id: str) -> str:
+            try:
+                value = self.service.plan_record(goal_id).get("status")
+            except RuntimeFault:
+                return "unknown"
+            return value if value in PLAN_STATUSES else "unknown"
+
+        return NotifierPump(
+            self.store, self.scope, notifier, status, interval=entry.interval_seconds
+        )
 
     def _task_environments(
         self,
@@ -1056,16 +1090,22 @@ class LocalProductDeployment:
             @asynccontextmanager
             async def lifespan(application: Any) -> Any:
                 self.loop.start()
+                if self.notifier_pump is not None:
+                    self.notifier_pump.start()
                 try:
                     async with original(application) as state:
                         yield state
                 finally:
+                    if self.notifier_pump is not None:
+                        self.notifier_pump.stop()
                     self.loop.stop()
 
             app.router.lifespan_context = lifespan
         return app
 
     def close(self) -> None:
+        if self.notifier_pump is not None:
+            self.notifier_pump.stop()
         self.loop.stop()
         self.store.close()
 
