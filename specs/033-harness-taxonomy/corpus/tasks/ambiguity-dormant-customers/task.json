@@ -76,7 +76,9 @@
       "falls within",
       "fall within",
       "within 90 days mean",
-      "within `days` days mean"
+      "within `days` days mean",
+      "90 days old",
+      "days old"
     ],
     "interpretations": [
       "An order placed exactly `days` days before `as_of` is within the window: a customer is dormant only when their latest remaining order is more than `days` days old",
