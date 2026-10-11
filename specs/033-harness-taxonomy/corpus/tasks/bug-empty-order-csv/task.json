@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-empty-order-csv",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D23",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Orders disappear when they are saved as CSV. An order may have no lines yet (an `Order` is created without lines by default, and the JSON format keeps such orders), but after the orders are written to an orders file and read back, every order without lines is gone: `stockroom sales` on the saved file reports fewer orders and fewer cancelled orders than the order book that was saved. The orders writer is documented to produce a file that the orders reader reads back.\n\nAn order without lines must survive the CSV round trip, with this representation. Writing: an order without lines is written as exactly one row holding its `order_id`, `customer`, `placed` and `status` cells as for any other order and empty `sku`, `quantity` and `unit_price` cells (the row ends in `,,,`, e.g. `A-1,Hana Kim,2024-01-08,open,,,`), at the position of that order among the others; orders with lines are written exactly as today. Reading: a row whose `sku`, `quantity` and `unit_price` cells are all empty or whitespace stands for an order without lines; the order takes its `order_id`, `customer`, `placed` and `status` from that row (trimmed as for other rows) and keeps the position of that row among the orders. Such a row must be the only row of its order: if its order id also has another row anywhere in the file (a row with a line, or a second row without a line, before or after it), reading raises `stockroom.errors.ParseError`. A row in which only one or two of those three cells are empty is still refused with `ParseError`. Everything else is read and written as before, so for any list of orders (customers without surrounding whitespace, valid SKUs, non-negative prices), reading what the writer wrote gives back an equal list, and writing that list again gives the same text.",
+  "acceptance": [
+    "The sample orders plus a paid order without lines (inserted as the third order) and a cancelled order without lines (appended), written to a file, read back equal, and `stockroom sales` on that file prints `6 orders, 2 cancelled` and `Revenue: $149.65` first; the file holds 8 orders",
+    "Writing one open order without lines gives the header plus `A-1,Hana Kim,2024-01-08,open,,,`; a mixed list gives exactly the expected text (quoted customers and a quoted `\"1,250.00\"` price as before, `,,,` rows for orders without lines at their positions, an empty customer as an empty cell); the sample orders file is written back to its exact text",
+    "A hand-written CRLF file with a whitespace-only `sku`/`quantity`/`unit_price` row, an empty one, and line rows of another order on both sides is read into the expected orders, with trimmed customer and status and orders in order of their first rows",
+    "A row without a line together with a line row of the same order (in either order, also with another order's row between), two rows without a line for one order, and rows with only one or two of the three cells empty each raise `ParseError`; a row without a line next to another order's line row is fine",
+    "For 250 seeded generated lists of 0-6 orders with 0-3 lines each (customers with commas, double quotes, line breaks, semicolons and non-ASCII letters, years 1 to 9999, prices up to 10^8 cents, all four statuses), reading the written text gives an equal list and writing it again gives the same text"
+  ],
+  "hidden_map": {
+    "test_saved_orders_without_lines_still_count_in_sales": 0,
+    "test_an_order_without_lines_is_one_row_with_three_empty_cells": 1,
+    "test_hand_written_rows_without_a_line_are_read": 2,
+    "test_mixed_or_partly_empty_rows_are_refused": 3,
+    "test_generated_order_lists_survive_the_csv_round_trip": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,35 @@
+{
+  "task_id": "refactor-package-facade",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "public-api",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The `stockroom` package has no declared public API: `import stockroom` offers nothing but `__version__`, no module says which of its names are public (so `from stockroom.csvio import *` also drags in `csv`, `io`, `Iterable`, `annotations`, ...), and nothing keeps the modules from importing each other in a circle. Declare the API:\n- every module gets an `__all__` that lists exactly its public names,\n- `stockroom/__init__.py` re-exports a fixed set of names (the facade below) so that callers can write `from stockroom import read_items, OrderBook, main`,\n- the modules of the package import each other without any cycle.\nNote that `stockroom/cli.py` currently takes `__version__` from the package itself (`from . import __version__`), so once the package re-exports `cli.main` that import closes a cycle.\n\nThe facade, in this order (home module in brackets): `StockroomError`, `ParseError`, `StockError`, `ConfigError` (errors); `Item`, `OrderLine`, `Order` (models); `parse_money`, `format_money` (money); `parse_date`, `format_date` (dates); `read_items`, `write_items`, `read_stock`, `read_orders`, `write_orders` (csvio); `dump_orders`, `load_orders` (jsonio); `Inventory` (inventory); `OrderBook` (orders); `order_total` (pricing); `sales_summary` (report); `load_config` (config); `main` (cli).\n\nThis is a refactor: no function or class changes its behaviour, `stockroom.__version__` stays `0.4.0`, the command line and the sample data script work exactly as before, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "Every module of the `stockroom` package other than `stockroom/__init__.py` and `stockroom/__main__.py`, including any module you add, defines `__all__` as a `list` that holds exactly its public names, in the order in which they are first bound in the module. A public name is one bound by a statement directly in the module body (not inside a function, class, `if` or `try`) that is a `def`, an `async def`, a `class`, an assignment to a plain name (`NAME = ...`) or an annotated assignment with a value (`NAME: T = ...`), and that does not start with `_`; names bound by `import` statements are never public. For example `models.__all__` is `[\"SKU\", \"STATUSES\", \"check_sku\", \"Item\", \"OrderLine\", \"Order\"]`, and `from stockroom.<module> import *` binds exactly the public names",
+    "`stockroom.__all__` is a `list` equal to the facade above, in that order; each facade name is an attribute of `stockroom` that is the very same object as in its home module; `from stockroom import *` binds exactly these 24 names; `stockroom.__version__` is still `\"0.4.0\"`",
+    "The modules of the package import each other without a cycle: draw an edge from module A to module B when a statement directly in A's module body (an `import` or a `from ... import`, absolute or relative, not inside a function, class, `if` or `try`) imports B, where `from <package> import X` imports the submodule `X` when `X` is a module of the package and the package's `__init__` otherwise, and `from .m import X`, `from stockroom.m import X` and `import stockroom.m` import `m` (and also `m.X` when that is a module); this graph over all modules of the package (`__init__` and `__main__` included) has no cycle",
+    "In a fresh interpreter, `import stockroom` and `import stockroom.<module>` for every module of the package (except `__main__`) work as the very first import",
+    "`python -m stockroom --version` prints `stockroom 0.4.0`; `items`, `price` and `sales` print exactly what they printed before, with exit code 0 and nothing on stderr; `python scripts/make_sample_data.py --out DIR --orders 4` still prints `wrote 8 items and 4 orders to DIR`"
+  ],
+  "hidden_map": {
+    "test_every_module_lists_its_public_names_in_definition_order": 0,
+    "test_the_package_offers_the_facade": 1,
+    "test_the_import_graph_has_no_cycle": 2,
+    "test_every_module_can_be_imported_first": 3,
+    "test_the_command_line_and_script_still_work": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

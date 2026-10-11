@@ -1,0 +1,44 @@
+{
+  "task_id": "feature-price-lists",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-feature)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add price lists to stockroom: dated unit prices per SKU, either for every customer or for one customer; a rule that picks the price that applies to a customer on a given day; and a `reprice` command that shows how the open orders change when they are priced from the list.\n\nIn `stockroom/money.py` add `format_signed(cents: int, symbol: str = \"$\") -> str`: like `format_money`, with a `+` in front of positive amounts. `125` gives `+$1.25`, `-50` gives `-$0.50`, `0` gives `$0.00`, and `format_signed(123456, \"EUR \")` gives `+EUR 1,234.56`.\n\nCreate the module `stockroom/pricelist.py` with:\n\n- `PriceRule`, a frozen dataclass with the fields `sku` (str), `customer` (str), `start` (`datetime.date`), `end` (`datetime.date | None`) and `unit_price_cents` (int), in that order. A rule whose `customer` is empty or only whitespace is a general rule (for every customer); every other rule is a customer rule. A rule is in force from `start` (included) up to `end` (excluded: on the day `end` it is no longer in force); an `end` of `None` means it never ends.\n- `Repricing`, a frozen dataclass with the fields `order_id` (str), `line` (int), `sku` (str), `quantity` (int), `old_cents` (int) and `new_cents` (int), in that order. `line` is the 1-based position of the line in its order.\n- `PRICE_HEADER = (\"sku\", \"customer\", \"start\", \"end\", \"price\")`, `read_price_rules(text: str) -> list[PriceRule]`, `best_rule(rules: Sequence[PriceRule], sku: str, customer: str, day: date) -> PriceRule | None`, `price_for(rules: Sequence[PriceRule], items: Iterable[Item], sku: str, customer: str, day: date) -> int` and `reprice(orders: Iterable[Order], rules: Sequence[PriceRule], items: Iterable[Item]) -> list[Repricing]`.\n\n**Customer names** match when they are equal after this folding: runs of whitespace become one space and surrounding whitespace is removed (`\" \".join(name.split())`), then the text is case-folded with `str.casefold()`. So `\"  HANA\\t kim \"` matches `\"Hana Kim\"`, and `\"Lena Straße\"` matches `\"LENA STRASSE\"`.\n\n**best_rule** returns the rule that applies, or `None` when none does. The candidates are the rules with exactly that `sku` that are in force on `day` (`start <= day`, and `day < end` unless `end` is `None`) and that are general rules or customer rules whose customer matches `customer`. Among the candidates, the first of these criteria that tells two rules apart decides:\n\n1. a customer rule beats a general rule, whatever their dates;\n2. the later `start` wins;\n3. a rule with an `end` beats a rule without one, and of two rules with an `end` the earlier `end` wins;\n4. the lower `unit_price_cents` wins;\n5. the rule that comes first in `rules` wins.\n\nIt returns the chosen rule object itself (one of the objects in `rules`).\n\n**price_for** returns the `unit_price_cents` of `best_rule(rules, sku, customer, day)`; when no rule applies, it returns the `price_cents` of the catalogue item with that SKU in `items` (any iterable), and when there is no such item either, it raises `ParseError`.\n\n**reprice** prices again every line of every order whose status is `open` (orders with any other status are left out), for the order's `customer` on its `placed` date, with `price_for`. `orders` and `items` may be any iterables (`items` is needed for many lookups). It returns a `Repricing` for every line whose new unit price differs from its current `unit_price_cents`, in the order of the orders and then of their lines; lines whose price stays the same are not listed. A `ParseError` from `price_for` propagates.\n\n**read_price_rules.** The text is read with the `csv` module; rows whose cells are all empty or whitespace are skipped; the first remaining row is the header and its cells, with surrounding whitespace removed, must equal `PRICE_HEADER`; every further row has exactly five cells, each stripped of surrounding whitespace. `sku` must be valid (`models.check_sku`); `customer` is kept as it is after stripping (empty for a general rule); `start` is a `YYYY-MM-DD` date read like the other dates of the package; an empty `end` gives `None`, any other `end` is such a date and must be after `start`; `price` is read with `money.parse_money` and must not be negative. Everything else raises `ParseError`: an empty text, a wrong header, a row with another number of cells, an invalid SKU, date or amount, an `end` on or before `start`, and a negative price. The rules come back in file order.\n\n**Command.** Add `python -m stockroom reprice --items ITEMS.csv --rules RULES.csv --orders ORDERS.csv`. It reads the catalogue like `items` does, the price list with `read_price_rules` and the orders file like `sales` does, calls `reprice` with all orders of the file, and prints, with exit code 0 and money formatted with the `currency_symbol` setting:\n\n1. one line per `Repricing`, in order: `<order_id>/<line> <sku> x<quantity>: <old> -> <new> (<difference>)`, where `<old>` and `<new>` are the unit prices formatted as `money.format_money` does and `<difference>` is `quantity * (new_cents - old_cents)` formatted with `format_signed`;\n2. `<lines> changed in <orders>, difference <total>`, where `<lines>` is `textutil.plural(n, \"line\")` for the number `n` of listed lines, `<orders>` is `textutil.plural(m, \"order\")` for the number `m` of distinct orders among them, and `<total>` is the sum of the differences formatted with `format_signed` (so `0 lines changed in 0 orders, difference $0.00` when nothing changes).\n\nAny error (in one of the files, or a line that cannot be priced) ends the command with exit code 1, `stockroom: error: ...` on stderr and nothing on stdout.",
+  "acceptance": [
+    "PriceRule and Repricing are frozen dataclasses with the stated fields in order; money.format_signed is format_money with a '+' before positive amounts ('+$1.25', '-$0.50', '$0.00', '+EUR 1,234.56')",
+    "read_price_rules reads the price list CSV (header PRICE_HEADER with stripped cells, all-empty rows skipped, five stripped cells per row, an empty end as None, prices read with parse_money) and raises ParseError for an empty text, a wrong header, a wrong cell count, an invalid SKU, date or amount, an end on or before the start and a negative price",
+    "A rule is a candidate only for its SKU and only from its start (included) to its end (excluded), or forever when the end is None",
+    "Customer rules beat general rules (empty or whitespace-only customer) whatever their dates; customer names match after collapsing whitespace and str.casefold()",
+    "Among otherwise equal candidates the later start wins, then a rule with an end beats one without and the earlier end wins, then the lower price, then the earlier position in the list; best_rule returns that rule object itself",
+    "price_for gives the best rule's price, else the catalogue price of the SKU, and raises ParseError when neither exists",
+    "reprice lists, for open orders only and in order, every line whose price for the order's customer on its placed date differs from its unit price, as Repricing(order_id, 1-based line, sku, quantity, old, new)",
+    "For random rule sets and queries, best_rule and price_for agree with the stated selection rules",
+    "The reprice command prints one line per repriced line and the summary line with the plural counts and signed differences in exactly the stated format with the currency_symbol setting; errors end with exit code 1, 'stockroom: error: ...' on stderr and empty stdout"
+  ],
+  "hidden_map": {
+    "test_records_and_signed_amounts": 0,
+    "test_read_price_rules": 1,
+    "test_windows_include_the_start_and_exclude_the_end": 2,
+    "test_customer_rules_beat_general_ones": 3,
+    "test_tie_breaks": 4,
+    "test_price_for_falls_back_to_the_catalogue": 5,
+    "test_reprice_changes_open_orders_only": 6,
+    "test_random_queries_match_the_model": 7,
+    "test_cli_reprice_report": 8,
+    "test_cli_errors": 8
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-order-row-shape",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D17",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`stockroom sales --orders F` crashes with a Python traceback (`AttributeError: 'NoneType' object has no attribute 'strip'`) when the orders file was cut off in the middle of a row, for example when its last line is `A-1006,Omar Diaz,2024-03-21`, and also when the file has a line that holds only spaces. A row with more cells than the header, on the other hand, is silently accepted and its extra cells are dropped. The command line is documented to end every data error with exit code 1 and one line `stockroom: error: <reason>` on stderr, and the catalogue and stock files already refuse rows with the wrong number of fields.\n\nOrders files must follow the same rules as the stock file. Cells are counted the CSV way (a quoted cell may contain commas). A line whose cells are all empty or whitespace, whatever their number (an empty line, `   `, `\\t`, ` , ,  ,`, `,,,,,,`), carries no row and is skipped. Every other row must have exactly as many cells as the header (7); a row with fewer or more cells raises `stockroom.errors.ParseError` with the message `line N: expected 7 fields`, where N is the row's line number in the file with the header on line 1 (line numbering in files with empty lines or with line breaks inside cells is outside this task). The first faulty row in file order is reported. Through the command this gives exit code 1, empty stdout and stderr `stockroom: error: line N: expected 7 fields` followed by a newline, and nothing else. Files without such rows are read exactly as before.",
+  "acceptance": [
+    "`stockroom sales --orders F` on the sample orders with a cut-off last row (`A-1006,Omar Diaz,2024-03-21`, or `A-1006,Omar Diaz,2024-03-21,open,MUG-002,1` without a final newline), with a row `A-1002` inserted as line 4, or with line 2 missing its last cell, exits with code 1, prints nothing on stdout and exactly `stockroom: error: line N: expected 7 fields` plus a newline on stderr, with N the row's line",
+    "Reading an orders text with a row of 6, 4, 3 or 1 cells (also after valid rows and when a quoted customer holds a comma) raises `ParseError` whose message is exactly `line N: expected 7 fields`",
+    "A row with 8 or more cells (a trailing comma, extra values, an extra quoted cell holding a comma) raises `ParseError` with the message `line N: expected 7 fields`, and `stockroom sales` on such a file exits with code 1, empty stdout and exactly `stockroom: error: line 4: expected 7 fields` plus a newline for a fourth line with 8 cells",
+    "Lines with only whitespace or only empty or blank cells (any number of them, also as the unterminated last line) are skipped: the orders read equal those of the file without them, `stockroom sales` prints the same output as for the sample file with an empty stderr, and a file with just the header and such lines holds no orders",
+    "For 300 seeded generated orders files (1-6 orders of 1-3 rows, customers with commas and double quotes), the file is read into the expected orders, and after one random row is cut to 1-6 cells or given 1-3 extra cells, reading raises `ParseError` with the message `line N: expected 7 fields` for that row's line N"
+  ],
+  "hidden_map": {
+    "test_sales_reports_a_short_row_as_a_data_error": 0,
+    "test_reading_a_short_row_names_its_line": 1,
+    "test_a_row_with_extra_cells_is_refused": 2,
+    "test_lines_without_content_are_skipped": 3,
+    "test_generated_files_with_one_malformed_row": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

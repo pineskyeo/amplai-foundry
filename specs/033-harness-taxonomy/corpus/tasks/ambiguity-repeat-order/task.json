@@ -1,0 +1,63 @@
+{
+  "task_id": "ambiguity-repeat-order",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-ambiguity)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Let customers place an earlier order again. A new module `stockroom/reorder.py` gets `repeat_order(order: Order, items: Sequence[Item], *, order_id: str, placed: date) -> Order`, where `items` is the current catalogue. Checks, in this order: a cancelled order cannot be repeated (`ParseError` with the message `order ID is cancelled`); `placed` must not be earlier than the original order's date (the same day is allowed), else `ParseError` with the message `repeat of ID cannot be placed before YYYY-MM-DD` (the original id and date); every SKU of the original order must still be in the catalogue, else `ParseError` with the message `SKU is no longer sold` for the first such line in line order, and nothing is created. The result is a new `Order` with the given `order_id` and `placed`, the original customer, status `open`, and one order line per line of the original order, in the same order, with the same SKU and quantity; open, paid and shipped orders can all be repeated. The CLI gets `python -m stockroom repeat --orders FILE --items FILE --order-id ID --new-id NEW --placed YYYY-MM-DD [--write]`. It reads both files, repeats order `ID` as `NEW`, and refuses a `NEW` that is already an order id in the file with the message of `OrderBook.add` (`duplicate order id NEW`). Without `--write` it prints the new order in the order-file format, exactly the text `csvio.write_orders([new_order])` returns (header included), and leaves the file alone. With `--write` it rewrites the order file as `csvio.write_orders` of all its orders followed by the new one, and prints `added NEW for CUSTOMER: N line(s)` where the count is made with `textutil.plural(count, \"line\")` (`1 line`, `2 lines`). An unknown `ID` (`no order ID`, from `OrderBook.get`), a bad `--placed` (the `not a date: ...` message of `dates.parse_date`) and every refusal above are data errors: exit code 1, nothing on stdout, `stockroom: error: MESSAGE` on stderr, and the order file is not changed. The other commands are unchanged.",
+  "acceptance": [
+    "`repeat_order` returns an open order with the given id and date for the original customer, with one line per original line in the same order and with the same SKU and quantity; the same day as the original is allowed and open, paid and shipped orders can be repeated",
+    "`repeat_order` refuses, in this order, a cancelled order (`order ID is cancelled`), a date before the original (`repeat of ID cannot be placed before DATE`) and a SKU missing from the catalogue (`SKU is no longer sold`, the first such line), each with `ParseError`",
+    "`repeat` without `--write` prints `write_orders([new_order])` (header and one row per line) and leaves the order file unchanged",
+    "`repeat --write` rewrites the order file with the existing orders followed by the new one and prints `added NEW for CUSTOMER: N line(s)` using `plural`",
+    "`repeat` with an unknown order id, a cancelled order, an unsold SKU, a new id already in the file, a date before the original or an invalid date exits with 1, prints nothing on stdout, prints `stockroom: error: MESSAGE` on stderr and leaves the order file unchanged",
+    "The repeated order's lines are complete order lines (SKU, quantity and unit price) that `write_orders` writes like any other line (checked over many seeded random orders and catalogues and in the command output)"
+  ],
+  "hidden_map": {
+    "test_repeat_keeps_customer_lines_and_opens_the_order": 0,
+    "test_repeat_refuses_cancelled_early_and_unsold_orders": 1,
+    "test_repeat_command_prints_the_new_order_rows": 2,
+    "test_repeat_command_write_adds_the_order_to_the_file": 3,
+    "test_repeat_command_refuses_bad_requests": 4,
+    "test_repeat_lines_take_the_current_catalogue_price": 5,
+    "test_repeat_keeps_customer_lines_and_opens_the_order_alt": 0,
+    "test_repeat_refuses_cancelled_early_and_unsold_orders_alt": 1,
+    "test_repeat_command_prints_the_new_order_rows_alt": 2,
+    "test_repeat_command_write_adds_the_order_to_the_file_alt": 3,
+    "test_repeat_command_refuses_bad_requests_alt": 4,
+    "test_repeat_lines_keep_the_price_they_were_ordered_at": 5
+  },
+  "ambiguity": {
+    "expected": "ask",
+    "must_mention_any": [
+      "price",
+      "prices",
+      "priced",
+      "pricing",
+      "reprice",
+      "repriced",
+      "repricing",
+      "unit_price",
+      "unit_price_cents",
+      "price_cents",
+      "cost",
+      "costs"
+    ],
+    "interpretations": [
+      "Each repeated line takes the current catalogue price of its SKU (`Item.price_cents`)",
+      "Each repeated line keeps the unit price of the original order line, the catalogue being used only to check that the SKU is still sold"
+    ]
+  },
+  "difficulty_declared": null
+}

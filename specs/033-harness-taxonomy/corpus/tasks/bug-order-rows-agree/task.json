@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-order-rows-agree",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D22",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The sales summary trusts only the first row of each order. In an orders file, all rows of one order (rows with the same `order_id`) are supposed to share the customer, the date the order was placed and its status, but when they do not, the program silently believes the first row: if the second row of order A-1004 in the sample file says `cancelled` while the first says `paid`, `stockroom sales` still counts A-1004 as paid revenue, and a second row whose `placed` cell is `2024-02-30` or `soon` is not even noticed, although a date that is not a date is an error everywhere else.\n\nReading an orders file must check every row. The `placed` cell of every row, not only the first row of an order, must be a valid date (as dates are read elsewhere); and every further row of an order must agree with the order's first row (in file order; rows of one order need not be adjacent) on the customer (compared after removing surrounding whitespace, letter case and inner spaces significant), on the date (compared as dates, so ` 2024-01-08 ` and `2024-01-08` agree) and on the status (compared after removing surrounding whitespace, letter case significant). A row that breaks one of these rules raises `stockroom.errors.ParseError` whose message starts with `line N: `, where N is that row's line number in the file with the header on line 1 (line numbering in files with empty lines or with line breaks inside cells is outside this task), followed by a reason of your choice; the first such row in file order is reported. A bad date in the first row of an order is reported the same way. Through `stockroom sales` this gives exit code 1, nothing on stdout and exactly one line `stockroom: error: line N: <reason>` on stderr. Files whose rows agree are read exactly as before (the order keeps its first row's values, its lines come in file order, and orders come in the order of their first rows).",
+  "acceptance": [
+    "`stockroom sales` on the sample orders with line 7 changed to status `cancelled`, line 3 changed to placed `2024-01-09`, line 7 changed to customer `Hana  Kim` (two spaces), or line 3 changed to placed `2024-01-32` exits with code 1, empty stdout, and one stderr line starting `stockroom: error: line N: ` with N the changed line, without a traceback",
+    "A `placed` cell of `2024-02-30`, `soon`, the empty text or `2024-13-01` raises `ParseError` with a message starting `line N: ` for the row's line, whether it is a later row of an order, the first row of the file, or the first row of another order",
+    "A later row whose customer, date or status differs only by surrounding whitespace (or whose order id has surrounding whitespace) is read as part of the same order with the first row's values, while a customer differing in letter case or content, a different date, or a different status (`shipped`, `Paid`, `teleported`) raises `ParseError` starting `line N: ` for that row, also when another order's row lies between them",
+    "The sample orders file and a file whose order rows are not adjacent but agree are read as before (orders in order of their first rows, lines in file order)",
+    "For 400 seeded generated files (1-5 orders of 1-4 rows, customers with commas, double quotes and case variants, rows shuffled in half of the files), the file is read into the expected orders; after one later row of an order gets surrounding whitespace added to its customer, date or status cell the result is unchanged, and after that cell is changed to a different customer, date or status, reading raises `ParseError` starting `line N: ` for that row"
+  ],
+  "hidden_map": {
+    "test_sales_refuses_an_order_whose_rows_disagree": 0,
+    "test_every_row_needs_a_real_date": 1,
+    "test_customer_date_and_status_are_compared_as_values": 2,
+    "test_consistent_files_read_as_before": 3,
+    "test_generated_files_with_one_changed_row": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

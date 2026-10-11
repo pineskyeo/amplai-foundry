@@ -1,0 +1,39 @@
+{
+  "task_id": "data-receivable-aging",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-data)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "The shop wants to see who owes how much, and for how long. Add a module `stockroom/aging.py`. Records: frozen dataclasses `Payment(customer: str, day: datetime.date, amount_cents: int)` and `AgingRow(customer, current, days_1_30, days_31_60, days_61_90, over_90, total, credit)` (fields in exactly this order; amounts in integer cents). `read_payments(text) -> list[Payment]` reads a CSV text (the `csv` module, so quoted cells work) with the header `customer,paid,amount`; every cell is trimmed with `str.strip()`, rows whose cells are all empty are skipped, and the header cells must equal those names. Every other row has exactly three cells: a non-empty customer; `paid` exactly `YYYY-MM-DD` with ASCII digits and an existing date; `amount` ASCII digits optionally followed by `.` and exactly two digits, more than zero (`7` is 700 cents; no sign, symbol or grouping). Anything else, including a missing header, is a `stockroom.errors.ParseError`. Payments come back in file order. `customer_key(name) -> str` is how customers are matched: the name in Unicode NFKC form, split at whitespace runs (`str.split()`) and joined with single spaces, then `str.casefold()` (so `HANA` U+00A0 `KIM`, full-width letters and `hana  kim` are the same customer, and `Straße` equals `STRASSE`). `age_receivables(orders, payments, *, as_of, terms_days=30) -> list[AgingRow]` (any iterables; `terms_days` below 0 raises `ValueError`). Only orders that are not `cancelled` and were placed on or before `as_of` are owed, each for its subtotal (`pricing.order_subtotal`), and only payments made on or before `as_of` count. For each customer key, the events are taken in order of their day; on the same day orders come before payments; orders of the same day keep their given order, and so do payments of the same day. A payment pays that customer's open orders oldest first (by placed day, equal days in the given order), each as far as it can, and what is left becomes the customer's credit. When an order comes and the customer has credit, the credit pays as much of it as it can right away. At `as_of`, each order with an open balance is due `terms_days` days after it was placed; with `late = (as_of - due).days`, its balance goes to `current` when `late <= 0`, to `days_1_30` for 1 to 30, `days_31_60` for 31 to 60, `days_61_90` for 61 to 90 and `over_90` above 90. `total` is the sum of the five, `credit` the unused credit. There is one row per customer key with a non-zero total or credit (also a customer known only from payments), named by the `customer` text of the first order with that key in the given order of orders (whatever its status or date), or else of the first payment with that key in the given order of payments (whatever its date); rows are ordered by total, largest first, then by key in plain string order. Finally add `python -m stockroom aging --orders ORDERS_CSV --payments PAYMENTS_CSV --as-of YYYY-MM-DD [--terms N]` (default 30 days). It prints one line per row: `NAME: current A, 1-30 B, 31-60 C, 61-90 D, 90+ E, total T, credit K`, every amount written by `format_money` with the configured currency symbol, or the single line `nothing outstanding` when there are no rows. A bad file, a bad `--as-of` date or a negative `--terms` exits with code 1, `stockroom: error: ...` on stderr and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "`read_payments` reads trimmed cells, `\\r\\n` line ends, quoted customers with commas, `7` as 700 and `0.05` as 5, skips blank and all-empty rows, gives `[]` for a header alone (also with spaces), and raises `ParseError` for an empty customer, `20240301`, `2024-3-1`, `2024-02-30`, amounts `0`, `0.00`, `-1.00`, `1.5`, `$1.00`, `\"1,000.00\"`, an Arabic-Indic digit, `²` and `1_0.00`, two or four cells, an empty text and wrong headers",
+    "`customer_key` gives `hana kim` for `Hana Kim`, `HANA`, two U+00A0, `KIM` with spaces and a tab around it and full-width `Ｈａｎａ Kim`, `strasse` for `Straße` and `STRASSE`, the same key for `e` + combining acute and `é`, `a b c` for `a`, U+2003, `b`, newline, `c`, `fine` for the `ﬁ` ligature; for 2,000 seeded random names it equals NFKC, whitespace joining and casefold, and applying it to a key gives the key",
+    "Payments pay the oldest open orders first (2500 pays a 2000 order of 01-05 and 500 of a 3000 order of 01-10 even when the later one is listed first); overpayment becomes credit that pays the next order when it is placed; a payment before any order is credit; an order and a payment of the same day cancel out; cancelled orders, later orders and later payments are ignored; spellings with U+00A0, upper case and extra spaces are one customer named by the first order; another customer's payment is that customer's credit; no data gives `[]`; negative terms raise `ValueError`",
+    "The age buckets switch exactly at a lateness of 0/1, 30/31, 60/61 and 90/91 days (also far beyond), terms of 0 make an order due on its own day, terms of 7 are honoured, and a partly paid order ages with its remaining balance (400 in `days_61_90` and the next order's 1000 in `days_1_30` on 2024-04-01)",
+    "Rows are ordered by total, largest first, then by key (`Zed` 900, `bo` 501, then the credits of `Cy` and `Dee`), a customer with nothing open and no credit is left out, a customer whose only order is cancelled but who paid shows the credit, the name is the first order's spelling (`bo`, not `BO`), and iterators are accepted",
+    "For 800 seeded random ledgers (customers with several spellings, all statuses, up to 8 orders and 6 payments over 220 days, a random as-of day and terms of 0, 7, 30 or 45), the rows equal an independent computation of the stated rules; each row's total is the sum of its buckets, a row never has both a total and a credit, billed minus paid (owed orders and counted payments of that key) equals total minus credit, and totals never increase down the list",
+    "`python -m stockroom aging --orders O --payments P --as-of 2024-04-15` prints `Omar Diaz: current $0.00, 1-30 $0.00, 31-60 $34.00, 61-90 $0.00, 90+ $0.00, total $34.00, credit $0.00`, then `Hana Kim: current $0.00, 1-30 $8.95, 31-60 $0.00, 61-90 $15.00, 90+ $0.00, total $23.95, credit $0.00` (two spellings joined, a payment under a third spelling), then Lena Berg's line with `credit $10.00` (her order is cancelled); `--as-of 2024-06-01 --terms 10` with the symbol `EUR ` moves Hana Kim's balances to `61-90 EUR 8.95` and `90+ EUR 15.00` and leaves out the fully paid customer; an as-of day before every order prints `nothing outstanding`; a bad payment file, `--as-of 2024-02-30` and `--terms=-1` exit with code 1, empty stdout and `stockroom: error:`"
+  ],
+  "hidden_map": {
+    "test_read_payments": 0,
+    "test_customer_keys_are_normalised": 1,
+    "test_payments_go_to_the_oldest_orders_and_credit_carries_over": 2,
+    "test_age_buckets_have_exact_boundaries": 3,
+    "test_rows_are_ordered_and_named": 4,
+    "test_generated_ledgers_follow_the_rules": 5,
+    "test_aging_command": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,24 @@
+"""Errors. The command line turns every ``StockroomError`` into exit code 1."""
+
+__all__ = [  # noqa: RUF022 - in the order of definition
+    "StockroomError",
+    "ParseError",
+    "StockError",
+    "ConfigError",
+]
+
+
+class StockroomError(Exception):
+    """Base class of the errors this package raises on bad input."""
+
+
+class ParseError(StockroomError):
+    """Text that is not a valid amount, date, record or file."""
+
+
+class StockError(StockroomError):
+    """A stock movement that the current levels do not allow."""
+
+
+class ConfigError(StockroomError):
+    """An unknown setting, a bad value or an unreadable settings file."""
