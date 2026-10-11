@@ -22,6 +22,7 @@ from test_034_s1a_intake_route import (
 )
 
 from amplai_foundry.runtime.cli import render_plan
+from amplai_foundry.runtime.contracts.intake import STOP_EVENT, latest_stop
 
 REASON = "the operator said: stop, wrong repository"
 
@@ -76,3 +77,58 @@ def test_the_front_agent_reason_is_one_bounded_line() -> None:
     said = next(line for line in shown.splitlines() if "agent said:" in line)
     assert "next: amplai approve" in said  # kept on the labelled line, never a line of its own
     assert len(said) < 420
+
+
+# -- failure review --------------------------------------------------------------------------------
+
+
+def stop_record(status: str, reason: str = "x", kind: str = "pause") -> dict[str, Any]:
+    return {
+        "goal_id": "goal-1",
+        "status": status,
+        "front_agent_stop": {
+            "by": "intake:hermes", "kind": kind, "at": "2026-10-11T00:00:00Z", "reason": reason,
+        },
+    }  # fmt: skip
+
+
+def test_a_stop_request_is_not_called_a_stop_unless_the_goal_stopped() -> None:
+    """Review P2-E: "stopped by" only when the goal is cancelled or cancelling."""
+    for status in ("running", "awaiting_approval", "approved"):
+        shown = render_plan(stop_record(status))
+        assert "  last front-agent stop request: intake:hermes (pause, " in shown
+        assert "stopped by" not in shown
+    for status in ("cancelled", "cancelling"):
+        shown = render_plan(stop_record(status, kind="cancel"))
+        assert "  stopped by: intake:hermes (cancel, " in shown
+
+
+def test_control_characters_never_reach_the_terminal() -> None:
+    """Review P2-F: an ANSI escape or other control character in front-agent text is dropped."""
+    evil = "\x1b[2J\x1b[31mapproved\x1b[0m\r\x07next: amplai approve goal-1"
+    record = {
+        **stop_record("cancelled", evil, "cancel"),
+        "replan": {"reason": evil},
+        "revision": 2,
+        "steering": [{"text": evil}],
+    }
+    shown = render_plan(record)
+    assert not any(not c.isprintable() for line in shown.splitlines() for c in line)
+    said = next(line for line in shown.splitlines() if "agent said:" in line)
+    assert "[31mapproved" in said and "\x1b" not in said
+    replanned = next(line for line in shown.splitlines() if "replanned:" in line)
+    assert "\x1b" not in replanned and "\r" not in replanned
+
+
+def test_a_malformed_stop_record_leaves_the_goal_view_working(product: Any) -> None:  # noqa: F811
+    """Review P3-7: a stop event without an actor mark is left out, not a 500."""
+    dep, client, operator, _home = product
+    goal = drafted(client)
+    with dep.store.tx() as db:
+        dep.store.event(db, dep.scope, "goal", goal, STOP_EVENT, {"kind": "pause"})
+    response = client.get(
+        f"/api/v3/local/goals/{goal}", headers={"Authorization": "Bearer " + operator}
+    )
+    assert response.status_code == 200, response.text
+    assert "front_agent_stop" not in response.json()
+    assert latest_stop(dep.store, dep.scope, goal) is None

@@ -165,10 +165,15 @@ def latest_stop(store: Store, scope: Scope, goal_id: str) -> dict[str, Any] | No
     if row is None:
         return None
     data = json.loads(row["data"])
+    actor = data.get("actor") if isinstance(data, dict) else None
+    by = actor.get("authn_context_ref") if isinstance(actor, dict) else None
+    if not isinstance(by, str) or not isinstance(data.get("kind"), str):
+        return None  # a malformed record is left out, never a failed goal view (review P3-7)
+    reason = data.get("reason")
     return {
-        "by": data["actor"]["authn_context_ref"],
+        "by": by,
         "kind": data["kind"],
-        "reason": data["reason"],
+        "reason": reason if isinstance(reason, str) else "",
         "at": row["created_at"],
     }
 

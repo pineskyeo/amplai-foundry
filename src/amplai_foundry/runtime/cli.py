@@ -116,6 +116,14 @@ def _submit_and_plan(
         connection.close()
 
 
+def printable(text: object, limit: int = 300) -> str:
+    """Text another party wrote (a front agent's reason, a replan reason, steering), as one line
+    of printable characters: no ANSI escape or other control character reaches the operator's
+    terminal, and no line break can fake an AMPLAI line (Work 034 review P2-F)."""
+    kept = "".join(c if c.isprintable() else " " for c in str(text or ""))
+    return " ".join(kept.split())[:limit]
+
+
 def render_plan(record: dict[str, Any]) -> str:
     goal, status = record.get("goal_id", "?"), record.get("status", "?")
     lines = [f"goal {goal}: {status}"]
@@ -176,16 +184,20 @@ def render_plan(record: dict[str, Any]) -> str:
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
     stop = record.get("front_agent_stop") or {}
-    if stop:  # who stopped it through the front agent, and the front agent's own words
-        lines.append(f"  stopped by: {stop['by']} ({stop['kind']}, {stop['at']})")
-        said = " ".join(str(stop["reason"]).split())[:300]
+    if stop:  # the front agent's latest stop request and its own words (Work 034 review P2-E)
+        said_how = f"{printable(stop.get('by'))} ({printable(stop.get('kind'))}, {stop.get('at')})"
+        if record.get("status") in {"cancelled", "cancelling"}:
+            lines.append(f"  stopped by: {said_how}")
+        else:
+            lines.append(f"  last front-agent stop request: {said_how}")
+        said = printable(stop.get("reason"), 300)
         lines.append(f"  agent said: {said}   [text written by the front agent, not AMPLAI]")
     replan = record.get("replan") or {}
     if replan:
-        why = replan["reason"][:200]
+        why = printable(replan["reason"], 200)
         lines.append(f"  revision  : {record.get('revision')} (replanned: {why})")
     for step in record.get("steering") or []:
-        lines.append(f"  steered   : {step['text'][:200]}")
+        lines.append(f"  steered   : {printable(step['text'], 200)}")
     for i, a in enumerate(record.get("attempts") or [], start=1):
         detail = ", ".join(f"{v['acceptance']}={v['outcome']}" for v in a.get("verdicts", []))
         lines.append(f"  attempt {i} : {a['outcome']} {detail} ({a.get('seconds', '?')}s)")
