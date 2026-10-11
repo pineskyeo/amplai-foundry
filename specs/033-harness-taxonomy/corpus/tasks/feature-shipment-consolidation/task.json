@@ -1,0 +1,40 @@
+{
+  "task_id": "feature-shipment-consolidation",
+  "version": 2,
+  "domain": "feature",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-feature)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add shipment consolidation to stockroom: paid orders of the same customer that are placed close together travel in one shipment, each shipment pays one shipping fee (unless it is big enough to ship free), and the fee is shared out over the orders of the shipment in exact cents. Add a `shipments` command and two settings.\n\nIn `stockroom/money.py` add `allocate(total: int, weights: Sequence[int]) -> list[int]`. It splits `total` cents into one share per weight, in proportion to the weights, by the largest remainder method, in exact integer arithmetic (it must be exact for numbers of any size). With `W = sum(weights)`, every share first gets `total * weight // W`; the cents still missing to reach `total` are then given out one each to the shares with the largest remainders `total * weight % W`; between equal remainders the larger weight comes first, and between equal remainders and equal weights the earlier share comes first. When all weights are 0 the result is `split_evenly(total, len(weights))`. A negative `total`, an empty `weights` or a negative weight raises `ValueError`. The shares always add up to `total`, and `weights` is not modified. Examples: `allocate(100, [1, 1, 1])` is `[34, 33, 33]`, `allocate(2, [3, 1])` is `[2, 0]`, `allocate(5, [0, 0])` is `[3, 2]`.\n\nIn `stockroom/config.py` add two whole-number settings that work like `tax_bp`: `shipping_fee_cents` (default `600`, environment variable `STOCKROOM_SHIPPING_FEE_CENTS`) and `free_shipping_cents` (default `5000`, environment variable `STOCKROOM_FREE_SHIPPING_CENTS`). They are read from the INI file and from the environment like the other settings (the environment wins), and a value that is not a whole number or is negative raises `ConfigError`.\n\nCreate the module `stockroom/shipments.py` with:\n\n- `Shipment`, a frozen dataclass with the fields `shipment_id` (str), `customer` (str), `placed` (`datetime.date`), `order_ids` (tuple of str), `units` (int), `subtotal_cents` (int), `fee_cents` (int) and `fee_shares` (tuple of int), in that order;\n- `consolidate(orders: Iterable[Order], *, window_days: int = 3, max_units: int = 20, fee_cents: int = 600, free_from_cents: int = 5000) -> list[Shipment]`.\n\n`consolidate`:\n\n- raises `ValueError` for a `window_days` below 0, a `max_units` below 1, or a negative `fee_cents` or `free_from_cents`, and raises `StockroomError` when two of the given orders (of any status) have the same `order_id`;\n- ships only the orders whose status is `paid`; all other orders are ignored;\n- groups the paid orders per customer, where customers are told apart by the exact `customer` text (letter case and spaces count). The orders of one customer are taken in the order of `placed`, then `order_id` (plain `str` order). The first of them opens a shipment, and each following order joins the open shipment when both of these hold: it was placed at most `window_days` days after the **first** order of that shipment (`(order.placed - first.placed).days <= window_days`), and the shipment's units plus the order's units are at most `max_units`. Otherwise it opens the next shipment of that customer. The units of an order are the sum of its line quantities. An order with more than `max_units` units still forms a shipment of its own: orders are never split;\n- sorts the shipments of all customers by the `placed` date of their first order, then by customer (plain `str` order), then by the `order_id` of their first order, and numbers them in that order `SHP-1`, `SHP-2`, ...;\n- fills each `Shipment` with: `customer`; `placed`, the placed date of its first order; `order_ids` in shipment order; `units`, the sum of its orders' units; `subtotal_cents`, the sum of its orders' subtotals (`pricing.order_subtotal`); `fee_cents`, which is 0 when `subtotal_cents` is at least `free_from_cents` and the `fee_cents` argument otherwise; and `fee_shares`, which is `allocate(fee, [the subtotal of each of its orders, in shipment order])` for that fee.\n\n**Command.** Add `python -m stockroom shipments --orders ORDERS.csv [--window DAYS] [--max-units N]`. It reads the orders file like `sales` does and calls `consolidate` with all its orders, `window_days` from `--window` (default 3), `max_units` from `--max-units` (default 20), `fee_cents` from the `shipping_fee_cents` setting and `free_from_cents` from the `free_shipping_cents` setting. `--window` must be written with the ASCII digits 0-9 only (0 allowed), and so must `--max-units`, with a value of at least 1; anything else is a usage error (exit code 2). Money is formatted as `money.format_money` does with the `currency_symbol` setting, and `plural` below is `textutil.plural`. It prints, with exit code 0:\n\n1. for every shipment, in order, the line `<shipment_id>  <customer>  <placed as YYYY-MM-DD>  <plural(number of orders, \"order\")>  <plural(units, \"unit\")>  <subtotal>  fee <fee>`, followed by one line per order of the shipment, in shipment order, made of two spaces and `<order_id>  <subtotal of the order>  <fee share of the order>`;\n2. `<plural(number of shipments, \"shipment\")>, fees <sum of the fees of all shipments>`.\n\nErrors in the orders file or in the settings end the command with exit code 1, `stockroom: error: ...` on stderr and nothing on stdout.",
+  "acceptance": [
+    "money.allocate splits a total by the largest remainder method in exact integer arithmetic: floor shares first, leftover cents to the largest remainders, ties to the larger weight and then to the earlier share, split_evenly when all weights are 0, ValueError for a negative total, no weights or a negative weight, and the weights left unchanged",
+    "Shipment is a frozen dataclass with the stated fields; consolidate ships only paid orders, groups them per exact customer text in placed/order_id order, adds an order to the open shipment only while it was placed at most window_days after the shipment's first order and the units stay at most max_units, and never splits an order",
+    "Shipments are sorted by the placed date of their first order, then by customer, then by first order id, and are numbered SHP-1, SHP-2, ... in that order",
+    "A shipment's fee is fee_cents unless its subtotal is at least free_from_cents (then 0), and fee_shares is allocate(fee, order subtotals in shipment order); invalid parameters raise ValueError and duplicate order ids raise StockroomError",
+    "The settings shipping_fee_cents (default 600) and free_shipping_cents (default 5000) are read from the INI file and the STOCKROOM_ variables like tax_bp and refuse negative or non-numeric values with ConfigError",
+    "For random weights and random orders, allocate and consolidate give what the stated rules give",
+    "The shipments command prints each shipment line with its order lines and the closing count line in exactly the stated format, uses the two settings, --window and --max-units (defaults 3 and 20), treats invalid option values as usage errors (exit 2), and exits 1 with 'stockroom: error: ...' and empty stdout on settings errors"
+  ],
+  "hidden_map": {
+    "test_allocate_by_largest_remainder": 0,
+    "test_groups_follow_the_window_and_unit_limit": 1,
+    "test_shipments_are_sorted_and_numbered": 2,
+    "test_fees_and_shares": 3,
+    "test_settings": 4,
+    "test_random_data_matches_the_model": 5,
+    "test_cli_sample_data": 6,
+    "test_cli_options_and_settings": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

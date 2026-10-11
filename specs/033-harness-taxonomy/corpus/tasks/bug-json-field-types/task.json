@@ -1,0 +1,37 @@
+{
+  "task_id": "bug-json-field-types",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D19",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Loading orders from JSON text either crashes or lets wrong values through when a value has the wrong JSON type. An order object whose `placed` is the number `20240108`, or whose `order_id` is a number, makes loading fail with `AttributeError` instead of the package's `ParseError` (so a caller that handles `StockroomError` still gets a traceback). Other wrong values are accepted silently: a customer that is a number or `null`, a quantity of `2.5` or `true`, a unit price of `12.5` or `false`, and `\"lines\": \"\"` or `\"lines\": {}` (read as an order without lines). Missing keys and some other wrong values are already refused with `ParseError`.\n\nLoading JSON orders must accept an order object only when every value has the right type, and refuse everything else with `stockroom.errors.ParseError` (never another exception). The rules, for each element of the top-level list: it is a JSON object; `order_id` is a string that is not blank (as today); `customer` is a string (any string, also empty); `placed` is a string holding a date in the form the program already accepts for dates (`2024-01-08`); `lines` is a JSON array (it may be empty, giving an order without lines) whose elements are all JSON objects; in each line object `sku` is a string holding a valid SKU (as today), `quantity` is a JSON integer greater than 0, and `unit_price_cents` is a JSON integer of 0 or more. A JSON integer is a number written without a fraction or exponent, which Python's `json` module reads as an `int`; `true` and `false` are not integers, and `2.0`, `2e0` or `1250.0` are refused even though their value is whole. Each of these keys must be present. Keys other than these are ignored, and the handling of the order status does not change. Orders that follow the rules load exactly as before, and the JSON that is written does not change.",
+  "acceptance": [
+    "An order object whose `placed` is a number (`20240108`, `2024.0108`), `null`, `true`, an array or an object, or that has no `placed` key, raises `ParseError` when loaded; the well-formed object loads into the expected order",
+    "An `order_id` or `customer` that is a number, `null`, `false`, an array or an object raises `ParseError`; an empty customer string is kept, and a blank order id is still refused",
+    "`lines` that is a string (also empty), an object (also empty), `null`, a number or `true` raises `ParseError`, as does a line that is a string, a number, `null`, an array or `true`; an empty `lines` array gives an order without lines",
+    "A `quantity` or `unit_price_cents` of `2.5`, `2.0`, `1e3`, `true`, `false`, a string, `null`, an array or an object raises `ParseError` (also when written in the JSON text as `2.0`, `2e0`, `true` or `1250.0`), while a quantity of 10**30 and a unit price of 0 are loaded",
+    "Extra keys in an order or line object are ignored, and orders with no lines, year 1 and year 9999 dates, an empty customer and large quantities survive dumping and loading unchanged",
+    "For 1,500 seeded objects in which one field of the order or of one of its lines is removed or replaced by a value from a fixed pool (`null`, booleans, integers, floats, strings, arrays, objects), loading raises `ParseError` exactly when the field is missing or breaks the rules and otherwise returns the expected order"
+  ],
+  "hidden_map": {
+    "test_a_placed_value_that_is_not_text_is_refused": 0,
+    "test_ids_and_customers_must_be_text": 1,
+    "test_lines_must_be_a_list_of_objects": 2,
+    "test_quantities_and_unit_prices_must_be_whole_numbers": 3,
+    "test_well_formed_objects_still_load_and_round_trip": 4,
+    "test_generated_field_values_are_accepted_exactly_when_well_typed": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

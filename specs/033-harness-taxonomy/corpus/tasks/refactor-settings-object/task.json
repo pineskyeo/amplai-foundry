@@ -1,0 +1,46 @@
+{
+  "task_id": "refactor-settings-object",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "deprecation",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Settings travel through the package as a plain `dict` keyed by strings: `config.load_config` returns one, and the command functions in `stockroom/cli.py` read `config[\"currency_symbol\"]`, `config[\"low_stock_warning\"]` and `config[\"tax_bp\"]`, so the names of the settings are spelled out in several modules and a misspelt key is only noticed when that line runs. Replace the dict with an immutable settings record `Settings` and a loader `load_settings` in `stockroom/config.py`, move the command line onto them, and keep the old entry points working for existing callers for one more release, with deprecation warnings.\n\nThis is a refactor. Which value is loaded from which source, every `ConfigError` message (including which problem is reported when several exist) and every output and exit code of the `stockroom` command stay exactly as they are today; the existing tests keep passing without being edited. Read the current `stockroom/config.py` closely before restructuring it: the acceptance statements below list the corners of its behaviour that are checked against the code as it is now.",
+  "acceptance": [
+    "`config.Settings` is a frozen dataclass with exactly the fields `currency_symbol: str = \"$\"`, `low_stock_warning: bool = True`, `tax_bp: int = 0` and `data_dir: str = \"data\"`, in this order (the annotations resolve with `typing.get_type_hints` to `str`, `bool`, `int`, `str`); instances can be built positionally or by keyword, compare and hash by value, and assigning a field raises `dataclasses.FrozenInstanceError`",
+    "`config.load_settings(path=None, env=None)` returns a `Settings` built from the same sources as `load_config` today: the defaults, then the INI file `path` when it is not `None`, then the `STOCKROOM_<KEY>` entries of the mapping `env` (any `collections.abc.Mapping`, e.g. `os.environ` or a `types.MappingProxyType`); when `env` is `None` no environment variable is read at all, because `config.py` never consults the process environment by itself",
+    "For every settings file and environment mapping, `load_settings` returns the same values, with the same types, that `load_config` returns today, or raises `ConfigError` with exactly the same message; this includes keys written in another letter case, keys inherited from a `[DEFAULT]` section, a file without a `[stockroom]` section or with a differently cased section name, a file without any section header, duplicate keys, comment and continuation lines, empty values, surrounding spaces, numbers in the spellings that `int()` accepts (`+7`, ` 7 `, `1_000`, `-0`, non-ASCII decimal digits), negative numbers, booleans written in the file, a missing file, unknown and lower-case environment variable names, and which error is reported when several problems exist: problems of the file before problems of the environment, and within the file the first problem in the order in which `configparser` lists the keys of the `[stockroom]` section",
+    "`config.load_config(path=None, env=None)` still exists and returns a new `dict` equal to `dataclasses.asdict(load_settings(path, env))` (keys in field order; changing the returned dict changes nothing else, `config.DEFAULTS` included), but it is deprecated: every call emits exactly one `DeprecationWarning` with the message `load_config() is deprecated; use load_settings()`, attributed to the caller (the warning's `filename` is the file that contains the call, as `stacklevel=2` does), and the warning is emitted before any settings are read, so a call that raises `ConfigError` has warned as well; `load_settings` itself never emits a warning",
+    "Code that still indexes the settings like the old dict keeps working for now: `settings[name]` for one of the four field names returns that field's value and emits one `DeprecationWarning` with the message `settings['<name>'] is deprecated; use settings.<name>` (for example `settings['tax_bp'] is deprecated; use settings.tax_bp`), attributed to the caller; any other key, such as another letter case of a name, an unknown name, the name of a method or function, a dunder attribute such as `__class__` or `__dataclass_fields__`, or the empty string, raises `KeyError` whose only argument is the key, and emits no warning",
+    "`config.DEFAULTS` is still a `dict` with exactly the items `currency_symbol: \"$\"`, `low_stock_warning: True`, `tax_bp: 0`, `data_dir: \"data\"`, in this order",
+    "Each setting name is written exactly once in the package: no module of the `stockroom` package contains a string literal whose whole text is `currency_symbol`, `low_stock_warning`, `tax_bp` or `data_dir`; the four names appear only as the field declarations of `Settings`, and `DEFAULTS` and the names of the environment variables are derived from those fields",
+    "`stockroom/cli.py` uses the new API: it does not refer to `load_config` at all, it calls `load_settings`, and the command functions read the settings as attributes of the `Settings` record; `python -W error::DeprecationWarning -m stockroom ...` with a `--config` file and `STOCKROOM_*` variables (for example `price` and `stock`) runs without any warning",
+    "For `items` (with and without `--tag`), `stock`, `sales` and `price`, with the currency symbol, tax rate and low-stock warning coming from the defaults, a `--config` file, `STOCKROOM_*` variables or both, and for settings errors (an unknown key, a bad or negative number, a bad boolean, a missing settings file, a file error together with an environment error, a file without a `[stockroom]` section), the exit code, stdout and stderr of `cli.main` are byte for byte what they are before the change",
+    "For 1500 seeded random combinations of a settings file (random sections including `[DEFAULT]`, keys of random letter case, values from the cases above, comment, blank and continuation lines, duplicates, a missing section header, with or without a final newline) and an environment mapping or `None`, `load_settings` gives exactly the outcome that `load_config` gives before the change: the same values with the same types, or `ConfigError` with the same message"
+  ],
+  "hidden_map": {
+    "test_settings_record_has_four_typed_fields": 0,
+    "test_load_settings_reads_only_the_given_sources": 1,
+    "test_settings_edge_cases_load_as_before": 2,
+    "test_load_config_is_a_deprecated_wrapper": 3,
+    "test_load_config_warns_before_it_fails": 3,
+    "test_settings_items_stay_readable_with_a_warning": 4,
+    "test_defaults_mapping_is_unchanged": 5,
+    "test_each_setting_name_is_written_once": 6,
+    "test_command_line_reads_the_settings_record_without_deprecated_calls": 7,
+    "test_command_line_output_is_unchanged": 8,
+    "test_generated_settings_sources_load_as_before": 9
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
