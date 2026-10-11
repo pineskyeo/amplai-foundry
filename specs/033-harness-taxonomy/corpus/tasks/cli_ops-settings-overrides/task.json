@@ -1,0 +1,43 @@
+{
+  "task_id": "cli_ops-settings-overrides",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Operators want to change one setting for a single run without editing the settings file, and to point every run at a settings file through the environment. Add both to the `stockroom` command, and make the precedence of all settings sources exact.\n\n**`--set KEY=VALUE`** is a new global option (written before the command name, like `--config`; written after the command name it is a usage error as for any unknown option). It may be given any number of times. Its argument is split at the first `=`: `KEY` is the text before it and must be exactly the name of a setting as the settings code defines it (`currency_symbol`, `low_stock_warning`, `tax_bp`, `data_dir`; lower case, no surrounding spaces), and `VALUE` is everything after it (it may contain further `=` characters). An argument without `=`, or whose `KEY` is not such a name, is an argparse usage error: exit code 2, nothing on stdout, and the message on stderr contains the argument text exactly as given. This check applies to every `--set`, also one with an empty value. `--set=KEY=VALUE` works too, as argparse allows.\n\nSeveral `--set` options for the same key: the last one wins. An empty `VALUE` (`--set KEY=`) cancels every earlier `--set` for that key (and only for that key), so that the key falls back to the weaker sources below, unless a later `--set` for the key follows. Consequently `--set currency_symbol=` gives the symbol from the other sources, not an empty one.\n\nThe value that `--set` finally decides for a key is converted like a value of the settings file: `low_stock_warning` accepts `true/false`, `yes/no`, `on/off`, `1/0` in any letter case; `tax_bp` must be a non-negative whole number; text settings (`currency_symbol`, `data_dir`) are used exactly as written, including spaces at either end (unlike the INI file, nothing is stripped). A value that does not convert ends the command with exit code 1 and the usual single line `stockroom: error: <reason>` on stderr, where the reason contains the key, and nothing on stdout. Only the value that is finally used is converted: a bad value that a later `--set` of the same key replaces or cancels is no error.\n\n**Settings file from the environment.** When `--config` is not given, the environment variable `STOCKROOM_CONFIG` names the settings file; a relative path is relative to the current directory, and the file is read and checked exactly like a `--config` file (a missing or invalid file is the usual exit 1 error naming the path as given). `--config PATH` wins over the variable and the variable's file is then not read at all. `--config \"\"` (an empty value) means no settings file, even when `STOCKROOM_CONFIG` is set; an empty `STOCKROOM_CONFIG` also means no file. `STOCKROOM_CONFIG` is not a setting.\n\n**Precedence**, from weakest to strongest: built-in defaults, the settings file, the `STOCKROOM_<KEY>` environment variables, `--set`. An environment variable that is set to the empty string counts as not set (today it is used as an empty value or rejected). An environment variable is not read at all for a key that `--set` finally decides, so an invalid `STOCKROOM_<KEY>` value is no error then; when `--set` does not decide the key (none given, or cancelled), an invalid variable is the usual exit 1 error.\n\nEverything else stays as it is: runs that use none of `--set`, `STOCKROOM_CONFIG` and empty environment variables keep their output, messages and exit codes, and `load_config(path, env)` keeps working when called as today.",
+  "acceptance": [
+    "--set KEY=VALUE (before the command) overrides the settings file and the STOCKROOM_<KEY> variables for every command (price tax and symbol, the stock warning, sales symbol); boolean values are read like the INI file (on/off, yes/no, true/false, 1/0, any case) and data_dir is accepted",
+    "Repeated --set for one key: the last wins; an empty value cancels the earlier --set options of that key only, so the key falls back to the environment, the settings file or the default (an empty currency symbol never comes from --set), and a later --set for the key applies again",
+    "Text values from --set are taken exactly: everything after the first '=' including further '=' characters and spaces at either end; --set=KEY=VALUE works",
+    "A --set argument without '=' or with a KEY that is not exactly a setting name (wrong case, spaces, unknown key, empty key), --set after the command, and --set without an argument are usage errors: exit 2, empty stdout, and the message contains the argument text as given",
+    "A --set value that does not convert (tax_bp not a non-negative whole number, a boolean that is not a boolean) gives exit 1, empty stdout and one 'stockroom: error: ' line naming the key, but only when it is the value finally used; a STOCKROOM_<KEY> variable is not read for a key that --set decides, while an invalid variable without such a --set is still an error",
+    "A STOCKROOM_<KEY> variable set to the empty string counts as not set, so the settings file value or the default applies",
+    "STOCKROOM_CONFIG names the settings file when --config is absent (relative to the current directory, checked like --config, errors name the path); --config wins and the variable's file is then not read; --config '' and an empty STOCKROOM_CONFIG mean no settings file",
+    "Precedence over all sources is defaults < settings file (--config, else STOCKROOM_CONFIG) < non-empty STOCKROOM_<KEY> < the final --set, for every combination of the sources",
+    "Runs without the new options keep their output, errors and exit codes"
+  ],
+  "hidden_map": {
+    "test_set_overrides_settings_of_every_command": 0,
+    "test_last_set_wins_and_an_empty_value_cancels": 1,
+    "test_set_text_values_are_taken_exactly": 2,
+    "test_malformed_set_options_are_usage_errors": 3,
+    "test_bad_set_values_are_data_errors_only_when_used": 4,
+    "test_empty_environment_variables_count_as_unset": 5,
+    "test_settings_file_from_the_environment": 6,
+    "test_settings_source_precedence_matrix": 7,
+    "test_runs_without_the_new_options_are_unchanged": 8
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

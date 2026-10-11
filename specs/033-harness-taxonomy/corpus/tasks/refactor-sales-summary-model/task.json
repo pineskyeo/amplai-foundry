@@ -1,0 +1,46 @@
+{
+  "task_id": "refactor-sales-summary-model",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "separate-concerns",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`report.sales_summary(book, *, symbol=\"$\", top=3)` computes the figures of the sales summary and lays them out as text in one function. It needs a full `OrderBook` (it calls `len(book)` and `book.revenue_by_month()` and walks the book several times), and the currency is a bare symbol string handed down through every call. A JSON report and real currencies are coming, so separate the figures from the layout and give the currency a type of its own:\n- `money.Currency`: a frozen dataclass with one field `symbol: str = \"$\"` and a method `format(cents)` that returns exactly what `format_money(cents, symbol)` returns.\n- `report.SalesSummary`: a frozen dataclass with the fields `order_count`, `cancelled_count`, `revenue_cents`, `months` and `top_customers`, in this order, that holds the figures.\n- `report.summarize(orders, top=3)` computes a `SalesSummary` from any iterable of orders.\n- `report.render_summary(summary, currency=None)` lays a `SalesSummary` out as the text that `sales_summary` produces today (`None` stands for `Currency(\"$\")`).\n- `report.sales_summary(book, *, currency=None, top=3)` returns `render_summary(summarize(book, top=top), currency)`; its old `symbol` keyword keeps working for one more release, but deprecated.\n- `stockroom/cli.py` writes every amount through a `Currency` built from the currency symbol setting.\n\nThis is a refactor: for the same orders and currency symbol, the text of the summary and every output of the `stockroom` command stay byte for byte as they are today, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`money.Currency` is a frozen dataclass with the single field `symbol` (default `\"$\"`) that compares and hashes by value; `Currency(symbol).format(cents)` equals `format_money(cents, symbol)` for every integer amount (negative amounts and amounts with thousands separators included) and every symbol",
+    "`report.SalesSummary` is a frozen, hashable dataclass with exactly the fields `order_count`, `cancelled_count`, `revenue_cents`, `months`, `top_customers`, in this order",
+    "`report.summarize(orders, top=3)` (`top` by position or keyword) accepts any iterable of orders (a list, an `OrderBook`, a generator, an object that can be iterated only once) and iterates it exactly once. `order_count` is the number of orders whose status is not `cancelled`, `cancelled_count` the number of cancelled orders, `revenue_cents` the sum of the subtotals of the orders that are not cancelled; `months` is a tuple of `(\"YYYY-MM\", cents)` tuples, one for each month in which at least one order that is not cancelled was placed, in ascending month order, holding the sum of their subtotals (also when that sum is 0); `top_customers` is a tuple of the `top` largest `(customer, cents)` tuples over the orders that are not cancelled (customers whose total is 0 included), largest first, ties by customer name. These are the figures that `sales_summary` shows today (checked for `top` from 1 to 5)",
+    "`report.render_summary(summary, currency=None)` (`currency` by position or keyword) lays out any `SalesSummary`, also one built by hand with figures that no order book would give, exactly as `sales_summary` lays out the same figures today: the line `<N> order(s), <M> cancelled` (`1 order`, otherwise `<N> orders`), the line `Revenue: <amount>`, an empty line, the `Month`/`Revenue` table, an empty line and the `Customer`/`Total` table, joined with newlines and without a trailing newline; it reads nothing but the record and the currency",
+    "Every amount in the text of `render_summary`, and so of `sales_summary`, is written by `currency.format(cents)`: a subclass of `Currency` that overrides `format` changes every amount, the revenue line, the months and the customers alike",
+    "For 400 seeded random order books (0 to 11 orders with random customers, dates, statuses and lines, including orders without lines and ties between customers), each with a random `top` of 1, 2, 3 or 5 and a currency symbol `$`, the empty string or `EUR `: `summarize` returns the figures described above, and `render_summary(summarize(orders, top=top), Currency(symbol))`, `sales_summary(book, currency=Currency(symbol), top=top)` and, for `$`, `sales_summary(book, top=top)` and `render_summary(summary)` all return exactly the text that `sales_summary(book, symbol=symbol, top=top)` returns before the change",
+    "`sales_summary` takes `book` as its first parameter and `currency` (default `None`) and `top` (default `3`) as keyword-only parameters. The old keyword `symbol` is still accepted: passing it, with any value including `\"$\"`, emits exactly one `DeprecationWarning` with the message `the symbol argument of sales_summary() is deprecated; pass currency=Currency(symbol)`, attributed to the caller (the warning's `filename` is the calling file), and gives the same text as `currency=Currency(symbol)`; a call without `symbol` emits no warning",
+    "Passing both `currency` and `symbol` raises `TypeError` with the message `sales_summary() takes currency or symbol, not both` and emits no warning; passing the currency by position is a `TypeError` as well",
+    "`stockroom/cli.py` writes every amount it prints (the `items` prices, the three `price` lines and the amounts of the sales summary) with `Currency.format` of a `Currency` whose `symbol` is the currency symbol setting, and never passes `symbol=` to `sales_summary`, so `python -W error::DeprecationWarning -m stockroom sales ...` runs without a warning",
+    "For `items` (with and without `--tag`), `sales` (with and without `--from`, with the currency symbol from the environment), and `price` (with a discount, with a tax rate and currency symbol from the environment, an unknown SKU), the exit code, stdout and stderr of `cli.main` are byte for byte what they were before the change"
+  ],
+  "hidden_map": {
+    "test_currency_record_formats_like_format_money": 0,
+    "test_sales_summary_record_is_frozen_and_ordered": 1,
+    "test_summarize_reads_any_iterable_of_orders_once": 2,
+    "test_render_summary_lays_out_any_record": 3,
+    "test_every_amount_is_written_by_the_currency": 4,
+    "test_generated_books_summarize_and_render_as_before": 5,
+    "test_symbol_argument_still_works_with_a_deprecation_warning": 6,
+    "test_currency_and_symbol_together_are_refused": 7,
+    "test_command_line_writes_every_amount_through_the_currency": 8,
+    "test_command_line_does_not_use_the_deprecated_argument": 8,
+    "test_command_line_output_is_unchanged": 9
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

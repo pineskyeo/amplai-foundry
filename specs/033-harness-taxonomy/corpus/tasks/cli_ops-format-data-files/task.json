@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-format-data-files",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Data files edited by hand or exported from spreadsheets drift from the form stockroom writes (byte order marks, CRLF line ends, spaces around cells, `$12.5` instead of `12.50`, upper-case tags). Add a formatter script, so that a pre-commit hook can keep them canonical: `python scripts/fmt_data.py [--check] FILE [FILE ...]` (run with the repository root on `PYTHONPATH`, like the other script).\n\n**Canonical form.** For each file the script reads the bytes, decodes them as UTF-8 (strict) and removes one leading U+FEFF (byte order mark) itself, before anything else. The kind of file is decided by the first line of the remaining text (`text.splitlines()[0]`): split at `,` and with spaces around each cell stripped, it must be exactly the item header (`sku,name,price,tags,reorder_level`), the stock header (`sku,on_hand,reserved`) or the order header (`order_id,customer,placed,status,sku,quantity,unit_price`). The text (without the BOM) is then parsed by the matching reader of `stockroom/csvio.py` (`read_items`, `read_stock`, `read_orders`), and the canonical text is what the matching writer returns for the records read: `write_items`, `write_orders`, and a new function `write_stock(levels)` that you add to `stockroom/csvio.py` as the counterpart of `read_stock` (header line `sku,on_hand,reserved`, then one `sku,on_hand,reserved` line per row in the given order, `\\n` line ends, written with the `csv` module like the other writers). A file is canonical when its bytes are exactly the UTF-8 encoding of its canonical text (so a file with a BOM, CRLF line ends or no final newline is never canonical).\n\n**Without `--check`** every file that is not canonical is replaced by its canonical text (UTF-8, no BOM). The replacement is atomic: the text goes to a temporary file in the same directory, which is then renamed over the file; no temporary file remains. A canonical file is not written at all (its inode and modification time stay). For each replaced file stdout gets the line `reformatted FILE`. **With `--check`** nothing is ever written; for each file that is not canonical stdout gets `would reformat FILE`. Canonical files print no line.\n\n**Failures.** A file that cannot be read (missing, a directory, ...), that is not valid UTF-8, that is empty (no first line), whose first line is not one of the three headers, or that its reader rejects (`ParseError`), is a failed file: stderr gets one line `fmt_data: error: FILE: <reason>` and the file is not written. A failure does not stop the script: the remaining files are processed as usual.\n\n**Output and order.** `FILE` in every line is the argument exactly as given. The files are processed in the order of the arguments; two arguments that name the same file (equal `os.path.realpath`, which also covers `./a.csv`, `sub/../a.csv`, absolute spellings and symbolic links) count as one file, processed once at the position and with the spelling of its first occurrence; this applies to files that fail as well. After all files, stdout ends with one summary line: `<a> reformatted, <b> unchanged, <c> failed` without `--check`, or `<a> would be reformatted, <b> unchanged, <c> failed` with it, where the numbers count distinct files (no plural forms). Nothing else is printed.\n\n**Exit code**: 3 when at least one file failed (with or without `--check`); otherwise 1 when `--check` found at least one file that is not canonical; otherwise 0. Missing `FILE` arguments and unknown options are argparse usage errors (exit code 2, nothing processed). A file whose name starts with `-` is given after `--`, as argparse allows.",
+  "acceptance": [
+    "Items, stock and orders files are replaced by their canonical text (BOM removed, LF line ends, final newline, cells trimmed, prices like 12.50 and 1,234.50 as the writers write them, lower-case tags, order rows grouped by order as read_orders does); 'reformatted FILE' lines appear in argument order with FILE as given, then the summary, exit 0",
+    "Canonical files are not written (same bytes, inode and modification time) and count as unchanged; a second run reports '0 reformatted, 3 unchanged, 0 failed'; the repository's data files are canonical",
+    "--check writes nothing, prints 'would reformat FILE' for each non-canonical file and the '... would be reformatted, ... unchanged, ... failed' summary, and exits 1 when a file would change, 0 when none would",
+    "Missing files, directories, non-UTF-8 files, empty files, unknown headers and rows the readers reject each give one 'fmt_data: error: FILE: <reason>' line on stderr in argument order, are counted as failed and left untouched, while the other files are still processed; the exit code is then 3",
+    "The exit code is 3 whenever a file failed, else 1 when --check found a change, else 0, for every combination of --check, changed files and failed files, and the summary counts match",
+    "Arguments naming the same file (./a.csv, sub/../a.csv, an absolute path, a symbolic link, a repeat) are processed once, at the first occurrence and with its spelling, also for a missing file",
+    "No FILE, unknown options and a name starting with '-' without '--' are usage errors (exit 2, nothing written); after '--' such a name is an ordinary file",
+    "For seeded random data files made messy (BOM, CRLF or LF, missing final newline, spaces around cells, blank lines, '$' and one-decimal prices, upper-case and spaced tags, leading zeros) the script writes exactly the canonical text, leaves no other file, and a following --check reports every file unchanged"
+  ],
+  "hidden_map": {
+    "test_each_kind_is_rewritten_in_canonical_form": 0,
+    "test_canonical_files_are_not_written_and_a_rerun_changes_nothing": 1,
+    "test_check_mode_reports_and_writes_nothing": 2,
+    "test_failures_are_reported_per_file_and_the_rest_is_processed": 3,
+    "test_exit_code_matrix": 4,
+    "test_each_file_is_processed_once": 5,
+    "test_usage_and_names_that_start_with_a_dash": 6,
+    "test_seeded_messy_files_become_canonical": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

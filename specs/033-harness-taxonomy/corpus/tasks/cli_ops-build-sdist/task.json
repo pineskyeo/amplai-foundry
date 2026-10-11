@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-build-sdist",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Releases need a source archive that is byte-for-byte reproducible, so that two people building the same commit get the same checksum. Add a script `scripts/build_sdist.py`: `python scripts/build_sdist.py [--root DIR] [--out DIR] [--check]`. It uses only the standard library (`tomllib`, `zipfile`, ...), never imports the project, and works without `PYTHONPATH`. `--root` is the project root and defaults to the directory above the directory that holds the script (independent of the current directory); a relative `--root` is relative to the current directory.\n\n**Configuration** lives in `ROOT/pyproject.toml`. The archive is named after `[project] name` and `[project] version` (both strings): `<name>-<version>.zip`. The version must equal the `__version__` of `ROOT/stockroom/__init__.py`, taken from the first line that starts with `__version__ = \"X\"` or `__version__ = 'X'` (spaces around `=` optional). The new table `[tool.stockroom.sdist]` has the keys `include` (a non-empty list of glob patterns, required), `exclude` (a list of patterns, default empty) and `out` (a string, optional). Add this table to the repository's own `pyproject.toml` with `include = [\"pyproject.toml\", \"README.md\", \"stockroom/**/*.py\", \"scripts/*.py\"]` and `exclude = [\"__pycache__\", \"*.pyc\"]` and no `out`.\n\n**Files.** Each include pattern is a path relative to `ROOT`; it is expanded with `pathlib.Path(ROOT).glob(pattern)` and only regular files count (directories that a pattern matches are ignored). A file is excluded when any single component of its path relative to `ROOT` (split at `/`) matches any exclude pattern with `fnmatch.fnmatchcase` (so `build` excludes `stockroom/build/x.py` but not `stockroom/rebuild/z.py`). The archive holds every file matched by any include pattern and not excluded, once, even when several patterns match it. Every include pattern must match at least one file that is not excluded.\n\n**Archive format.** A ZIP file whose entries are `<name>-<version>/<path relative to ROOT, with / separators>` for every file, plus one generated entry `<name>-<version>/PKG-INFO` with the content `Metadata-Version: 2.1\\nName: <name>\\nVersion: <version>\\n`. Entries are in ascending order of their names (plain string order), there are no directory entries, and every entry has the timestamp 1980-01-01 00:00:00, `ZIP_DEFLATED` compression, `create_system` 3 (Unix) and the permission bits `0o100644` in the upper 16 bits of `external_attr`, whatever the file's mode. The file contents are stored byte for byte. Therefore the archive bytes depend only on the file names and contents: modification times, permissions, the order in which files were created, cache directories that are excluded and the current directory change nothing.\n\n**Output directory**: `--out DIR` when given (relative to the current directory); otherwise the table's `out` (relative to `ROOT`); otherwise `ROOT/dist`. It is created with its parents when missing. The archive is written atomically (a temporary file in the output directory, then renamed over the archive; no temporary file remains, other files in the directory are untouched), and stdout gets one line `wrote <path> (<n> files)`, where `<path>` is the output directory as chosen above joined with the archive name, printed as `pathlib.Path` prints it (for example `../proj/dist/demo-1.2.3.zip` for `--root ../proj`), and `<n>` is the number of entries including `PKG-INFO`. Exit code 0.\n\n**`--check`** builds the archive in memory, writes nothing (not even the output directory), and compares it with the archive file at the same path: identical bytes print `up to date <path>` and exit 0; different bytes print `out of date <path>` and exit 1; no such file prints `missing <path>` and exits 1.\n\n**Errors** end with exit code 2, one line `build_sdist: error: <reason>` on stderr, nothing on stdout and nothing written or created, also with `--check`: a missing or invalid `pyproject.toml` (the reason contains `pyproject.toml`), no `[tool.stockroom.sdist]` table, an `include` that is missing, empty or not a list of strings, an include pattern that is absolute or has a `..` component (the reason contains the pattern), an include pattern that matches no file that is not excluded (the reason contains the pattern), a version that differs from `__version__` (the reason contains both), and an output directory that exists as a regular file (the reason contains its path). Bad command-line options are argparse usage errors (also exit code 2).",
+  "acceptance": [
+    "On the repository itself (default root, any current directory) the archive stockroom-0.4.0.zip holds exactly pyproject.toml, README.md, every stockroom/**/*.py outside __pycache__, scripts/*.py (the new script included) and PKG-INFO under 'stockroom-0.4.0/', with the files' bytes, and stdout is 'wrote <path> (<n> files)'",
+    "Entries are sorted by name with no directory entries, each with date 1980-01-01 00:00:00, ZIP_DEFLATED, create_system 3 and mode 0o100644 regardless of file modes; PKG-INFO holds the stated three lines",
+    "Rebuilding after changing modification times, permissions, file creation order and adding excluded caches, from another current directory with a relative --root, gives byte-identical archives; rebuilding in place leaves only the archive",
+    "Include patterns are pathlib globs relative to ROOT counting regular files only, duplicates are stored once, exclude patterns match single path components with fnmatchcase (build excludes stockroom/build/x.py but not stockroom/rebuild/z.py), and an include pattern left without files (all excluded, only directories, nothing) is an error naming the pattern",
+    "The output directory is --out (relative to the current directory) if given, else the table's out (relative to ROOT), else ROOT/dist, for every combination, and the printed path uses that directory as chosen",
+    "--check prints 'missing <path>' or 'out of date <path>' with exit 1, or 'up to date <path>' with exit 0 (also after only modification times changed), and writes nothing; configuration errors in check mode exit 2",
+    "Missing table, missing/empty/non-list include, absolute or '..' patterns, invalid or missing pyproject.toml, a version different from __version__ and an output directory that is a file give exit 2, one 'build_sdist: error: ' line with the stated details, empty stdout and nothing written; bad options exit 2",
+    "An existing archive is replaced through a temporary file in the output directory (created with parents), other files there stay, and the result is a valid ZIP"
+  ],
+  "hidden_map": {
+    "test_the_repository_archive": 0,
+    "test_entries_are_normalised": 1,
+    "test_a_rebuild_is_byte_identical": 2,
+    "test_include_and_exclude_rules": 3,
+    "test_output_directory_precedence": 4,
+    "test_check_mode_compares_archive_bytes": 5,
+    "test_configuration_errors": 6,
+    "test_output_is_replaced_atomically": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

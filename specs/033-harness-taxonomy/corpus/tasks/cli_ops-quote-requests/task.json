@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-quote-requests",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add a `quote` command to `stockroom` that prices a whole list of requests at the end of a shell pipeline: `python -m stockroom quote --items CATALOGUE [--tax-bp N] [--out PATH] [REQUESTS]`.\n\n**Input.** `CATALOGUE` is a catalogue file, read like `items` reads it (always a path, never standard input). `REQUESTS` is a text file of requests; it defaults to `-`, and the value `-` (exactly that) means standard input, while any other value is a path (`./-` is the file called `-`). The requests are read as bytes and decoded as UTF-8; the text is split into lines at `\\n`, a `\\r` at the end of a line is dropped, and an empty piece after a final `\\n` is not a line. Lines are numbered from 1 by physical position, counting every line. A line that is empty or only whitespace, and a line whose first non-blank character is `#`, is skipped. Every other line is a request: split at whitespace (`str.split()`), it must have exactly two fields, `SKU QUANTITY`, where `QUANTITY` is one or more ASCII digits `0`-`9` with a value of at least 1 (leading zeros allowed; `+2`, `3.0` or other digit characters are not quantities) and `SKU` is the SKU of a catalogue item (compared exactly).\n\n**Output.** For each valid request line, in input order, one line `N: QUANTITY x SKU NAME = AMOUNT`, with `N` the line number, `QUANTITY` as a plain integer, the item's SKU and name, and `AMOUNT` the item's price times the quantity. Each line is a separate entry even when a SKU repeats. Then three lines `subtotal: S`, `tax: T` and `total: S+T`, where `S` is the sum of the amounts and `T` the tax on `S` computed once with `stockroom.pricing.tax` (half up, on the subtotal, not per line). Amounts are written with `format_money` and the `currency_symbol` setting. A request file without any request line (empty, or only blank and comment lines) gives just the three total lines with zero amounts and exit code 0.\n\n**Tax rate.** The rate in basis points is the new option `--tax-bp N` when given (`N` one or more ASCII digits; `0` is a valid rate and wins like any other value), otherwise the `tax_bp` setting as usual (defaults, settings file, `STOCKROOM_TAX_BP`). An `N` that is not such a number is an argparse usage error (exit code 2).\n\n**Bad lines and exit codes.** A request line that is not valid (wrong number of fields, a quantity that is not as above, a SKU that is not in the catalogue) is reported on stderr as `stockroom: error: line N: <reason>` (for an unknown SKU the reason contains the SKU), one line per bad line, in input order, and the remaining lines are still priced. The exit code is 0 when no line was bad; 3 when some lines were bad and at least one was priced (stdout then holds the priced lines and the totals over them); 1 when there were request lines but none could be priced, in which case stdout stays empty (no totals) and only the per-line errors are on stderr.\n\n**`--out PATH`.** Without `--out`, or with `--out -`, the output goes to stdout. With another `PATH` (a relative path is relative to the current directory) it is written (UTF-8) to that file instead and stdout stays empty; the per-line errors still go to stderr. The file is written atomically, through a temporary file in the same directory that is then renamed over `PATH` (no temporary file remains), and replaces an existing file. When the exit code is 3 the file holds the partial output; when the run fails (exit code 1 for any reason) `PATH` is neither created nor changed. Before anything is read, the command refuses an output that would replace one of its inputs: when `PATH` names the same file as `CATALOGUE` or as the `REQUESTS` file (compared by `os.path.realpath`, so `./r.txt` or `sub/../r.txt` count), and when `PATH` is an existing directory or its directory does not exist; each of these is a single error line containing `PATH` as given, exit code 1, and no file is changed.\n\n**Other failures** end the command with exit code 1, the usual single line `stockroom: error: <reason>` on stderr and empty stdout: a requests file that is missing, a directory or not valid UTF-8 (the reason contains the path as given, or the words `standard input` for `-`), and a catalogue that cannot be read (the reason contains its path) or is not a valid catalogue. Missing `--items` and a second `REQUESTS` argument are usage errors (exit code 2). The other commands do not change.",
+  "acceptance": [
+    "quote prints 'N: QUANTITY x SKU NAME = AMOUNT' for each request line (physical line numbers, blank and '#' lines skipped, whitespace-separated fields, repeated SKUs as separate lines), then subtotal, tax (once on the subtotal, half up) and total, with the currency symbol setting; exit 0 and empty stderr",
+    "Requests come from standard input when REQUESTS is omitted or '-', decoded as UTF-8 with CRLF lines handled like LF; an empty or comment-only request list gives zero totals and exit 0; './-' is the file named '-'",
+    "Bad request lines (unknown SKU, wrong field count, quantity 0, +2, 3.0, words, non-ASCII digits) each give 'stockroom: error: line N: ...' on stderr in input order while the good lines (including a quantity with leading zeros) are priced; the exit code is 3 and stdout holds the good lines and their totals",
+    "When there are request lines but none can be priced the exit code is 1, stdout is empty and stderr holds one error line per bad line",
+    "The tax rate is --tax-bp when given (also 0), otherwise the tax_bp setting from the environment, the settings file or the default, for every combination of these sources",
+    "--out PATH writes the output atomically (replacing an existing file, no leftover files) with empty stdout; '--out -' is stdout; with exit 3 the file holds the partial output; a run with exit 1 neither creates nor changes PATH; an existing directory or a missing directory for PATH is one error line naming PATH before any input is read",
+    "An --out that names the catalogue or the requests file (also as ./r.txt, sub/../r.txt or an absolute path) is refused with exit 1 and one error line naming PATH as given, and no file changes",
+    "Invalid --tax-bp values, missing --items and two REQUESTS arguments are usage errors (exit 2); a missing, directory or non-UTF-8 requests file or standard input, and a missing or invalid catalogue give exit 1 with one error line (naming the path or 'standard input'); other commands are unchanged"
+  ],
+  "hidden_map": {
+    "test_each_request_line_is_priced_and_totalled": 0,
+    "test_requests_come_from_standard_input_by_default": 1,
+    "test_partial_failures_print_the_good_lines_and_exit_3": 2,
+    "test_a_quote_without_a_good_line_fails": 3,
+    "test_tax_rate_precedence_matrix": 4,
+    "test_out_writes_the_quote_atomically": 5,
+    "test_the_output_never_replaces_an_input": 6,
+    "test_usage_errors_and_unreadable_inputs": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

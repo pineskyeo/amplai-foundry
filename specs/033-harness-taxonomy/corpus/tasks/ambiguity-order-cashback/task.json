@@ -1,0 +1,42 @@
+{
+  "task_id": "ambiguity-order-cashback",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-ambiguity)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Add a cashback statement. A new module `stockroom/cashback.py` gets `order_cashback(order: Order, rate_bp: int) -> int` and `cashback_by_customer(book: OrderBook, rate_bp: int) -> list[tuple[str, int]]`. The rate is in basis points (150 = 1.5 %); a rate below 0 or above 10000 raises `ValueError` in both functions, checked before anything else (also for a cancelled order or an empty book). Only orders with status `paid` or `shipped` earn cashback; `open` and `cancelled` orders earn 0. Cashback is worked out for each order on its own: `rate_bp` basis points of that order's subtotal (`pricing.order_subtotal`), rounded half up to a whole cent exactly as `pricing.tax` rounds (so `order_cashback` of a paid order is `pricing.tax(order_subtotal(order), rate_bp)`). A customer's cashback is the sum of the already rounded cashback of each of their paid or shipped orders; it is never recomputed from the customer's total spend, even when that would round differently. `cashback_by_customer` lists every customer (told apart by the exact `customer` text) who has at least one paid or shipped order, also when their cashback is 0, as `(customer, cents)`, largest amount first, equal amounts in plain string order of the name; customers with only open or cancelled orders are not listed. The CLI gets `python -m stockroom cashback --orders FILE --rate-bp N`: one line `NAME: AMOUNT` per listed customer in that order, then `total: AMOUNT`, the sum of the listed amounts; amounts are formatted by `money.format_money` with the configured `currency_symbol`. An empty listing prints only the `total:` line. A `--rate-bp` outside 0-10000 is a data error with the message `--rate-bp must be between 0 and 10000` (exit code 1, nothing on stdout, `stockroom: error: MESSAGE` on stderr). The other commands are unchanged.",
+  "acceptance": [
+    "`order_cashback` is `pricing.tax(order_subtotal(order), rate_bp)` for paid and shipped orders and 0 for open and cancelled ones (1.00 at 50 bp gives 1 cent, 0.99 gives 0); a rate below 0 or above 10000 raises `ValueError` in both functions, also for a cancelled order or an empty book",
+    "A customer's cashback is the sum of their orders' individually rounded cashback, not the cashback of their total spend (two paid orders of 0.30 at 150 bp give 0, not 1), checked over many seeded random books",
+    "`cashback_by_customer` lists every customer with a paid or shipped order, including those with 0, largest first with ties in plain string order, leaves out customers with only open or cancelled orders and gives `[]` for an empty book",
+    "`cashback` prints `NAME: AMOUNT` per listed customer and a final `total: AMOUNT` (the sum of the listed amounts), with the configured currency symbol",
+    "`cashback` with `--rate-bp` outside 0-10000 exits with 1, prints nothing on stdout and prints `stockroom: error: --rate-bp must be between 0 and 10000`; an order file without orders prints only `total: $0.00`"
+  ],
+  "hidden_map": {
+    "test_cashback_of_one_order_is_rounded_half_up": 0,
+    "test_cashback_is_rounded_per_order_and_then_added": 1,
+    "test_cashback_lists_earning_customers_largest_first": 2,
+    "test_cashback_command_prints_customers_and_total": 3,
+    "test_cashback_command_refuses_a_rate_out_of_range": 4
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Cashback is rounded per order and a customer's amount is the sum of the rounded order amounts; only paid and shipped orders earn (as stated)",
+      "Cashback is computed once on each customer's total spend, or open orders also earn (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

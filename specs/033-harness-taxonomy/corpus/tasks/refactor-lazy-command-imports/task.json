@@ -1,0 +1,38 @@
+{
+  "task_id": "refactor-lazy-command-imports",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "lazy-loading",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "`python -m stockroom --version`, `--help` and every usage error import the whole package although they need none of it, and each command pays for the modules of all the other commands: `stockroom/cli.py` imports `csvio`, `dates`, `inventory`, `models`, `money`, `orders`, `pricing` and `report` at the top. Change `stockroom/cli.py` so that a module of the package is imported only when a command, or a caller, actually needs it.\n\n`stockroom.cli` is also used as a library. Other code reads the helper names it has always offered (`stockroom.cli.read_items`, `from stockroom.cli import format_money`, ...), and test suites outside this repository replace them, for example `monkeypatch.setattr(stockroom.cli, \"read_orders\", fake)`, and expect the commands to use the replacement, as they do today. Both uses must keep working.\n\nApart from when modules are imported nothing changes: every output, message and exit code of the command stays byte for byte the same, and the existing tests keep passing without being edited. Only `stockroom/cli.py` needs to change.",
+  "acceptance": [
+    "In a fresh interpreter, `import stockroom.cli` loads no module of the `stockroom` package other than `stockroom`, `stockroom.cli`, `stockroom.config` and `stockroom.errors` (as listed in `sys.modules`; loading fewer of the last two is fine), and still no other package module is loaded after `cli.main` has handled `--version`, `--help`, a subcommand's `--help`, a missing required option or an unknown command",
+    "In a fresh interpreter, one successful run of a single command through `cli.main` leaves exactly these package modules loaded in addition to `stockroom`, `stockroom.cli`, `stockroom.config` and `stockroom.errors` (all four are loaded once a command has run), no more and no fewer: `items` -> `csvio`, `dates`, `models`, `money`; `stock` -> `csvio`, `dates`, `inventory`, `models`, `money`; `sales` (with or without `--from`) -> `csvio`, `dates`, `models`, `money`, `orders`, `pricing`, `report`, `textutil`; `price` -> `csvio`, `dates`, `models`, `money`, `pricing` (the modules each command uses, together with the modules those import)",
+    "These fourteen names remain attributes of `stockroom.cli`: `read_items`, `read_orders`, `read_stock` (home module `csvio`), `parse_date` (`dates`), `Inventory` (`inventory`), `Item` (`models`), `format_money` (`money`), `OrderBook` (`orders`), `apply_discount` and `tax` (`pricing`), `sales_summary` (`report`), `load_config` (`config`), `ParseError` and `StockroomError` (`errors`); each is the very same object as in its home module, `from stockroom.cli import <name>` works for each, and `dir(stockroom.cli)` lists all of them as well as `main` and `COMMANDS`; a name the module does not have raises `AttributeError` on attribute access (and `ImportError` in `from stockroom.cli import ...`), so `hasattr` is false for it",
+    "In a fresh interpreter, reading one of these names from `stockroom.cli` without running a command loads its home module together with the modules that module imports, and no other module of the package besides `stockroom`, `stockroom.cli`, `stockroom.config` and `stockroom.errors`: for example reading `stockroom.cli.format_money` loads `stockroom.money` (and `stockroom.errors`, which it imports) and nothing like `stockroom.csvio`, and reading `stockroom.cli.tax` loads `stockroom.pricing` and `stockroom.models` (and `stockroom.errors`)",
+    "A command uses whatever the attribute of `stockroom.cli` refers to at the moment the command runs: after `monkeypatch.setattr(stockroom.cli, name, replacement)` with `name` one of `read_items`, `read_stock`, `read_orders`, `parse_date`, `Inventory`, `OrderBook`, `format_money`, `apply_discount`, `tax`, `sales_summary` or `load_config`, every command that uses the name uses the replacement in exactly the places, and with exactly the arguments, where it used the original before the change (so the output is what the old module printed with the same replacement), and after `monkeypatch.undo()` the attribute is the original object again",
+    "For `--help` (the main help and every subcommand's, terminal width 80), `--version`, usage errors (no command, a missing option, an unknown command, a bad `--quantity`), `items` (with and without `--tag`), `stock`, `sales` (also with `--from` and with a bad `--from` date), `price` (also an unknown SKU and a quantity of 0) and settings from `STOCKROOM_*` variables (tax rate, currency symbol, a bad tax rate), the exit code, stdout and stderr of `cli.main` are byte for byte what they were before the change"
+  ],
+  "hidden_map": {
+    "test_parsing_alone_loads_only_settings_and_errors": 0,
+    "test_each_command_loads_exactly_the_modules_it_needs": 1,
+    "test_old_names_remain_the_same_objects": 2,
+    "test_reading_an_old_name_loads_only_its_module": 3,
+    "test_a_replaced_name_is_used_by_the_commands": 4,
+    "test_command_output_is_unchanged": 5,
+    "test_settings_from_the_environment_still_reach_the_commands": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

@@ -1,0 +1,41 @@
+{
+  "task_id": "refactor-order-status-enum",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "replace-type",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "An order's status is a bare string: `models.STATUSES` lists the four texts, `Order` checks that its status is one of them, and `orders.py`, `report.py`, `jsonio.py` and `scripts/make_sample_data.py` spell `\"cancelled\"` or `\"open\"` themselves (the script even keeps its own copy of the list). Replace the strings with an enum `OrderStatus` in `stockroom/models.py` and make every order hold a member of it, while every text that leaves the program stays exactly the same.\n\nThis is a refactor: CSV and JSON text, reports, error messages and the sample data files are byte for byte what they are today, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`models.OrderStatus` is an `enum.StrEnum` with the members `OPEN`, `PAID`, `SHIPPED` and `CANCELLED`, in this order, whose values are `open`, `paid`, `shipped` and `cancelled`; `str()` and f-string formatting of a member give its value, and `OrderStatus(text)` returns the member. `models.STATUSES` is still a tuple equal to `(\"open\", \"paid\", \"shipped\", \"cancelled\")`, and its items are the four members in that order",
+    "After construction, `Order.status` is always the `OrderStatus` member itself (`order.status is OrderStatus.PAID`), whether the status was given as its text or as the member, by position or by keyword, through the default (`OrderStatus.OPEN`) or through `dataclasses.replace`; orders built with the text and with the member compare and hash equal; the `repr` of an order shows the member (`status=<OrderStatus.PAID: 'paid'>`); `Order` stays a frozen dataclass with the same fields in the same order, and its `status` field is annotated as `OrderStatus` (`typing.get_type_hints(Order)[\"status\"] is OrderStatus`) with the default `OrderStatus.OPEN`",
+    "Any other status, such as another letter case (`PAID`, `Open`), surrounding spaces, the empty string, an unknown word, or a value that is not a string (`1`, `None`), is refused with `ParseError` and exactly today's message `<order_id>: unknown status <repr of the given value>` (for example `A-9: unknown status 'lost'`); an empty order id is still reported first, as `empty order id`",
+    "Text that leaves the program is unchanged: for 300 seeded random lists of orders (statuses given as text or as members, customers with non-ASCII letters and double quotes), `csvio.write_orders` and `jsonio.dump_orders` return exactly the text they returned before the change; `csvio.read_orders` reads the written text back to equal orders whose statuses are members; `jsonio.order_to_dict(order)[\"status\"]` is a plain `str` (its type is exactly `str`) equal to the status text; `jsonio.load_orders` of an order object that has no status key gives `OrderStatus.OPEN`",
+    "`scripts/make_sample_data.py` writes byte-identical files for the same seed and order count (checked for the seeds and counts 7/20, 3/9, 11/5 and 2/40)",
+    "`OrderBook.revenue_by_month`, `report.customer_totals` and `report.sales_summary` (with the default arguments and with `symbol=\"EUR \", top=2`) give exactly the results they gave before, whether the statuses were given as text or as members",
+    "Outside `stockroom/models.py`, no module of the `stockroom` package and no file in `scripts/` contains a string literal whose whole text is `open`, `paid`, `shipped` or `cancelled`; that code uses `OrderStatus` (or `STATUSES`) instead",
+    "`stockroom sales` prints the same summary as before (with and without `--from`), and an orders file in which an order has the unknown status `Lost` still ends with exit code 1, nothing on stdout and `stockroom: error: Z-6: unknown status 'Lost'` on stderr"
+  ],
+  "hidden_map": {
+    "test_order_status_is_a_string_enum": 0,
+    "test_an_order_always_holds_a_member": 1,
+    "test_unknown_statuses_are_refused_as_before": 2,
+    "test_files_and_json_keep_the_plain_status_text": 3,
+    "test_sample_data_files_are_byte_identical": 4,
+    "test_reports_count_statuses_as_before": 5,
+    "test_only_the_models_module_spells_the_statuses": 6,
+    "test_sales_command_output_is_unchanged": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

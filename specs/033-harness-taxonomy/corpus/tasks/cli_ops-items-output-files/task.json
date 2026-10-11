@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-items-output-files",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Let the `items` command write the catalogue listing as a file for spreadsheets and other tools. New options of `items` (written after the command name): `--out PATH`, `--format {text,csv,tsv}`, `--newline {lf,crlf}` (default `lf`), `--bom` and `--force`; and a new setting `items_format`.\n\n**Formats.** `text` is today's table, unchanged (it uses the `currency_symbol` setting). `csv` is exactly the text that `stockroom.csvio.write_items` returns for the listed items (header `sku,name,price,tags,reorder_level`, prices like `12.50` without a currency symbol, tags joined with `;`). `tsv` has the same header and columns, separated by one tab character, with the cells written as in `csv` but never quoted. In every format the listed items are the ones `items` lists today (after `--tag`), in file order, and every line, the last one included, ends with the line end chosen by `--newline` (`lf`: `\\n`, `crlf`: `\\r\\n`; this applies to the `text` table too). With `--bom` the output starts with the UTF-8 byte order mark (bytes `EF BB BF`). The output is always encoded as UTF-8, on stdout as well as in a file.\n\n**Which format.** The first of these that applies decides: (1) `--format`; (2) the suffix of `--out` as `pathlib.Path(PATH).suffix` gives it (the suffix of the last path component only; so `.csv` and `f.` have no suffix and `d.csv.bak` has `.bak`), compared without regard to case: `.csv` means `csv`, `.tsv` means `tsv`, `.txt` means `text`, any other suffix or none decides nothing, and `--out -` decides nothing; (3) the setting `items_format`; (4) `text`. The setting `items_format` works like the other settings (default `text`; INI key `items_format` in `[stockroom]`; environment variable `STOCKROOM_ITEMS_FORMAT`, which overrides the file) and its value must be exactly `text`, `csv` or `tsv` (lower case); any other value is a settings error: exit code 1 and the usual single `stockroom: error: ...` line containing `items_format`, for every command, as for other bad settings. The other commands accept the setting and ignore it. Invalid `--format` and `--newline` values are argparse usage errors (exit code 2).\n\n**Output file.** Without `--out`, or with `--out -`, the listing goes to stdout. With another `PATH` it is written to that file (a relative path is relative to the current directory) and stdout stays empty. The file is written atomically: a temporary file in the same directory is written and then renamed over `PATH`, so no other file is left behind. When `PATH` already exists the command refuses to replace it unless `--force` is given: exit code 1, one error line containing `PATH` as given, the file unchanged. Even with `--force`, the command refuses (exit code 1, one error line containing `PATH` as given, nothing changed) when `PATH` names the catalogue file itself (compared by `os.path.realpath`, so `./items.csv` counts), when `PATH` is an existing directory, and when the directory of `PATH` does not exist. In every error case stdout is empty and no file is created or changed.\n\nWithout the new options and the new setting, `items` prints exactly what it prints today.",
+  "acceptance": [
+    "--format csv prints exactly write_items' text for the listed items, --format tsv the same cells tab-separated and unquoted, --format text today's table; --tag filters all formats; the currency symbol is used only by the text table",
+    "The format is --format if given, else the --out suffix (.csv, .tsv, .txt in any case), else the items_format setting (environment over INI file), else text, for every combination of option, output name ('-', other or no suffix) and setting",
+    "Suffix inference uses pathlib's suffix of the last component, case-insensitively: d.csv.bak, '.csv', 'f.' and unknown suffixes decide nothing, e.tsv.txt is text, and a directory name with a suffix does not count",
+    "--newline crlf ends every line (the last included, text table too) with CRLF, lf is the default, --bom prepends the UTF-8 byte order mark, in files and on stdout, and non-ASCII names are written as UTF-8",
+    "--out PATH writes the listing (stdout empty), refuses an existing PATH without --force (exit 1, error line naming PATH, file unchanged), replaces it with --force, leaves no temporary file, resolves relative paths against the current directory, and '--out -' is stdout",
+    "An --out that is the catalogue file itself (also ./items.csv or an absolute path), an existing directory, or inside a missing directory is refused with exit 1 and one error line naming PATH, even with --force, and nothing is created or changed",
+    "items_format values other than exactly text, csv or tsv (from the environment or the INI file) give exit 1 and one error line naming items_format; a valid setting is used by items and ignored by other commands; invalid --format or --newline values are usage errors (exit 2)",
+    "Without the new options and setting, items output is unchanged"
+  ],
+  "hidden_map": {
+    "test_csv_and_tsv_listings": 0,
+    "test_format_precedence_matrix": 1,
+    "test_suffix_inference_follows_pathlib": 2,
+    "test_line_ends_and_byte_order_mark": 3,
+    "test_out_needs_force_to_replace_and_is_atomic": 4,
+    "test_unsafe_outputs_are_refused": 5,
+    "test_settings_and_usage_errors": 6,
+    "test_default_listing_is_unchanged": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
