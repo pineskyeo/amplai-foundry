@@ -90,6 +90,17 @@
 - H-14 Hermes VM 침해 시 영향 범위를 문서화한다: 연결된 사용자 사칭, goal 조회, 실행 중 에이전트에 steer 문장 주입,
   메신저를 통한 피싱. 승인·grant·권한 질문·취소는 범위 밖.
 
+- H-15 일시정지는 진짜 `paused` 상태다 (운영자 결정 2026-10-11, design-reference 기준). 지금 로컬 제품은 loop 가 요청하지 않은
+  pause 를 받으면 시도를 끝내고 goal 을 `held` 로 둔다 (`runtime/execution/loop.py:237-238`,
+  `tests/e2e/test_rc07_steer.py::test_a_pause_nobody_takes_over_stops_the_process`).
+  - Run 상태에 `pausing → paused` 를 둔다 (design/08 §상태). 안전한 체크포인트에서 멈추고 세션·작업 공간을 보존한다.
+  - 재개는 같은 세션을 이어 가되, 세션 id·드라이버·모델 버전·작업 공간 digest·계약 revision 이 맞을 때만이다 (design/11 resume).
+    맞지 않으면 현재 계약·체크포인트·근거 요약으로 새 세션을 만들어 이어 실행하고, "같은 세션 재개" 와 "이어 실행" 을 구분해
+    기록한다 (design/11, design/08 복구).
+  - 멈춘 동안 들어온 지시·계약 revision 을 반영한 뒤에만 재개한다 (design/08 test 요구).
+  - 재개 권한: Hermes 가 멈춘 것은 Hermes 도, 운영자가 멈춘 것은 운영자만 (OD-5).
+  - 멈춘 동안의 자원(작업 공간, lease)과 시간 초과 처리는 S1e 설계에서 정한다.
+
 ### F. 앞단 에이전트·메신저 교체 (OD-13)
 - F-1 세 층으로 나눈다.
   1. 접수 어댑터: `intake_adapter` 코드 모듈(별도 프로세스). 첫 구현은 AMPLAI MCP 서버이고, 도구 계약은 앞단 에이전트와 무관하다.

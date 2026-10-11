@@ -299,6 +299,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | S1b | 승인 페이지 (OD-6), 원격 listener (OD-8 이 원격일 때) | AC-H11 | — | S1a |
 | S1c | 앞단 에이전트·메신저 모듈: adapter 별 intake 설정, 경로·표지 일반화, `notifier` kind + Slack, 도구 계약 v1, MCP 서버, Hermes 키트 | AC-F1~F3, AC-H8, AC-H9 | — | S1a |
 | S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, launchd tick, 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N6 | class C(권한) | S1c |
+| S1e | 진짜 일시정지(H-15): Run `pausing → paused`, 체크포인트 보존, 같은 세션 재개 또는 이어 실행, 멈춘 동안 지시 반영, 자원·시간 초과 | 추가 예정 | — | S1a |
 | S2a | 지식 모듈 | AC-K1, AC-K3 | G-04 | S0 |
 | S2b | 문서 최신성 모듈 | AC-K2 | — | S2a |
 | S3 | 배포 릴리스·Q-suite 자산, 동결, 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한 | AC-U1~U8 | G-07, G-15, G-20 | S0 |
