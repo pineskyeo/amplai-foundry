@@ -1,0 +1,701 @@
+{
+  "contract": "amplai-intake-tools",
+  "version": "1",
+  "description": "AMPLAI intake tools for a messenger front agent (Work 034 S1c, spec F-4). Front-agent neutral: each tool maps to one /api/v3/intake/{adapter_id} route.",
+  "tools": [
+    {
+      "name": "submit_work",
+      "description": "Submit the operator's message as an AMPLAI work goal. AMPLAI drafts a contract; only the operator approves it, never the front agent.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "channel_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger channel id the message came from."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger message id: a resend of the same message is accepted once."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "channel_id",
+          "message_id",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "POST",
+        "path": "",
+        "mode": "work"
+      }
+    },
+    {
+      "name": "submit_design",
+      "description": "Submit the operator's message as a design-only goal (no implementation).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "channel_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger channel id the message came from."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger message id: a resend of the same message is accepted once."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "channel_id",
+          "message_id",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "POST",
+        "path": "",
+        "mode": "design"
+      }
+    },
+    {
+      "name": "list_goals",
+      "description": "The linked operator's 20 most recent goals: id, status, time.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "goal_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                  "description": "An AMPLAI goal id."
+                },
+                "status": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z_]{0,31}$",
+                  "description": "The goal's status from AMPLAI's closed set, or unknown."
+                },
+                "at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Time of the goal's latest event (RFC 3339 UTC)."
+                }
+              },
+              "required": [
+                "goal_id",
+                "status",
+                "at"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "GET",
+        "path": "/goals"
+      }
+    },
+    {
+      "name": "goal_status",
+      "description": "One goal of the linked operator: id, status, time.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "goal_id"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "GET",
+        "path": "/goals/{goal_id}"
+      }
+    },
+    {
+      "name": "steer",
+      "description": "Relay the operator's guidance to the goal's running attempt. The contract does not change.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "channel_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger channel id the message came from."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger message id: a resend of the same message is accepted once."
+          },
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "channel_id",
+          "message_id",
+          "goal_id",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "POST",
+        "path": "/goals/{goal_id}/steer"
+      }
+    },
+    {
+      "name": "replan",
+      "description": "Ask AMPLAI to re-plan a running goal. The operator approves the new contract revision.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "channel_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger channel id the message came from."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger message id: a resend of the same message is accepted once."
+          },
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "channel_id",
+          "message_id",
+          "goal_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "POST",
+        "path": "/goals/{goal_id}/replan"
+      }
+    },
+    {
+      "name": "cancel_goal",
+      "description": "Cancel one of the linked operator's goals, saying why. AMPLAI alerts the operator directly.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "channel_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger channel id the message came from."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger message id: a resend of the same message is accepted once."
+          },
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id",
+          "channel_id",
+          "message_id",
+          "goal_id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "An AMPLAI goal id."
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,31}$",
+            "description": "The goal's status from AMPLAI's closed set, or unknown."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the goal's latest event (RFC 3339 UTC)."
+          }
+        },
+        "required": [
+          "goal_id",
+          "status",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "POST",
+        "path": "/goals/{goal_id}/cancel"
+      }
+    },
+    {
+      "name": "pending_events",
+      "description": "Notifications for the linked operator's goals after a cursor (fixed schema: goal, event type, status, time). Without a cursor: a snapshot and the cursor to follow from.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+            "description": "The messenger name in lowercase, as the identity map writes it."
+          },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger workspace (team) id of the sender."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,256}$",
+            "description": "The messenger user id of the sender."
+          },
+          "cursor": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,200}:[0-9]{1,18}$",
+            "description": "Opaque feed cursor from the previous pending_events result."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "provider",
+          "workspace_id",
+          "user_id"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "seq": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "goal_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                  "description": "An AMPLAI goal id."
+                },
+                "event": {
+                  "type": "string",
+                  "pattern": "^([a-z][a-z0-9_]*(\\.[a-z0-9_]+)*|other)$"
+                },
+                "status": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z_]{0,31}$",
+                  "description": "The goal's status from AMPLAI's closed set, or unknown."
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "seq",
+                "goal_id",
+                "event",
+                "status",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "cursor": {
+            "type": "string",
+            "pattern": "^[^\\s]{1,200}:[0-9]{1,18}$",
+            "description": "Opaque feed cursor from the previous pending_events result."
+          },
+          "snapshot": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "goal_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                  "description": "An AMPLAI goal id."
+                },
+                "status": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z_]{0,31}$",
+                  "description": "The goal's status from AMPLAI's closed set, or unknown."
+                },
+                "at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Time of the goal's latest event (RFC 3339 UTC)."
+                }
+              },
+              "required": [
+                "goal_id",
+                "status",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "True when the cursor was from another store generation: start again from snapshot and cursor."
+          }
+        },
+        "required": [
+          "items",
+          "cursor"
+        ],
+        "additionalProperties": false
+      },
+      "route": {
+        "method": "GET",
+        "path": "/events"
+      }
+    }
+  ]
+}

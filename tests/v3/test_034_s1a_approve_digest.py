@@ -22,6 +22,7 @@ from amplai_foundry.runtime.errors import RuntimeFault
 from amplai_foundry.runtime.execution.codex import AUTH
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
 from rc06_rig import FixedPlanner, codex_inputs, make_repo
+from testclient_bridge import forwarding_transport
 
 
 def init_home(tmp_path: Path) -> Path:
@@ -66,7 +67,7 @@ def product(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
         client.headers["Authorization"] = "Bearer " + token
 
         def test_client() -> AmplaiClient:
-            return AmplaiClient("http://127.0.0.1/", token, transport=client._transport)
+            return AmplaiClient("http://127.0.0.1/", token, transport=forwarding_transport(client))
 
         monkeypatch.setattr(cli, "client", test_client)
         yield dep, client
