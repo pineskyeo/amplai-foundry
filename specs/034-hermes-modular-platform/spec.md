@@ -22,7 +22,7 @@
 | OD-5 | Hermes 는 연결된 운영자의 goal 을 일시정지·취소할 수 있다. 재개는 Hermes 가 멈춘 goal 만 (운영자가 멈춘 goal 은 운영자가 재개) | 확정 (2026-10-11, 변경) |
 | OD-6 | 승인 페이지(S1b) 인증은 passkey 만, POST + CSRF | 확정 (2026-10-11) |
 | OD-7 | 사내 평가기 재승인용 Q-suite 를 배포 릴리스 자산으로 싣는다 | 확정 (2026-10-11) |
-| OD-8 | Hermes VM 은 처음에 이 Mac 의 VM (loopback 접근, H-12 원격 listener 는 옮길 때) | 확정 (2026-10-11) |
+| OD-8 | Hermes VM 은 이 Mac 안의 VM. VM 에서 AMPLAI 로는 접수 전용 listener(H-12)로만 들어온다 (VM 의 127.0.0.1 은 VM 자신이라 loopback 으로는 닿지 않는다; Hermes 를 VM 없이 Mac 에 두면 운영자 토큰 파일을 읽을 수 있어 제외) | 확정 (2026-10-12 갱신) |
 | OD-9 | 메신저는 Slack. 운영자 직접 알림(`notifier`)은 Hermes 와 다른 별도 Slack 앱의 Incoming Webhook (Q-10) | 확정 (2026-10-11) |
 | OD-10 | 지식은 별도 git 저장소. 3층: Markdown 파일(정본) / 지식 모듈(유일한 쓰기·승인·색인) / MCP(읽기·검색·제안 창구). 사내는 지식 공간(Knowledge Space) 단위로 관리 주체·승인자를 두고 프로젝트가 골라 연결한다 (K-5~K-9) | 방향 확정, 세부 확인 대기 |
 | OD-11 | Hermes 가 쓸 모델·비용: 구독 연결 가능 여부를 먼저 확인한 뒤 결정 | 확인 중 |
