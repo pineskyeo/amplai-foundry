@@ -24,6 +24,8 @@ PLACEMENTS: tuple[str, ...] = get_args(Placement)
 KINDS: tuple[str, ...] = (
     "driver", "strategy", "decider", "judge", "knowledge", "doc_freshness", "intake_adapter",
     "model_gateway",
+    # Work 034 S1c (F-5): the operator's direct alert, independent of the front agent
+    "notifier",
 )  # fmt: skip
 # The interface version a module of each kind must implement (M-2). A module declaring another
 # version is refused; raising a row is an interface change and needs a new conformance suite.
