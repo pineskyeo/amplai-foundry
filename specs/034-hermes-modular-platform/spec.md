@@ -101,6 +101,11 @@
   - 재개 권한: Hermes 가 멈춘 것은 Hermes 도, 운영자가 멈춘 것은 운영자만 (OD-5).
   - 멈춘 동안의 자원(작업 공간, lease)과 시간 초과 처리는 S1e 설계에서 정한다.
 
+- H-16 운영자 이벤트 목록 `GET /api/v3/events` 도 cursor 를 `<store incarnation>:<seq>` 로 쓴다 (운영자 결정 2026-10-11).
+  세대가 다르거나 seq 가 최대값보다 크면 `CURSOR_EXPIRED` 와 공통 snapshot 경로 `GET /api/v3/snapshot` 을 돌려준다
+  (design/18 §4). intake feed 응답 안의 snapshot 도 이 경로로 통일한다. SSE `Last-Event-ID` 도 같은 형식이다.
+  지금 운영자 목록은 숫자 cursor 이고 저장소 안에 읽는 곳은 없다 (`control_plane/api_v3/server.py` events, client·cli 검색 0건).
+
 ### F. 앞단 에이전트·메신저 교체 (OD-13)
 - F-1 세 층으로 나눈다.
   1. 접수 어댑터: `intake_adapter` 코드 모듈(별도 프로세스). 첫 구현은 AMPLAI MCP 서버이고, 도구 계약은 앞단 에이전트와 무관하다.
