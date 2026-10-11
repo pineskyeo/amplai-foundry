@@ -497,10 +497,10 @@ def test_after_a_restart_only_the_intake_relay_reruns_an_interrupted_command(
     stop = message("m-relay-stop", reason="stop")
     assert client.post(url, headers=HERMES, json=stop).json()["status"] == "cancelled"
     hermes = intake_actor("pinesky", dep.scope)
-    interrupt(dep, hermes, CancelBody.model_validate(stop).key())
+    interrupt(dep, hermes, CancelBody.model_validate(stop).key("hermes"))
     again = client.post(url, headers=HERMES, json=stop)
     assert again.status_code == 200 and again.json()["status"] == "cancelled"
-    receipt = ApiCommands(dep.store).receipt(hermes, CancelBody.model_validate(stop).key())
+    receipt = ApiCommands(dep.store).receipt(hermes, CancelBody.model_validate(stop).key("hermes"))
     assert receipt is not None and receipt["state"] == "completed"
     assert receipt["data"]["interrupted"][0]["code"] == "COMMAND_INTERRUPTED"
 

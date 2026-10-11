@@ -217,7 +217,7 @@ def test_a_resent_message_is_a_replay_and_is_never_limited(tmp_path: Path) -> No
     with_intake(home, {"submit": one, "cancel": one})
     dep = start(home)
     try:
-        assert dep._intake(dep.config.intake).limits.clock is time.monotonic
+        assert dep._intake(dep.config.intake.adapters[0]).limits.clock is time.monotonic
         with TestClient(dep.app) as client:
             first = submit(client, "m-1")
             goal = first.json()["goal_id"]

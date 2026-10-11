@@ -1,15 +1,22 @@
 """The intake actor: a messenger front agent acting for one linked operator (Work 034 S1a).
 
-Spec H-2..H-5, D-106, D-112 (``specs/034-hermes-modular-platform``). The server builds this actor
-after it authenticated the front agent (Hermes) and found the messenger user in the operator's
-identity map; no request field supplies it. Its permissions are the front agent's, its attribution
-(``subject_id``) is the linked operator's, and it is never human, so it cannot approve
+Spec H-2..H-5, F-2, F-3, D-106, D-112, D-116 (``specs/034-hermes-modular-platform``). The server
+builds this actor after it authenticated one configured intake adapter (Hermes is the first) and
+found the messenger user in that adapter's identity map; no request field supplies it. Its
+permissions are the adapter's configured ceiling (at most the front agent's set, H-2), its
+attribution (``subject_id``) is the linked operator's, and it is never human, so it cannot approve
 (``execution/product.py`` ``approve``).
 
 On the wire an actor is ``human`` or ``service`` (frozen 3.0.0 ``common.schema.json``
 ``$defs/actor``), so an intake actor is written as ``service`` and marked by its
-``authn_context_ref`` (``intake:<adapter>``). Who paused a goal is read back by that mark
+``authn_context_ref`` (``intake:<adapter_id>``): the mark names the adapter, so two adapters are
+told apart wherever an actor is recorded (F-2). Who paused a goal is read back by that mark
 (``latest_applied_pause``).
+
+The wire ``source_channel`` of a front-agent submission is ``hermes`` whatever the adapter
+(:data:`FRONT_AGENT_CHANNEL`): the frozen 3.0.0 enum is ``cli|api|hermes|import``
+(``intent-envelope.schema.json``), and ``hermes`` is the wire name of the front-agent intake
+channel (F-3). The adapter is told by the ``authn_context_ref``, not by the channel.
 
 Rules every path applies, whatever route reached the service:
 
@@ -23,6 +30,7 @@ Rules every path applies, whatever route reached the service:
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from typing import Any
 
@@ -30,9 +38,14 @@ from ..errors import RuntimeFault
 from ..storage.store import Scope, Store
 from .authority import INTAKE_KIND, Actor
 
+# The first adapter's id, and the id a pre-S1c single ``intake`` configuration migrates to.
 HERMES = "hermes"
+# F-3: the frozen wire ``source_channel`` of every front-agent submission, whatever the adapter.
+FRONT_AGENT_CHANNEL = "hermes"
 INTAKE_CONTEXT_PREFIX = "intake:"
 HERMES_CONTEXT = INTAKE_CONTEXT_PREFIX + HERMES
+# An adapter id is a path segment and a key prefix: lowercase, bounded, no separator characters.
+ADAPTER_ID = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 
 # H-2. Not here: execution.approve, grant.issue (no approval, no grant through the front agent).
 INTAKE_PERMISSIONS = frozenset(
@@ -75,10 +88,30 @@ INTAKE_QUESTION_KINDS = frozenset(
 )
 
 
-def intake_actor(subject_id: str, scope: Scope, adapter: str = HERMES) -> Actor:
-    """The actor for a request the front agent relays from the linked operator ``subject_id``."""
+def check_adapter(adapter_id: str, permissions: frozenset[str]) -> None:
+    """An adapter id is well formed and its permission ceiling stays inside H-2 (F-2)."""
+    if not isinstance(adapter_id, str) or not ADAPTER_ID.fullmatch(adapter_id):
+        raise RuntimeFault("INTAKE_ADAPTER", "An adapter id is [a-z][a-z0-9_-]{0,31}")
+    beyond = set(permissions) - INTAKE_PERMISSIONS
+    if beyond:
+        raise RuntimeFault(
+            "INTAKE_PERMISSIONS",
+            "An intake adapter's permissions stay within the front agent's set (H-2)",
+            details={"beyond": sorted(beyond)},
+        )
+
+
+def intake_actor(
+    subject_id: str,
+    scope: Scope,
+    adapter: str = HERMES,
+    permissions: frozenset[str] = INTAKE_PERMISSIONS,
+) -> Actor:
+    """The actor for a request the intake adapter ``adapter`` relays from the linked operator
+    ``subject_id``, with that adapter's configured permission ceiling (at most H-2)."""
+    check_adapter(adapter, permissions)
     context = INTAKE_CONTEXT_PREFIX + adapter
-    return Actor(subject_id, scope, INTAKE_PERMISSIONS, INTAKE_KIND, context)
+    return Actor(subject_id, scope, frozenset(permissions), INTAKE_KIND, context)
 
 
 def is_intake(actor: Actor) -> bool:
