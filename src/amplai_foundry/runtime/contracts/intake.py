@@ -43,7 +43,6 @@ HERMES = "hermes"
 # F-3: the frozen wire ``source_channel`` of every front-agent submission, whatever the adapter.
 FRONT_AGENT_CHANNEL = "hermes"
 INTAKE_CONTEXT_PREFIX = "intake:"
-HERMES_CONTEXT = INTAKE_CONTEXT_PREFIX + HERMES
 # An adapter id is a path segment and a key prefix: lowercase, bounded, no separator characters.
 ADAPTER_ID = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 
@@ -104,7 +103,7 @@ def check_adapter(adapter_id: str, permissions: frozenset[str]) -> None:
 def intake_actor(
     subject_id: str,
     scope: Scope,
-    adapter: str = HERMES,
+    adapter: str,
     permissions: frozenset[str] = INTAKE_PERMISSIONS,
 ) -> Actor:
     """The actor for a request the intake adapter ``adapter`` relays from the linked operator

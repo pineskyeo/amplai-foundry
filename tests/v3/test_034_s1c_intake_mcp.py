@@ -16,6 +16,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -36,7 +37,12 @@ from test_034_s1a_intake_route import (
 )
 
 from amplai_foundry.control_plane.api_v3 import intake as intake_api
-from amplai_foundry.integrations.intake_mcp.contract import CONTRACT_VERSION, load, raw
+from amplai_foundry.integrations.intake_mcp.contract import (
+    CONTRACT_VERSION,
+    load,
+    raw,
+    version_tuple,
+)
 from amplai_foundry.integrations.intake_mcp.server import (
     IntakeCaller,
     Settings,
@@ -58,13 +64,25 @@ USER = {**SLACK_USER, "workspace_id": "T1"}
 
 def test_the_contract_is_version_1_with_the_v1_tools() -> None:
     document = raw()
-    assert (document["contract"], document["version"]) == ("amplai-intake-tools", "1")
+    assert (document["contract"], document["version"]) == ("amplai-intake-tools", "1.0")
     assert set(load()) == TOOLS
     for tool in document["tools"]:
         assert tool["input_schema"]["additionalProperties"] is False
         assert tool["output_schema"]["additionalProperties"] is False
         for word in ("hermes", "slack", "telegram"):  # front-agent neutral (H-11)
             assert word not in json.dumps(tool).lower()
+
+
+def test_v1_0_is_the_eight_tools_and_the_versioning_rule_is_written() -> None:
+    """Review P2-4: v1.0 = the 8 tools over the S1a routes; a new tool is an additive minor
+    (``since``); a rename or schema change is a new major."""
+    document = raw()
+    assert {t["since"] for t in document["tools"]} == {"1.0"}
+    assert "additive minor" in document["versioning"] and "new major" in document["versioning"]
+    assert version_tuple("1.12") == (1, 12)
+    for bad in ("1", "v1.0", "1.0.0", "1.x"):
+        with pytest.raises(ValueError):
+            version_tuple(bad)
 
 
 def test_no_tool_approves_grants_or_names_an_actor() -> None:
@@ -337,4 +355,29 @@ def test_the_settings_hide_the_token() -> None:
     settings = Settings.from_environment(environ)
     assert "AMPLAI_INTAKE_TOKEN" not in environ  # removed once read
     assert HERMES_TOKEN not in repr(settings) and settings.url == "http://127.0.0.1:8765"
-    assert CONTRACT_VERSION == "1"
+    assert CONTRACT_VERSION == "1.0"
+
+
+def test_the_mcp_server_install_set_is_hash_pinned() -> None:
+    """Review P2-5: the full closure of amplai-foundry[intake-mcp], every pin with hashes."""
+    import tomllib
+    from importlib import resources
+
+    text = (
+        resources.files("amplai_foundry.integrations.intake_mcp")
+        .joinpath("requirements-hashes.txt")
+        .read_text(encoding="utf-8")
+    )
+    entries = re.findall(
+        r"^([A-Za-z0-9_.-]+)==([^\s;]+)(?: ;[^\n]*)? \\\n((?:    --hash=sha256:[0-9a-f]{64}.*\n)+)",
+        text,
+        re.M,
+    )
+    pinned = {name.lower(): version for name, version, _ in entries}
+    requirement_lines = [line for line in text.splitlines() if re.match(r"^[A-Za-z0-9]", line)]
+    assert len(entries) == len(requirement_lines)  # no requirement without hashes
+    assert pinned["mcp"] == "2.3.0"
+    project = tomllib.loads(Path("pyproject.toml").read_text())["project"]
+    for requirement in project["dependencies"] + project["optional-dependencies"]["intake-mcp"]:
+        name = re.split(r"[<>=!\[ ;]", requirement, maxsplit=1)[0].lower()
+        assert name in pinned, name

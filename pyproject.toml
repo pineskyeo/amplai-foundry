@@ -50,7 +50,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "amplai_foundry.runtime.contracts" = ["data/*.json", "data/schemas/*.json"]
 "amplai_foundry" = ["packs/**/*.json", "packs/**/*.md"]
-"amplai_foundry.integrations.intake_mcp" = ["contract.json"]
+"amplai_foundry.integrations.intake_mcp" = ["contract.json", "requirements-hashes.txt"]
 # Work 034 S1c: front-agent kits are configuration, shipped with the wheel for the operator
 "amplai_foundry.integrations" = ["front_agents/**/*.md", "front_agents/**/*.json", "front_agents/**/*.template"]
 

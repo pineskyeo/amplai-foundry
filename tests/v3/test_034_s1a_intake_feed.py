@@ -187,7 +187,10 @@ def test_the_limiter_counts_per_actor_and_operation_in_a_sliding_window() -> Non
         lambda: clock[0],
     )
     scope = store_scope()
-    hermes, other = intake_actor("pinesky", scope), intake_actor("pinesky", scope, "other")
+    hermes, other = (
+        intake_actor("pinesky", scope, "hermes"),
+        intake_actor("pinesky", scope, "other"),
+    )
     limiter.check(hermes, "submit")
     limiter.check(hermes, "submit")
     with pytest.raises(RuntimeFault) as exc:

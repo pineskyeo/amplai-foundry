@@ -234,7 +234,7 @@ def test_the_token_and_the_identity_map_are_not_in_a_store_backup(
     dep, client, _operator, home = product
     submit(client)
     backup = tmp_path / "backup"
-    actor = intake_actor("pinesky", dep.scope)
+    actor = intake_actor("pinesky", dep.scope, "hermes")
     RecoveryService(dep.store).backup(
         type(actor)("pinesky", dep.scope, frozenset({"runtime.backup"})), backup
     )
@@ -358,7 +358,7 @@ def test_a_cancel_through_the_front_agent_states_why_and_is_recorded(product: An
 def test_operator_read_routes_refuse_an_intake_actor(deployment: Any) -> None:
     d = deployment
     token = "test-only-intake-token-" + "i" * 40
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     authenticate = BearerAuthenticator(
         {hashlib.sha256(token.encode()).hexdigest(): "hermes"}, lambda _b: hermes
     )
@@ -496,7 +496,7 @@ def test_after_a_restart_only_the_intake_relay_reruns_an_interrupted_command(
     url = f"/api/v3/intake/hermes/goals/{goal}/cancel"
     stop = message("m-relay-stop", reason="stop")
     assert client.post(url, headers=HERMES, json=stop).json()["status"] == "cancelled"
-    hermes = intake_actor("pinesky", dep.scope)
+    hermes = intake_actor("pinesky", dep.scope, "hermes")
     interrupt(dep, hermes, CancelBody.model_validate(stop).key("hermes"))
     again = client.post(url, headers=HERMES, json=stop)
     assert again.status_code == 200 and again.json()["status"] == "cancelled"
