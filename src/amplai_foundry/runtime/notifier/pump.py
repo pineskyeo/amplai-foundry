@@ -21,6 +21,14 @@ This module is the outbox's consumer when a notifier is configured:
 Delivery is at least once. A crash after the webhook POST and before the receipt is written
 sends that alert again on the next delivery; a Slack Incoming Webhook takes no idempotency key.
 
+Receipts, rejections and the watermark are keyed ``notifier:<module_id>`` (not the version), so a
+new version of the same module keeps them. Records written under an older key are not read: with
+no ``first-enable`` row under the current key, the watermark is taken again as the newest event
+seq. On such a key change, stop alerts still pending are acknowledged without a send (dropped,
+and they leave the ``undelivered`` count), an alert whose acknowledgment was lost is not resent,
+and the ``rejected`` count starts again from zero. No deployment had a notifier enabled when the
+key changed from ``module_id@version`` (Work 034 S1c review of #84), so nothing adopts the old key.
+
 The alert reads only the store, never the intake configuration, so it is sent with the front agent
 turned off or its adapter removed (AC-F3).
 

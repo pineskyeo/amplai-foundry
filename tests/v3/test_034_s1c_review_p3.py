@@ -15,6 +15,7 @@ MCP caller. Stand-ins: the planner returns a fixed draft; the webhook POST is re
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 from typing import Any
@@ -24,6 +25,7 @@ import pytest
 from fastapi.testclient import TestClient
 from test_034_s1a_intake_route import HERMES, HERMES_TOKEN, message, submit, wait_status
 from test_034_s1c_notifier import (
+    Recorder,
     cancel_through_the_front_agent,
     outbox_due,
     product,  # noqa: F401 - the fixture
@@ -32,6 +34,9 @@ from test_034_s1c_notifier import (
 from amplai_foundry.integrations.intake_mcp import contract
 from amplai_foundry.integrations.intake_mcp.server import IntakeCaller, Settings, ToolFailure
 from amplai_foundry.runtime.contracts.intake import STOP_EVENT, latest_stop
+from amplai_foundry.runtime.keys import private_bytes
+from amplai_foundry.runtime.modules import ModuleSpec
+from amplai_foundry.runtime.notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
 from amplai_foundry.runtime.notifier.slack import spec as slack_spec
 
 USER = {"provider": "slack", "workspace_id": "T1", "user_id": "U0OPERATOR"}
@@ -46,7 +51,12 @@ def drafted(client: TestClient, message_id: str = "m-1") -> str:
 # -- the running cancel path ---------------------------------------------------------------------
 
 
-def test_a_running_goal_cancelled_by_the_front_agent_keeps_its_mark(product: Any) -> None:  # noqa: F811
+def test_a_front_agent_cancel_of_an_approved_goal_records_its_mark_for_the_stop(
+    product: Any,  # noqa: F811
+) -> None:
+    """The cancel of an approved goal remembers the front agent's mark, and the loop's stop
+    helper (``_stop_goal``, called directly here: the attempt loop itself needs a container)
+    records it as the reason."""
     dep, client, _post, home = product
     goal = drafted(client)
     operator = (home / "operator.token").read_text().strip()
@@ -119,6 +129,7 @@ def test_a_malformed_stop_event_is_rejected_not_retried(product: Any) -> None:  
     with dep.store.tx() as db:
         dep.store.event(db, dep.scope, "goal", goal, STOP_EVENT, {"kind": "pause"})
     results = dep.notifier_pump.run_once(limit=1000)
+    assert results
     assert all(r["acknowledged"] for r in results)
     outbox_due(dep)
     dep.notifier_pump.run_once(limit=1000)
@@ -130,7 +141,7 @@ def test_a_malformed_stop_event_is_rejected_not_retried(product: Any) -> None:  
 
 def test_receipts_and_the_watermark_are_keyed_by_module_id(product: Any) -> None:  # noqa: F811
     """P3-8: a new notifier version keeps the receipts and the watermark of the module."""
-    dep, client, _post, _home = product
+    dep, client, _post, home = product
     cancel_through_the_front_agent(client)
     dep.notifier_pump.run_once(limit=1000)
     actors = {
@@ -141,6 +152,33 @@ def test_receipts_and_the_watermark_are_keyed_by_module_id(product: Any) -> None
     }
     assert actors == {"notifier:" + slack_spec().module_id}
     assert "@" not in next(iter(actors))
+    (event_id,) = dep.store.conn.execute(
+        "SELECT event_id FROM events WHERE event_type=?", (STOP_EVENT,)
+    ).fetchone()
+    receipt_rows = dep.store.conn.execute(
+        "SELECT COUNT(*) FROM commands WHERE operation='notify' AND key=?", (event_id,)
+    ).fetchone()[0]
+    assert receipt_rows == 1
+    # the same module at another version: same receipts, same watermark, no second POST
+    newer = dataclasses.replace(slack_spec(), version="2")
+
+    class NewerSlack(SlackWebhookNotifier):
+        @property
+        def spec(self) -> ModuleSpec:
+            return newer
+
+    post = Recorder()
+    receipts = StoreReceipts(dep.store, dep.scope, newer.module_id)
+    notifier = NewerSlack(
+        home / "secrets" / "notifier.url", read=private_bytes, receipts=receipts, post=post
+    )
+    pump = NotifierPump(dep.store, dep.scope, notifier, lambda _goal: "cancelled", receipts)
+    assert pump.watermark == dep.notifier_pump.watermark
+    assert receipts.get(event_id) is not None
+    with dep.store.tx() as db:  # as if the acknowledgment had been lost before the upgrade
+        db.execute("UPDATE outbox SET status='pending', next_at=0")
+    pump.run_once(limit=1000)
+    assert post.calls == []
 
 
 # -- the tool contract -----------------------------------------------------------------------------
