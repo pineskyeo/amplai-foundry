@@ -132,8 +132,9 @@ class MemoryReceipts:
 
 class StoreReceipts:
     """Receipts in the product store's idempotency table (``commands``), one row per event:
-    actor ``notifier:<module ref>``, operation ``notify``, key the event id, request digest the
-    projection digest, retention ``effect``. Rows are never deleted (``Store.command``)."""
+    actor ``notifier:<module_id>`` (not the version, so an upgrade keeps them), operation
+    ``notify``, key the event id, request digest the projection digest, retention ``effect``.
+    Rows are never deleted (``Store.command``)."""
 
     OPERATION = "notify"
 
