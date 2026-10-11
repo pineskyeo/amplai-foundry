@@ -1,10 +1,12 @@
 {
   "contract": "amplai-intake-tools",
-  "version": "1",
+  "version": "1.0",
+  "versioning": "major.minor. v1.0 is the eight tools over the S1a intake routes. Adding a tool is an additive minor (1.x; each tool names the version that added it in since). Renaming or removing a tool, or changing any input or output schema, is a new major. A kit pins the version it was checked against and includes only tools with since <= that version.",
   "description": "AMPLAI intake tools for a messenger front agent (Work 034 S1c, spec F-4). Front-agent neutral: each tool maps to one /api/v3/intake/{adapter_id} route.",
   "tools": [
     {
       "name": "submit_work",
+      "since": "1.0",
       "description": "Submit the operator's message as an AMPLAI work goal. AMPLAI drafts a contract; only the operator approves it, never the front agent.",
       "input_schema": {
         "type": "object",
@@ -86,6 +88,7 @@
     },
     {
       "name": "submit_design",
+      "since": "1.0",
       "description": "Submit the operator's message as a design-only goal (no implementation).",
       "input_schema": {
         "type": "object",
@@ -167,6 +170,7 @@
     },
     {
       "name": "list_goals",
+      "since": "1.0",
       "description": "The linked operator's 20 most recent goals: id, status, time.",
       "input_schema": {
         "type": "object",
@@ -242,6 +246,7 @@
     },
     {
       "name": "goal_status",
+      "since": "1.0",
       "description": "One goal of the linked operator: id, status, time.",
       "input_schema": {
         "type": "object",
@@ -310,6 +315,7 @@
     },
     {
       "name": "steer",
+      "since": "1.0",
       "description": "Relay the operator's guidance to the goal's running attempt. The contract does not change.",
       "input_schema": {
         "type": "object",
@@ -396,6 +402,7 @@
     },
     {
       "name": "replan",
+      "since": "1.0",
       "description": "Ask AMPLAI to re-plan a running goal. The operator approves the new contract revision.",
       "input_schema": {
         "type": "object",
@@ -482,6 +489,7 @@
     },
     {
       "name": "cancel_goal",
+      "since": "1.0",
       "description": "Cancel one of the linked operator's goals, saying why. AMPLAI alerts the operator directly.",
       "input_schema": {
         "type": "object",
@@ -568,6 +576,7 @@
     },
     {
       "name": "pending_events",
+      "since": "1.0",
       "description": "Notifications for the linked operator's goals after a cursor (fixed schema: goal, event type, status, time). Without a cursor: a snapshot and the cursor to follow from.",
       "input_schema": {
         "type": "object",

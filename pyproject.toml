@@ -50,7 +50,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "amplai_foundry.runtime.contracts" = ["data/*.json", "data/schemas/*.json"]
 "amplai_foundry" = ["packs/**/*.json", "packs/**/*.md"]
-"amplai_foundry.integrations.intake_mcp" = ["contract.json"]
+"amplai_foundry.integrations.intake_mcp" = ["contract.json", "requirements-hashes.txt"]
 
 [tool.pytest.ini_options]
 # 기본 실행은 network·브라우저·컨테이너 없이 돈다. 명령줄의 `-m` 이 이것을 이긴다.
