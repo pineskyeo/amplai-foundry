@@ -1,8 +1,11 @@
-"""Work 033 pilot split rule ``stratified_by_domain_pilot_v1`` (operator decision 2026-10-08).
+"""Work 033 split rules: ``stratified_by_domain_pilot_v1`` (operator decision 2026-10-08) and
+``stratified_by_domain_append_v1`` (operator decision 2026-10-11).
 
-Contract: specs/033-harness-taxonomy/interfaces.md §10.1, §10.2 and the clarification "Pilot Split
-Rule (2026-10-08)". The committed corpus is read in place and copied to ``tmp_path`` for writes;
-no docker, no network.
+Contract: specs/033-harness-taxonomy/interfaces.md §10.1, §10.2 and the clarifications "Pilot Split
+Rule (2026-10-08)" and "Append Split Rule (2026-10-11)". Corpus version 2.0.0 was split with the
+pilot rule (its file is kept as ``splits-2.0.0.json``); version 2.1.0 keeps every 2.0.0 assignment
+and places only the new tasks. The committed corpus is read in place and copied to ``tmp_path``
+for writes; no docker, no network.
 """
 
 from __future__ import annotations
@@ -27,6 +30,9 @@ V2_ROOT = REPO / "specs" / "033-harness-taxonomy" / "corpus"
 SCRIPT = REPO / "scripts" / "corpus_check.py"
 PILOT = corpus_v2.PILOT_SPLIT_METHOD
 PILOT_SEED = 20261008  # fixed before computing (interfaces "Pilot Split Rule (2026-10-08)")
+APPEND = corpus_v2.APPEND_SPLIT_METHOD
+APPEND_SEED = 20261011  # fixed before computing (interfaces "Append Split Rule (2026-10-11)")
+PREVIOUS = V2_ROOT / "splits-2.0.0.json"  # the 2.0.0 splits.json, byte for byte
 OWN_DOMAINS = ("bug", "feature", "refactor", "cli_ops", "data", "ambiguity")
 
 
@@ -76,12 +82,23 @@ def _copy_corpus(tmp_path: Path, *, with_splits: bool) -> Path:
     return root
 
 
+def _previous() -> dict[str, str]:
+    assignments: dict[str, str] = json.loads(PREVIOUS.read_text())["assignments"]
+    return assignments
+
+
+def _v200_tasks() -> list[TaskV2]:
+    """The tasks of corpus version 2.0.0: its main tasks (``splits-2.0.0.json``) and the
+    regression set (never assigned)."""
+    previous = _previous()
+    return [t for t in corpus_v2.load(V2_ROOT).tasks if t.task_id in previous or t.set != "main"]
+
+
 # -- the rule ------------------------------------------------------------------------------------
 
 
-def test_pilot_rule_on_the_real_corpus_meets_the_minimums() -> None:
-    corpus = corpus_v2.load(V2_ROOT)
-    tasks = list(corpus.tasks)
+def test_pilot_rule_on_the_2_0_0_corpus_meets_the_minimums() -> None:
+    tasks = _v200_tasks()
     result = corpus_v2.assign_splits(tasks, seed=PILOT_SEED, method=PILOT)
     totals = _totals(result)
     assert totals["holdout"] >= corpus_v2.HOLDOUT_MIN
@@ -97,10 +114,10 @@ def test_pilot_rule_on_the_real_corpus_meets_the_minimums() -> None:
         assert validation == (len(mine) - holdout + 1) // 2, domain  # 50 % of the rest, half up
 
 
-def test_v1_on_the_real_corpus_is_still_too_small() -> None:
+def test_v1_on_the_2_0_0_corpus_is_too_small() -> None:
     # the reason for the pilot rule: own tasks alone give validation < 24 under v1 (§10.2)
     with pytest.raises(CorpusError) as e:
-        corpus_v2.assign_splits(list(corpus_v2.load(V2_ROOT).tasks), seed=PILOT_SEED)
+        corpus_v2.assign_splits(_v200_tasks(), seed=PILOT_SEED)
     assert e.value.code == "SPLIT_TOO_SMALL" and corpus_v2.SPLIT_METHOD in str(e.value)
 
 
@@ -155,38 +172,129 @@ def test_unknown_split_method_is_task_split() -> None:
     assert e.value.code == "TASK_SPLIT"
 
 
-# -- the committed splits.json -------------------------------------------------------------------
+# -- the append rule -----------------------------------------------------------------------------
 
 
-def test_the_committed_splits_json_is_the_pilot_rule_with_the_fixed_seed() -> None:
-    data = json.loads((V2_ROOT / "splits.json").read_text())
-    manifest = json.loads((V2_ROOT / "manifest.json").read_text())
-    assert data["seed"] == PILOT_SEED == manifest["split_seed"]
-    assert data["method"] == PILOT
-    corpus = corpus_v2.load(V2_ROOT)
-    expected = corpus_v2.assign_splits(list(corpus.tasks), seed=PILOT_SEED, method=PILOT)
+def _grown(per_domain: int, new_per_domain: int, *, tb2_new: int = 0) -> list[TaskV2]:
+    old = _fixture(per_domain)
+    new = [_mk(f"{d}-n{i:03d}", d) for d in OWN_DOMAINS for i in range(new_per_domain)] + [
+        _mk(f"tb2-n{i:03d}", "terminal", kind="tb2") for i in range(tb2_new)
+    ]
+    return old + new
+
+
+def test_append_keeps_every_previous_assignment_and_places_only_new_tasks() -> None:
+    previous = corpus_v2.assign_splits(_fixture(12), seed=PILOT_SEED, method=PILOT)
+    tasks = _grown(12, 8, tb2_new=5)
+    result = corpus_v2.append_splits(tasks, previous, seed=APPEND_SEED)
+    assert {k: result[k] for k in previous} == previous
+    for domain in OWN_DOMAINS:
+        new = {k: v for k, v in result.items() if k.startswith(f"{domain}-n")}
+        assert len(new) == 8
+        # 30 % of the 8 new own tasks, rounded half up as _share: 2 holdout, the rest validation
+        assert sorted(new.values()) == ["holdout"] * 2 + ["validation"] * 6, domain
+    # TB2 tasks never go to holdout; no new task goes to development
+    assert all(result[f"tb2-n{i:03d}"] == "validation" for i in range(5))
+    assert set(result) == {t.task_id for t in tasks}
+
+
+def test_append_is_deterministic_seeded_and_per_domain() -> None:
+    previous = corpus_v2.assign_splits(_fixture(12), seed=PILOT_SEED, method=PILOT)
+    tasks = _grown(12, 8)
+    a = corpus_v2.append_splits(tasks, previous, seed=APPEND_SEED)
+    assert corpus_v2.append_splits(list(reversed(tasks)), previous, seed=APPEND_SEED) == {
+        t.task_id: a[t.task_id] for t in reversed(tasks)
+    }
+    others = [corpus_v2.append_splits(tasks, previous, seed=s) for s in range(1, 6)]
+    assert any(o != a for o in others)
+    # new tasks of one domain never change the placement of another domain's new tasks
+    more = tasks + [_mk(f"bug-n{i:03d}", "bug") for i in range(8, 12)]
+    b = corpus_v2.append_splits(more, previous, seed=APPEND_SEED)
+    assert {k: v for k, v in b.items() if not k.startswith("bug-")} == {
+        k: v for k, v in a.items() if not k.startswith("bug-")
+    }
+
+
+def test_append_refuses_a_dropped_or_bad_previous_task_and_keeps_the_minimums() -> None:
+    previous = corpus_v2.assign_splits(_fixture(12), seed=PILOT_SEED, method=PILOT)
+    tasks = _grown(12, 8)
+    dropped = [t for t in tasks if t.task_id != "bug-000"]
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.append_splits(dropped, previous, seed=APPEND_SEED)
+    assert e.value.code == "TASK_SPLIT"
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.append_splits(tasks, {**previous, "bug-000": "test"}, seed=APPEND_SEED)
+    assert e.value.code == "TASK_SPLIT"
+    tb2 = [*tasks, _mk("tb2-old", "terminal", kind="tb2")]
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.append_splits(tb2, {**previous, "tb2-old": "holdout"}, seed=APPEND_SEED)
+    assert e.value.code == "TASK_SPLIT"
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.append_splits(_fixture(2), {}, seed=APPEND_SEED)
+    assert e.value.code == "SPLIT_TOO_SMALL" and APPEND in str(e.value)
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.assign_splits(tasks, seed=APPEND_SEED, method=APPEND)
+    assert e.value.code == "TASK_SPLIT"  # the append rule needs the previous split
+
+
+# -- the committed files ---------------------------------------------------------------------------
+
+
+def test_the_2_0_0_splits_file_is_the_pilot_rule_with_the_fixed_seed() -> None:
+    data = json.loads(PREVIOUS.read_text())
+    assert data["seed"] == PILOT_SEED and data["method"] == PILOT
+    expected = corpus_v2.assign_splits(_v200_tasks(), seed=PILOT_SEED, method=PILOT)
     assert data["assignments"] == expected
     assert list(data["assignments"]) == sorted(data["assignments"])
-    assert corpus.split_seed == PILOT_SEED and corpus.split_method == PILOT
-    assert {t.task_id: t.split for t in corpus.tasks if t.set == "main"} == expected
+    assert _totals(expected) == {"holdout": 22, "validation": 25, "development": 24}
+
+
+def test_the_committed_splits_json_is_the_append_rule_over_2_0_0() -> None:
+    data = json.loads((V2_ROOT / "splits.json").read_text())
+    manifest = json.loads((V2_ROOT / "manifest.json").read_text())
+    assert manifest["version"] == "2.1.0"
+    assert data["seed"] == APPEND_SEED == manifest["split_seed"]
+    assert data["method"] == APPEND
+    previous = _previous()
+    # every 2.0.0 assignment is unchanged (§10.2 (2))
+    assert {k: data["assignments"][k] for k in previous} == previous
+    corpus = corpus_v2.load(V2_ROOT)
+    main = [t for t in corpus.tasks if t.set == "main"]
+    new = [t for t in main if t.task_id not in previous]
+    assert new
+    for domain in {t.domain for t in new}:
+        mine = [t for t in new if t.domain == domain]
+        own = [t for t in mine if t.source["kind"] == "own"]
+        splits = [data["assignments"][t.task_id] for t in mine]
+        assert splits.count("holdout") == (3 * len(own) + 5) // 10, domain  # 30 %, half up
+        assert splits.count("validation") == len(mine) - splits.count("holdout"), domain
+    expected = corpus_v2.append_splits(list(corpus.tasks), previous, seed=APPEND_SEED)
+    assert data["assignments"] == expected
+    assert list(data["assignments"]) == sorted(data["assignments"])
+    assert corpus.split_seed == APPEND_SEED and corpus.split_method == APPEND
+    assert {t.task_id: t.split for t in main} == expected
 
 
 def test_write_splits_reproduces_the_committed_file(tmp_path: Path) -> None:
     root = _copy_corpus(tmp_path, with_splits=False)
-    result = corpus_v2.write_splits(root, seed=PILOT_SEED, method=PILOT)
+    prev = root / "splits-2.0.0.json"
+    result = corpus_v2.write_splits(root, seed=APPEND_SEED, method=APPEND, previous=prev)
     assert (root / "splits.json").read_bytes() == (V2_ROOT / "splits.json").read_bytes()
     assert json.loads((root / "manifest.json").read_text()) == json.loads(
         (V2_ROOT / "manifest.json").read_text()
     )
-    assert result["seed"] == PILOT_SEED and result["method"] == PILOT
+    assert result["seed"] == APPEND_SEED and result["method"] == APPEND
     assert sum(sum(d.values()) for d in result["counts"].values()) == len(
         json.loads((V2_ROOT / "splits.json").read_text())["assignments"]
     )
     # the same call again is a no-op; another seed or rule is refused (a re-split is a new version)
-    assert corpus_v2.write_splits(root, seed=PILOT_SEED, method=PILOT) == result
-    for seed, method in ((PILOT_SEED + 1, PILOT), (PILOT_SEED, corpus_v2.SPLIT_METHOD)):
+    assert corpus_v2.write_splits(root, seed=APPEND_SEED, method=APPEND, previous=prev) == result
+    with pytest.raises(CorpusError) as e:
+        corpus_v2.write_splits(root, seed=APPEND_SEED + 1, method=APPEND, previous=prev)
+    assert e.value.code == "TASK_SPLIT"
+    for method, previous in ((PILOT, None), (APPEND, None), (PILOT, prev)):
         with pytest.raises(CorpusError) as e:
-            corpus_v2.write_splits(root, seed=seed, method=method)
+            corpus_v2.write_splits(root, seed=APPEND_SEED, method=method, previous=previous)
         assert e.value.code in ("TASK_SPLIT", "SPLIT_TOO_SMALL")
     assert (root / "splits.json").read_bytes() == (V2_ROOT / "splits.json").read_bytes()
 
@@ -199,13 +307,25 @@ def _cli(*args: str) -> subprocess.CompletedProcess[str]:
 
 def test_corpus_check_writes_splits(tmp_path: Path) -> None:
     root = _copy_corpus(tmp_path, with_splits=False)
-    done = _cli("--corpus", str(root), "--write-splits", PILOT, "--seed", str(PILOT_SEED))
+    prev = str(root / "splits-2.0.0.json")
+    done = _cli(
+        "--corpus", str(root), "--write-splits", APPEND, "--seed", str(APPEND_SEED),
+        "--previous", prev,
+    )  # fmt: skip
     assert done.returncode == 0, done.stdout + done.stderr
     report = json.loads(done.stdout)
-    assert report["method"] == PILOT and report["seed"] == PILOT_SEED
+    assert report["method"] == APPEND and report["seed"] == APPEND_SEED
     assert (root / "splits.json").read_bytes() == (V2_ROOT / "splits.json").read_bytes()
-    assert _cli("--corpus", str(root), "--write-splits", PILOT).returncode == 2  # no seed
+    assert _cli("--corpus", str(root), "--write-splits", APPEND).returncode == 2  # no seed
     assert _cli("--write-splits", PILOT, "--seed", "1").returncode == 2  # no corpus
+    seed = str(APPEND_SEED)
+    assert _cli("--corpus", str(root), "--write-splits", APPEND, "--seed", seed).returncode == 2
+    assert (
+        _cli(
+            "--corpus", str(root), "--write-splits", PILOT, "--seed", seed, "--previous", prev
+        ).returncode
+        == 2
+    )  # fmt: skip
 
 
 # -- the freeze path -----------------------------------------------------------------------------
@@ -220,7 +340,7 @@ def meta_ref(tmp_path: Path) -> Any:
         ref.close()
 
 
-def test_freeze_reads_the_pilot_splits_file(tmp_path: Path, meta_ref: MetaReference) -> None:
+def test_freeze_reads_the_committed_splits_file(tmp_path: Path, meta_ref: MetaReference) -> None:
     root = _copy_corpus(tmp_path, with_splits=True)
     assignments = json.loads((root / "splits.json").read_text())["assignments"]
     main = corpus_v2.for_set(corpus_v2.load(root), "main")
@@ -229,6 +349,6 @@ def test_freeze_reads_the_pilot_splits_file(tmp_path: Path, meta_ref: MetaRefere
     frozen = d.store.get(d.scope, "eval-corpus", refs["corpus_ref"])
     assert {c["case_id"]: c["split"] for c in frozen["cases"]} == assignments
     index = d.store.get(d.scope, "corpus-task-index", refs["task_index_ref"])
-    assert index["splits"]["seed"] == PILOT_SEED and index["splits"]["method"] == PILOT
+    assert index["splits"]["seed"] == APPEND_SEED and index["splits"]["method"] == APPEND
     tasks = list(main.tasks)
     assert index["splits"]["counts"] == corpus_v2.split_counts(tasks, assignments)

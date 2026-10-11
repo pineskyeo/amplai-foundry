@@ -21,6 +21,7 @@ from amplai_foundry.runtime import cli
 from amplai_foundry.runtime.execution.codex import AUTH
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
 from rc06_rig import DRAFT, FixedPlanner, codex_inputs, make_repo
+from testclient_bridge import forwarding_transport
 
 
 @pytest.fixture
@@ -137,7 +138,7 @@ def test_cli_work_waits_for_the_draft_and_shows_the_next_step(
     _, client, token = product
 
     def test_client() -> AmplaiClient:
-        return AmplaiClient("http://127.0.0.1/", token, transport=client._transport)
+        return AmplaiClient("http://127.0.0.1/", token, transport=forwarding_transport(client))
 
     monkeypatch.setattr(cli, "client", test_client)
     monkeypatch.setattr("amplai_foundry.runtime.cli.time.sleep", lambda _s: None)

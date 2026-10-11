@@ -1,0 +1,39 @@
+{
+  "task_id": "data-brace-patterns",
+  "version": 2,
+  "domain": "data",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-data)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Staff want to write SKU lists as brace patterns such as `MUG-{001..003}` or `{TEA,PEN}-{1..9..4}`. Add a module `stockroom/braces.py` with `expand_braces(pattern) -> list[str]`, `count_braces(pattern) -> int` and `escape_braces(text) -> str`. Syntax. A backslash escapes exactly one of the four characters `\\`, `{`, `}` and `,`, which then stand for themselves; a backslash before any other character or at the end of the pattern is an error. Unescaped `{` and `}` must pair up like parentheses (nesting allowed). Every other character, including an unescaped `,` or `..` outside braces, spaces and non-ASCII letters, is literal text. A group `{...}` whose content has at least one unescaped comma at its own nesting level (not inside a nested group) is a list of alternatives: the content split at those commas, each alternative being a pattern itself (possibly empty, possibly with nested groups). A group without such a comma must be a range, and its content (the raw text between the braces, so an escaped comma or any escape makes it no range) must be exactly `X..Y` or `X..Y..S`: X and Y both ASCII digit strings, or both single ASCII letters of the same case; S ASCII digits with a value of at least 1 (default 1; leading zeros allowed). The values go from X to Y in steps of S (downwards when X is greater than Y), both ends included as far as the step reaches them (`{1..10..4}` is 1, 5, 9; `{10..1..4}` is 10, 6, 2; `{e..a..2}` is e, c, a). Numbers are written in decimal without padding, except that when X or Y has a leading zero and more than one digit, every number is padded with zeros to the length of the longer of the two texts X and Y (`{1..010..3}` is 001, 004, 007, 010; `{0..2}` is not padded). Any other group content, including `{}`, `{a}`, a sign, a missing end, three dots, a zero step, different letter cases, more than one letter, non-ASCII digits or spaces, is an error. Meaning. A pattern stands for every combination of its parts, read left to right, the leftmost part varying slowest (`{a,b}{1,2}` is `a1 a2 b1 b2`); alternatives come in their order, one after the other with their own expansions (`{a,b{c,d}}e` is `ae bce bde`); repeats are kept; the empty pattern gives `['']`. Errors are `stockroom.errors.ParseError` with the message `column C: REASON`, C the 1-based character position, decided in this order: (1) the leftmost bad escape, at its backslash; (2) otherwise unpaired braces, at the leftmost unpaired `{` or `}`; (3) otherwise the invalid group whose `{` comes first, at that `{` (an outer invalid group is reported before an invalid group inside it). `count_braces` returns the number of texts the pattern stands for without producing them (it must work for counts such as 10^18 or 10^21) and raises the same `ParseError` as `expand_braces` for an invalid pattern. `expand_braces` raises `ValueError` when the count is above 100,000, before producing anything (100,000 itself is fine). `escape_braces(text)` puts a backslash before every `\\`, `{`, `}` and `,` of the text, so that `expand_braces(escape_braces(text)) == [text]` for every text. Finally add `python -m stockroom expand PATTERN [--count]`, which prints every text of the pattern on its own line (an empty text gives an empty line), or with `--count` only the count; and `--match PATTERN` for `python -m stockroom items`, which keeps the items whose SKU is one of the pattern's texts, in file order (it combines with `--tag`). An invalid pattern, or more than 100,000 texts to list or match (`--count` prints any count), exits with code 1, `stockroom: error: ` followed by the error message on stderr, and empty stdout. Existing behaviour otherwise stays.",
+  "acceptance": [
+    "Alternatives expand as stated: `''`, plain text, `{a,b}`, `x{a,b,c}y`, products in order, nested groups, empty alternatives (`{,s}`, `mug{,s,}`), repeats kept, groups of groups, a range inside an alternative, `{1..3,x}` and `{a..c,}` as alternatives with literal dots, a top-level comma as text, spaces inside alternatives, non-ASCII text, and dots outside groups",
+    "Ranges count up and down, with steps (`{1..10..3}`, `{1..10..4}`, `{10..1..4}`, a step larger than the range, a step written `007`), padding only for a leading zero (`{0..2}`, `{00..2}`, `{001..3}`, `{1..010..3}`, `{98..0100}`, `{09..11}`; `{8..11}` unpadded), letters (`{a..e}`, `{a..e..2}`, `{e..a..2}`, `{X..Z}`, `{z..z}`), a product of a number range and a letter range, and numbers longer than 20 digits",
+    "Escapes give literal braces, commas and backslashes (`\\{a,b\\}`, `{a\\,b,c}`, `\\\\{a,b}`, `{\\{,x}`); `escape_braces` escapes exactly `\\`, `{`, `}` and `,`; for 2,000 seeded random texts over letters, braces, commas, backslashes, dots, spaces, digits, `é` and `-`, `expand_braces(escape_braces(text)) == [text]` and the count is 1",
+    "Errors are reported at the stated column, the same by `count_braces`, for 43 patterns: unpaired braces (`{a,b` at 1, `x{a,b{c,d}` at 2, `a}` at 2, `}{` at 1, `{a}}` at 4, `{{a,b}` at 1, `{a,b}}{` at 6), invalid groups at their `{` with outer before inner (`{}`, `x{a}` at 2, `{a}{b,c}` at 1, `{b,c}{a}` at 6, `{x{a}}` at 1, `{x,{a}}` at 4, `{x,{y,{z}}}` at 7), bad ranges (`{1..}`, `{..3}`, `{1...3}`, a zero, empty, extra or negative step, signs, `{1..a}`, `{a..Z}`, `{a..zz}`, `{aa..z}`, an Arabic-Indic digit, `{1..²}`, `{1..1_0}`, `{1..3..²}`, a space, `é`), bad escapes before everything else (`a\\b` at 2, `a\\` at 2, `\\.` at 1, `{a\\x,b}` at 3, `{a}\\q` at 4, `}\\q` at 2, `{1\\..3}` at 3), `{a,b\\}` (unpaired at 1), and an escaped comma that leaves no alternatives (`{1..\\,}`, `{a\\,b}` at 1)",
+    "`count_braces` counts without expanding: 1 for `''`, 3, 4, 26 × 1000 × 7, 10^18 for three ranges of a million and 10^21 for one range; `expand_braces` raises `ValueError` for those, for `{1..100001}` and for `{1..1000}{a,b,{1..1000}}`, and returns exactly 100,000 texts for `{1..100000}` and `{1..50}{1..2000}`",
+    "For 1,500 seeded random patterns built from escaped literals, number ranges (with random zero padding and steps), letter ranges, alternatives and sequences up to depth 3, the expansion equals the one the stated rules give, `count_braces` equals its length, and appending another random pattern gives the stated product",
+    "`python -m stockroom expand 'MUG-{001..003},{a,b}'` prints the six texts with the literal comma in order, `--count` prints `26000000` for `{1..1000000}{a..z}`, `{,x}` prints an empty line and `x`; `{a` and `x{a}` exit with code 1, empty stdout and `stockroom: error: column 1:` / `column 2:` (also with `--count`), `{1..200000}` exits with code 1; `items --match` lists `MUG-001`, `MUG-002`, `MUG-010` for `MUG-{001..010}`, two for a step of 9, none for the unpadded `MUG-{1..10}`, `TEA-010` and `PEN-100` in file order for a nested pattern with unknown SKUs, works with `--tag`, and `MUG-{1..3` exits with code 1, empty stdout and `stockroom: error: column 5:`"
+  ],
+  "hidden_map": {
+    "test_alternatives_and_nesting": 0,
+    "test_ranges_steps_and_padding": 1,
+    "test_escapes_and_literals": 2,
+    "test_errors_report_their_column": 3,
+    "test_count_without_expanding": 4,
+    "test_generated_patterns_follow_the_rules": 5,
+    "test_expand_command_and_item_match": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

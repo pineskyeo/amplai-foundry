@@ -9,6 +9,7 @@ gate: `specs/033-harness-taxonomy/interfaces.md` §10. Code: `meta_harness/corpu
 ```text
 manifest.json            corpus_id, version, split_seed, bases (no task list)
 splits.json              seed, method, assignments (written by S6-freeze; absent until then)
+splits-<version>.json    a previous version's splits.json, input of the append rule
 bases/demo/              Work 030 base tree (imported, byte-identical to its base/)
 bases/bench/, bench.commit   richer base app (S6-base)
 bases/tb2.commits.json   per-task TB2 base commits (TB2 adapter, S7a/S16)
@@ -28,11 +29,19 @@ tb2/<name>/              TB2 adapter output (S7a)
   `hidden_map` is empty: Work 030 had no map and the full-map rule (§10.3 rule 2) binds own tasks.
 - `manifest.json`: `split_seed` is `null` until S6-freeze sets it. The `bench` base has no
   `app_id` yet (확인 필요: not named in §10.1; S6-base/S6-freeze fill it).
+- Version 2.1.0 (operator decision 2026-10-11, interfaces "Append Split Rule (2026-10-11)"): the
+  71 own tasks of 2.0.0 plus 48 harder own tasks (hard wave 1, 8 per domain, `source.created`
+  2026-10-11; bug targets D16-D23 in `authoring/bench-defects.md`). `splits-2.0.0.json` is the
+  2.0.0 `splits.json` byte for byte; `splits.json` keeps every 2.0.0 assignment and places the new
+  tasks with `stratified_by_domain_append_v1` (seed 20261011).
 
 ## Commands
 
 ```bash
 .venv/bin/python scripts/corpus_check.py --corpus specs/033-harness-taxonomy/corpus --repeats 3
+.venv/bin/python scripts/corpus_check.py --corpus specs/033-harness-taxonomy/corpus \
+    --write-splits stratified_by_domain_append_v1 --seed 20261011 \
+    --previous specs/033-harness-taxonomy/corpus/splits-2.0.0.json
 .venv/bin/python scripts/corpus_check.py --corpus specs/033-harness-taxonomy/corpus --domain bug
 ```
 

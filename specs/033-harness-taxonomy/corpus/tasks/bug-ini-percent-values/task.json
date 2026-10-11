@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-ini-percent-values",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D20",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "A settings file that contains a `%` sign breaks the command line. With `currency_symbol = %` in the `[stockroom]` section of the file given to `--config`, every command (for example `stockroom --config s.ini price --items data/items.csv --sku MUG-001 --quantity 3`) dies with a Python traceback instead of running, although a data or settings error is documented to end with exit code 1 and one `stockroom: error: <reason>` line, and a `%` is a perfectly good currency symbol. Other values are silently changed: `%%` comes back as `%`, and `%(tax_bp)s` is replaced by the value of another setting.\n\nValues in the settings file are plain text: every character of a value, including `%`, `%%` and `%(name)s`, is taken literally, exactly as the same text in a `STOCKROOM_*` environment variable is. So `currency_symbol = %` gives the symbol `%` (prices print as `%37.50`), `currency_symbol = %%` gives `%%`, and `data_dir = /srv/100%/%%data%(x)s` gives exactly that path. A `%` in a value that must be a whole number (`tax_bp`) or a yes/no value (`low_stock_warning`) makes that value invalid, so it is refused like any other invalid value: `stockroom.errors.ConfigError` when the settings are loaded, and through the command exit code 1, nothing on stdout and exactly one `stockroom: error: <reason>` line on stderr, without a traceback. Everything else about settings stays as it is: the `[stockroom]` section, surrounding whitespace of a value being removed, the accepted yes/no words, the error for unknown keys, and environment variables overriding the file.",
+  "acceptance": [
+    "`stockroom --config F price --items data/items.csv --sku MUG-001 --quantity 3` with `currency_symbol = %` exits 0 and prints `3 x MUG-001 Blue Mug: %37.50`, `tax: %0.00`, `total: %37.50` with empty stderr; with `currency_symbol = %%` and `tax_bp = 1000` it prints `3 x MUG-001 Blue Mug: %%37.50`, `tax: %%3.75`, `total: %%41.25`",
+    "Loading a settings file keeps `%(tax_bp)s`, `/srv/100%/%%data%(x)s`, `50% off` (trailing space removed) and `%(missing)s` literally as the values of `currency_symbol` and `data_dir`, while `tax_bp = 825` in the same file is still read as 825",
+    "`low_stock_warning` set to `100%`, `%(x)s` or `yes%`, and `tax_bp` set to `8%`, `%(data_dir)s` or `%%`, each raise `ConfigError` when loaded, and the `price` command with such a file exits with code 1, empty stdout and exactly one `stockroom: error: ` line on stderr without a traceback",
+    "Environment variables still override the file (also when the file holds `%`), environment values with `%` are kept literally, the yes/no word `Off` is still read as false, an unknown key in a file that also holds `%` is still a `ConfigError`, and `STOCKROOM_CURRENCY_SYMBOL=$` makes the command print `$37.50` despite `currency_symbol = %` in the file",
+    "For 400 seeded settings files whose `currency_symbol` and `data_dir` values are random texts of up to 10 characters from `%`, `(`, `)`, `s`, `d`, `x`, `$`, `€`, `a`, space, `;`, `#`, `:`, `=`, `-` and `/` (without surrounding whitespace), the loaded values equal those texts exactly"
+  ],
+  "hidden_map": {
+    "test_a_percent_sign_as_currency_symbol_is_printed": 0,
+    "test_percent_text_is_kept_literally": 1,
+    "test_percent_in_numbers_and_switches_is_a_settings_error": 2,
+    "test_other_settings_behave_as_before": 3,
+    "test_generated_text_values_come_back_unchanged": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
