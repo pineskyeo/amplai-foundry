@@ -328,6 +328,25 @@ def test_a_lost_acknowledgment_is_a_receipt_replay_not_a_second_message(product:
     assert len(post.calls) == 1
 
 
+def test_a_lost_acknowledgment_then_a_status_change_is_still_acknowledged(product: Any) -> None:
+    """Review P2-1: the projection reads the goal's status at delivery. A redelivery after the
+    goal moved on must find the receipt, not project again and conflict forever."""
+    dep, client, post, _home = product
+    cancel_through_the_front_agent(client)
+    pump = dep.notifier_pump
+    pump.run_once(limit=1000)
+    with dep.store.tx() as db:  # the ack was lost
+        db.execute("UPDATE outbox SET status='pending', next_at=0")
+    pump.status = lambda _goal: "failed"  # the goal's status changed before the redelivery
+    results = pump.run_once(limit=1000)
+    assert results and all(r["acknowledged"] for r in results)
+    assert len(post.calls) == 1
+    pending = dep.store.conn.execute(
+        "SELECT COUNT(*) FROM outbox WHERE status='pending'"
+    ).fetchone()[0]
+    assert pending == 0
+
+
 def test_a_failed_send_is_retried_from_the_outbox(product: Any) -> None:
     dep, client, post, _home = product
     cancel_through_the_front_agent(client)

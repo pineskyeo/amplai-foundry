@@ -7,7 +7,8 @@ This module is the outbox's consumer when a notifier is configured:
 - ``intake.stop_requested`` (a front agent paused or cancelled a goal, H-3) becomes a
   :class:`~.interface.Projection` and is sent through the notifier. A failed send is not
   acknowledged, so the outbox retries it later; a send that succeeded but whose acknowledgment was
-  lost is a receipt replay on the next delivery, not a second message (F-5).
+  lost finds its receipt on the next delivery and is acknowledged without a second message (F-5),
+  even if the goal's status changed in between.
 - Every other event is acknowledged without a send: it is not an operator alert in v1.
 
 The alert reads only the store, never the intake configuration, so it is sent with the front agent
@@ -26,7 +27,7 @@ from typing import Any
 from ..contracts.intake import STOP_EVENT
 from ..recovery.service import OutboxPump
 from ..storage.store import Scope, Store
-from .interface import Notifier, Projection
+from .interface import Notifier, Projection, ReceiptLog
 
 
 class NotifierPump:
@@ -36,10 +37,12 @@ class NotifierPump:
         scope: Scope,
         notifier: Notifier,
         status: Callable[[str], str],
+        receipts: ReceiptLog,
         *,
         interval: float = 5.0,
     ) -> None:
         self.store, self.scope, self.notifier, self.status = store, scope, notifier, status
+        self.receipts = receipts
         self.interval = interval
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -62,6 +65,11 @@ class NotifierPump:
         )
 
     def deliver(self, event: dict[str, Any]) -> bool:
+        """An event that already has a receipt was sent: acknowledge it without projecting it
+        again. The projection reads the goal's status now, so a redelivery after a lost
+        acknowledgment would otherwise differ from what was sent and never pass replay."""
+        if self.receipts.get(event["event_id"]) is not None:
+            return True
         projection = self.projection(event)
         if projection is not None:
             self.notifier.send(event["event_id"], projection)  # raises: retried by the outbox

@@ -795,7 +795,7 @@ class LocalProductDeployment:
             return value if value in PLAN_STATUSES else "unknown"
 
         return NotifierPump(
-            self.store, self.scope, notifier, status, interval=entry.interval_seconds
+            self.store, self.scope, notifier, status, receipts, interval=entry.interval_seconds
         )
 
     def _task_environments(
