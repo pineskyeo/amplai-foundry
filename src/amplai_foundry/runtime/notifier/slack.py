@@ -105,8 +105,12 @@ class SlackWebhookNotifier:
         body = json.dumps({"text": render(projection)}).encode()
         status = self.post(self._url(), body)
         if not 200 <= status < 300:
-            # the status only: Slack's response body is not carried anywhere
-            raise RuntimeFault("NOTIFY_FAILED", f"The webhook answered HTTP {status}")
+            # the status only: Slack's response body is not carried anywhere. A 4xx other than
+            # 429 will not change on a retry (e.g. a revoked webhook): permanent.
+            code = "NOTIFY_REJECTED" if 400 <= status < 500 and status != 429 else "NOTIFY_FAILED"
+            raise RuntimeFault(
+                code, f"The webhook answered HTTP {status}", details={"http_status": status}
+            )
         receipt = Receipt(
             event_id=event_id,
             module=self._spec.ref,

@@ -15,7 +15,10 @@ or compromised front agent cannot hide a warning (F-5, AC-F3). Interface v1::
 - The destination is the one operator connection in the notifier's configuration; nothing in the
   input names a destination.
 - A failed send raises; nothing is recorded, so a later ``send`` of the same event tries again. The
-  product store outbox drives those retries (``notifier/pump.py``).
+  product store outbox drives those retries (``notifier/pump.py``). ``NOTIFY_FAILED`` is
+  transient (retried); ``NOTIFY_REJECTED`` is a permanent refusal (recorded, not retried).
+- Delivery is at least once: a crash after the destination accepted a message and before its
+  receipt is written sends that message again.
 
 ``conformance_suite`` is the v1 suite (``conformance.notifier.v1``). It needs an implementation
 built with a test transport: it sends synthetic events.

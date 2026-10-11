@@ -116,6 +116,24 @@ def _submit_and_plan(
         connection.close()
 
 
+def notifier_line(health: dict[str, Any]) -> str:
+    """One operator line about direct alerts (Work 034 S1c review P2-A), or "" when all is well.
+    Counts and codes only: no goal id, no text."""
+    undelivered, rejected = health.get("undelivered", 0), health.get("rejected", 0)
+    if not undelivered and not rejected:
+        return ""
+    parts = []
+    if undelivered:
+        parts.append(f"{undelivered} alerts undelivered since {health.get('undelivered_since')}")
+    if rejected:
+        parts.append(f"{rejected} alerts rejected by the webhook (not retried)")
+    last = health.get("last_error") or {}
+    if last:
+        status = f" HTTP {last['http_status']}" if last.get("http_status") else ""
+        parts.append(f"last {last.get('code')}{status} at {last.get('at')}")
+    return "  notifier  : " + ", ".join(parts)
+
+
 def render_plan(record: dict[str, Any]) -> str:
     goal, status = record.get("goal_id", "?"), record.get("status", "?")
     lines = [f"goal {goal}: {status}"]
@@ -175,6 +193,9 @@ def render_plan(record: dict[str, Any]) -> str:
         lines.append(f"  contract  : revision {ref.get('revision')} {ref.get('digest')}")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
+    health = notifier_line(record.get("notifier_health") or {})
+    if health:
+        lines.append(health)
     replan = record.get("replan") or {}
     if replan:
         why = replan["reason"][:200]

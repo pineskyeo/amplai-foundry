@@ -1055,7 +1055,10 @@ class LocalProductDeployment:
         @router.get("/goals/{goal_id}")
         def goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
             a.require("runtime.read")
-            return self.service.plan_record(goal_id)
+            record = self.service.plan_record(goal_id)
+            if self.notifier_pump is not None:  # the operator's view only (review P2-A)
+                record = {**record, "notifier_health": self.notifier_pump.health()}
+            return record
 
         @router.post("/goals/{goal_id}/approve")
         def approve(goal_id: str, body: ApproveBody, a: Actor = Depends(actor)) -> Any:

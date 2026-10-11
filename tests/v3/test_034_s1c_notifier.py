@@ -16,10 +16,12 @@ import os
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from test_034_s1a_intake_route import (
     HERMES,
+    SLACK_USER,
     init_home,
     message,
     private,
@@ -29,6 +31,7 @@ from test_034_s1a_intake_route import (
     with_intake,
 )
 
+from amplai_foundry.runtime.cli import render_plan
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.errors import RuntimeFault
 from amplai_foundry.runtime.keys import private_bytes
@@ -401,3 +404,137 @@ def test_without_a_notifier_entry_nothing_consumes_the_outbox(tmp_path: Path) ->
         assert dep.notifier_pump is None
     finally:
         dep.close()
+
+
+# -- failure review: visible failures, permanent refusals, no backlog flush ----------------------
+
+
+def outbox_due(dep: Any) -> None:
+    with dep.store.tx() as db:  # the backoff elapsed
+        db.execute("UPDATE outbox SET next_at=0 WHERE status='pending'")
+
+
+def operator_view(client: TestClient, home: Path, goal: str) -> dict[str, Any]:
+    operator = (home / "operator.token").read_text().strip()
+    record: dict[str, Any] = client.get(
+        f"/api/v3/local/goals/{goal}", headers={"Authorization": "Bearer " + operator}
+    ).json()
+    return record
+
+
+def test_a_failing_webhook_is_visible_to_the_operator_only(product: Any) -> None:
+    """Review P2-A: count and age of undelivered alerts and the last error, operator view only."""
+    dep, client, post, home = product
+    goal = cancel_through_the_front_agent(client)
+    post.status = 503
+    dep.notifier_pump.run_once(limit=1000)
+    record = operator_view(client, home, goal)
+    health = record["notifier_health"]
+    assert health["undelivered"] == 1 and health["rejected"] == 0
+    assert health["last_error"]["code"] == "NOTIFY_FAILED"
+    assert health["last_error"]["http_status"] == 503
+    shown = render_plan(record)
+    line = next(x for x in shown.splitlines() if x.startswith("  notifier  :"))
+    assert "1 alerts undelivered since " in line
+    assert "last NOTIFY_FAILED HTTP 503 at " in line
+    assert goal not in line
+    # not on the front agent's routes
+    seen = client.get(
+        f"/api/v3/intake/hermes/goals/{goal}", headers=HERMES, params=SLACK_USER
+    ).json()
+    assert set(seen) == {"goal_id", "status", "at"}
+    post.status = 200
+    outbox_due(dep)
+    dep.notifier_pump.run_once(limit=1000)
+    assert dep.notifier_pump.health()["undelivered"] == 0
+
+
+@pytest.mark.parametrize("status", [400, 403, 404, 410])
+def test_a_permanent_refusal_is_recorded_and_not_retried(product: Any, status: int) -> None:
+    """Review P2-B: a 4xx other than 429 is NOTIFY_REJECTED: recorded, acknowledged, surfaced."""
+    dep, client, post, home = product
+    goal = cancel_through_the_front_agent(client)
+    post.status = status
+    results = dep.notifier_pump.run_once(limit=1000)
+    assert all(r["acknowledged"] for r in results)
+    outbox_due(dep)
+    dep.notifier_pump.run_once(limit=1000)
+    assert len(post.calls) == 1  # not retried
+    health = dep.notifier_pump.health()
+    assert health["rejected"] == 1 and health["undelivered"] == 0
+    assert health["last_error"]["code"] == "NOTIFY_REJECTED"
+    shown = render_plan(operator_view(client, home, goal))
+    assert "1 alerts rejected by the webhook (not retried)" in shown
+    assert f"last NOTIFY_REJECTED HTTP {status}" in shown
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503])
+def test_rate_limits_and_server_errors_are_retried(product: Any, status: int) -> None:
+    dep, client, post, _home = product
+    cancel_through_the_front_agent(client)
+    post.status = status
+    results = dep.notifier_pump.run_once(limit=1000)
+    assert [r for r in results if not r["acknowledged"]]
+    outbox_due(dep)
+    post.status = 200
+    dep.notifier_pump.run_once(limit=1000)
+    assert len(post.calls) == 2
+    assert dep.notifier_pump.health()["rejected"] == 0
+
+
+def test_a_transport_error_is_retried_and_recorded(product: Any) -> None:
+    dep, client, post, _home = product
+    cancel_through_the_front_agent(client)
+
+    def unreachable(url: str, body: bytes) -> int:
+        raise httpx.ConnectError("no route")
+
+    dep.notifier_pump.notifier.post = unreachable
+    results = dep.notifier_pump.run_once(limit=1000)
+    assert [r for r in results if not r["acknowledged"]]
+    assert dep.notifier_pump.health()["last_error"]["code"] == "ConnectError"
+    dep.notifier_pump.notifier.post = post
+    outbox_due(dep)
+    dep.notifier_pump.run_once(limit=1000)
+    assert len(post.calls) == 1
+
+
+def test_enabling_a_notifier_does_not_flush_older_alerts(tmp_path: Path) -> None:
+    """Review P2-C: stop events from before the first enable are acknowledged without a send."""
+    home = init_home(tmp_path)
+    with_intake(home)
+    dep = LocalProductDeployment(home / "local.json", start_loop=False)
+    for installed in dep.service.apps.values():
+        installed.planners["codex-cli"] = FixedPlanner()
+    try:
+        with TestClient(dep.app) as client:
+            cancel_through_the_front_agent(client)  # no notifier yet
+    finally:
+        settle(dep)
+        dep.close()
+    with_notifier(home)
+    again, post = start(home)
+    try:
+        assert again.notifier_pump is not None
+        again.notifier_pump.run_once(limit=1000)
+        assert post.calls == []
+        with TestClient(again.app) as client:
+            goal: str = submit(client, "m-new").json()["goal_id"]
+            wait_status(client, goal, {"planning"})
+            client.post(
+                f"/api/v3/intake/hermes/goals/{goal}/cancel",
+                headers=HERMES,
+                json=message("m-new-stop", reason="x"),
+            )
+        again.notifier_pump.run_once(limit=1000)
+        ((_url, body),) = post.calls
+        assert goal in body["text"]
+        watermark = again.notifier_pump.watermark
+    finally:
+        settle(again)
+        again.close()
+    third, _ = start(home)  # the watermark is the first enable's, kept across restarts
+    try:
+        assert third.notifier_pump is not None and third.notifier_pump.watermark == watermark
+    finally:
+        third.close()
