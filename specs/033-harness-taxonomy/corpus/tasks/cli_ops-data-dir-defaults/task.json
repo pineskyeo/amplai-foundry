@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-data-dir-defaults",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Typing `--file`, `--items`, `--stock` and `--orders` on every run is tedious when all data lives in one directory. Let the input files default to the standard file names in a configured data directory.\n\n**Default files.** The input options become optional: `items --file`, `stock --items`, `stock --stock`, `sales --orders` and `price --items`. When such an option is omitted, the command uses a file in the data directory instead: `items.csv` for `--file` and `--items`, `stock.csv` for `--stock`, `orders.csv` for `--orders` (so `stock` without both options reads `<dir>/items.csv` and `<dir>/stock.csv`). An option that is given keeps working exactly as today; in particular a relative path given to an input option is relative to the current directory, never to the data directory, and one input option may be given while the other comes from the data directory.\n\n**The data directory** is configured by the first of these sources that has a non-empty value:\n1. the new global option `--data-dir DIR` (written before the command name); a relative `DIR` is relative to the current directory; an empty value (`--data-dir \"\"`) is an argparse usage error (exit code 2);\n2. the environment variable `STOCKROOM_DATA_DIR`; a relative value is relative to the current directory; an empty value counts as not set;\n3. the key `data_dir` in the `[stockroom]` section of the settings file given with `--config`; a relative value is relative to **the directory that contains the settings file** (the directory part of the `--config` path as given, so `--config ../conf/s.ini` with `data_dir = ../ini` means `../conf/../ini` from the current directory); an absolute value is used as it is; an empty value counts as not set.\n\nThe built-in default of the `data_dir` setting (`data`) does not configure a data directory. When an input option is omitted and no data directory is configured, the run is an argparse usage error as today: exit code 2, empty stdout, and the message on stderr names every omitted option (for example `--file`, or `--stock`).\n\n**Checks.** The data directory is only used, and only checked, when at least one input option of the command is omitted: when all input options are given, an invalid data directory is no error. When it is used and it is not an existing directory (missing, or a regular file), the command ends with exit code 1, empty stdout and the usual single line `stockroom: error: <reason>` on stderr, where the reason contains the data directory path (the value as configured; for a relative settings-file value, that value joined to the settings file's directory). Settings errors keep their behaviour and come first.\n\nEverything else stays as it is: runs that give all their input options behave exactly as before.",
+  "acceptance": [
+    "--data-dir DIR supplies items.csv, stock.csv and orders.csv for items, stock (both files), sales and price when their input options are omitted; DIR may be relative to the current directory or absolute, with or without a trailing slash",
+    "An input option that is given is used as today, relative to the current directory and never to the data directory; one stock input may be explicit while the other comes from the data directory; with all inputs given an invalid data directory is not looked at",
+    "STOCKROOM_DATA_DIR configures the data directory (relative to the current directory, or absolute); an empty variable configures nothing, so an omitted option stays a usage error",
+    "data_dir in the --config settings file configures the data directory relative to the settings file's directory (absolute values as they are); an empty value or a missing key configures nothing",
+    "Precedence is --data-dir > non-empty STOCKROOM_DATA_DIR > non-empty data_dir of the settings file, for every combination; with none of them an omitted input option is a usage error and the built-in default 'data' is never used",
+    "A configured data directory that is needed but missing or a regular file gives exit 1, empty stdout and one 'stockroom: error: ' line containing the data directory path, for each source",
+    "Without a configured data directory an omitted input option is a usage error (exit 2) naming the option (--file, --items, --stock, --orders); --data-dir '' and --data-dir after the command are usage errors",
+    "Runs with explicit input files keep their output, messages and exit codes"
+  ],
+  "hidden_map": {
+    "test_data_dir_option_supplies_every_default_file": 0,
+    "test_explicit_files_stay_relative_to_the_current_directory": 1,
+    "test_environment_data_dir": 2,
+    "test_settings_file_data_dir_is_relative_to_the_settings_file": 3,
+    "test_data_dir_precedence_matrix": 4,
+    "test_a_data_dir_that_is_not_a_directory": 5,
+    "test_missing_inputs_without_a_data_dir_are_usage_errors": 6,
+    "test_runs_with_explicit_files_are_unchanged": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

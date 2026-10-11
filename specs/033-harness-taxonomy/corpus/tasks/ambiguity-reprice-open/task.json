@@ -1,0 +1,46 @@
+{
+  "task_id": "ambiguity-reprice-open",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-ambiguity)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "After a catalogue price change, bring the orders that are still open up to date. A new module `stockroom/reprice.py` gets a frozen dataclass `Repricing(orders: tuple[Order, ...], changes: tuple[tuple[str, str, int, int], ...], missing: tuple[tuple[str, str], ...])` and `reprice_open(orders: Sequence[Order], items: Sequence[Item]) -> Repricing`. A catalogue that lists a SKU more than once is refused first with `ParseError` and the message `duplicate sku SKU in catalogue` (the first repeated SKU in catalogue order). Only orders with status `open` are repriced; paid, shipped and cancelled orders are returned exactly as they were, whatever their prices. In an open order every line whose SKU is in the catalogue takes that item's current `price_cents` as its unit price (quantity and SKU unchanged), and a line whose SKU is not in the catalogue keeps its unit price. `orders` holds all the orders, repriced or not, in the given order; `changes` holds `(order_id, sku, old unit price, new unit price)` for each open-order line whose unit price actually changed, and `missing` holds `(order_id, sku)` for each open-order line whose SKU is not in the catalogue, both in order and then line order. Repricing an already repriced list changes nothing. The CLI gets `python -m stockroom reprice --orders FILE --items FILE [--write]`. It prints one line `ORDER SKU: OLD -> NEW` per change (amounts formatted by `money.format_money` with the configured `currency_symbol`), then one line `ORDER SKU: not in catalogue` per missing line, then the summary `repriced LINES in ORDERS`, where LINES is `textutil.plural(number of changes, \"line\")` and ORDERS is `textutil.plural(number of distinct orders with a change, \"order\")` (`repriced 1 line in 1 order`, `repriced 3 lines in 3 orders`). Without `--write` the order file is left alone; with `--write` it is rewritten as `csvio.write_orders` of the resulting orders. A repeated SKU in the catalogue is a data error: exit code 1, nothing on stdout, `stockroom: error: MESSAGE` on stderr, and the order file is not changed. The other commands are unchanged.",
+  "acceptance": [
+    "`reprice_open` gives open orders' lines the catalogue's current `price_cents` and returns paid, shipped and cancelled orders unchanged, in the given order; no orders gives `Repricing((), (), ())`",
+    "`changes` lists `(order_id, sku, old, new)` only for open-order lines whose price actually changed, in order and line order, and repricing the result again changes nothing",
+    "A line of an open order whose SKU is not in the catalogue keeps its unit price and is listed in `missing` as `(order_id, sku)`",
+    "A catalogue with a repeated SKU raises `ParseError('duplicate sku SKU in catalogue')`",
+    "Over many seeded random orders and catalogues the result follows the rules above exactly",
+    "`reprice` prints the change lines, the `not in catalogue` lines and `repriced N line(s) in M order(s)` with `plural`, and leaves the order file unchanged without `--write`",
+    "`reprice --write` rewrites the order file with `write_orders` of the repriced orders, and a catalogue with a repeated SKU exits with 1, prints nothing on stdout, prints `stockroom: error: MESSAGE` on stderr and leaves the file unchanged"
+  ],
+  "hidden_map": {
+    "test_reprice_moves_only_open_orders_to_catalogue_prices": 0,
+    "test_reprice_reports_only_lines_whose_price_changed": 1,
+    "test_reprice_keeps_lines_missing_from_the_catalogue": 2,
+    "test_reprice_refuses_a_catalogue_with_a_repeated_sku": 3,
+    "test_reprice_follows_the_rule_on_random_orders": 4,
+    "test_reprice_command_lists_changes_missing_lines_and_a_summary": 5,
+    "test_reprice_command_write_rewrites_the_order_file": 6
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "Only open orders take the current catalogue prices; other orders and lines whose SKU is not in the catalogue keep their prices (as stated)",
+      "Paid orders are repriced too, or lines missing from the catalogue are dropped or refused (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

@@ -1,0 +1,39 @@
+{
+  "task_id": "cli_ops-split-orders",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Accounting wants the orders as one file per month, refreshed by a nightly job that must be safe to re-run. Add a script `scripts/split_orders.py` (run with the repository root on `PYTHONPATH`, like the other script): `python scripts/split_orders.py --orders FILE --out DIR [--prune] [--dry-run]`. Relative paths are relative to the current directory. Both options are required; missing ones and unknown options are argparse usage errors (exit code 2, nothing written).\n\n**Grouping.** Add a method `by_month()` to `OrderBook` in `stockroom/orders.py`: it returns a dict from the month key `YYYY-MM` of the date an order was placed to the list of that month's orders, for orders of every status (cancelled ones included), the keys in ascending order and the orders of each month in the book's order. The script reads `FILE` (UTF-8) with `stockroom.csvio.read_orders`, builds an `OrderBook`, and for each month of `by_month()` the month file `DIR/orders-YYYY-MM.csv` has the content that `stockroom.csvio.write_orders` returns for that month's orders (UTF-8).\n\n**Writing.** `DIR` is created, with its parents, when it does not exist (also when there is no order). A month file whose current bytes already equal its new content is not written at all (its inode and modification time stay) and is reported as `unchanged NAME`; any other month file is written atomically (a temporary file in `DIR`, then renamed over the target; no temporary file remains) and reported as `wrote NAME`. Files in `DIR` that are not month files of this run are left alone and not mentioned, unless `--prune` is given: then every regular file directly in `DIR` whose name matches `orders-` + four ASCII digits + `-` + two ASCII digits + `.csv` exactly (case-sensitive; so not `orders-2024-1.csv`, `orders-2024-01.csv.bak`, `Orders-2022-06.csv`, a `.CSV` suffix, other digit characters, or a directory) and that is not a month file of this run is deleted and reported as `removed NAME`.\n\n**Output.** stdout holds the reported lines sorted by `NAME` (as plain strings, over all three kinds), then one summary line `W written, U unchanged, R removed` with the counts. With `--dry-run` nothing is created, written or removed (not even `DIR`), the same decisions are reported with `would write NAME`, `unchanged NAME` and `would remove NAME`, and the summary is `W would be written, U unchanged, R would be removed`. Exit code 0, stderr empty.\n\n**Errors** end with exit code 1, one line `split_orders: error: <reason>` on stderr, empty stdout, and nothing created, written or removed (not even `DIR`): an orders file that cannot be read (missing, a directory, not UTF-8) or that `read_orders` rejects (the reason contains `FILE` as given); a `DIR` that exists but is not a directory (the reason contains `DIR` as given); and a run that would write or remove the orders file itself, that is when `FILE` (by `os.path.realpath`) is one of the month files of this run (whether or not its content would change) or one of the files `--prune` would remove (the reason contains the word `input`). These checks apply with `--dry-run` too.",
+  "acceptance": [
+    "The script writes DIR/orders-YYYY-MM.csv per month with write_orders' text for that month's orders (all statuses, rows grouped per order, book order), creates DIR with parents, prints 'wrote NAME' lines sorted by name and '3 written, 0 unchanged, 0 removed'; relative paths are relative to the current directory; an orders file without orders writes nothing but creates DIR",
+    "A re-run writes only month files whose bytes would change (hand-edited or changed months) and reports the others as 'unchanged NAME' without touching them (same inode and modification time)",
+    "--prune deletes exactly the regular files named orders-DDDD-DD.csv (ASCII digits, case-sensitive) that are not month files of this run and reports 'removed NAME' in the sorted list; other files and directories stay; without --prune stale files stay and are not mentioned",
+    "--dry-run reports 'would write', 'unchanged' and 'would remove' with the 'would be written ... would be removed' summary and changes nothing (no DIR created), for every combination of --prune, --dry-run and a missing, current or changed DIR",
+    "An unreadable or invalid orders file (reason names FILE), a DIR that is a regular file (reason names DIR), and a run that would write or remove the orders file itself (reason contains 'input', also with --dry-run) give exit 1, one 'split_orders: error: ' line, empty stdout and no change",
+    "OrderBook.by_month() returns {YYYY-MM: [orders]} with sorted month keys, every status, and the book's order within a month; an empty book gives {}",
+    "Missing --orders or --out and unknown options are usage errors (exit 2) that write nothing"
+  ],
+  "hidden_map": {
+    "test_one_file_per_month": 0,
+    "test_a_rerun_writes_only_what_changed": 1,
+    "test_prune_removes_only_stale_month_files": 2,
+    "test_dry_run_and_prune_matrix": 3,
+    "test_split_failures_change_nothing": 4,
+    "test_by_month_groups_orders": 5,
+    "test_split_usage_errors_write_nothing": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

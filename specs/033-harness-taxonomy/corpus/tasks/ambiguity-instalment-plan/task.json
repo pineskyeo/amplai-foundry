@@ -1,0 +1,44 @@
+{
+  "task_id": "ambiguity-instalment-plan",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-ambiguity)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Let customers pay an order in monthly instalments. A new module `stockroom/instalments.py` gets `plan_instalments(order: Order, count: int, first_due: date, *, tax_bp: int = 0) -> list[tuple[date, int]]`, one `(due date, cents)` pair per instalment. Checks, in this order: a `count` outside 1-12 raises `ValueError`; a negative `tax_bp` raises `ValueError`; a cancelled order raises `ParseError` with the message `order ID is cancelled` (open, paid and shipped orders can all be planned). The amount to pay is the order total with tax and no discount, `pricing.order_total(order, tax_bp=tax_bp)`. It is divided with the repository's existing rule for splitting cents: the instalment amounts are exactly the shares `money.split_evenly(total, count)` returns, in the order it returns them, so they follow that function's docstring for where the odd cents go. Instalment number i (counting from 0) is due on `dates.add_months(first_due, i)`, always computed from `first_due` itself (not from the previous due date), so its month-end clamping follows the `add_months` docstring. The CLI gets `python -m stockroom instalments --orders FILE --order-id ID --count N --first-due YYYY-MM-DD`, which plans that order with the configured `tax_bp` and prints one line `instalment K/N due YYYY-MM-DD: AMOUNT` per instalment (K from 1), then `total: AMOUNT`, the sum of the instalments; amounts are formatted by `money.format_money` with the configured `currency_symbol`. A `--count` outside 1-12 is a data error with the message `--count must be between 1 and 12`; a cancelled order (`order ID is cancelled`), an unknown order id (`no order ID`, as `OrderBook.get` raises it) and a `--first-due` that is not a date (the `not a date: ...` message of `dates.parse_date`) are data errors too; data errors exit with code 1, print nothing on stdout and print `stockroom: error: MESSAGE` on stderr. The other commands are unchanged.",
+  "acceptance": [
+    "The instalment amounts are `split_evenly(order_total(order, tax_bp=tax_bp), count)` in that function's order (10000 in 3 gives 3334, 3333, 3333; 2 cents in 3 gives 1, 1, 0) and instalment i is due on `add_months(first_due, i)`, checked over many seeded random orders, counts, tax rates and first dates",
+    "The amounts add up to the order total including tax rounded half up (3395 cents at 825 bp in 2 gives 1838 and 1837)",
+    "Due dates are computed from `first_due` each time: from 2023-01-31 they are 2023-01-31, 2023-02-28, 2023-03-31, 2023-04-30, and they continue into the next year",
+    "A count outside 1-12 and a negative `tax_bp` raise `ValueError` before the order is looked at, a cancelled order raises `ParseError('order ID is cancelled')`, and open, paid and shipped orders are planned",
+    "`instalments` prints `instalment K/N due DATE: AMOUNT` per instalment and `total: AMOUNT`, with the configured `tax_bp` and currency symbol",
+    "`instalments` with a count outside 1-12, a cancelled or unknown order or a bad `--first-due` exits with 1, prints nothing on stdout and prints `stockroom: error: MESSAGE` on stderr"
+  ],
+  "hidden_map": {
+    "test_instalments_split_like_split_evenly": 0,
+    "test_instalments_cover_the_order_total_with_tax": 1,
+    "test_instalments_fall_due_monthly_from_the_first_date": 2,
+    "test_instalments_refuse_bad_plans": 3,
+    "test_instalments_command_prints_the_plan": 4,
+    "test_instalments_command_refuses_bad_requests": 5
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "The amounts are `split_evenly` shares (the larger shares first) and each due date is `add_months(first_due, i)` (as stated)",
+      "The odd cents go to the last instalment, or each due date is one month after the previous due date (contradicts the stated rules)"
+    ]
+  },
+  "difficulty_declared": null
+}

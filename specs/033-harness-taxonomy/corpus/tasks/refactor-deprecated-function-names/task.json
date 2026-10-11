@@ -1,0 +1,43 @@
+{
+  "task_id": "refactor-deprecated-function-names",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "rename",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "A naming review found five public names in `stockroom` that do not say what they return: `textutil.plural(count, word)` returns a counted label such as `3 orders`, `report.top_n(totals, n)` the largest totals, `money.split_evenly(total, parts)` an allocation of cents, `csvio.parse_tags(cell)` the tags of a cell, and the method `Inventory.low_stock(items)` the items below their reorder level. Rename them:\n- `textutil.plural` -> `textutil.count_label`\n- `report.top_n` -> `report.largest_totals`\n- `money.split_evenly` -> `money.allocate_cents`\n- `csvio.parse_tags` -> `csvio.split_tags`\n- `Inventory.low_stock` -> `Inventory.below_reorder_level`\nand move every caller in the `stockroom` package and in `scripts/` to the new names. Code outside this repository still calls the old names, so each old name stays for one more release as a deprecated alias of its new name.\n\nThis is a refactor: the renamed functions keep their parameters and behave exactly as before for every input, including results that may look odd (`plural(2, \"box\")` gives `2 boxs`), and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`count_label`, `largest_totals`, `allocate_cents` and `split_tags` return exactly what `plural`, `top_n`, `split_evenly` and `parse_tags` returned before the change, or raise the same exception class with the same message, for every input; checked against copies of the old functions on 600 seeded random inputs each: counts from -2 to 10**6 with words such as `box`, `ox` and the empty string; totals with ties and negative values for `n` from 1 to 8; totals from -1000 to 1000 split into 1 to 12 parts and into 0 or -1 parts; tag cells with mixed letter case, spaces, tabs, repeated `;` and non-ASCII letters. Calling the old name with the same arguments gives the same outcome and emits one `DeprecationWarning`",
+    "`Inventory.below_reorder_level(items)` returns the same item objects, in the same order, that `low_stock` returned before (it accepts any iterable of items, e.g. an iterator), checked on 300 seeded random inventories; `low_stock(items)` still returns that list and emits one `DeprecationWarning`",
+    "Each new function is defined in the module of the old one (`Inventory.below_reorder_level` in the class `Inventory`) and is a plain function whose `__name__` and `__qualname__` are its new name (`below_reorder_level` and `Inventory.below_reorder_level` for the method) and whose `__module__` is that module",
+    "Every call of an old name emits exactly one `DeprecationWarning` with the message `<old>() is deprecated; use <new>()` (for example `plural() is deprecated; use count_label()`; for the method `Inventory.low_stock() is deprecated; use Inventory.below_reorder_level()`), attributed to the caller (the warning's `filename` is the file that contains the call, as `stacklevel=2` does); the warning is emitted before the call is carried out, so a call that raises (for example `split_evenly(10, 0)` with `ValueError: parts must be positive`, or `top_n(None, 1)` with the `AttributeError` that `largest_totals` raises) has warned as well; calls of the new names never warn",
+    "Each old name is still a plain function (for the method: a plain function that is an attribute of the class `Inventory`) whose `__name__` and `__qualname__` are the old name (`low_stock` and `Inventory.low_stock` for the method) and whose `__module__` is the module it lives in; its `__wrapped__` attribute is the new function (for the method, `Inventory.low_stock.__wrapped__ is Inventory.below_reorder_level`), and `inspect.signature` of the old name equals `inspect.signature` of the new one",
+    "An old name calls its new name when it is called, not a copy taken at import time: after `monkeypatch.setattr(<module>, \"<new>\", replacement)` the old name of that module returns what the replacement returns for the same arguments, and `low_stock` calls `self.below_reorder_level(items)`, so a subclass of `Inventory` that overrides `below_reorder_level` changes what `low_stock` returns",
+    "No code in the `stockroom` package or in `scripts/` refers to `plural`, `top_n`, `split_evenly`, `parse_tags` or `low_stock` (as a name, an attribute, an imported name or a function name) except the definition of the alias itself: its `def` or assignment, and assignments to the alias's own attributes such as `__wrapped__`",
+    "`python -W error::DeprecationWarning -m stockroom` runs `items` (with and without `--tag`), `stock` and `sales` (with and without `--from`) without any warning, and their exit codes, stdout and stderr are byte for byte what they were before the change; `python -W error::DeprecationWarning scripts/make_sample_data.py --out DIR` also runs without a warning",
+    "Using the package through the new names emits no warning, and `read_items` (tags split, trimmed and lower-cased as before), `sales_summary` (the text for `top=2` byte for byte as before) and `Inventory.below_reorder_level` give the same results as before"
+  ],
+  "hidden_map": {
+    "test_new_names_behave_like_the_old_functions": 0,
+    "test_inventory_method_behaves_like_the_old_one": 1,
+    "test_new_functions_have_their_own_names": 2,
+    "test_old_names_warn_once_per_call_before_they_run": 3,
+    "test_old_names_are_described_like_the_new_ones": 4,
+    "test_old_names_follow_the_new_ones_at_call_time": 5,
+    "test_nothing_in_the_package_uses_the_old_names": 6,
+    "test_command_line_output_is_unchanged_and_warning_free": 7,
+    "test_reports_and_readers_are_unchanged": 8
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

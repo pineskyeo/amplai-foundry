@@ -1,0 +1,33 @@
+{
+  "task_id": "bug-month-range-end",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D21",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Listing the month keys of a date range fails at the end of the calendar. The function that lists the `YYYY-MM` keys of every month a range touches (from the start date's month to the end date's month, both included) raises `ValueError: year 10000 is out of range` for any range whose end lies in December 9999, for example from 9999-11-05 to 9999-12-31, and so does the widest possible range, from `date.min` to `date.max`. Other ranges work.\n\nThe listing must work for every pair of dates Python's `date` can hold. For a start date S and an end date E with E not before S, the result is the list of keys of every month from S's month to E's month inclusive, oldest first, each key being the four-digit zero-padded year, `-` and the two-digit month (`0001-01`, `0999-12`, `9999-12`); the day of the month of S and E does not matter. When E is before S (even within the same month, such as 2024-03-20 to 2024-03-05), the result is an empty list, as today. Results for ranges that work today stay the same.",
+  "acceptance": [
+    "Ranges ending in December 9999 give their keys: 9999-11-05 to 9999-12-31 gives `9999-11`, `9999-12`; 9999-12-01 to 9999-12-31, 9999-12-31 to 9999-12-31 and 9999-12-17 to 9999-12-18 give `9999-12`; 9998-12-15 to 9999-01-01 gives `9998-12`, `9999-01`; 9999-01-31 to 9999-12-01 ends with `9999-10`, `9999-11`, `9999-12`",
+    "From `date.min` to `date.max` gives 119,988 keys, starting `0001-01`, `0001-02`, `0001-03` and ending `9999-11`, `9999-12`, sorted and without repeats; 0001-01-01 to 0001-01-01 gives `0001-01`, and 0999-12-31 to 1000-01-01 gives `0999-12`, `1000-01`",
+    "For 3,000 seeded pairs of dates (uniform over the whole calendar, near its last day and near its first day, including reversed pairs), the result equals the list of keys of the months from the start's month to the end's month inclusive, or the empty list when the end is before the start",
+    "Reversed ranges (also within one month and on 9999-12-31/9999-12-30) give an empty list, and ordinary ranges such as 2023-11-20 to 2024-02-01 and 2024-01-31 to 2024-03-01 give the same keys as before"
+  ],
+  "hidden_map": {
+    "test_ranges_that_end_in_the_last_month_of_the_calendar": 0,
+    "test_the_whole_calendar_is_one_key_per_month": 1,
+    "test_generated_ranges_match_the_month_count": 2,
+    "test_empty_and_ordinary_ranges_are_unchanged": 3
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

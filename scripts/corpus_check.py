@@ -20,6 +20,13 @@ listed as SKIP: their fairness is the TB2 admission run in the task image (§10.
 ``--write-splits METHOD --seed N`` judges nothing: it assigns the main set with that split rule
 (``corpus_v2.SPLIT_METHODS``), writes ``splits.json`` and the manifest ``split_seed``
 (``corpus_v2.write_splits``) and prints the counts per split and domain.
+
+    .venv/bin/python scripts/corpus_check.py --corpus specs/033-harness-taxonomy/corpus \
+        --write-splits stratified_by_domain_append_v1 --seed 20261011 \
+        --previous specs/033-harness-taxonomy/corpus/splits-2.0.0.json
+
+``stratified_by_domain_append_v1`` keeps every assignment of the previous version's splits file
+(``--previous``) and places only the new tasks (``corpus_v2.append_splits``).
 """
 
 from __future__ import annotations
@@ -45,6 +52,9 @@ def _parser() -> argparse.ArgumentParser:
         "--write-splits", choices=corpus_v2.SPLIT_METHODS, help="write splits.json (no judging)"
     )
     parser.add_argument("--seed", type=int, help="the split seed for --write-splits")
+    parser.add_argument(
+        "--previous", type=Path, help="the previous version's splits file (append rule only)"
+    )
     parser.add_argument("task_ids", nargs="*")
     return parser
 
@@ -105,9 +115,9 @@ def _v2(root: Path, domains: list[str] | None, task_ids: list[str], repeats: int
     return 1 if bad else 0
 
 
-def _write_splits(root: Path, method: str, seed: int) -> int:
+def _write_splits(root: Path, method: str, seed: int, previous: Path | None) -> int:
     try:
-        result = corpus_v2.write_splits(root, seed=seed, method=method)
+        result = corpus_v2.write_splits(root, seed=seed, method=method, previous=previous)
     except CorpusError as exc:
         print(f"{exc.code}: {exc}")
         return 1
@@ -117,14 +127,17 @@ def _write_splits(root: Path, method: str, seed: int) -> int:
 
 def main(argv: list[str]) -> int:
     args = _parser().parse_args(argv)
-    if args.write_splits or args.seed is not None:
+    if args.write_splits or args.seed is not None or args.previous is not None:
         if args.corpus is None or args.write_splits is None or args.seed is None:
             print("--write-splits needs --corpus and --seed")
             return 2
         if args.domain or args.task_ids:
             print("--write-splits assigns the whole main set (no --domain or task ids)")
             return 2
-        return _write_splits(args.corpus, args.write_splits, args.seed)
+        if (args.write_splits == corpus_v2.APPEND_SPLIT_METHOD) != (args.previous is not None):
+            print(f"--previous goes with --write-splits {corpus_v2.APPEND_SPLIT_METHOD} only")
+            return 2
+        return _write_splits(args.corpus, args.write_splits, args.seed, args.previous)
     if args.repeats < 1:
         print("--repeats must be at least 1")
         return 2

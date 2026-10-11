@@ -25,6 +25,14 @@ Confirmed intentional by the orchestrator (2026-10-01). Base commit: `bases/benc
 | D11 | `stockroom/report.py` `render_table` | header widths ignored when rows exist | columns fit headers and rows |
 | D12 | `stockroom/report.py` `top_n` | `n=0` returns everything | empty |
 | D13 | `stockroom/config.py` env booleans | `bool(raw)`: `STOCKROOM_LOW_STOCK_WARNING=false` → True (INI path correct) | parse booleans like the INI path |
+| D16 | `stockroom/dates.py` `parse_date` (+ `cli._cmd_sales` truthiness) | `date.fromisoformat` on Python 3.11 also accepts `20240309`, `2024-W10-6`, `2024W106`; `sales --from ""` / `--to ""` is ignored instead of refused | "`"2024-03-09"` -> `date(2024, 3, 9)`; anything else is a `ParseError`" (dates.py:13); README:32 `YYYY-MM-DD` |
+| D17 | `stockroom/csvio.py` `read_orders` | a row with fewer cells than the header, or a whitespace-only line, gives `None` cells and an `AttributeError` traceback; extra cells are silently dropped | data errors end in exit 1 with `stockroom: error: …` (cli.py:3, README:37-38, errors.py:1,5) |
+| D18 | `stockroom/csvio.py` `read_items` / `read_stock` / `read_orders` | `line N` in messages counts kept rows, not physical lines (blank lines, quoted line breaks, DictReader skipping) | the messages name a line (`line {number}`, csvio.py:27,47,88) |
+| D19 | `stockroom/jsonio.py` `order_from_dict` | non-string `placed`/`order_id` raise `AttributeError` (not `ParseError`); non-string customer, float/bool quantity or unit price, `"lines": ""`/`{}` are accepted | bad input raises `StockroomError`/`ParseError` (errors.py:5,9; jsonio.py:43-44 wraps bad objects) |
+| D20 | `stockroom/config.py` `_from_file` | `ConfigParser` interpolation: a `%` in an INI value raises `InterpolationSyntaxError` (traceback); `%%` → `%`, `%(key)s` is substituted | settings errors are `ConfigError` → exit 1 (errors.py:17, cli.py:3); values are plain settings text |
+| D21 | `stockroom/dates.py` `months_between` | `add_months` past 9999-12 → `ValueError: year 10000 is out of range` for any range ending in December 9999 | "The month keys from `start`'s month to `end`'s month, both included" (dates.py:50) |
+| D22 | `stockroom/csvio.py` `read_orders` | only the first row of an order is used: later rows' customer/placed/status are never compared, a later `placed` is never parsed | "rows of one order share `order_id`, `customer`, `placed` and `status`" (csvio.py:95-96); bad dates are `ParseError` (errors.py:9) |
+| D23 | `stockroom/csvio.py` `write_orders` / `read_orders` | an `Order` without lines (the model default) writes no row and vanishes on the CSV round trip | "The order file for `orders` (`read_orders` reads it back)" (csvio.py:127) |
 
 ## Other Domains
 
@@ -40,3 +48,10 @@ Confirmed intentional by the orchestrator (2026-10-01). Base commit: `bases/benc
 
 A task outside `bug` must not require fixing any of D1–D13 (its hidden tests must not touch those triggers), or the
 reference would fix an unstated requirement (§10.3 rule 2). Two bug tasks never target the same defect.
+
+The same holds for D16–D23 (added 2026-10-11 by the hard-wave-1 bug author): a task outside `bug` must not require
+fixing them, so its hidden tests avoid their triggers — dates other than `YYYY-MM-DD` (e.g. `20240309`, week dates)
+or an empty `--from`/`--to`; orders rows with too few or too many cells, or whitespace-only lines in an orders file;
+expected `line N` numbers in files with blank lines or quoted line breaks; non-string or float/bool values in JSON
+orders; `%` in INI values; `months_between` ranges reaching December 9999; rows of one order that disagree on
+customer, `placed` or status; orders without lines through `write_orders`/`read_orders`.

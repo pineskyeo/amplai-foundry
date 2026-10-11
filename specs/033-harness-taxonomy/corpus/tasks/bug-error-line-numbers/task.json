@@ -1,0 +1,35 @@
+{
+  "task_id": "bug-error-line-numbers",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D18",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Error messages point at the wrong line. A stock file whose header is followed by an empty line, a good row, another empty line and then `MUG-002,four,0` on line 5 makes `stockroom stock` report `stockroom: error: line 3: on_hand is not a whole number: 'four'`, and an operator who opens line 3 finds a perfectly good row. The same happens with the catalogue (`stockroom items`) and with orders files (`stockroom sales`), and in orders and stock files a quoted cell that contains a line break throws the count off as well.\n\nIn every message of the form `line N: ...` that the catalogue, stock and orders readers produce, N must be the number of the physical line of the text on which the faulty row starts. Lines are numbered from 1 at the start of the text, and every line counts: the header line, empty lines, lines holding only whitespace, lines the reader skips (including lines before the header) and the extra lines taken up by a quoted cell that contains line breaks. A line ends at `\\n` or at `\\r\\n` (which is one line end, not two). When a row spans several lines because of a quoted cell, its number is that of its first line. This covers the existing messages `line N: expected 5 fields` and `line N: reorder_level is not a whole number: '...'` of the catalogue, `line N: expected 3 fields`, `line N: on_hand is not a whole number: '...'` and `line N: reserved is not a whole number: '...'` of the stock file, and `line N: quantity is not a whole number: '...'` of the orders file; their wording and the `repr` of the cell text after the colon stay as they are, and the command line keeps printing them as `stockroom: error: <message>` with exit code 1. How each reader splits a line into cells, which lines it skips and which rows it accepts does not change, and files without errors are read exactly as before.",
+  "acceptance": [
+    "Catalogue texts with empty and whitespace-only lines between rows, empty lines before the header and CRLF line ends report `line 6: reorder_level is not a whole number: 'x'`, `line 6: expected 5 fields`, `line 6: reorder_level is not a whole number: 'y'` and `line 2: ...` for the physical line of the faulty row",
+    "Stock texts report the physical line of the faulty row when empty, whitespace-only and blank-cell lines precede it, when an earlier row has a quoted on-hand cell containing line breaks (also with CRLF), and when the faulty row itself spans two lines (its first line is reported); a valid stock text with such lines is still read as before",
+    "Orders texts report the physical line for `quantity is not a whole number` when empty lines precede the row, when earlier rows have quoted customers containing one or more line breaks, with CRLF line ends, and for a fault on line 2",
+    "`stockroom stock`, `stockroom items` and `stockroom sales` on files with empty lines (and, for orders, a customer containing a line break) exit with code 1, empty stdout and stderr exactly `stockroom: error: line 5: on_hand is not a whole number: 'four'`, `stockroom: error: line 5: reorder_level is not a whole number: 'many'` and `stockroom: error: line 5: quantity is not a whole number: 'two'`, each followed by a newline",
+    "For 200 seeded generated texts of each kind (random `\\n` or `\\r\\n` line ends, random empty, whitespace-only and, for stock, blank-cell lines before the header and between rows, quoted cells holding line breaks, one faulty row at a random position), the message is exactly the expected one with N the line on which the faulty row starts"
+  ],
+  "hidden_map": {
+    "test_catalogue_errors_count_blank_lines": 0,
+    "test_stock_errors_count_blank_lines_and_quoted_line_breaks": 1,
+    "test_order_errors_count_blank_lines_and_quoted_line_breaks": 2,
+    "test_command_line_errors_name_the_physical_line": 3,
+    "test_generated_files_report_the_line_where_the_bad_row_starts": 4
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

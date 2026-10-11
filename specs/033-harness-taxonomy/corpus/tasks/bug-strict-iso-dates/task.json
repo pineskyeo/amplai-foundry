@@ -1,0 +1,37 @@
+{
+  "task_id": "bug-strict-iso-dates",
+  "version": 2,
+  "domain": "bug",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/D16",
+    "author": "Claude Opus 5.5 (033-hard-wave1-bug)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Dates that are not written as `YYYY-MM-DD` slip into the data. An orders file whose `placed` cell is `20240309` or `2024-W10-6` is accepted by `stockroom sales` and counted in a month, a JSON order file with such a `placed` text loads without complaint, and `stockroom sales --orders F --from 20240201` runs as if a proper date had been given. Worse, `stockroom sales --orders F --from \"\"` (an empty value) is not refused at all: it prints the unfiltered summary, and so does an empty `--to`.\n\nThe documented date format is `YYYY-MM-DD` and everything else must be refused. The rule, for every date the program reads (the `placed` cell of an orders file, the `placed` value of a JSON order, the `--from` and `--to` options of `sales`, and the date-parsing function the program uses for all of them): after removing surrounding whitespace (what Python's `str.strip()` removes), the text must be exactly four digits, `-`, two digits, `-`, two digits, where every digit is one of the ASCII characters `0`-`9`, and it must name a real day of the proleptic Gregorian calendar with a year from 0001 to 9999 (so `2024-02-29` is valid, `2023-02-29`, `2024-04-31`, month `00` or `13`, day `00` and year `0000` are not). Every other text raises `stockroom.errors.ParseError`: the empty or blank text, compact `20240309`, ISO week dates such as `2024-W10-6` or `2024W106`, ordinal dates such as `2024-069`, one-digit or extra-digit parts (`2024-3-9`, `02024-03-09`), a sign, other separators (`2024/03/09`), a time after the date (`2024-03-09T10:00`, `2024-03-09 10:00`), spaces inside the text, any other text before or after the date, and digits outside ASCII (full-width or Arabic-Indic digits). In the command, a `--from` or `--to` value that breaks the rule, including an empty or blank value, ends the command with exit code 1, nothing on stdout and exactly one line `stockroom: error: <reason>` on stderr, as other data errors do; the same holds for an orders file with such a `placed` cell. Valid dates keep working everywhere exactly as before.",
+  "acceptance": [
+    "The date parser reads `2024-03-09` (also with surrounding spaces, tabs or newlines), `0001-01-01`, `9999-12-31`, `2024-02-29` and `2000-02-29`, and refuses `20240309`, `2024-W10-6` and `2024W106` with `ParseError`",
+    "The date parser raises `ParseError` for the empty and blank text, compact, week and ordinal forms, one-digit parts, short and five-digit years, a leading sign, `/` and `.` separators, partial dates, dates followed by a time, spaces inside, extra characters before or after, full-width and Arabic-Indic digits (also when only some digits are non-ASCII), year 0000 and impossible days or months",
+    "For 9,000 seeded generated texts (canonical, compact and week forms of random days from year 1 to 9999, random strings of digits, `-` and `W`, random `YYYY-MM-DD` shaped texts with out-of-range parts) with random surrounding whitespace, the parser returns the date exactly when the stripped text is four ASCII digits, `-`, two ASCII digits, `-`, two ASCII digits naming a real day with year 0001-9999, and raises `ParseError` otherwise",
+    "An orders file with a `placed` cell of `20240309` or `2024-W10-6` is refused with `ParseError` when read, and `stockroom sales --orders F` on it exits with code 1, empty stdout and one `stockroom: error: ` line on stderr; a `placed` cell ` 2024-03-09 ` is still read as 9 March 2024",
+    "Loading JSON orders whose `placed` value is `20240309`, `2024-W10-6` or `2024W106` raises `ParseError`; `2024-03-09` still loads",
+    "`stockroom sales --orders data/orders.csv --from 2024-02-01` (also `--from \" 2024-02-01 \"`) still prints `3 orders, 1 cancelled` and `Revenue: $81.70` first; `--from` or `--to` given `20240201`, `2024-W05-4`, `2024W054`, the empty text, a single space or `2024-2-1`, and an empty `--to` or `--from` next to a valid other option, each exit with code 1, empty stdout and exactly one `stockroom: error: ` line on stderr without a traceback"
+  ],
+  "hidden_map": {
+    "test_only_dashed_calendar_dates_are_read": 0,
+    "test_other_written_forms_are_refused": 1,
+    "test_generated_texts_follow_the_date_rule": 2,
+    "test_order_files_with_other_date_forms_are_refused": 3,
+    "test_json_orders_with_other_date_forms_are_refused": 4,
+    "test_sales_range_options_take_only_dashed_dates": 5
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

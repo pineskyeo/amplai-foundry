@@ -1,0 +1,41 @@
+{
+  "task_id": "refactor-streaming-order-export",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "streaming",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Both order exports build their whole text in memory: `jsonio.dump_orders(orders)` makes a list of dicts and calls `json.dumps` once, and `csvio.write_orders(orders)` collects every row in a string buffer. Exports of large order books need to stream instead. Add two streaming writers that write the same text to a stream one order at a time and return the number of orders written:\n- `jsonio.write_orders_json(orders, stream)`, the text of `dump_orders`;\n- `csvio.write_orders_csv(orders, stream)`, the text of `write_orders`;\nand turn `dump_orders` and `write_orders` into thin wrappers around them.\n\nThis is a refactor: the exported text stays byte for byte what it is today. For JSON that is a list of order objects with two-space indentation, keys sorted, non-ASCII characters escaped as `json.dumps` does by default, a final newline, and `[]` plus a newline for no orders; for CSV it is the header line and one row per order line, quoted by the `csv` module, with `\\n` line ends, and the header line alone for no orders. `order_to_dict`, `load_orders` and `read_orders` stay as they are, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "For 300 seeded random lists of 0 to 6 orders (customers with non-ASCII letters, characters outside the Basic Multilingual Plane, double quotes, commas, backslashes, tabs and newlines, or empty; orders with 0 to 3 lines; every status), `jsonio.write_orders_json(orders, stream)` writes exactly the text that `dump_orders(orders)` returned before the change and returns the number of orders; `dump_orders` returns that same text, for a list as well as for a generator",
+    "For 300 seeded random lists of 0 to 6 orders of the same kind, each order with 1 to 3 lines and unit prices up to 100,000.00, `csvio.write_orders_csv(orders, stream)` writes exactly the text that `write_orders(orders)` returned before the change and returns the number of orders; `write_orders` returns that same text, for a list as well as for a generator",
+    "The stream can be any object with a `write` method: neither writer calls anything else on it (no `flush`, `getvalue`, `seek`, ...), both pass `write` only `str` values, and neither uses what `write` returns",
+    "With no orders, `write_orders_json` writes `[]` followed by a newline and `write_orders_csv` writes the header line `order_id,customer,placed,status,sku,quantity,unit_price` followed by a newline, both return 0, and `dump_orders` and `write_orders` return those texts",
+    "For both writers, `orders` can be any iterable, including a one-shot iterator; it is iterated once and never read ahead: when order k+1 is taken from it, the complete text of the first k orders (for JSON everything up to the closing `}` of order k, for CSV every row of the first k orders) has already been written to the stream, and everything written so far is the beginning of the final text (nothing that is not part of it)",
+    "For both writers, when the iterable raises, or an element cannot be converted (an element that is not an `Order` raises an `AttributeError` such as `'str' object has no attribute ...`), the exception propagates unchanged, and the text written to the stream is a beginning of the old export of the orders taken before the failure (`dump_orders(...)` or `write_orders(...)` of them) that contains the complete text of each of those orders: neither a separator nor any part of the failing element has been written",
+    "`dump_orders(orders)` is `write_orders_json` writing into a string buffer, and `write_orders(orders)` is `write_orders_csv` writing into a string buffer, and each calls its module's streaming writer when it runs: after `monkeypatch.setattr(jsonio, \"write_orders_json\", replacement)` or `monkeypatch.setattr(csvio, \"write_orders_csv\", replacement)`, `dump_orders` or `write_orders` returns the concatenation of everything the replacement wrote, and the replacement received the orders",
+    "`order_to_dict`, `load_orders` and `read_orders` are unchanged: `load_orders(dump_orders(orders))` gives back equal orders for open orders, with and without lines, `read_orders(write_orders(orders))` gives back equal orders that have lines, and the texts of a small example are exactly as before"
+  ],
+  "hidden_map": {
+    "test_json_stream_is_the_old_dump": 0,
+    "test_csv_stream_is_the_old_file_text": 1,
+    "test_the_stream_needs_only_a_write_method": 2,
+    "test_no_orders_give_an_empty_export": 3,
+    "test_each_order_is_written_before_the_next_is_taken": 4,
+    "test_a_failing_source_leaves_the_orders_written_so_far": 5,
+    "test_whole_text_functions_write_through_the_streaming_writers": 6,
+    "test_reading_and_converting_are_unchanged": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

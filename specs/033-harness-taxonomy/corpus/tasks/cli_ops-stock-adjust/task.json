@@ -1,0 +1,41 @@
+{
+  "task_id": "cli_ops-stock-adjust",
+  "version": 2,
+  "domain": "cli_ops",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-cli_ops)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Add an `adjust` command to `stockroom` that changes the on-hand stock in a stock file in place, for the person who counts the shelves: `python -m stockroom adjust --stock FILE [--items CATALOGUE] [--dry-run] [--backup] CHANGE [CHANGE ...]`.\n\n**Changes.** Each `CHANGE` is one argument: a SKU (2 to 4 capital letters A-Z, `-`, 3 to 5 digits), directly followed by an operator and a number, with no spaces: `SKU+N` adds `N` to the on-hand count, `SKU-N` takes `N` away, `SKU=N` sets it to `N` (for example `MUG-001+6`, `TEA-011-4`, `PEN-100=10`). `N` is one or more ASCII digits `0`-`9` (leading zeros allowed, other digit characters are not digits here); for `+` and `-` its value must be at least 1, for `=` it may be 0. Anything else is an argparse usage error: exit code 2, stdout empty, the message on stderr contains the bad argument exactly as given, and no file is read or written. At least one `CHANGE` is required.\n\n**Applying.** The stock file is read like the `stock` command reads it (`sku,on_hand,reserved`). It is an error when a SKU appears on two rows, or when a row has more reserved than on hand. The changes are applied one after another in the order given, so several changes of one SKU accumulate (`MUG-001+1 MUG-001+1` adds 2) and `=` sets the value reached so far. The reserved count never changes. After every single change, the SKU's on-hand count must not be below its reserved count; this is checked at each step, so `PEN-100-2 PEN-100+2` fails when `PEN-100` would drop below its reserved count in between, although the net change is zero. A SKU that is not in the file is added as a new row (on hand 0 and reserved 0 before the change) by a `+` or `=` change; a `-` change of a SKU that is neither in the file nor added by an earlier change is an error. With `--items CATALOGUE` (a catalogue file read like `items` reads it), every SKU of a change must be in the catalogue, otherwise it is an error; without `--items` there is no such check.\n\n**Errors** (exit code 1): the changes are checked in order, and the first change that fails is the one reported. The error is the usual single line `stockroom: error: <reason>` on stderr, where the reason contains the SKU of that change (for the duplicate-row and reserved-above-on-hand problems of the file: the SKU of that row). Also an error: a stock file that is not valid, and a stock or catalogue file that cannot be read (the reason then contains the path). In every error case stdout is empty and nothing is written: the stock file, a backup file and the directory stay exactly as they were.\n\n**Output.** On success the exit code is 0, stderr is empty, and stdout has one line per SKU whose on-hand count differs from before, in the order of the rows of the new file: first the rows already in the file, in file order, then the added rows in the order of the change that first named them. A row that was in the file prints `SKU: OLD -> NEW`; an added row prints `SKU: new -> NEW` (an added row always counts as a difference, also with 0). When no SKU differs (including changes that cancel out, such as `MUG-002-4 MUG-002+4`), the only line is `no changes`, and the file is not written at all: not even its modification time or inode changes, and no backup is made.\n\n**Writing.** When something differs, the whole file is rewritten as `sku,on_hand,reserved` and one `sku,on_hand,reserved` line per row, with `\\n` line ends, a final newline and no blank lines or extra spaces, whatever line ends and spacing the old file used. The rewrite is atomic: the new text is written to a temporary file in the same directory, which then replaces the stock file by a rename, so no reader ever sees a partial file; after the command the directory holds no file that was not there before (other than the backup). With `--backup`, the old file's exact bytes are first saved as `FILE.bak` (the stock path with `.bak` appended), replacing an older backup; without `--backup` no backup file is written or changed. With `--dry-run` nothing is written (no stock file change, no backup); the command prints the same lines it would print otherwise and then one more line `dry run: nothing written` (but only `no changes` when nothing differs), with the same checks and errors.\n\nAdd the function `write_stock(levels)` to `stockroom/csvio.py`, the counterpart of `read_stock`: it returns the text of a stock file for `(sku, on_hand, reserved)` rows in the format above. The other commands do not change.",
+  "acceptance": [
+    "adjust applies +N, -N and =N changes to the stock file, prints 'SKU: OLD -> NEW' for changed rows and 'SKU: new -> N' for added rows in the order of the rows of the new file (file order, then added rows by first mention), exits 0 with empty stderr, and the stock command reads the result; relative paths are relative to the current directory",
+    "Changes apply one after another in the given order: repeated changes of a SKU accumulate, '=' sets the running value, a SKU added by an earlier change exists for later ones, and on hand must stay at or above reserved after every single change (a net-zero sequence that dips below reserved fails)",
+    "When no on-hand count differs (including changes that cancel out) the only output is 'no changes' and the file is not written at all (same bytes, inode and modification time), also with --backup or --dry-run, and no backup is made",
+    "A CHANGE that is not SKU, operator and ASCII digits exactly (lower case, missing number, +0/-0, a decimal, non-ASCII digits, '=-1', spaces, short SKUs, other operators, trailing text) or a missing CHANGE is a usage error: exit 2, empty stdout, the message contains the argument, no file changes",
+    "Errors give exit 1, empty stdout and one 'stockroom: error: ' line naming the SKU of the first failing change (below reserved, '-' of an unknown SKU, not in the --items catalogue) or of the bad row (duplicate SKU, reserved above on hand), or the path of an unreadable file; an invalid stock file is an error; nothing is written, with --backup and --dry-run too",
+    "A rewrite produces the canonical file (header, one 'sku,on_hand,reserved' line per row, LF line ends, final newline, no blank lines or spaces), replaces the file through a new file (new inode, no leftover temporary file), and --backup saves the old exact bytes as FILE.bak, replacing an older backup, while a run without --backup leaves an existing backup alone; csvio.write_stock(levels) returns that canonical text and read_stock reads it back",
+    "--dry-run prints the same lines plus 'dry run: nothing written' and writes nothing (no stock change, no backup)",
+    "For random sequences of +, - and = changes over a small stock file (fixed seed) the exit code, output and resulting file match the model stated in the objective: sequential application, the reserved check after each change, new rows, the first failing change reported, 'no changes' when nothing differs"
+  ],
+  "hidden_map": {
+    "test_changes_update_the_file_and_report_in_file_order": 0,
+    "test_changes_apply_in_order_and_accumulate": 1,
+    "test_no_change_leaves_the_file_untouched": 2,
+    "test_malformed_changes_are_usage_errors": 3,
+    "test_failed_adjustments_change_nothing": 4,
+    "test_rewrite_is_atomic_and_backup_keeps_the_old_bytes": 5,
+    "test_dry_run_prints_the_changes_and_writes_nothing": 6,
+    "test_seeded_sequences_match_the_model": 7
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}

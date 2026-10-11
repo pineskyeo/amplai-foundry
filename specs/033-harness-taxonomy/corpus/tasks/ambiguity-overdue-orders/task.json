@@ -1,0 +1,44 @@
+{
+  "task_id": "ambiguity-overdue-orders",
+  "version": 2,
+  "domain": "ambiguity",
+  "subdomain": null,
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-ambiguity)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "planner_questions",
+  "objective": "Report orders that have waited too long to ship. `OrderBook` (in `stockroom/orders.py`) gets `awaiting(as_of: date, days: int) -> list[Order]`, the overdue orders. Only orders with status `open` or `paid` can be overdue (shipped and cancelled orders never are), and an order placed after `as_of` is never overdue. An order is overdue when it was placed more than `days` days before `as_of`, counted in whole days with `dates.days_between(placed, as_of)`: an order placed exactly `days` days before `as_of` is not overdue yet, and one placed `days + 1` days before is. So with `days` 0 every open or paid order placed before `as_of` is overdue, but not one placed on `as_of`. A negative `days` raises `ValueError` (also for an empty book). The result is oldest placement date first; orders placed on the same day come in plain string order of `order_id` (Python `str` comparison, so `V-10` comes before `V-9`). The CLI gets `python -m stockroom overdue --orders FILE --as-of YYYY-MM-DD [--days N]` with `--days` defaulting to 7. It prints one line per overdue order in that order, `ID CUSTOMER: placed YYYY-MM-DD, AGE old, AMOUNT`, where AGE is `textutil.plural(n, \"day\")` for the whole days from placement to `as_of` and AMOUNT is the order's subtotal (`pricing.order_subtotal`) formatted by `money.format_money` with the configured `currency_symbol`; then a last line `COUNT, TOTAL in total`, where COUNT is `textutil.plural(count, \"overdue order\")` and TOTAL is the formatted sum of the listed subtotals (`0 overdue orders, $0.00 in total` when there are none). A negative `--days` is a data error with the message `--days must not be negative`, and an `--as-of` that is not a date gives the `not a date: ...` message of `dates.parse_date`; data errors exit with code 1, print nothing on stdout and print `stockroom: error: MESSAGE` on stderr. The other commands are unchanged.",
+  "acceptance": [
+    "`awaiting` treats an order as overdue only when `days_between(placed, as_of)` is greater than `days` (exactly `days` days is not overdue, `days + 1` is; with 0 an order placed on `as_of` is not overdue), and raises `ValueError` for a negative `days`, also on an empty book",
+    "Over many seeded random books, `awaiting` returns exactly the open or paid orders older than `days` days, oldest first and ties by `order_id` in plain string order",
+    "Shipped and cancelled orders and orders placed after `as_of` are never overdue, and an empty book gives `[]`",
+    "Orders placed on the same day are listed in plain string order of `order_id` (`V-10` before `V-9`), after older orders",
+    "`overdue` prints `ID CUSTOMER: placed DATE, AGE old, AMOUNT` per overdue order and `COUNT, TOTAL in total`, with `plural` for AGE and COUNT, `--days` defaulting to 7 and amounts in the configured currency symbol",
+    "`overdue` with a negative `--days` or a bad `--as-of` exits with 1, prints nothing on stdout and `stockroom: error: MESSAGE` on stderr"
+  ],
+  "hidden_map": {
+    "test_overdue_starts_the_day_after_the_limit": 0,
+    "test_overdue_matches_the_stated_rule_on_random_books": 1,
+    "test_overdue_skips_shipped_cancelled_and_later_orders": 2,
+    "test_overdue_lists_oldest_first_with_ties_by_order_id": 3,
+    "test_overdue_command_prints_orders_and_a_total": 4,
+    "test_overdue_command_refuses_bad_options": 5
+  },
+  "ambiguity": {
+    "expected": "proceed",
+    "must_mention_any": [],
+    "interpretations": [
+      "An open or paid order is overdue only when it is more than `days` days old; exactly `days` days old is not overdue (as stated)",
+      "An order exactly `days` days old is already overdue, or shipped orders count too (contradicts the stated rule)"
+    ]
+  },
+  "difficulty_declared": null
+}

@@ -3992,3 +3992,50 @@ reservation (decision (B)), so 50 trials exhausted the 200M budget in seconds.
 - Tests: `test_a_frozen_regression_case_runs_against_its_set_corpus`
   (`tests/v3/test_033_s8_executor.py`), `test_four_trials_in_a_row_not_run_with_one_code_stop_a_calibration`
   (`tests/v3/test_033_s2_calibration.py`).
+
+## Clarification: Append Split Rule And Corpus 2.1.0 (2026-10-11)
+
+Operator decision 2026-10-11 (Work 033 pilot, decision 1 option A): calibration 9 found the main
+set saturated (14–18 of 25 validation tasks solved in every repeat of every cell, 3–8 informative
+validation tasks per cell against the 16 that IC-20 needs), so harder own tasks are added. A
+proposer run (`proprun-b7a13a6c`) has read development cases of 2.0.0, so §10.2 (2) applies:
+every existing assignment stays, and validation grows only with new tasks. `assign_splits`
+re-shuffles each domain over all its ids (`corpus_v2.py` `assign_splits`), so re-running a rule
+over the grown corpus would move existing tasks; a new rule places only the new tasks.
+
+- **Rule `stratified_by_domain_append_v1`** (`corpus_v2.APPEND_SPLIT_METHOD`,
+  `corpus_v2.append_splits(tasks, previous, seed=)`): every task of the previous version's
+  assignments keeps its split and must still be a main task (else `TASK_SPLIT`); the new main
+  tasks of each domain go 30 % of the new own tasks to holdout (`_share`, rounded half up; TB2 and
+  imported tasks never holdout), drawn from `Random(f"{seed}:{domain}")` over their sorted ids,
+  and every other new task to validation; no new task goes to development. The §10.2 minimums
+  apply to the whole result. `assign_splits(..., method=append)` is refused (`TASK_SPLIT`): the
+  rule needs the previous split.
+- **Version 2.1.0**: `manifest.json` `version` 2.1.0 and `split_seed` 20261011 (the decision date,
+  fixed before computing). `splits-2.0.0.json` is the 2.0.0 `splits.json` byte for byte (the
+  previous split, input of the rule); `splits.json` is written by `corpus_v2.write_splits(root,
+  seed=20261011, method=append, previous=<splits-2.0.0.json>)`, from
+  `scripts/corpus_check.py --corpus <root> --write-splits stratified_by_domain_append_v1 --seed
+  20261011 --previous <root>/splits-2.0.0.json`, after removing `splits.json` and the manifest seed
+  as for any re-split (§10.2). `freeze` records the rule as the task index `splits.method`; the
+  frozen corpus id becomes `amplai-bench-v2-2.1.0` (freeze writes revision 1 per id). Freeze and
+  re-calibration are operator steps on the meta deployment.
+- **New tasks (hard wave 1)**: 48 own tasks, 8 per domain (ambiguity 4 ask + 4 proceed), authored
+  under §10.3 and checked with `corpus_check --repeats 3`. The new bug tasks target latent defects
+  D16–D23 of the unchanged bench base (`corpus/authoring/bench-defects.md`).
+- **Result** (`specs/033-harness-taxonomy/corpus/splits.json`, 119 main tasks):
+
+| Domain | holdout | validation | development |
+|---|---|---|---|
+| ambiguity | 4 + 2 | 4 + 6 | 4 |
+| bug | 4 + 2 | 5 + 6 | 4 |
+| cli_ops | 4 + 2 | 4 + 6 | 4 |
+| data | 3 + 2 | 4 + 6 | 4 |
+| feature | 4 + 2 | 4 + 6 | 4 |
+| refactor | 3 + 2 | 4 + 6 | 4 |
+| **total** | **34** | **61** | **24** |
+
+- **Open**: whether the new tasks are informative (pass rate in [0.2, 0.9] per cell) is known only
+  after the operator's re-calibration on 2.1.0.
+- Tests: `tests/v3/test_033_pilot_split.py` (the 2.0.0 file is the pilot rule; the committed
+  `splits.json` is the append rule over it; `write_splits` and `corpus_check` reproduce it).

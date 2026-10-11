@@ -11,8 +11,10 @@ Layout under ``specs/033-harness-taxonomy/corpus/`` (interfaces §10.1)::
 
 ``load`` scans the task directories; there is no task list. Authors never set ``split``:
 ``assign_splits`` computes it (``stratified_by_domain_v1``, or ``stratified_by_domain_pilot_v1``
-for the pilot, interfaces "Pilot Split Rule (2026-10-08)") and ``write_splits`` writes
-``splits.json`` with the rule id and seed.
+for the pilot, interfaces "Pilot Split Rule (2026-10-08)"); ``append_splits`` keeps a previous
+version's assignments and places only the new tasks (``stratified_by_domain_append_v1``,
+interfaces "Append Split Rule (2026-10-11)"); ``write_splits`` writes ``splits.json`` with the
+rule id and seed.
 Regression-set tasks are all ``validation`` and are frozen as their own corpus (§10.6).
 """
 
@@ -52,7 +54,11 @@ SPLIT_METHOD = "stratified_by_domain_v1"
 # Operator decision 2026-10-08 (interfaces "Pilot Split Rule (2026-10-08)"): the pilot runs on the
 # own tasks with validation = 50 % of the remaining main tasks of each domain.
 PILOT_SPLIT_METHOD = "stratified_by_domain_pilot_v1"
-SPLIT_METHODS = (SPLIT_METHOD, PILOT_SPLIT_METHOD)
+# Operator decision 2026-10-11 (interfaces "Append Split Rule (2026-10-11)"): once a proposer has
+# read development cases, a new corpus version keeps every earlier assignment (§10.2 (2)) and
+# places only the new tasks: per domain 30 % of the new own tasks in holdout, the rest validation.
+APPEND_SPLIT_METHOD = "stratified_by_domain_append_v1"
+SPLIT_METHODS = (SPLIT_METHOD, PILOT_SPLIT_METHOD, APPEND_SPLIT_METHOD)
 # §10.6: the regression set is its own corpus with every case in validation. The method label of
 # its task index is not named by the spec (reported as open).
 REGRESSION_CORPUS_ID = "amplai-regression-v1"
@@ -439,6 +445,8 @@ def assign_splits(tasks: list[TaskV2], *, seed: int, method: str = SPLIT_METHOD)
     """
     if type(seed) is not int:
         raise CorpusError("TASK_SPLIT", "The split seed is an integer")
+    if method == APPEND_SPLIT_METHOD:
+        raise CorpusError("TASK_SPLIT", f"{method} needs the previous split (append_splits)")
     if method not in SPLIT_METHODS:
         raise CorpusError("TASK_SPLIT", f"Unknown split method {method!r}")
     validation_share = _half if method == PILOT_SPLIT_METHOD else _share
@@ -469,13 +477,57 @@ def assign_splits(tasks: list[TaskV2], *, seed: int, method: str = SPLIT_METHOD)
             )
             assignments[task_id] = split
             counts[split][domain] = counts[split].get(domain, 0) + 1
-    holdout_n, validation_n = sum(counts["holdout"].values()), sum(counts["validation"].values())
+    _check_minimums(method, counts)
+    return {t.task_id: assignments[t.task_id] for t in tasks if t.task_id in assignments}
+
+
+def _check_minimums(method: str, counts: dict[str, dict[str, int]]) -> None:
+    holdout_n = sum(counts.get("holdout", {}).values())
+    validation_n = sum(counts.get("validation", {}).values())
     if holdout_n < HOLDOUT_MIN or validation_n < VALIDATION_MIN:
         raise CorpusError(
             "SPLIT_TOO_SMALL",
             f"{method}: holdout {holdout_n} (min {HOLDOUT_MIN}), validation {validation_n} "
             f"(min {VALIDATION_MIN}); counts by split and domain: {json.dumps(counts)}",
         )
+
+
+def append_splits(tasks: list[TaskV2], previous: dict[str, str], *, seed: int) -> dict[str, str]:
+    """``stratified_by_domain_append_v1``: the main set of a new corpus version whose previous
+    version was split as ``previous`` (``{task: split}``, that version's ``splits.json``).
+
+    Every task of ``previous`` keeps its split and must still be a main task of the corpus (a
+    task is never dropped or moved, §10.2 (2)). The new main tasks are placed per domain:
+    holdout = 30 % of the new own tasks (``_share``, rounded half up; TB2 and imported tasks never
+    go to holdout), drawn from ``Random(f"{seed}:{domain}")`` over their ids in sorted order;
+    every other new task is validation. No new task goes to development: validation grows only
+    with new tasks (§10.2 (2)). The §10.2 minimums apply to the whole result.
+    """
+    if type(seed) is not int:
+        raise CorpusError("TASK_SPLIT", "The split seed is an integer")
+    if len({t.task_id for t in tasks}) != len(tasks):
+        raise CorpusError("TASK_DUPLICATE", "Task ids must be unique")
+    main = {t.task_id: t for t in tasks if t.set == "main"}
+    for task_id, split in previous.items():
+        if task_id not in main or split not in SPLITS:
+            raise CorpusError(
+                "TASK_SPLIT", f"previous split: {task_id!r} ({split!r}) is not a main task here"
+            )
+        if split == "holdout" and main[task_id].source.get("kind") != "own":
+            raise CorpusError("TASK_SPLIT", f"{task_id}: only own tasks go to holdout (D-098)")
+    assignments = dict(previous)
+    new_by_domain: dict[str, list[TaskV2]] = {}
+    for task in main.values():
+        if task.task_id not in previous:
+            new_by_domain.setdefault(task.domain, []).append(task)
+    for domain in sorted(new_by_domain):
+        rng = random.Random(f"{seed}:{domain}")
+        own = sorted(t.task_id for t in new_by_domain[domain] if t.source.get("kind") == "own")
+        rng.shuffle(own)
+        holdout = set(own[: _share(len(own))])
+        for task in new_by_domain[domain]:
+            assignments[task.task_id] = "holdout" if task.task_id in holdout else "validation"
+    _check_minimums(APPEND_SPLIT_METHOD, split_counts(list(main.values()), assignments))
     return {t.task_id: assignments[t.task_id] for t in tasks if t.task_id in assignments}
 
 
@@ -489,15 +541,35 @@ def split_counts(tasks: list[TaskV2], assignments: dict[str, str]) -> dict[str, 
     return counts
 
 
-def write_splits(root: Path, *, seed: int, method: str) -> dict[str, Any]:
+def write_splits(
+    root: Path, *, seed: int, method: str, previous: Path | None = None
+) -> dict[str, Any]:
     """Assign the main set of the corpus at ``root`` and write ``splits.json`` (seed, method,
     assignments sorted by id) and the manifest ``split_seed`` (§10.1). The split is registered
     before any run: an existing ``splits.json`` or manifest seed that differs is refused
-    (``TASK_SPLIT``); a re-split is a new corpus version (§10.2) and starts by removing them."""
+    (``TASK_SPLIT``); a re-split is a new corpus version (§10.2) and starts by removing them.
+
+    ``stratified_by_domain_append_v1``, and only it, takes ``previous``: the previous version's
+    splits file, kept in the corpus as ``splits-<version>.json``."""
     root = Path(root)
     corpus = load(root)
     tasks = list(corpus.tasks)
-    assignments = dict(sorted(assign_splits(tasks, seed=seed, method=method).items()))
+    if (method == APPEND_SPLIT_METHOD) != (previous is not None):
+        raise CorpusError(
+            "TASK_SPLIT", f"{APPEND_SPLIT_METHOD}, and only it, takes a previous split"
+        )
+    if previous is not None:
+        prior = _json(Path(previous), "TASK_SPLIT")
+        if (
+            not isinstance(prior, dict)
+            or set(prior) != {"seed", "method", "assignments"}
+            or not isinstance(prior["assignments"], dict)
+        ):
+            raise CorpusError("TASK_SPLIT", f"{previous}: not a splits file")
+        assigned = append_splits(tasks, prior["assignments"], seed=seed)
+    else:
+        assigned = assign_splits(tasks, seed=seed, method=method)
+    assignments = dict(sorted(assigned.items()))
     data = {"seed": seed, "method": method, "assignments": assignments}
     path = root / "splits.json"
     if path.exists() and _json(path, "TASK_SPLIT") != data:

@@ -1,0 +1,39 @@
+{
+  "task_id": "refactor-error-message-catalogue",
+  "version": 2,
+  "domain": "refactor",
+  "subdomain": "centralize",
+  "set": "main",
+  "split": null,
+  "source": {
+    "kind": "own",
+    "ref": "bench-base/hard-wave1",
+    "author": "Claude Opus 5.5 (033-hard-wave1-refactor)",
+    "created": "2026-10-11"
+  },
+  "license": "LicenseRef-amplai-internal",
+  "base": "bench",
+  "environment": "app",
+  "grading": "pytest_hidden",
+  "objective": "Every module of the `stockroom` package spells out its error messages inline (`raise ParseError(f\"not an amount: {text!r}\")`), so the wording is spread over eleven modules and cannot be reviewed or translated in one place. Move every message text into a new module `stockroom/messages.py` that holds one `str.format` template per message, and make every `raise` take its text from there. The templates must be looked up when an error is raised, not when a module is imported, because a translation will later be installed by replacing the attributes of `stockroom.messages` while the program runs.\n\nThe templates, by name, with the places that raise them today (each placeholder takes the value that the corresponding part of today's message shows):\n- `NO_ITEM` = `no item {sku}`: `cli`, `ParseError` when `price` names an unknown SKU\n- `QUANTITY_NOT_POSITIVE` = `quantity must be positive`: `cli` (`ParseError` for a `--quantity` of 0 or less) and `inventory` (`StockError` for a quantity of 0 or less)\n- `SETTING_NOT_WHOLE` = `{key} must be a whole number, not {value!r}`, `SETTING_NEGATIVE` = `{key} must not be negative`, `SETTINGS_UNREADABLE` = `cannot read {path}: {error}`, `SETTING_UNKNOWN` = `unknown setting {key!r} in {path}`, `SETTING_NOT_BOOLEAN` = `{key} must be a boolean`: `config`, `ConfigError` (`value` is the raw text, `error` the exception that made the file unreadable)\n- `CELL_NOT_WHOLE` = `line {line}: {field} is not a whole number: {value!r}`: `csvio`, `ParseError` (`field` is the column name, `value` the cell text)\n- `ITEM_FILE_EMPTY` = `empty item file`, `ITEM_HEADER_WRONG` = `item header must be {header}`: `csvio.read_items`; `FIELD_COUNT_WRONG` = `line {line}: expected {count} fields`: `csvio.read_items` and `csvio.read_stock`; `STOCK_HEADER_WRONG` = `stock header must be {header}`: `csvio.read_stock`; `ORDER_HEADER_WRONG` = `order header must be {header}`: `csvio.read_orders` (all `ParseError`; `header` is the expected header joined with `,`, `count` the expected number of fields)\n- `DATE_INVALID` = `not a date: {text!r}`: `dates.parse_date`, `ParseError`; `MONTH_INVALID` = `no month {month}`: `dates.days_in_month`, `ValueError`\n- `LEVELS_INCONSISTENT` = `{sku}: inconsistent levels {on_hand}/{reserved}`: `Inventory.from_levels`; `ONLY_AVAILABLE` = `{sku}: only {count} available`: `Inventory.reserve`; `ONLY_RESERVED` = `{sku}: only {count} reserved`: `Inventory.release` and `Inventory.ship` (all `StockError`)\n- `ORDER_OBJECT_BAD` = `bad order object: {error}`: `jsonio.order_from_dict`; `JSON_INVALID` = `not JSON: {error}`, `JSON_NOT_A_LIST` = `an order file holds a JSON list`: `jsonio.load_orders` (all `ParseError`)\n- `SKU_INVALID` = `bad sku: {sku!r}`: `models.check_sku`; `NAME_EMPTY` = `{sku}: empty name`, `PRICE_NEGATIVE` = `{sku}: negative price`, `REORDER_LEVEL_NEGATIVE` = `{sku}: negative reorder level`: `Item`; `LINE_QUANTITY_NOT_POSITIVE` = `{sku}: quantity must be positive`, `UNIT_PRICE_NEGATIVE` = `{sku}: negative unit price`: `OrderLine`; `ORDER_ID_EMPTY` = `empty order id`, `STATUS_UNKNOWN` = `{order_id}: unknown status {status!r}`: `Order` (all `ParseError`)\n- `AMOUNT_INVALID` = `not an amount: {text!r}`: `money.parse_money`, `ParseError`; `PARTS_NOT_POSITIVE` = `parts must be positive`: `money.split_evenly`, `ValueError`\n- `ORDER_ID_DUPLICATE` = `duplicate order id {order_id}`: `OrderBook.add`; `ORDER_MISSING` = `no order {order_id}`: `OrderBook.get` (both `StockroomError`)\n- `PERCENT_OUT_OF_RANGE` = `percent must be between 0 and 100`: `pricing.apply_discount`; `RATE_NEGATIVE` = `rate must not be negative`: `pricing.tax` (both `ValueError`)\n- `WIDTH_NOT_POSITIVE` = `width must be positive`: `textutil.truncate`; `ALIGNMENT_UNKNOWN` = `unknown alignment: {how!r}`: `textutil.align` (both `ValueError`)\n\nThis is a refactor: the class, the text and the chaining of every exception stay exactly as they are, the command line prints the same errors, and the existing tests keep passing without being edited.",
+  "acceptance": [
+    "`stockroom/messages.py` defines exactly the 37 templates listed above, with exactly those names and texts, each a plain `str`; besides them the module contains only a docstring, optionally `from __future__` imports and optionally an `__all__`: no other upper-case names, no functions, no classes and no other statements",
+    "Every error listed above is raised with the same exception class, the same message text, the same `__cause__` (an exception of the same class as today for the errors raised `from` another exception, `None` otherwise) and the same `__suppress_context__` as today; in particular `OrderBook.get` of an unknown id still raises `from None`",
+    "The text of each listed error is produced from its template when the error is raised: the code looks the template up as an attribute of the `stockroom.messages` module at that moment and fills it with `str.format`, passing the placeholders by keyword (a template without placeholders may be used as it is). After `monkeypatch.setattr(stockroom.messages, NAME, replacement)` with a replacement that has the same placeholders, every error of that kind, at every place that uses the template (also through `cli.main`), carries the replacement's text, and after `monkeypatch.undo()` the original text again",
+    "Outside `stockroom/messages.py`, no `raise` statement in the package contains an f-string or a string literal that contains a letter, so no message can be spelled out at a raise (passing `\",\".join(...)` of the header fields is fine)",
+    "No module of the package other than `stockroom/messages.py` contains a string literal equal to one of the 37 templates",
+    "`stockroom/messages.py` imports nothing (apart from optional `from __future__` imports), so every module of the package can import it",
+    "The command line reports errors as before: `stockroom: error: <message>` on stderr with exit code 1 and nothing on stdout for an unknown SKU, a quantity of 0, a bad `--from` date, a bad number in a catalogue file and a wrong stock file header"
+  ],
+  "hidden_map": {
+    "test_the_templates_live_in_one_module": 0,
+    "test_every_error_keeps_class_message_and_cause": 1,
+    "test_a_replaced_template_changes_the_message": 2,
+    "test_no_raise_statement_spells_out_a_message": 3,
+    "test_templates_are_not_copied_into_other_modules": 4,
+    "test_the_message_module_depends_on_nothing_in_the_package": 5,
+    "test_command_line_reports_the_same_errors": 6
+  },
+  "ambiguity": null,
+  "difficulty_declared": null
+}
