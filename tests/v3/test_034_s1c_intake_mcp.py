@@ -46,6 +46,7 @@ from amplai_foundry.integrations.intake_mcp.contract import (
 from amplai_foundry.integrations.intake_mcp.server import (
     IntakeCaller,
     Settings,
+    ToolFailure,
     build_server,
 )
 from amplai_foundry.runtime.local_deployment import LocalProductDeployment
@@ -381,3 +382,78 @@ def test_the_mcp_server_install_set_is_hash_pinned() -> None:
     for requirement in project["dependencies"] + project["optional-dependencies"]["intake-mcp"]:
         name = re.split(r"[<>=!\[ ;]", requirement, maxsplit=1)[0].lower()
         assert name in pinned, name
+
+
+# -- failure review P3-5: unreachable and malformed AMPLAI answers ---------------------------------
+
+
+def stub_caller(handler: Any) -> IntakeCaller:
+    http = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://amplai.test")
+    return IntakeCaller(Settings("http://amplai.test", "hermes", HERMES_TOKEN), http)
+
+
+def failure_of(caller_: IntakeCaller, name: str, arguments: dict[str, Any]) -> ToolFailure:
+    with pytest.raises(ToolFailure) as excinfo:
+        caller_.call(name, arguments)
+    failure = excinfo.value
+    for text in (str(failure.wire()), repr(failure), str(failure)):
+        assert HERMES_TOKEN not in text
+    return failure
+
+
+def _raise(exc: Exception) -> Any:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise exc
+
+    return handler
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        httpx.ConnectError("connection refused"),
+        httpx.ConnectTimeout("connect timed out"),
+        httpx.ReadTimeout("read timed out"),
+        httpx.RemoteProtocolError("server disconnected"),
+    ],
+)
+def test_amplai_unreachable_is_a_tool_error_without_the_token(exc: Exception) -> None:
+    failure = failure_of(stub_caller(_raise(exc)), "list_goals", USER)
+    assert failure.code == "AMPLAI_UNREACHABLE"
+    assert failure.message == type(exc).__name__  # the class only, never the request
+
+
+@pytest.mark.parametrize(
+    "status, content, code",
+    [
+        (502, b"<html>Bad Gateway</html>", "AMPLAI_RESPONSE"),
+        (500, b"Internal Server Error", "AMPLAI_RESPONSE"),
+        (200, b"not json", "AMPLAI_RESPONSE"),
+        (200, b"[1, 2]", "AMPLAI_RESPONSE"),
+        (500, b'{"detail": "boom"}', "HTTP_500"),
+        (503, b'{"code": "lower case", "message": 7}', "HTTP_503"),
+        (200, b'{"items": [{"goal_id": "has space"}]}', "CONTRACT_OUTPUT"),
+    ],
+)
+def test_malformed_or_failed_answers_are_tool_errors(
+    status: int, content: bytes, code: str
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["Authorization"] == "Bearer " + HERMES_TOKEN
+        return httpx.Response(status, content=content)
+
+    failure = failure_of(stub_caller(handler), "list_goals", USER)
+    assert failure.code == code
+    assert "<html>" not in failure.message and "boom" not in failure.message
+
+
+def test_an_unreachable_amplai_through_the_mcp_protocol_leaks_no_token() -> None:
+    server = build_server(stub_caller(_raise(httpx.ReadTimeout("timed out"))))
+
+    async def steps() -> Any:
+        async with Client(server) as mcp:
+            return await mcp.call_tool("goal_status", {**USER, "goal_id": "goal-1"})
+
+    result = run(steps)
+    assert error(result)["code"] == "AMPLAI_UNREACHABLE"
+    assert HERMES_TOKEN not in result.model_dump_json()
