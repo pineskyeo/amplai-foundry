@@ -47,6 +47,7 @@ from ..verification.runtime.patch_commands import NonEmptyChangeCheck, SuiteVeri
 from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
 from .contracts.identity import digest
+from .contracts.intake import latest_stop
 from .contracts.registry import Contracts
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
@@ -1021,7 +1022,9 @@ class LocalProductDeployment:
         @router.get("/goals/{goal_id}")
         def goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
             a.require("runtime.read")
-            return self.service.plan_record(goal_id)
+            record = self.service.plan_record(goal_id)
+            stop = latest_stop(self.store, self.scope, goal_id)  # the operator's view only
+            return record if stop is None else {**record, "front_agent_stop": stop}
 
         @router.post("/goals/{goal_id}/approve")
         def approve(goal_id: str, body: ApproveBody, a: Actor = Depends(actor)) -> Any:

@@ -175,6 +175,11 @@ def render_plan(record: dict[str, Any]) -> str:
         lines.append(f"  contract  : revision {ref.get('revision')} {ref.get('digest')}")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
+    stop = record.get("front_agent_stop") or {}
+    if stop:  # who stopped it through the front agent, and the front agent's own words
+        lines.append(f"  stopped by: {stop['by']} ({stop['kind']}, {stop['at']})")
+        said = " ".join(str(stop["reason"]).split())[:300]
+        lines.append(f"  agent said: {said}   [text written by the front agent, not AMPLAI]")
     replan = record.get("replan") or {}
     if replan:
         why = replan["reason"][:200]
