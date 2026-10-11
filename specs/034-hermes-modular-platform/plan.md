@@ -225,7 +225,8 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 - **notifier v1**: `send(event_id, projection) -> receipt`.
   - 같은 event_id 를 다시 보내면 receipt 를 재생한다.
   - 실패하면 제품 store outbox 에서 재시도한다.
-  - Slack 구현은 운영자 채널 하나에만 보낸다.
+  - Slack 구현은 Incoming Webhook 으로 운영자 채널 하나에만 보낸다. Hermes 의 Slack 앱과 다른 앱이고, 웹훅 URL 은 store 밖
+    비밀 파일(0600)에 둔다.
 
 ### 3.8 야간 메타 루프 제어 (S1d, OD-12)
 
@@ -334,7 +335,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | Q-7 | design/16 §3 pack 조합 class A 와 코드 B 의 차이 | S0 이후 |
 | Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 → 결정: B, N-9 조건부 (2026-10-11) | S1d |
 | Q-9 | 제어 기록 위치 → 결정: 제품 store (2026-10-11, 운영자 "정석대로") | S1d |
-| Q-10 | notifier 의 Slack 방식: incoming webhook / bot token (OD-9 확정 뒤) | S1c |
+| Q-10 | notifier 의 Slack 방식 → 결정: Incoming Webhook, Hermes 와 다른 Slack 앱 (보내기만, 최소 권한, 독립 채널). 여러 사람 DM·메시지 갱신이 필요해지면 bot 구현을 추가 (2026-10-11) | S1c |
 
 ## 8. 위험
 
