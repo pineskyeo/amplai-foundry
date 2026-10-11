@@ -13,7 +13,12 @@ import re
 from importlib import resources
 from pathlib import Path
 
-from amplai_foundry.integrations.intake_mcp.contract import CONTRACT_ID, CONTRACT_VERSION, load
+from amplai_foundry.integrations.intake_mcp.contract import (
+    CONTRACT_ID,
+    CONTRACT_VERSION,
+    load,
+    version_tuple,
+)
 
 KIT = Path(str(resources.files("amplai_foundry.integrations").joinpath("front_agents/hermes")))
 
@@ -51,7 +56,10 @@ def test_the_manifest_lists_the_kit_files_and_the_contract_version() -> None:
 
 def test_the_mcp_connection_includes_exactly_the_contract_tools() -> None:
     config = text("config.yaml.template")
-    assert block(config, "include") == list(load())
+    pinned = version_tuple(json.loads(text("kit.json"))["tool_contract"]["version"])
+    # review P2-4: the kit includes exactly the tools of its pinned version (since <= pinned)
+    expected = [t.name for t in load().values() if version_tuple(t.since) <= pinned]
+    assert block(config, "include") == expected
     assert 'args: ["-m", "amplai_foundry.integrations.intake_mcp"]' in config
     assert "AMPLAI_INTAKE_ADAPTER: hermes" in config
     assert "AMPLAI_INTAKE_TOKEN: ${AMPLAI_INTAKE_TOKEN}" in config

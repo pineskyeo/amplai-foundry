@@ -134,8 +134,16 @@ chmod 600 ~/.amplai/secrets/notifier.url
 
 1. `vm-checklist.ko.md` 를 먼저 채운다.
 2. Hermes v0.21.6 을 설치한다. 설치·고정 방법 — 확인 필요.
-3. AMPLAI MCP 서버를 VM 에 설치한다: `amplai-foundry` 를 `intake-mcp` extra 와 함께 (`mcp==2.3.0`).
-   VM 에 설치할 배포물(wheel) 전달 방법 — 확인 필요.
+3. AMPLAI MCP 서버를 VM 에 설치한다. 의존성은 hash 로 고정된 목록으로만 설치한다:
+   ```bash
+   python3.11 -m venv ~/amplai-intake-mcp
+   ~/amplai-intake-mcp/bin/python -m pip install --require-hashes \
+     -r requirements-hashes.txt
+   ~/amplai-intake-mcp/bin/python -m pip install --no-deps <amplai_foundry wheel>
+   ```
+   `requirements-hashes.txt` 는 `amplai_foundry/integrations/intake_mcp/` 에 있다 (`amplai-foundry[intake-mcp]` 의
+   의존 closure 전체와 `mcp==2.3.0`, 버전과 배포 파일 hash 고정). 이 저장소에는 그 밖의 lock 파일이 없다.
+   VM 에 wheel 을 전달하는 방법 — 확인 필요. `config.yaml` 의 `command` 는 이 venv 의 python 이다.
 4. `config.yaml.template` → `$HERMES_HOME/config.yaml`, `env.template` → `$HERMES_HOME/.env` (0600),
    `SOUL.md` → `$HERMES_HOME/SOUL.md`. `<...>` 를 채운다.
 5. `hermes gateway setup` 으로 Slack gateway 를 확인한다.
@@ -192,17 +200,28 @@ Hermes v0.21.6 (tag `v0.21.6`, commit `818c13be`) 소스에서 확인한 위치�
 | `SOUL.md` 위치 | `website/docs/user-guide/features/personality.md:9-41` |
 | MCP 호출은 기본(`trust: full`) 승인 단계 없음 | `tools/mcp_tool_handlers.py:60-85` |
 
+## 도구 계약 버전
+
+키트는 도구 계약 `amplai-intake-tools` `1.0` 에 맞춰 확인했다 (`kit.json`). `1.0` 은 S1a intake route 위의 도구 8개다.
+도구를 더하는 변경은 같은 major 의 minor(`1.x`)이고, 각 도구의 `since` 가 더해진 버전을 적는다. 이름을 바꾸거나 지우거나 입력·출력
+schema 를 바꾸면 새 major 다. 키트를 새 minor 로 올릴 때는 `kit.json` 의 버전과 `tools.include` 를 함께 바꾼다.
+
 ## 열린 항목
 
-- **보낸 사람 정보**: Hermes 는 MCP 호출에 보낸 사람(플랫폼, 사용자 id, 채널, 메시지 id)을 넣지 않는다
+운영자 결정이 필요한 항목이다.
+
+- **(P2-6) `message_id` 를 모델이 채운다 (H-7)**: Hermes 는 MCP 호출에 보낸 사람(플랫폼, 사용자 id, 채널, 메시지 id)을 넣지 않는다
   (`tools/mcp_tool_handlers.py:396`, 인자는 모델이 만든 그대로). 모델은 system prompt 의 세션 정보에서 사용자 이름 또는 id 를 본다
   (`gateway/session.py:376-463`). Slack 메시지 id 를 모델에 주는 부분은 찾지 못했다. 그래서 도구의 `user_id`, `workspace_id`,
   `message_id` 는 모델이 채운다. 연결표가 운영자 1인이라 사칭 범위는 같은 운영자다. 그러나 같은 메시지 재전송을 한 번만 받는 것(H-7)은
   모델이 `message_id` 를 일관되게 채울 때만 성립한다. 서버가 보낸 사람을 검증하려면 Hermes 쪽 지원이 필요하다 — 확인 필요.
-- **VM → AMPLAI 경로**: AMPLAI 서버는 `127.0.0.1:5083` 에만 열린다 (`runtime/cli.py` `local-serve`). VM 안의 MCP 서버가
-  호스트에 닿는 방법(VM 네트워크 설정 또는 S1b 의 원격 listener, H-12) — 확인 필요.
-- **intake 토큰 위치**: 토큰은 MCP 서버 환경에만 들어가지만, `${AMPLAI_INTAKE_TOKEN}` 치환을 위해 Hermes 의 `.env` 에도 있다.
-  Docker terminal 은 `docker_forward_env` 로 넘긴 변수만 받는다. 모델 문맥에는 들어가지 않는다.
+- **(P2-7) VM → AMPLAI 경로와 AC-H8**: AMPLAI 서버는 `127.0.0.1:5083` 에만 열린다 (`runtime/cli.py` `local-serve`). VM 안의
+  MCP 서버가 호스트에 닿는 방법(VM 네트워크 설정 또는 S1b 의 원격 listener, H-12/OD-8) — 확인 필요. 이 경로가 정해져야 egress
+  허용 목록과 AC-H8 확인(`vm-checklist.ko.md`)을 끝낼 수 있다.
+- **(P2-8) Hermes 의 파일 도구가 `$HERMES_HOME/.env` 를 읽을 수 있는가**: 토큰은 MCP 서버 환경에만 들어가지만,
+  `${AMPLAI_INTAKE_TOKEN}` 치환을 위해 Hermes 의 `.env` 에도 있다. Docker terminal 은 `docker_forward_env` 로 넘긴 변수만 받는다.
+  그러나 terminal 밖에서 도는 Hermes 의 파일 읽기 도구가 `.env` 를 읽어 모델 문맥에 넣을 수 있는지는 확인하지 못했다 — 확인 필요.
+  읽을 수 있다면 intake 토큰과 Slack 토큰이 모델에게 보인다.
 - **외부 skill 설치 차단 설정**: v0.21.6 에서 해당 키를 찾지 못했다. `catalog` toolset 은 끈다. 운영 규칙으로 막는다.
-- **도구 계약 v1 에 없는 도구**: `pause_goal`, `resume_goal`, `answer_question`, `propose_knowledge`, `meta_summary` 는 AMPLAI 에
+- **도구 계약 1.0 에 없는 도구**: `pause_goal`, `resume_goal`, `answer_question`, `propose_knowledge`, `meta_summary` 는 AMPLAI 에
   intake route 가 아직 없다.

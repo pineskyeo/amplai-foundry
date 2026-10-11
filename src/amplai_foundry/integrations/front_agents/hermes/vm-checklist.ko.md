@@ -20,7 +20,7 @@ Hermes 를 켜기 전과 버전을 올린 뒤마다 확인한다. 한 칸이라�
 - [ ] `terminal.backend: docker`, `terminal.docker_volumes: []`, `terminal.docker_network: false`.
 - [ ] `agent.disabled_toolsets` 에 `delegation`, `code_execution`, `cronjob`, `browser`, `catalog`, `web`, `search` 가 있다.
 - [ ] `skills.write_approval: true`, `memory.write_approval: true`.
-- [ ] `mcp_servers.amplai.tools.include` 가 도구 계약 v1 의 8개와 같다.
+- [ ] `mcp_servers.amplai.tools.include` 가 `kit.json` 의 도구 계약 버전(1.0)의 도구 8개와 같다.
 - [ ] `SLACK_ALLOWED_USERS` 에 운영자 한 명만 있다.
 - [ ] 외부 skill hub 설치를 막는 Hermes 설정 키는 v0.21.6 에서 찾지 못했다. 운영자가 `hermes skills install` 을 쓰지 않는다 (운영 규칙).
 - [ ] Hermes 가 스스로 쓴 메모리·skill 이 주입을 지속시키는지 주기적으로 `/skills pending` 과 메모리 대기 목록을 검토한다 (plan.md §8).

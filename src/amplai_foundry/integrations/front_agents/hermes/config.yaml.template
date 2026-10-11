@@ -45,7 +45,7 @@ mcp_servers:
       # interpolated from $HERMES_HOME/.env when the server starts; never written here
       AMPLAI_INTAKE_TOKEN: ${AMPLAI_INTAKE_TOKEN}
     tools:
-      include:                  # tool contract amplai-intake-tools v1, exactly
+      include:                  # amplai-intake-tools 1.0 (kit.json): the tools with since <= 1.0
         - submit_work
         - submit_design
         - list_goals
