@@ -261,7 +261,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 - **검토한 대안**:
   - (a) meta 상주 서버가 meta store 를 소유하고 밤을 안에서 돌린다. meta CLI 전체를 client 로 바꿔야 해서 크다.
   - (b) meta 폴더의 제어 파일. 트랜잭션 store 밖이고 쓰는 쪽이 둘이다.
-  - (c) 제품 store 기록(추천, Q-9). S1a 의 authority service, 감사, 중복 방지를 그대로 쓴다.
+  - (c) 제품 store 기록(채택, Q-9). S1a 의 authority service, 감사, 중복 방지를 그대로 쓴다.
 - **평가기 digest**: `nightly.py` 는 평가기 digest 범위 밖이다(`evaluation/versions.py:33-34`). 새 권한 `nightly.control` 은
   권한 코드 변경이라 class C 다.
 
@@ -333,7 +333,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | Q-6 | 사내 LLM 서버 사양 (OpenAI 호환, 도구 호출, 컨텍스트, 스트리밍 사용량) | S4 |
 | Q-7 | design/16 §3 pack 조합 class A 와 코드 B 의 차이 | S0 이후 |
 | Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 → 결정: B, N-9 조건부 (2026-10-11) | S1d |
-| Q-9 | 제어 기록 위치: 제품 store (추천) / meta 제어 파일 / meta 상주 서버 (§3.8 대안) | S1d |
+| Q-9 | 제어 기록 위치 → 결정: 제품 store (2026-10-11, 운영자 "정석대로") | S1d |
 | Q-10 | notifier 의 Slack 방식: incoming webhook / bot token (OD-9 확정 뒤) | S1c |
 
 ## 8. 위험
