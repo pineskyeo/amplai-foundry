@@ -102,8 +102,24 @@ class AmplaiClient:
     def local_goals(self) -> Any:
         return self.call("GET", "api/v3/local/goals")
 
-    def local_approve(self, goal_id: str) -> Any:
-        return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/approve")
+    def local_approve(self, goal_id: str, expected_contract_ref: dict[str, Any]) -> Any:
+        return self.call(
+            "POST",
+            "api/v3/local/goals/" + quote(goal_id, safe="") + "/approve",
+            payload={"expected_contract_ref": expected_contract_ref},
+        )
+
+    def contract(self, ref: dict[str, Any]) -> Any:
+        """The frozen contract at ``ref``; the server checks the digest."""
+        return self.call(
+            "GET",
+            "api/v3/objects/goal-contract/"
+            + quote(str(ref["id"]), safe="")
+            + "?revision="
+            + quote(str(ref["revision"]), safe="")
+            + "&digest="
+            + quote(str(ref["digest"]), safe=""),
+        )
 
     def local_cancel(self, goal_id: str) -> Any:
         return self.call("POST", "api/v3/local/goals/" + quote(goal_id, safe="") + "/cancel")

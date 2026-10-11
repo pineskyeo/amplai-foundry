@@ -11,7 +11,8 @@
 
 ```text
 amplai work "<goal>"        목표를 내고 계약 초안을 받는다
-amplai approve <goal-id>    계약을 승인한다. 검증된 결과만 draft PR 로 돌아온다
+amplai approve <goal-id> --expected-digest <digest>
+                            읽은 계약(digest)을 승인한다. 검증된 결과만 draft PR 로 돌아온다
 amplai status [<goal-id>]   계획·시도·검증·PR 을 본다
 amplai steer <goal-id> ...  실행 중인 agent 에게 방향을 준다
 amplai replan <goal-id> ... 실행 중인 목표의 계획을 바꾼다

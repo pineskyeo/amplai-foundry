@@ -17,7 +17,7 @@ meta-harness 를 담는다.
 [docs/v3/USING_AMPLAI_WORK.ko.md](docs/v3/USING_AMPLAI_WORK.ko.md) 가 정본이다.
 
 ```text
-amplai work "<goal>"      → 계약 초안 → amplai approve <goal-id> → 검증된 draft PR
+amplai work "<goal>"      → 계약 초안(digest) → amplai approve <goal-id> --expected-digest <digest> → 검증된 draft PR
 amplai status | steer | replan | cancel
 amplai design "<problem>" → 설계 문서만, 구현·배포 없음
 amplai ops ...            → local-init, local-add-app, local-verifier, local-serve 등 운영

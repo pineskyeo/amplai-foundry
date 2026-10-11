@@ -15,7 +15,7 @@ import typer
 from amplai_foundry.control_plane.api_v3.client import AmplaiClient
 from amplai_foundry.runtime.contracts.identity import canonical, new_id
 from amplai_foundry.runtime.contracts.registry import Contracts
-from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 
 T = TypeVar("T")
 
@@ -170,6 +170,9 @@ def render_plan(record: dict[str, Any]) -> str:
         )
     elif check:
         lines.append("  base check: acceptance suite passes on the untouched base")
+    ref = record.get("contract_ref") or {}
+    if ref:  # what `amplai approve --expected-digest` binds (Work 034 H-13)
+        lines.append(f"  contract  : revision {ref.get('revision')} {ref.get('digest')}")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
     replan = record.get("replan") or {}
@@ -192,8 +195,13 @@ def render_plan(record: dict[str, Any]) -> str:
     if outcome:
         edited = ", changed by a human" if outcome.get("revised") else ""
         lines.append(f"  PR state  : {outcome['state']}{edited} (checked {outcome['checked_at']})")
+    approve_next = (
+        f"next: amplai approve {goal} --expected-digest {ref['digest']}   (or amplai cancel {goal})"
+        if ref.get("digest")
+        else f"next: amplai status {goal}   (no contract digest recorded; nothing to approve yet)"
+    )
     nxt = {
-        "awaiting_approval": f"next: amplai approve {goal}   (or amplai cancel {goal})",
+        "awaiting_approval": approve_next,
         "needs_answers": "next: answer the questions in a refined `amplai work` goal",
         "approved": f"next: amplai status {goal}",
         "running": f'next: amplai status {goal}   (guide it: amplai steer {goal} "..."; '
@@ -220,10 +228,63 @@ def _local(operation: Callable[[AmplaiClient], Any], *, render: bool = True) -> 
         connection.close()
 
 
+def render_contract(contract: dict[str, Any], ref: dict[str, Any]) -> str:
+    """The frozen contract the approval binds, as AMPLAI read it (design/17 §1): what changes,
+    what is not touched, what shows it is done."""
+    lines = [
+        f"contract {ref['id']} revision {ref['revision']}",
+        f"  digest    : {ref['digest']}",
+        f"  changes   : {contract.get('objective', '')}",
+    ]
+    lines += [f"  not doing : {item}" for item in contract.get("non_goals") or []]
+    lines += [f"  constraint: {c['statement']}" for c in contract.get("constraints") or []]
+    lines += [f"  done when : {a['id']} {a['statement']}" for a in contract.get("acceptance") or []]
+    return "\n".join(lines)
+
+
 @app.command("approve")
-def goal_approve(goal_id: Annotated[str, typer.Argument()]) -> None:
-    """Approve the drafted contract: AMPLAI may run it and publish a draft PR when verified."""
-    _local(lambda c: c.local_approve(goal_id))
+def goal_approve(
+    goal_id: Annotated[str, typer.Argument()],
+    expected: Annotated[
+        str | None,
+        typer.Option(
+            "--expected-digest",
+            help="The contract digest you read (`amplai status`); required to approve",
+        ),
+    ] = None,
+) -> None:
+    """Approve the drafted contract: AMPLAI may run it and publish a draft PR when verified.
+
+    Approval needs the digest of the contract you read (Work 034 H-13, operator decision on
+    PR #77: option A). Without --expected-digest the frozen contract and its digest are shown
+    with the exact command, and nothing is approved (exit 3). A different digest is refused."""
+
+    def approve(c: AmplaiClient) -> Any:
+        record = c.local_goal(goal_id)
+        ref = record.get("contract_ref")
+        if record.get("status") != "awaiting_approval" or not ref:
+            raise Hold(
+                "PLAN_NOT_READY",
+                "Goal has no contract awaiting approval",
+                details=record.get("status"),
+            )
+        typer.echo(render_contract(c.contract(ref), ref))
+        if expected is None:
+            typer.echo(
+                f"approve it with: amplai approve {goal_id} --expected-digest {ref['digest']}"
+            )
+            raise Hold(
+                "DIGEST_REQUIRED",
+                "Nothing is approved without the digest of the contract you read",
+            )
+        if expected != ref["digest"]:
+            raise Conflict(
+                "STALE_CONTRACT",
+                "The contract awaiting approval is not the one you read; read it again",
+            )
+        return c.local_approve(goal_id, ref)
+
+    _local(approve)
 
 
 @app.command("status")

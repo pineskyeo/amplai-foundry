@@ -74,7 +74,7 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 
 | 명령 | 하는 일 |
 |---|---|
-| `amplai approve <goal>` | 초안을 승인한다. 이 승인이 실행 권한과 draft PR 권한의 유일한 근거다 |
+| `amplai approve <goal> --expected-digest <digest>` | 읽은 초안을 승인한다. digest 는 `amplai status`·`amplai work` 출력의 `contract` 줄에 있다. digest 없이 부르면 계약과 digest, 승인 명령만 보여 주고 승인하지 않는다. 이 승인이 실행 권한과 draft PR 권한의 유일한 근거다 |
 | `amplai status [<goal>]` | 상태, attempt 별 검증 결과, PR 링크와 PR 상태 |
 | `amplai steer <goal> "…"` | 실행 중인 agent 에 안내를 준다. checkpoint 에서 멈췄다가 같은 session 이 메시지를 받고 이어서 한다. 계약은 바뀌지 않는다 (D-082) |
 | `amplai replan <goal> "…"` | 실행 중인 goal 의 계획을 바꾼다. 멈추고, 다음 contract revision 을 만들고, 승인을 기다린다 (D-082) |
