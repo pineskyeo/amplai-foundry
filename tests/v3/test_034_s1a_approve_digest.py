@@ -130,14 +130,14 @@ def test_status_shows_the_digest_and_the_approve_command_that_binds_it(product: 
     assert shown.exit_code == 0, shown.output
     digest = record["contract_ref"]["digest"]
     assert f"contract  : revision 1 {digest}" in shown.output
-    assert f"next: amplai approve {goal} --expected-contract-ref {digest}" in shown.output
+    assert f"next: amplai approve {goal} --expected-digest {digest}" in shown.output
 
 
 def test_approve_shows_the_contract_and_sends_its_revision(product: Any) -> None:
     dep, client = product
     goal, record = drafted(client)
     digest = record["contract_ref"]["digest"]
-    result = CliRunner().invoke(cli.app, ["approve", goal, "--expected-contract-ref", digest])
+    result = CliRunner().invoke(cli.app, ["approve", goal, "--expected-digest", digest])
     assert result.exit_code == 0, (result.output, repr(result.exception))
     for line in (
         f"contract {goal} revision 1",
@@ -151,9 +151,11 @@ def test_approve_shows_the_contract_and_sends_its_revision(product: Any) -> None
     assert dep.service.plan_record(goal)["status"] == "approved"
 
 
-def test_approve_without_the_option_still_binds_what_it_showed(product: Any) -> None:
+def test_approve_without_the_digest_shows_the_contract_and_approves_nothing(
+    product: Any,
+) -> None:
     dep, client = product
-    goal, _record = drafted(client)
+    goal, record = drafted(client)
     sent: list[Any] = []
     original = AmplaiClient.local_approve
 
@@ -166,15 +168,18 @@ def test_approve_without_the_option_still_binds_what_it_showed(product: Any) -> 
         result = CliRunner().invoke(cli.app, ["approve", goal])
     finally:
         AmplaiClient.local_approve = original  # type: ignore[method-assign]
-    assert result.exit_code == 0, result.output
-    assert sent == [dep.service.plan_record(goal)["contract_ref"]]
+    digest = record["contract_ref"]["digest"]
+    assert result.exit_code == 3 and "DIGEST_REQUIRED" in result.output
+    assert f"  digest    : {digest}" in result.output
+    assert f"approve it with: amplai approve {goal} --expected-digest {digest}" in result.output
+    assert sent == [] and dep.service.plan_record(goal)["status"] == "awaiting_approval"
 
 
 def test_approve_refuses_when_the_contract_is_not_the_one_read(product: Any) -> None:
     dep, client = product
     goal, _record = drafted(client)
     result = CliRunner().invoke(
-        cli.app, ["approve", goal, "--expected-contract-ref", "sha256:" + "0" * 64]
+        cli.app, ["approve", goal, "--expected-digest", "sha256:" + "0" * 64]
     )
     assert result.exit_code == 2 and "STALE_CONTRACT" in result.output
     assert dep.service.plan_record(goal)["status"] == "awaiting_approval"
@@ -192,6 +197,6 @@ def test_approve_without_a_drafted_contract_is_held(product: Any) -> None:
 
 def test_status_without_a_contract_ref_names_no_digest() -> None:
     shown = cli.render_plan({"goal_id": "goal-x", "status": "awaiting_approval"})
-    assert "None" not in shown and "--expected-contract-ref" not in shown
+    assert "None" not in shown and "--expected-digest" not in shown
     assert "contract  :" not in shown
     assert "next: amplai status goal-x   (no contract digest recorded" in shown

@@ -171,7 +171,7 @@ def render_plan(record: dict[str, Any]) -> str:
     elif check:
         lines.append("  base check: acceptance suite passes on the untouched base")
     ref = record.get("contract_ref") or {}
-    if ref:  # what `amplai approve --expected-contract-ref` binds (Work 034 H-13)
+    if ref:  # what `amplai approve --expected-digest` binds (Work 034 H-13)
         lines.append(f"  contract  : revision {ref.get('revision')} {ref.get('digest')}")
     if record.get("reason"):
         lines.append(f"  reason    : {record['reason']}")
@@ -196,8 +196,7 @@ def render_plan(record: dict[str, Any]) -> str:
         edited = ", changed by a human" if outcome.get("revised") else ""
         lines.append(f"  PR state  : {outcome['state']}{edited} (checked {outcome['checked_at']})")
     approve_next = (
-        f"next: amplai approve {goal} --expected-contract-ref {ref['digest']}"
-        f"   (or amplai cancel {goal})"
+        f"next: amplai approve {goal} --expected-digest {ref['digest']}   (or amplai cancel {goal})"
         if ref.get("digest")
         else f"next: amplai status {goal}   (no contract digest recorded; nothing to approve yet)"
     )
@@ -249,15 +248,16 @@ def goal_approve(
     expected: Annotated[
         str | None,
         typer.Option(
-            "--expected-contract-ref",
-            help="The contract digest `amplai status` showed; nothing is approved if it differs",
+            "--expected-digest",
+            help="The contract digest you read (`amplai status`); required to approve",
         ),
     ] = None,
 ) -> None:
     """Approve the drafted contract: AMPLAI may run it and publish a draft PR when verified.
 
-    The contract and its digest are shown first, and the server approves only that exact
-    revision (Work 034 H-13)."""
+    Approval needs the digest of the contract you read (Work 034 H-13, operator decision on
+    PR #77: option A). Without --expected-digest the frozen contract and its digest are shown
+    with the exact command, and nothing is approved (exit 3). A different digest is refused."""
 
     def approve(c: AmplaiClient) -> Any:
         record = c.local_goal(goal_id)
@@ -269,7 +269,15 @@ def goal_approve(
                 details=record.get("status"),
             )
         typer.echo(render_contract(c.contract(ref), ref))
-        if expected is not None and expected != ref["digest"]:
+        if expected is None:
+            typer.echo(
+                f"approve it with: amplai approve {goal_id} --expected-digest {ref['digest']}"
+            )
+            raise Hold(
+                "DIGEST_REQUIRED",
+                "Nothing is approved without the digest of the contract you read",
+            )
+        if expected != ref["digest"]:
             raise Conflict(
                 "STALE_CONTRACT",
                 "The contract awaiting approval is not the one you read; read it again",

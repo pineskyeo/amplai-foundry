@@ -22,7 +22,7 @@ python -m pip install -e '.[dev]'
 
 ```bash
 amplai work "<goal>"         # 계약 초안을 만든다
-amplai approve <goal-id>     # 승인하면 실행하고, 검증되면 draft PR 을 연다
+amplai approve <goal-id> --expected-digest <digest>  # 읽은 계약의 digest 로 승인하면 실행하고, 검증되면 draft PR 을 연다
 amplai status [<goal-id>]
 amplai steer | replan | cancel
 amplai design "<problem>"    # 설계 문서만, 구현 없음
