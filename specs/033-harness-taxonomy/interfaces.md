@@ -4001,7 +4001,10 @@ validation tasks per cell against the 16 that IC-20 needs), so harder own tasks 
 proposer run (`proprun-b7a13a6c`) has read development cases of 2.0.0, so §10.2 (2) applies:
 every existing assignment stays, and validation grows only with new tasks. `assign_splits`
 re-shuffles each domain over all its ids (`corpus_v2.py` `assign_splits`), so re-running a rule
-over the grown corpus would move existing tasks; a new rule places only the new tasks.
+over the grown corpus would move existing tasks; a new rule places only the new tasks. The split
+parameters are the operator's decision of 2026-10-11, which accepted the recommended option
+("정석대로"): existing assignments unchanged; new tasks per domain 30 % holdout (rounded half up),
+the rest validation, none to development.
 
 - **Rule `stratified_by_domain_append_v1`** (`corpus_v2.APPEND_SPLIT_METHOD`,
   `corpus_v2.append_splits(tasks, previous, seed=)`): every task of the previous version's
@@ -4020,6 +4023,14 @@ over the grown corpus would move existing tasks; a new rule places only the new 
   as for any re-split (§10.2). `freeze` records the rule as the task index `splits.method`; the
   frozen corpus id becomes `amplai-bench-v2-2.1.0` (freeze writes revision 1 per id). Freeze and
   re-calibration are operator steps on the meta deployment.
+- **Evaluator change (operator steps)**: adding tasks is an evaluator change (§11.1): after the
+  freeze, the operator proposes an `evaluator-change` of kind `add_tasks` whose target
+  `corpus_ref` is the frozen 2.1.0 corpus (`evaluation/quality.py` `CHANGE_KINDS`, target check
+  near `:1018-1032`), qualifies it alone, approves it, and so gets a new `eval-N`; calibration and
+  stages then pin that version. Without it, a stage plan whose calibration summary pins another
+  evaluator version holds `EVALUATOR_CHANGED` (`meta_harness/stages.py:811-812`). Whether this
+  change is bundled with the planned eval-10 (drift subset) or proposed on its own is the
+  operator's choice; this clarification does not decide it.
 - **New tasks (hard wave 1)**: 48 own tasks, 8 per domain (ambiguity 4 ask + 4 proceed), authored
   under §10.3 and checked with `corpus_check --repeats 3`. The new bug tasks target latent defects
   D16–D23 of the unchanged bench base (`corpus/authoring/bench-defects.md`).

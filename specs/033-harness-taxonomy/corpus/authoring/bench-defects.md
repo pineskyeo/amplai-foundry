@@ -50,8 +50,9 @@ A task outside `bug` must not require fixing any of D1–D13 (its hidden tests m
 reference would fix an unstated requirement (§10.3 rule 2). Two bug tasks never target the same defect.
 
 The same holds for D16–D23 (added 2026-10-11 by the hard-wave-1 bug author): a task outside `bug` must not require
-fixing them, so its hidden tests avoid their triggers — dates other than `YYYY-MM-DD` (e.g. `20240309`, week dates)
-or an empty `--from`/`--to`; orders rows with too few or too many cells, or whitespace-only lines in an orders file;
+fixing them, so its hidden tests avoid their triggers — non-bug hidden tests must not depend on `dates.parse_date`
+rejecting non-`YYYY-MM-DD` dates (e.g. `20240309`, week dates; a task whose text states its own date format for a
+new reader is fine), nor on an empty `--from`/`--to` being refused; orders rows with too few or too many cells, or whitespace-only lines in an orders file;
 expected `line N` numbers in files with blank lines or quoted line breaks; non-string or float/bool values in JSON
 orders; `%` in INI values; `months_between` ranges reaching December 9999; rows of one order that disagree on
 customer, `placed` or status; orders without lines through `write_orders`/`read_orders`.
