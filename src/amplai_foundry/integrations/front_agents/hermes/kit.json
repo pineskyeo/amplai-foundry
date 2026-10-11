@@ -1,0 +1,8 @@
+{
+  "kit": "front-agent.hermes",
+  "kit_version": "1",
+  "front_agent": {"name": "hermes-agent", "version": "v0.21.6", "commit": "818c13be1dc4fd28987e1e881a9408224afd4535"},
+  "intake_adapter_id": "hermes",
+  "tool_contract": {"contract": "amplai-intake-tools", "version": "1.0"},
+  "files": ["README.ko.md", "config.yaml.template", "env.template", "SOUL.md", "vm-checklist.ko.md"]
+}
