@@ -1,14 +1,18 @@
-"""Intake routes for a messenger front agent (Work 034 S1a; spec H-1, H-5..H-8, plan.md §3.2).
+"""Intake routes for messenger front agents (Work 034 S1a, S1c; spec H-1, H-5..H-8, F-2, plan.md
+§3.2, §3.7).
 
-The front agent (Hermes) holds its own bearer token, which no operator route accepts, and names the
-messenger user who sent each message. The server looks that user up in the operator's identity map
-and builds the intake actor (``runtime/contracts/intake.py``): the front agent's permissions, the
-linked operator's attribution, never human. The token file and the identity map live outside the
-store and are read on every request, so removing or rotating the token revokes it at once and a
-store restore cannot bring it back (H-6, AC-H7). No request field supplies an actor, a role, a
-repository hint or a data classification (H-5, design/17 §5): unknown fields are refused.
+Each configured intake adapter (``intake.adapters[]``; Hermes is the first) holds its own bearer
+token, which no operator route and no other adapter's route accepts, and names the messenger user
+who sent each message. The server looks that user up in that adapter's identity map and builds the
+intake actor (``runtime/contracts/intake.py``): the adapter's permission ceiling (at most H-2), the
+linked operator's attribution, never human, marked ``intake:<adapter_id>``. The token file and the
+identity map live outside the store and are read on every request, so removing or rotating the
+token revokes it at once and a store restore cannot bring it back (H-6, AC-H7). No request field
+supplies an actor, a role, a repository hint or a data classification (H-5, design/17 §5): unknown
+fields are refused. The core names no front agent or messenger: an adapter is configuration only
+(F-2, AC-F1), and two adapters share no token, identity map, limit window or route (AC-F2).
 
-Routes under ``/api/v3/intake/hermes``:
+Routes under ``/api/v3/intake/{adapter_id}``:
 
     POST ""                      submit a goal from a message; its contract is drafted next
     GET  /goals                  the linked operator's goals (fixed-schema projection)
@@ -19,8 +23,10 @@ Routes under ``/api/v3/intake/hermes``:
     GET  /events                 notifications after a cursor (fixed schema, H-8, AC-H10)
 
 A message is accepted once: the server derives the idempotency key from the message's transport
-identity (``hermes:<digest>``, H-7). A goal of another subject is not found (AC-H3). Submissions and
-controls are rate limited per actor and operation with the operator's configured limits (H-3, H-7).
+identity (``<adapter_id>:<digest>``, H-7, F-2). A goal of another subject is not found (AC-H3).
+Submissions and controls are rate limited per actor and operation with the adapter's configured
+limits (H-3, H-7). Reads need ``runtime.read`` and every control its own permission, so an adapter
+configured with fewer permissions than H-2 gets ``FORBIDDEN`` for the rest.
 
 The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8). A cursor of another
 incarnation (the store was restored) or past the newest event is ``CURSOR_EXPIRED`` and carries a
@@ -47,7 +53,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from amplai_foundry.runtime.contracts.authority import Actor
 from amplai_foundry.runtime.contracts.identity import digest
 from amplai_foundry.runtime.contracts.intake import (
-    HERMES,
+    FRONT_AGENT_CHANNEL,
+    INTAKE_PERMISSIONS,
+    check_adapter,
     check_goal_access,
     goal_owner,
     intake_actor,
@@ -57,10 +65,15 @@ from amplai_foundry.runtime.storage.store import Scope, Store
 
 from .server import ApiCommands
 
-PREFIX = "/api/v3/intake/" + HERMES
-IDENTITY_MAP_VERSION = "intake-identity-1"
+ROUTE_ROOT = "/api/v3/intake/"
+# v1 (S1a): (provider, user id). v2 (S1c, F-2): (provider, workspace, user id).
+IDENTITY_MAP_VERSIONS = ("intake-identity-1", "intake-identity-2")
 # a messenger's own identifiers: bounded, no whitespace (provider-neutral, H-11)
 _TOKEN = r"^[^\s]{1,256}$"
+
+
+def prefix(adapter_id: str) -> str:
+    return ROUTE_ROOT + adapter_id
 
 
 class _Body(BaseModel):
@@ -69,15 +82,29 @@ class _Body(BaseModel):
 
 class IdentityEntry(_Body):
     provider: str = Field(pattern=r"^[a-z][a-z0-9_.-]{0,63}$")
+    workspace_id: str | None = Field(default=None, pattern=_TOKEN)
     user_id: str = Field(pattern=_TOKEN)
     subject_id: str = Field(min_length=1, max_length=128)
+
+    def matches(self, provider: str, workspace_id: str | None, user_id: str) -> bool:
+        """A v2 entry names its workspace and matches only it. A v1 entry (S1a, no workspace)
+        matches the user in any workspace, as it did before S1c."""
+        if self.provider != provider or self.user_id != user_id:
+            return False
+        return self.workspace_id is None or self.workspace_id == workspace_id
 
 
 class IdentityMap(_Body):
     """Messenger user -> AMPLAI subject. This scope links one operator (H-5)."""
 
-    schema_version: Literal["intake-identity-1"]
+    schema_version: Literal["intake-identity-1", "intake-identity-2"]
     entries: list[IdentityEntry] = Field(min_length=1, max_length=64)
+
+    def check_shape(self) -> None:
+        """v2 entries all name a workspace; v1 entries name none."""
+        v2 = self.schema_version == "intake-identity-2"
+        if any((e.workspace_id is not None) != v2 for e in self.entries):
+            raise ValueError("intake-identity-2 entries name a workspace_id; v1 entries do not")
 
 
 class Message(_Body):
@@ -89,14 +116,15 @@ class Message(_Body):
     channel_id: str = Field(pattern=_TOKEN)
     message_id: str = Field(pattern=_TOKEN)
 
-    def key(self) -> str:
+    def key(self, adapter_id: str) -> str:
+        """``<adapter_id>:<digest>`` (F-2): one message is one command per adapter."""
         identity = {
             "provider": self.provider,
             "workspace": self.workspace_id,
             "channel": self.channel_id,
             "message": self.message_id,
         }
-        return "hermes:" + digest(identity)[7:]
+        return adapter_id + ":" + digest(identity)[7:]
 
 
 class SubmitBody(Message):
@@ -117,9 +145,11 @@ class CancelBody(Message):
 
 
 class IntakeGate:
-    """Authenticates the front agent and resolves the messenger user, on every request.
+    """Authenticates one intake adapter and resolves the messenger user, on every request.
 
     ``read`` returns a credential file's bytes (``keys.private_bytes``: owner-only, no symlink).
+    ``peer_token_files`` are the other adapters' token files: a token equal to one of them is
+    refused, so one credential never opens two adapters' routes (AC-F2).
     """
 
     def __init__(
@@ -131,10 +161,26 @@ class IntakeGate:
         operator_subject: str,
         operator_token: Callable[[], str],
         read: Callable[[Path], bytes],
+        adapter_id: str,
+        permissions: frozenset[str] = INTAKE_PERMISSIONS,
+        peer_token_files: tuple[Path, ...] = (),
     ) -> None:
+        check_adapter(adapter_id, permissions)
         self.token_file, self.identity_map_file = token_file, identity_map_file
         self.scope, self.operator_subject = scope, operator_subject
         self.operator_token, self.read = operator_token, read
+        self.adapter_id, self.permissions = adapter_id, frozenset(permissions)
+        self.peer_token_files = peer_token_files
+
+    def _shared_with_peer(self, token: str) -> bool:
+        for path in self.peer_token_files:
+            try:
+                peer = self.read(path).decode().strip()
+            except (OSError, RuntimeFault, ValueError):
+                continue  # a peer token that cannot be read opens nothing, so it cannot collide
+            if peer and hmac.compare_digest(token, peer):
+                return True
+        return False
 
     def _authenticate(self, authorization: str) -> None:
         """Check the presented credential before saying anything about the configuration: an
@@ -162,24 +208,31 @@ class IntakeGate:
             raise Hold(
                 "INTAKE_TOKEN_REUSED", "The front agent token must differ from the operator's"
             )
+        if self._shared_with_peer(token):
+            raise Hold(
+                "INTAKE_TOKEN_REUSED", "Each intake adapter needs a token of its own (AC-F2)"
+            )
 
     def identities(self) -> list[IdentityEntry]:
         try:
             parsed = IdentityMap.model_validate(json.loads(self.read(self.identity_map_file)))
+            parsed.check_shape()
         except (OSError, ValueError, ValidationError) as exc:
             raise Hold("INTAKE_IDENTITY_MAP", "The identity map is missing or malformed") from exc
-        seen = [(e.provider, e.user_id) for e in parsed.entries]
+        seen = [(e.provider, e.workspace_id, e.user_id) for e in parsed.entries]
         if len(seen) != len(set(seen)):
             raise Hold("INTAKE_IDENTITY_MAP", "A messenger user appears twice in the identity map")
         if any(e.subject_id != self.operator_subject for e in parsed.entries):
             raise Hold("INTAKE_IDENTITY_MAP", "The identity map links only the operator (H-5)")
         return parsed.entries
 
-    def actor(self, authorization: str, provider: str, user_id: str) -> Actor:
+    def actor(
+        self, authorization: str, provider: str, user_id: str, workspace_id: str | None = None
+    ) -> Actor:
         self._authenticate(authorization)
         for entry in self.identities():
-            if entry.provider == provider and entry.user_id == user_id:
-                return intake_actor(entry.subject_id, self.scope)
+            if entry.matches(provider, workspace_id, user_id):
+                return intake_actor(entry.subject_id, self.scope, self.adapter_id, self.permissions)
         raise RuntimeFault("FORBIDDEN", "The messenger user is not linked to an operator")
 
 
@@ -296,7 +349,8 @@ def newest_seq(store: Store, scope: Scope) -> int:
 
 
 def intake_router(services: IntakeServices) -> APIRouter:
-    router = APIRouter(prefix=PREFIX)
+    adapter_id = services.gate.adapter_id
+    router = APIRouter(prefix=prefix(adapter_id))
     gate, store, limits = services.gate, services.store, services.limits
     commands = ApiCommands(store)
 
@@ -310,16 +364,18 @@ def intake_router(services: IntakeServices) -> APIRouter:
 
     @router.post("", status_code=202)
     def submit(body: SubmitBody, authorization: str = Header(default="")) -> Any:
-        actor = gate.actor(authorization, body.provider, body.user_id)
-        if not submitted_before(store, actor, body.key()):  # a resend replays, never limited
+        actor = gate.actor(authorization, body.provider, body.user_id, body.workspace_id)
+        if not submitted_before(
+            store, actor, body.key(adapter_id)
+        ):  # a resend replays, never limited
             limits.check(actor, "submit")
         submitted = services.goals.submit(
             actor,
             text=body.text,
             mode=body.mode,
-            channel="hermes",
+            channel=FRONT_AGENT_CHANNEL,  # F-3: the wire name of every adapter
             external_message_id=body.message_id,
-            key=body.key(),
+            key=body.key(adapter_id),
         )
         goal_id: str = submitted["goal_id"]
         services.plan(goal_id)  # a resent message finds the same goal and its plan
@@ -345,15 +401,29 @@ def intake_router(services: IntakeServices) -> APIRouter:
                 break
         return items
 
+    def reader(authorization: str, provider: str, user_id: str, workspace_id: str | None) -> Actor:
+        actor = gate.actor(authorization, provider, user_id, workspace_id)
+        actor.require("runtime.read")
+        return actor
+
     @router.get("/goals")
-    def goals(provider: str, user_id: str, authorization: str = Header(default="")) -> Any:
-        return {"items": listing(gate.actor(authorization, provider, user_id))}
+    def goals(
+        provider: str,
+        user_id: str,
+        workspace_id: str | None = None,
+        authorization: str = Header(default=""),
+    ) -> Any:
+        return {"items": listing(reader(authorization, provider, user_id, workspace_id))}
 
     @router.get("/goals/{goal_id}")
     def goal(
-        goal_id: str, provider: str, user_id: str, authorization: str = Header(default="")
+        goal_id: str,
+        provider: str,
+        user_id: str,
+        workspace_id: str | None = None,
+        authorization: str = Header(default=""),
     ) -> Any:
-        return owned(gate.actor(authorization, provider, user_id), goal_id)
+        return owned(reader(authorization, provider, user_id, workspace_id), goal_id)
 
     def relay(
         authorization: str,
@@ -362,9 +432,9 @@ def intake_router(services: IntakeServices) -> APIRouter:
         route: str,
         operation: Callable[[Actor], dict[str, Any]],
     ) -> Any:
-        actor = gate.actor(authorization, body.provider, body.user_id)
+        actor = gate.actor(authorization, body.provider, body.user_id, body.workspace_id)
         owned(actor, goal_id)
-        if commands.receipt(actor, body.key()) is None:  # a resend replays, never limited
+        if commands.receipt(actor, body.key(adapter_id)) is None:  # a resend replays, never limited
             limits.check(actor, route)
 
         def execute() -> Any:
@@ -375,8 +445,8 @@ def intake_router(services: IntakeServices) -> APIRouter:
         # restart finds no running attempt; a cancel of an ended goal returns it), so a
         # receipt interrupted by a restart runs again on a resend
         return commands.run(
-            actor, body.key(), "intake." + route + ":" + goal_id, body.model_dump(), execute,
-            rerun_interrupted=True,
+            actor, body.key(adapter_id), "intake." + route + ":" + goal_id, body.model_dump(),
+            execute, rerun_interrupted=True,
         )  # fmt: skip
 
     @router.post("/goals/{goal_id}/steer", status_code=202)
@@ -409,6 +479,7 @@ def intake_router(services: IntakeServices) -> APIRouter:
     def events(
         provider: str,
         user_id: str,
+        workspace_id: str | None = None,
         cursor: str | None = None,
         limit: int = 100,
         authorization: str = Header(default=""),
@@ -416,7 +487,7 @@ def intake_router(services: IntakeServices) -> APIRouter:
         """Notifications for the linked operator's goals after ``cursor``. Each names the goal, the
         event type (an AMPLAI identifier), the goal's current status and the event time; never an
         event payload. Without a cursor: a snapshot and the cursor to follow from."""
-        actor = gate.actor(authorization, provider, user_id)
+        actor = reader(authorization, provider, user_id, workspace_id)
         if not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event limit")
         newest = newest_seq(store, actor.scope)

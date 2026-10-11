@@ -22,7 +22,13 @@ dependencies = [
 
 [project.optional-dependencies]
 visual = ["playwright>=1.49,<2", "pillow>=10,<13"]
+# Work 034 S1c: the intake MCP server (`amplai_foundry.integrations.intake_mcp`), a separate
+# process next to the front agent. Exact pin (supply chain): the official MCP Python SDK. Raise it
+# in its own PR after reading the diff; its own dependencies are not pinned here.
+intake-mcp = ["mcp==2.3.0"]
 dev = [
+  # the intake MCP server is type-checked and tested in CI (same pin as `intake-mcp`)
+  "mcp==2.3.0",
   "mypy>=1.11,<2",
   "pytest>=8.3,<10",
   # CI runs the suite across the runner's cores (`-n auto`); serial it took ~15 min.
@@ -44,6 +50,9 @@ where = ["src"]
 [tool.setuptools.package-data]
 "amplai_foundry.runtime.contracts" = ["data/*.json", "data/schemas/*.json"]
 "amplai_foundry" = ["packs/**/*.json", "packs/**/*.md"]
+"amplai_foundry.integrations.intake_mcp" = ["contract.json", "requirements-hashes.txt"]
+# Work 034 S1c: front-agent kits are configuration, shipped with the wheel for the operator
+"amplai_foundry.integrations" = ["front_agents/**/*.md", "front_agents/**/*.json", "front_agents/**/*.template"]
 
 [tool.pytest.ini_options]
 # 기본 실행은 network·브라우저·컨테이너 없이 돈다. 명령줄의 `-m` 이 이것을 이긴다.

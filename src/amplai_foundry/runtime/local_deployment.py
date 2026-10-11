@@ -33,6 +33,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ..agent_drivers.ports import DriverRegistry
 from ..control_plane.api_v3.intake import (
     OPERATIONS,
+    PLAN_STATUSES,
     IntakeGate,
     IntakeServices,
     RateLimiter,
@@ -47,7 +48,7 @@ from ..verification.runtime.patch_commands import NonEmptyChangeCheck, SuiteVeri
 from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
 from .contracts.identity import digest
-from .contracts.intake import latest_stop
+from .contracts.intake import HERMES, INTAKE_PERMISSIONS, check_adapter, latest_stop
 from .contracts.registry import Contracts
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
@@ -90,6 +91,8 @@ from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
+from .notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
+from .notifier.slack import spec as slack_spec
 from .storage.store import Scope, Store
 
 SERVICE_PERMISSIONS = frozenset(
@@ -322,15 +325,70 @@ class IntakeRateLimits(BaseModel):
     cancel: RateLimitEntry
 
 
-class IntakeEntry(BaseModel):
-    """The messenger front agent's credentials (Work 034 S1a, spec H-5, H-6). Both files live
-    outside the store and are read on every request: removing or rotating the token revokes it at
-    once, and a store restore never brings it back. Absent: no intake routes."""
+class IntakeAdapterEntry(BaseModel):
+    """One intake adapter's credentials and ceiling (Work 034 S1a, S1c; spec H-5, H-6, F-2). Both
+    files live outside the store and are read on every request: removing or rotating the token
+    revokes it at once, and a store restore never brings it back. The adapter's routes are
+    ``/api/v3/intake/<adapter_id>`` and its actors are marked ``intake:<adapter_id>``."""
 
     model_config = ConfigDict(extra="forbid")
-    token_file: str  # 0600 file with the front agent's bearer token (32+ characters)
-    identity_map_file: str  # 0600 JSON (intake-identity-1): messenger user -> the operator
+    adapter_id: str
+    token_file: str  # 0600 file with the adapter's bearer token (32+ characters)
+    identity_map_file: str  # 0600 JSON (intake-identity-1|2): messenger user -> the operator
+    # The permission ceiling, within H-2 (``contracts/intake.py`` INTAKE_PERMISSIONS). No default:
+    # the operator names what each adapter may do.
+    permissions: list[str] = Field(min_length=1)
     rate_limits: IntakeRateLimits
+
+    @model_validator(mode="after")
+    def _ceiling(self) -> IntakeAdapterEntry:
+        if len(set(self.permissions)) != len(self.permissions):
+            raise ValueError(f"{self.adapter_id}: a permission is listed twice")
+        try:
+            check_adapter(self.adapter_id, frozenset(self.permissions))
+        except RuntimeFault as exc:
+            raise ValueError(f"{self.adapter_id}: {exc.message} {exc.details or ''}") from exc
+        return self
+
+
+class IntakeEntry(BaseModel):
+    """The configured intake adapters (spec F-2, F-6). Absent: no intake routes.
+
+    A pre-S1c file has one front agent written directly under ``intake`` (``token_file``,
+    ``identity_map_file``, ``rate_limits``). It is read as the single adapter ``hermes`` with the
+    whole H-2 permission set, which is what S1a granted, so it keeps working unchanged.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    adapters: list[IntakeAdapterEntry] = Field(min_length=1, max_length=8)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _single(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "adapters" not in value and "token_file" in value:
+            legacy = {"adapter_id": HERMES, "permissions": sorted(INTAKE_PERMISSIONS), **value}
+            return {"adapters": [legacy]}
+        return value
+
+    @model_validator(mode="after")
+    def _separate(self) -> IntakeEntry:
+        """Two adapters share no id, token file or identity map (AC-F2)."""
+        for field in ("adapter_id", "token_file", "identity_map_file"):
+            values = [getattr(a, field) for a in self.adapters]
+            if len(values) != len(set(values)):
+                raise ValueError(f"intake adapters need distinct {field} values")
+        return self
+
+
+class NotifierEntry(BaseModel):
+    """The operator's direct alert (Work 034 S1c, spec F-5, OD-9, Q-10): a Slack Incoming Webhook
+    of a Slack app separate from the front agent's. Absent: no direct alerts. Independent of
+    ``intake``: alerts keep going with the front agent turned off (AC-F3)."""
+
+    model_config = ConfigDict(extra="forbid")
+    module: Literal["notifier.slack_webhook"]
+    webhook_url_file: str  # 0600 file outside the store with the webhook URL, read on every send
+    interval_seconds: int = Field(default=5, ge=1, le=3600)  # outbox poll interval
 
 
 class LocalConfig(BaseModel):
@@ -355,6 +413,7 @@ class LocalConfig(BaseModel):
     meta: MetaEntry | None = None
     jev: JevEntry | None = None
     intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
+    notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -764,6 +823,25 @@ class LocalProductDeployment:
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
+        self.notifier_pump = self._notifier(cfg.notifier) if cfg.notifier is not None else None
+
+    def _notifier(self, entry: NotifierEntry) -> NotifierPump:
+        """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
+        receipts = StoreReceipts(self.store, self.scope, slack_spec().ref)
+        notifier = SlackWebhookNotifier(
+            self.local(entry.webhook_url_file), read=private_bytes, receipts=receipts
+        )
+
+        def status(goal_id: str) -> str:
+            try:
+                value = self.service.plan_record(goal_id).get("status")
+            except RuntimeFault:
+                return "unknown"
+            return value if value in PLAN_STATUSES else "unknown"
+
+        return NotifierPump(
+            self.store, self.scope, notifier, status, receipts, interval=entry.interval_seconds
+        )
 
     def _task_environments(
         self,
@@ -914,8 +992,12 @@ class LocalProductDeployment:
     def _operator_token(self) -> str:
         return private_bytes(self.local(self.config.operator_token_file)).decode().strip()
 
-    def _intake(self, entry: IntakeEntry) -> IntakeServices:
-        """The front agent's routes over the same services the operator uses (Work 034 S1a)."""
+    def _intake(self, entry: IntakeAdapterEntry) -> IntakeServices:
+        """One adapter's routes over the same services the operator uses (Work 034 S1a, S1c)."""
+        adapters = self.config.intake.adapters if self.config.intake is not None else []
+        peers = tuple(
+            self.local(a.token_file) for a in adapters if a.adapter_id != entry.adapter_id
+        )
         gate = IntakeGate(
             self.local(entry.token_file),
             self.local(entry.identity_map_file),
@@ -923,6 +1005,9 @@ class LocalProductDeployment:
             operator_subject=self.config.operator_subject,
             operator_token=self._operator_token,
             read=private_bytes,
+            adapter_id=entry.adapter_id,
+            permissions=frozenset(entry.permissions),
+            peer_token_files=peers,
         )
         limits: dict[str, tuple[int, float]] = {}
         for op in OPERATIONS:
@@ -1023,6 +1108,8 @@ class LocalProductDeployment:
         def goal(goal_id: str, a: Actor = Depends(actor)) -> Any:
             a.require("runtime.read")
             record = self.service.plan_record(goal_id)
+            if self.notifier_pump is not None:  # the operator's view only (review P2-A)
+                record = {**record, "notifier_health": self.notifier_pump.health()}
             stop = latest_stop(self.store, self.scope, goal_id)  # the operator's view only
             return record if stop is None else {**record, "front_agent_stop": stop}
 
@@ -1052,23 +1139,30 @@ class LocalProductDeployment:
 
         app.include_router(router)
         if self.config.intake is not None:
-            app.include_router(intake_router(self._intake(self.config.intake)))
+            for adapter in self.config.intake.adapters:  # one router, token and window each
+                app.include_router(intake_router(self._intake(adapter)))
         if start_loop:
             original = app.router.lifespan_context
 
             @asynccontextmanager
             async def lifespan(application: Any) -> Any:
                 self.loop.start()
+                if self.notifier_pump is not None:
+                    self.notifier_pump.start()
                 try:
                     async with original(application) as state:
                         yield state
                 finally:
+                    if self.notifier_pump is not None:
+                        self.notifier_pump.stop()
                     self.loop.stop()
 
             app.router.lifespan_context = lifespan
         return app
 
     def close(self) -> None:
+        if self.notifier_pump is not None:
+            self.notifier_pump.stop()
         self.loop.stop()
         self.store.close()
 

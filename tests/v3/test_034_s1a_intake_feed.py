@@ -187,7 +187,10 @@ def test_the_limiter_counts_per_actor_and_operation_in_a_sliding_window() -> Non
         lambda: clock[0],
     )
     scope = store_scope()
-    hermes, other = intake_actor("pinesky", scope), intake_actor("pinesky", scope, "other")
+    hermes, other = (
+        intake_actor("pinesky", scope, "hermes"),
+        intake_actor("pinesky", scope, "other"),
+    )
     limiter.check(hermes, "submit")
     limiter.check(hermes, "submit")
     with pytest.raises(RuntimeFault) as exc:
@@ -217,7 +220,7 @@ def test_a_resent_message_is_a_replay_and_is_never_limited(tmp_path: Path) -> No
     with_intake(home, {"submit": one, "cancel": one})
     dep = start(home)
     try:
-        assert dep._intake(dep.config.intake).limits.clock is time.monotonic
+        assert dep._intake(dep.config.intake.adapters[0]).limits.clock is time.monotonic
         with TestClient(dep.app) as client:
             first = submit(client, "m-1")
             goal = first.json()["goal_id"]

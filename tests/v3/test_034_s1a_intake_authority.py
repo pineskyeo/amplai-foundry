@@ -20,7 +20,6 @@ from amplai_foundry.control_plane.api_v3.server import ApiServices, BearerAuthen
 from amplai_foundry.runtime.contracts.authority import INTAKE_KIND, Actor
 from amplai_foundry.runtime.contracts.identity import new_id, now
 from amplai_foundry.runtime.contracts.intake import (
-    HERMES_CONTEXT,
     INTAKE_PERMISSIONS,
     INTAKE_QUESTION_KINDS,
     INTAKE_STEERING_KINDS,
@@ -57,9 +56,9 @@ def test_the_intake_actor_is_not_human_and_holds_only_the_front_agent_permission
     deployment: Any,
 ) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     assert hermes.kind == INTAKE_KIND != "human"
-    assert hermes.authn_context_ref == HERMES_CONTEXT == "intake:hermes"
+    assert hermes.authn_context_ref == "intake:hermes"
     assert hermes.permissions == INTAKE_PERMISSIONS == {
         "goal.submit", "runtime.read", "goal.steer", "question.answer", "knowledge.propose",
         "meta.read", "goal.cancel",
@@ -75,7 +74,7 @@ def test_the_intake_actor_is_not_human_and_holds_only_the_front_agent_permission
 
 
 def test_the_front_agent_cannot_issue_a_grant(deployment: Any) -> None:
-    hermes = intake_actor("demo-owner", deployment.scope)
+    hermes = intake_actor("demo-owner", deployment.scope, "hermes")
     with pytest.raises(RuntimeFault) as exc:
         deployment.authority.issue(hermes, {})
     assert exc.value.code == "FORBIDDEN"
@@ -85,7 +84,7 @@ def test_the_front_agent_cannot_approve_even_with_the_permission(
     deployment: Any, tmp_path: Path
 ) -> None:
     rig = build_rig(deployment, tmp_path)
-    hermes = intake_actor("pinesky", deployment.scope)
+    hermes = intake_actor("pinesky", deployment.scope, "hermes")
     goal = deployment.goals.submit(hermes, text="make value return 2", key="m-approve")["goal_id"]
     rig.service.plan(goal)
     with pytest.raises(RuntimeFault) as exc:
@@ -111,7 +110,7 @@ def receive(d: Any, actor: Actor, prepared: dict[str, Any], kind: str, **kw: Any
 def test_the_front_agent_may_send_its_allowed_kinds(
     deployment: Any, prepared: dict[str, Any], kind: str
 ) -> None:
-    hermes = intake_actor("demo-owner", deployment.scope)
+    hermes = intake_actor("demo-owner", deployment.scope, "hermes")
     extra = {"priority": 5} if kind == "priority_change" else {}
     assert receive(deployment, hermes, prepared, kind, **extra)["status"] == "queued"
 
@@ -141,7 +140,7 @@ def test_the_front_agent_resumes_only_a_goal_it_paused(
     deployment: Any, prepared: dict[str, Any]
 ) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     with pytest.raises(RuntimeFault) as exc:  # nothing paused
         receive(d, hermes, prepared, "resume")
     assert exc.value.code == "FORBIDDEN"
@@ -155,7 +154,7 @@ def test_the_front_agent_cannot_resume_what_the_operator_paused(
     d = deployment
     pause_applied(d, prepared, by=d.actor)  # the operator (a human) paused it
     with pytest.raises(RuntimeFault) as exc:
-        receive(d, intake_actor("demo-owner", d.scope), prepared, "resume")
+        receive(d, intake_actor("demo-owner", d.scope, "hermes"), prepared, "resume")
     assert exc.value.code == "FORBIDDEN" and "operator resumes" in exc.value.message
     # the operator still resumes it, and a human keeps every kind
     assert receive(d, d.actor, prepared, "resume")["status"] == "queued"
@@ -165,7 +164,7 @@ def test_a_pause_or_cancel_through_the_front_agent_leaves_an_operator_record(
     deployment: Any, prepared: dict[str, Any]
 ) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     receive(d, hermes, prepared, "pause")
     receive(d, d.actor, prepared, "pause")  # the operator's own pause is not a front-agent stop
     receive(d, hermes, prepared, "constraint_add")
@@ -178,7 +177,7 @@ def test_a_pause_or_cancel_through_the_front_agent_leaves_an_operator_record(
 def test_the_front_agent_reaches_only_its_operator_goals(
     deployment: Any, prepared: dict[str, Any]
 ) -> None:
-    other = intake_actor("someone-else", deployment.scope)
+    other = intake_actor("someone-else", deployment.scope, "hermes")
     with pytest.raises(RuntimeFault) as exc:
         receive(deployment, other, prepared, "pause")
     assert exc.value.code == "NOT_FOUND"
@@ -187,7 +186,7 @@ def test_the_front_agent_reaches_only_its_operator_goals(
 def test_the_steering_route_checks_the_kind_too(deployment: Any, prepared: dict[str, Any]) -> None:
     d = deployment
     token = "test-only-intake-token-aaaaaaaaaaaaaaaaaaaaaaa"
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     authenticate = BearerAuthenticator(
         {hashlib.sha256(token.encode()).hexdigest(): "hermes"}, lambda _b: hermes
     )
@@ -226,7 +225,7 @@ def test_the_front_agent_refines_an_intent_only_for_non_authority_questions(
     deployment: Any, kind: str
 ) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     goal = d.goals.submit(d.actor, text="alpha 결과 JSON 생성", key="g-" + kind)["goal_id"]
     ref = question(d, goal, kind)
     if kind in INTAKE_QUESTION_KINDS:
@@ -244,7 +243,7 @@ def test_the_front_agent_answers_only_non_authority_questions(
     deployment: Any, prepared: dict[str, Any], kind: str
 ) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     ref = question(d, prepared["goal_id"], kind)
     if kind in INTAKE_QUESTION_KINDS:
         assert d.goals.answer(hermes, ref, "yes", prepared["contract_ref"])["revision"] == 2
@@ -264,7 +263,7 @@ def test_the_operator_holds_the_cancel_permission() -> None:
 def cancel_rig(deployment: Any, tmp_path: Path) -> tuple[Any, ExecutionLoop, Actor, str]:
     rig = build_rig(deployment, tmp_path)
     loop = ExecutionLoop(rig.service, coordinator=None)
-    hermes = intake_actor("pinesky", deployment.scope)
+    hermes = intake_actor("pinesky", deployment.scope, "hermes")
     goal = deployment.goals.submit(hermes, text="make value return 2", key="m-cancel")["goal_id"]
     rig.service.plan(goal)
     return rig, loop, hermes, goal
@@ -298,7 +297,7 @@ def test_the_front_agent_cancel_revokes_an_approval(deployment: Any, tmp_path: P
 def test_cancel_needs_a_cancel_permission_and_an_own_goal(deployment: Any, tmp_path: Path) -> None:
     _rig, loop, hermes, goal = cancel_rig(deployment, tmp_path)
     with pytest.raises(RuntimeFault) as exc:
-        loop.cancel(intake_actor("someone-else", deployment.scope), goal, reason="x")
+        loop.cancel(intake_actor("someone-else", deployment.scope, "hermes"), goal, reason="x")
     assert exc.value.code == "NOT_FOUND"
     reader = replace(hermes, permissions=frozenset({"runtime.read"}))
     with pytest.raises(RuntimeFault) as exc:
@@ -341,7 +340,7 @@ def paused_by(d: Any, goal: str) -> Any:
 
 def test_who_paused_is_the_most_recent_pause_that_took_effect(deployment: Any) -> None:
     d = deployment
-    hermes = intake_actor("demo-owner", d.scope)
+    hermes = intake_actor("demo-owner", d.scope, "hermes")
     goal = d.goals.submit(d.actor, text="alpha 결과 JSON 생성", key="g-pauses")["goal_id"]
     assert paused_by(d, goal) is None
     steering_head(d, goal, hermes, "applied", "2026-10-11T01:00:00.000000Z")
