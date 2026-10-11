@@ -827,7 +827,7 @@ class LocalProductDeployment:
 
     def _notifier(self, entry: NotifierEntry) -> NotifierPump:
         """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
-        receipts = StoreReceipts(self.store, self.scope, slack_spec().ref)
+        receipts = StoreReceipts(self.store, self.scope, slack_spec().module_id)
         notifier = SlackWebhookNotifier(
             self.local(entry.webhook_url_file), read=private_bytes, receipts=receipts
         )

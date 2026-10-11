@@ -10,7 +10,8 @@ This module is the outbox's consumer when a notifier is configured:
   missing webhook file) is not acknowledged, so the outbox retries it with backoff.
 - A permanent refusal (``NOTIFY_REJECTED``: any other HTTP 4xx, e.g. a revoked webhook) is
   recorded and acknowledged: retrying would only repeat it. The operator sees it in
-  ``amplai status`` (:meth:`NotifierPump.health`).
+  ``amplai status`` (:meth:`NotifierPump.health`). A stop event that cannot be projected (a
+  malformed record) is recorded and acknowledged the same way (``NOTIFY_INPUT``).
 - A send that succeeded but whose acknowledgment was lost finds its receipt on the next delivery
   and is acknowledged without a second message, even if the goal's status changed in between.
 - Every other event is acknowledged without a send: it is not an operator alert in v1.
@@ -19,6 +20,14 @@ This module is the outbox's consumer when a notifier is configured:
 
 Delivery is at least once. A crash after the webhook POST and before the receipt is written
 sends that alert again on the next delivery; a Slack Incoming Webhook takes no idempotency key.
+
+Receipts, rejections and the watermark are keyed ``notifier:<module_id>`` (not the version), so a
+new version of the same module keeps them. Records written under an older key are not read: with
+no ``first-enable`` row under the current key, the watermark is taken again as the newest event
+seq. On such a key change, stop alerts still pending are acknowledged without a send (dropped,
+and they leave the ``undelivered`` count), an alert whose acknowledgment was lost is not resent,
+and the ``rejected`` count starts again from zero. No deployment had a notifier enabled when the
+key changed from ``module_id@version`` (Work 034 S1c review of #84), so nothing adopts the old key.
 
 The alert reads only the store, never the intake configuration, so it is sent with the front agent
 turned off or its adapter removed (AC-F3).
@@ -65,7 +74,8 @@ class NotifierPump:
         self.store, self.scope, self.notifier, self.status = store, scope, notifier, status
         self.receipts = receipts
         self.interval = interval
-        self.actor = "notifier:" + notifier.spec.ref
+        # keyed by module id, not version: an upgrade keeps receipts and the watermark (review P3-8)
+        self.actor = "notifier:" + notifier.spec.module_id
         self.last_error: dict[str, Any] | None = None
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -139,7 +149,14 @@ class NotifierPump:
             return True  # from before the notifier was first enabled: not flushed
         if self.receipts.get(event["event_id"]) is not None:
             return True
-        projection = self.projection(event)
+        try:
+            projection = self.projection(event)
+        except (KeyError, TypeError, AttributeError, RuntimeFault):
+            # a malformed stop record never becomes valid: record it, do not retry (review P3-7)
+            malformed = RuntimeFault("NOTIFY_INPUT", "The stop event cannot be projected")
+            self.last_error = {"code": malformed.code, "http_status": None, "at": now()}
+            self._reject(event, malformed)
+            return True
         if projection is None:
             return True
         try:
