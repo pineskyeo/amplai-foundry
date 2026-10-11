@@ -30,7 +30,13 @@ from typing import Any
 from ...sandbox.git_workspace import BASE_MEDIA, PATCH_BINDING
 from ..contracts.authority import Actor
 from ..contracts.identity import canonical, digest, new_id, now
-from ..contracts.intake import check_goal_access, is_intake, stop_requested
+from ..contracts.intake import (
+    OPERATOR_CANCEL,
+    cancel_reason,
+    check_goal_access,
+    is_intake,
+    stop_requested,
+)
 from ..errors import Hold, RuntimeFault
 from . import context_assembly, policies, prompts
 from .cells import DispatchOptions, resolve_options
@@ -81,6 +87,7 @@ class ExecutionLoop:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._cancel: set[str] = set()
+        self._cancel_reason: dict[str, str] = {}  # goal -> who cancelled it (review P2-3)
         self._lock = threading.Lock()
         self.steering = SteeringService(service.runtime)
         self._steering: dict[str, dict[str, Any]] = {}  # goal -> pending operator steering
@@ -102,8 +109,10 @@ class ExecutionLoop:
         if is_intake(operator):
             with self.store.tx() as db:
                 stop_requested(self.store, db, operator, goal_id, "cancel", why)
+        stopped = cancel_reason(operator)
         with self._lock:
             self._cancel.add(goal_id)
+            self._cancel_reason[goal_id] = stopped
         if plan.get("decision_ref"):
             self.service.revoke(operator, goal_id)
         if plan["status"] in {
@@ -114,8 +123,8 @@ class ExecutionLoop:
             "replan_failed",
             "escalation_pending",
         }:
-            self._end(goal_id, "cancelled", "cancelled by the operator")
-            return self._finish(goal_id, "cancelled", reason="cancelled by the operator")
+            self._end(goal_id, "cancelled", stopped)
+            return self._finish(goal_id, "cancelled", reason=stopped)
         return {**plan, "status": "cancelling"}
 
     def steer(self, operator: Actor, goal_id: str, text: str) -> dict[str, Any]:
@@ -482,7 +491,7 @@ class ExecutionLoop:
             return self._stop_goal(goal_id, "held", reason, attempts)
         while True:
             if goal_id in self._cancel:
-                return self._stop_goal(goal_id, "cancelled", "cancelled by the operator", attempts)
+                return self._stop_goal(goal_id, "cancelled", self._cancelled_by(goal_id), attempts)
             remaining = deadline - self.clock()
             if remaining <= 0:
                 return self._stop_goal(goal_id, "timed_out", "wall-clock budget spent", attempts)
@@ -562,7 +571,7 @@ class ExecutionLoop:
                 self._discard(dispatch["run_id"])
                 status = "cancelled" if goal_id in self._cancel else "held"
                 reason = (
-                    "cancelled by the operator"
+                    self._cancelled_by(goal_id)
                     if status == "cancelled"
                     else "driver failed: " + str(getattr(exc, "code", exc))
                 )
@@ -1308,9 +1317,14 @@ class ExecutionLoop:
         self.service._save_plan(goal_id, plan, event)
         return plan
 
+    def _cancelled_by(self, goal_id: str) -> str:
+        with self._lock:
+            return self._cancel_reason.get(goal_id, OPERATOR_CANCEL)
+
     def _finish(self, goal_id: str, status: str, **fields: Any) -> dict[str, Any]:
         with self._lock:
             self._cancel.discard(goal_id)
+            self._cancel_reason.pop(goal_id, None)
         # what the strategy did (plan.md §8.1), over every revision so far (Work 033 S9)
         with contextlib.suppress(Exception):  # metrics never stop a goal from finishing
             plan = {**self.service.plan_record(goal_id), **fields}

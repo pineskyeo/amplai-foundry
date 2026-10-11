@@ -172,6 +172,44 @@ def check_goal_access(store: Store, actor: Actor, goal_id: str) -> None:
 
 
 STOP_EVENT = "intake.stop_requested"
+OPERATOR_CANCEL = "cancelled by the operator"
+
+
+def cancel_reason(actor: Actor) -> str:
+    """The plan's recorded reason for a cancel: who stopped it, by the actor's mark (review
+    P2-3). A front agent's cancel names its adapter mark (``intake:<adapter>``), not the
+    operator, though the operator is its attribution."""
+    if is_intake(actor):
+        return f"cancelled by the front agent ({actor.authn_context_ref})"
+    return OPERATOR_CANCEL
+
+
+def latest_stop(store: Store, scope: Scope, goal_id: str) -> dict[str, Any] | None:
+    """The goal's most recent front-agent pause or cancel (``intake.stop_requested``) for the
+    operator's own view: who (actor mark), what, when, and the reason the front agent wrote."""
+    with store._lock:
+        row = store.conn.execute(
+            "SELECT data, created_at FROM events WHERE tenant=? AND project=? "
+            "AND aggregate_type='goal' AND aggregate_id=? AND event_type=? "
+            "ORDER BY seq DESC LIMIT 1",
+            (*scope.keys(), goal_id, STOP_EVENT),
+        ).fetchone()
+    if row is None:
+        return None
+    data = json.loads(row["data"])
+    actor = data.get("actor") if isinstance(data, dict) else None
+    by = actor.get("authn_context_ref") if isinstance(actor, dict) else None
+    if not isinstance(by, str) or not isinstance(data.get("kind"), str):
+        return None  # a malformed record is left out, never a failed goal view (review P3-7)
+    reason = data.get("reason")
+    return {
+        "by": by,
+        "kind": data["kind"],
+        "reason": reason if isinstance(reason, str) else "",
+        "at": row["created_at"],
+    }
+
+
 STEER_EVENT = "intake.steer_requested"
 
 

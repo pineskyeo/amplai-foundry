@@ -48,7 +48,7 @@ from ..verification.runtime.patch_commands import NonEmptyChangeCheck, SuiteVeri
 from ..verification.runtime.service import VerificationService
 from .contracts.authority import Actor, Authority
 from .contracts.identity import digest
-from .contracts.intake import HERMES, INTAKE_PERMISSIONS, check_adapter
+from .contracts.intake import HERMES, INTAKE_PERMISSIONS, check_adapter, latest_stop
 from .contracts.registry import Contracts
 from .errors import Hold, RuntimeFault
 from .evidence.cas import ArtifactStore
@@ -1110,7 +1110,8 @@ class LocalProductDeployment:
             record = self.service.plan_record(goal_id)
             if self.notifier_pump is not None:  # the operator's view only (review P2-A)
                 record = {**record, "notifier_health": self.notifier_pump.health()}
-            return record
+            stop = latest_stop(self.store, self.scope, goal_id)  # the operator's view only
+            return record if stop is None else {**record, "front_agent_stop": stop}
 
         @router.post("/goals/{goal_id}/approve")
         def approve(goal_id: str, body: ApproveBody, a: Actor = Depends(actor)) -> Any:
