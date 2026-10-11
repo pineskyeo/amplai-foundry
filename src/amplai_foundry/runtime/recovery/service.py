@@ -1,7 +1,8 @@
 """Online SQLite + immutable CAS backup, explicit restore and reconciliation.
 
-Backups are not grants. Restore enters a kill-switched state and raises the owner
-epoch; persisted authority must still be checked against live governance.
+Backups are not grants. Restore enters a kill-switched state, raises the owner epoch and
+starts a new store incarnation; persisted authority must still be checked against live
+governance.
 """
 
 from __future__ import annotations
@@ -141,6 +142,8 @@ class RecoveryService:
         store = Store(destination)
         try:
             with store.tx() as db:
+                # a restored history is another generation: older event cursors expire (AC-H6)
+                incarnation = store.renew_incarnation(db)
                 for scope_wire in manifest["scopes"]:
                     scope = Scope.parse(scope_wire)
                     try:
@@ -171,12 +174,14 @@ class RecoveryService:
                         {
                             "backup_id": manifest["backup_id"],
                             "owner_epoch": store.epoch,
+                            "incarnation": incarnation,
                             "authority_restored": False,
                         },
                     )
             return {
                 "status": "restored_admission_disabled",
                 "owner_epoch": store.epoch,
+                "incarnation": incarnation,
                 "backup_id": manifest["backup_id"],
             }
         finally:

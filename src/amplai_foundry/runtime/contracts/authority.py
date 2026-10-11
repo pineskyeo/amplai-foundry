@@ -19,6 +19,9 @@ from ..storage.store import Scope, Store
 from .identity import now, reference, sign, verify_signature
 from .registry import Contracts
 
+# A front agent acting for a linked operator (Work 034 D-106, ``contracts/intake.py``). Not human.
+INTAKE_KIND = "intake"
+
 
 @dataclass(frozen=True)
 class Actor:
@@ -32,10 +35,18 @@ class Actor:
         if permission not in self.permissions:
             raise RuntimeFault("FORBIDDEN", "Actor lacks required permission: " + permission)
 
+    def require_any(self, *permissions: str) -> None:
+        if not self.permissions & set(permissions):
+            raise RuntimeFault(
+                "FORBIDDEN", "Actor lacks required permission: one of " + ", ".join(permissions)
+            )
+
     def wire(self) -> dict[str, str]:
+        # the frozen 3.0.0 wire kind is human|service: an intake actor is written as a service
+        # and marked by its authn_context_ref (intake:<adapter>)
         return {
             "subject_id": self.subject_id,
-            "kind": self.kind,
+            "kind": "service" if self.kind == INTAKE_KIND else self.kind,
             "authn_context_ref": self.authn_context_ref,
         }
 

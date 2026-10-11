@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -30,6 +31,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
+from ..control_plane.api_v3.intake import (
+    OPERATIONS,
+    IntakeGate,
+    IntakeServices,
+    RateLimiter,
+    intake_router,
+)
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -98,7 +106,9 @@ SERVICE_PERMISSIONS = frozenset(
         "execution.approve",
     }
 )
-OPERATOR_PERMISSIONS = frozenset({"goal.submit", "runtime.read", "execution.approve", "goal.steer"})
+OPERATOR_PERMISSIONS = frozenset(
+    {"goal.submit", "runtime.read", "execution.approve", "goal.steer", "goal.cancel"}
+)
 
 
 class VerifierConfig(BaseModel):
@@ -294,6 +304,34 @@ class IntegrationEntry(BaseModel):
     timeout_seconds: int = 900
 
 
+class RateLimitEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    count: int = Field(ge=1, le=10_000)
+    window_seconds: int = Field(ge=1, le=86_400)
+
+
+class IntakeRateLimits(BaseModel):
+    """Per front-agent actor (H-3, H-7). No defaults: the design gives no numbers, so the
+    operator sets each one."""
+
+    model_config = ConfigDict(extra="forbid")
+    submit: RateLimitEntry
+    steer: RateLimitEntry
+    replan: RateLimitEntry
+    cancel: RateLimitEntry
+
+
+class IntakeEntry(BaseModel):
+    """The messenger front agent's credentials (Work 034 S1a, spec H-5, H-6). Both files live
+    outside the store and are read on every request: removing or rotating the token revokes it at
+    once, and a store restore never brings it back. Absent: no intake routes."""
+
+    model_config = ConfigDict(extra="forbid")
+    token_file: str  # 0600 file with the front agent's bearer token (32+ characters)
+    identity_map_file: str  # 0600 JSON (intake-identity-1): messenger user -> the operator
+    rate_limits: IntakeRateLimits
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -315,6 +353,7 @@ class LocalConfig(BaseModel):
     roles: RolesEntry | None = None
     meta: MetaEntry | None = None
     jev: JevEntry | None = None
+    intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -864,12 +903,41 @@ class LocalProductDeployment:
 
     def authenticate(self, authorization: str | None) -> Actor:
         # Read on every request: rotating the token file revokes the old one.
-        token = private_bytes(self.local(self.config.operator_token_file)).decode().strip()
+        token = self._operator_token()
         bindings = {hashlib.sha256(token.encode()).hexdigest(): "operator"}
         actor: Actor = BearerAuthenticator(bindings, lambda _b: self.operator())(
             authorization or ""
         )
         return actor
+
+    def _operator_token(self) -> str:
+        return private_bytes(self.local(self.config.operator_token_file)).decode().strip()
+
+    def _intake(self, entry: IntakeEntry) -> IntakeServices:
+        """The front agent's routes over the same services the operator uses (Work 034 S1a)."""
+        gate = IntakeGate(
+            self.local(entry.token_file),
+            self.local(entry.identity_map_file),
+            scope=self.scope,
+            operator_subject=self.config.operator_subject,
+            operator_token=self._operator_token,
+            read=private_bytes,
+        )
+        limits: dict[str, tuple[int, float]] = {}
+        for op in OPERATIONS:
+            limit = getattr(entry.rate_limits, op)
+            limits[op] = (limit.count, limit.window_seconds)
+        return IntakeServices(
+            gate=gate,
+            limits=RateLimiter(limits, time.monotonic),  # windows ignore wall-clock steps
+            store=self.store,
+            goals=self.goals,
+            plan=self.request_plan,
+            plan_record=self.service.plan_record,
+            steer=self.loop.steer,
+            replan=self.loop.replan,
+            cancel=self.loop.cancel,
+        )
 
     # -- planning in the background --------------------------------------------------------------
     def request_plan(self, goal_id: str) -> dict[str, Any]:
@@ -883,18 +951,34 @@ class LocalProductDeployment:
             except RuntimeFault:
                 pass
             self._planning.add(goal_id)
-        self.service._save_plan(goal_id, {"goal_id": goal_id, "status": "planning"})
+        try:  # a cancel that landed after the read above stays (PLAN_ENDED)
+            self.service._save_plan(
+                goal_id, {"goal_id": goal_id, "status": "planning"}, unless_ended=True
+            )
+        except Hold as exc:
+            with self._planning_lock:
+                self._planning.discard(goal_id)
+            if exc.code != "PLAN_ENDED":
+                raise
+            return self.service.plan_record(goal_id)
 
         def run() -> None:
             try:
                 self.service.plan(goal_id)
             except Exception as exc:
-                self.service._save_plan(
-                    goal_id,
-                    {"goal_id": goal_id, "status": "plan_failed",
-                     "reason": f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"[:600],
-                     "details": str(getattr(exc, "details", ""))[:1500]},
-                )  # fmt: skip
+                code = str(getattr(exc, "code", type(exc).__name__))
+                try:  # a goal cancelled while it was planned keeps its cancel (PLAN_ENDED)
+                    self.service._save_plan(
+                        goal_id,
+                        {"goal_id": goal_id, "status": "plan_failed",
+                         "reason": f"{code}: {exc}"[:600],
+                         "details": str(getattr(exc, "details", ""))[:1500]},
+                        ("planning.failed", {"code": code[:128]}),
+                        unless_ended=True,
+                    )  # fmt: skip
+                except Hold as held:
+                    if held.code != "PLAN_ENDED":
+                        raise
             finally:
                 with self._planning_lock:
                     self._planning.discard(goal_id)
@@ -964,6 +1048,8 @@ class LocalProductDeployment:
             return {"recorded": self.tracker.sync()}
 
         app.include_router(router)
+        if self.config.intake is not None:
+            app.include_router(intake_router(self._intake(self.config.intake)))
         if start_loop:
             original = app.router.lifespan_context
 

@@ -8,6 +8,7 @@ recorded under specs/019-v3-completion/runs/.
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from pathlib import Path
@@ -162,6 +163,11 @@ def test_a_steer_that_arrives_as_the_attempt_ends_is_withdrawn(
     assert steering_states(rig) == ["superseded"]
     d = rig.d
     assert not d.store.head(d.scope, "goal", goal)["data"].get("admission_paused")
+    # the withdrawal is a goal event too (Work 034: a feed reader sees it, not only the record)
+    (row,) = d.store.conn.execute(
+        "SELECT data FROM events WHERE aggregate_id=? AND event_type='steering.withdrawn'", (goal,)
+    ).fetchall()
+    assert json.loads(row["data"])["reason"] == "the turn finished before the request reached it"
 
 
 def test_a_pause_nobody_takes_over_stops_the_process(deployment: Any, tmp_path: Path) -> None:

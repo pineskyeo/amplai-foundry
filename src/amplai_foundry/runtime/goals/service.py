@@ -10,6 +10,7 @@ from typing import Any
 
 from ..contracts.authority import Actor
 from ..contracts.identity import digest, new_id, now
+from ..contracts.intake import check_question_kind
 from ..contracts.registry import Contracts
 from ..contracts.semantics import (
     check_contract,
@@ -354,6 +355,7 @@ class GoalService:
         question = self.store.get(scope, "question", question_ref)
         if question["assigned_actor_id"] != actor.subject_id:
             raise RuntimeFault("QUESTION_ACTOR", "Question belongs to another actor")
+        check_question_kind(actor, question["kind"])  # H-4: refinement too
         if question["status"] != "open":
             raise Conflict("QUESTION_CLOSED", "Question is no longer open")
         goal = self.store.head(scope, "goal", question["goal_id"])
@@ -455,6 +457,7 @@ class GoalService:
         q = self.store.get(actor.scope, "question", question_ref)
         if q["assigned_actor_id"] != actor.subject_id:
             raise RuntimeFault("QUESTION_ACTOR", "Question is assigned to another actor")
+        check_question_kind(actor, q["kind"])  # H-4
         if q["status"] != "open":
             raise Conflict("QUESTION_CLOSED", "Question already has a terminal resolution")
         current = self.store.head(actor.scope, "goal", q["goal_id"])["data"].get(

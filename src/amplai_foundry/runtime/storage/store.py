@@ -198,9 +198,19 @@ class Store:
             self.close()
             raise
         self.epoch = 0
+        # The store's generation (Work 034 AC-H6): kept across restarts, replaced by a restore
+        # (``renew_incarnation``). An event cursor names it, so a cursor taken before a restore is
+        # expired rather than read against another history. ``owner_epoch`` rises on every open.
+        self.incarnation = ""
         if not readonly:
             with self.tx() as db:
                 db.execute("INSERT OR IGNORE INTO meta VALUES('schema_major','3')")
+                db.execute(
+                    "INSERT OR IGNORE INTO meta VALUES('incarnation',?)", (new_id("incarnation"),)
+                )
+                self.incarnation = db.execute(
+                    "SELECT value FROM meta WHERE key='incarnation'"
+                ).fetchone()[0]
                 row = db.execute("SELECT value FROM meta WHERE key='owner_epoch'").fetchone()
                 self.epoch = int(row[0]) + 1 if row else 1
                 db.execute(
@@ -209,6 +219,15 @@ class Store:
         else:
             row = self.conn.execute("SELECT value FROM meta WHERE key='owner_epoch'").fetchone()
             self.epoch = int(row[0]) if row else 0
+            row = self.conn.execute("SELECT value FROM meta WHERE key='incarnation'").fetchone()
+            self.incarnation = str(row[0]) if row else ""
+
+    def renew_incarnation(self, db: sqlite3.Connection) -> str:
+        """Start a new generation in the caller's transaction (a restore does this)."""
+        value = new_id("incarnation")
+        db.execute("INSERT OR REPLACE INTO meta VALUES('incarnation',?)", (value,))
+        self.incarnation = value
+        return value
 
     def _migrate_commands_operation(self) -> None:
         """Rebuild a pre-3.0.0.dev4 ``commands`` table whose key lacked ``operation``.
