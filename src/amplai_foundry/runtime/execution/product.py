@@ -32,7 +32,7 @@ from ..contracts.authority import Actor
 from ..contracts.identity import ID, digest, new_id, now
 from ..errors import Conflict, Hold, RuntimeFault
 from ..storage.store import Scope, Store
-from . import context_assembly, policies, prompts, releases
+from . import context_assembly, policies, prompts, releases, text_bounds
 from .cells import LEGACY_CELLS, Cell, model_slug
 from .codex import put_record
 from .planner_codex import TASK_CLASSES
@@ -300,37 +300,67 @@ def _offline_turn(planner: Any) -> bool:
     return True
 
 
-def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
-    """Model text within contract schema bounds: trimmed, non-empty, at most 4000 characters."""
+REPLAN_HINT = (
+    "The replan's draft is over the bound: cancel the goal and submit a shorter goal (or split "
+    "it into several goals)."
+)
 
-    def text(value: str) -> str:
-        return value.strip()[:4000]
+
+def _clean_draft(draft: dict[str, Any], *, hint: str = text_bounds.SPLIT_HINT) -> dict[str, Any]:
+    """Model text within contract schema bounds: trimmed and non-empty, never cut (operator
+    decision 2026-10-12, option A). A value over its wire bound Holds: the objective over the
+    contract's 8192 or a work item's own objective over the node's 4096 with
+    PLANNING_OBJECTIVE_LENGTH, any other text over 4096 with PLANNING_TEXT_LENGTH
+    (``text_bounds``). ``hint`` ends the Hold message (what the operator can do about it)."""
+
+    def text(value: str, field: str, limit: int = text_bounds.ITEM_TEXT) -> str:
+        return text_bounds.bounded(value, field=field, limit=limit, hint=hint)
+
+    def objective(value: str, field: str, limit: int) -> str:
+        return text_bounds.bounded(
+            value, field=field, limit=limit, code=text_bounds.OBJECTIVE_LENGTH, hint=hint
+        )
+
+    def texts(values: list[str] | None, field: str) -> list[str]:
+        return [t for i, v in enumerate(values or []) if (t := text(v, f"{field}[{i}]"))]
+
+    def item_objective(value: str, field: str, goal: str) -> str:
+        # an item without its own objective carries the whole goal's, up to the contract bound
+        # (its workgraph node names it by reference, text_bounds.node_objective); so does an item
+        # that repeats it, which also keeps a cleaned draft clean again (_compile)
+        own = value.strip()
+        if not own or own == goal:
+            return goal
+        return objective(own, field, text_bounds.NODE_OBJECTIVE)
+
+    def acceptance(entries: list[dict[str, Any]] | None, field: str) -> list[dict[str, Any]]:
+        return [
+            {**a, "statement": s}
+            for i, a in enumerate(entries or [])
+            if (s := text(a["statement"], f"{field}[{i}].statement"))
+        ]
 
     cleaned = dict(draft)
+    goal = objective(draft.get("objective", ""), "objective", text_bounds.CONTRACT_OBJECTIVE)
     for key in ("in_scope", "non_goals", "constraints", "assumptions", "questions"):
-        cleaned[key] = [text(v) for v in draft.get(key) or [] if text(v)]
-    cleaned["acceptance"] = [
-        {**a, "statement": text(a["statement"])}
-        for a in draft.get("acceptance") or []
-        if text(a["statement"])
-    ]
+        cleaned[key] = texts(draft.get(key), key)
+    cleaned["acceptance"] = acceptance(draft.get("acceptance"), "acceptance")
     if "work_items" in draft:
         cleaned["work_items"] = [
             {
                 "app": item["app"],
-                "objective": text(item.get("objective", "")) or text(draft.get("objective", "")),
-                "in_scope": [text(v) for v in item.get("in_scope") or [] if text(v)],
-                "acceptance": [
-                    {**a, "statement": text(a["statement"])}
-                    for a in item.get("acceptance") or []
-                    if text(a["statement"])
-                ],
+                "objective": item_objective(
+                    item.get("objective", ""), f"work_items[{k}].objective", goal
+                ),
+                "in_scope": texts(item.get("in_scope"), f"work_items[{k}].in_scope"),
+                "acceptance": acceptance(item.get("acceptance"), f"work_items[{k}].acceptance"),
                 "after": [b for b in dict.fromkeys(item.get("after") or []) if b != item["app"]],
             }
-            for item in draft["work_items"]
+            for k, item in enumerate(draft["work_items"])
         ]
-    cleaned["objective"] = text(draft.get("objective", ""))
-    cleaned["summary"] = text(draft.get("summary", "")) or cleaned["objective"][:200]
+    cleaned["objective"] = goal
+    # the summary is a label; its fallback is a display excerpt of the objective
+    cleaned["summary"] = text(draft.get("summary", ""), "summary") or goal[:200]
     if not cleaned["objective"]:
         raise Hold("PLANNING_OBJECTIVE", "The draft has no objective")
     return cleaned
@@ -1143,7 +1173,8 @@ class LocalExecutionService:
         drafted, _facts = self._draft(
             planner, request, targets, verifiers, bases, mode=mode, args=args
         )
-        draft = _clean_draft(drafted["draft"])
+        # the replan's planner output overran a bound: the operator cannot shorten that draft
+        draft = _clean_draft(drafted["draft"], hint=REPLAN_HINT)
         if draft["questions"]:
             raise Hold("REPLAN_QUESTIONS", "The replan needs answers", details=draft["questions"])
         items = (
@@ -1172,7 +1203,7 @@ class LocalExecutionService:
             goal_id, intent, previous["resolution_ref"], {"target_refs": previous["targets"]},
             previous["context_bundle_ref"], installed, draft, mode=mode, items=items,
             policy_ref=previous["policy_ref"], revision=revision,
-            previous_graph_ref=plan["graph_ref"], replan_reason=reason[:4000],
+            previous_graph_ref=plan["graph_ref"], replan_reason=reason,  # bounded: loop.replan
             budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
             node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
@@ -1994,13 +2025,19 @@ class LocalExecutionService:
             mode=plan.get("mode", "work"), items=plan["work_items"],
             policy_ref=previous["policy_ref"], revision=revision,
             previous_graph_ref=plan["graph_ref"],
-            replan_reason=f"escalation to {to_cell}: {reason}"[:4000], budget=budget,
+            # a short internal string; checked against the workgraph bound, never cut (D-124)
+            replan_reason=text_bounds.bounded(
+                f"escalation to {to_cell}: {reason}", field="escalation reason",
+                limit=text_bounds.STEERING_TEXT, code="ESCALATION_REASON_LENGTH",
+                hint="The escalation reason is internal; report this as a defect.",
+            ),
+            budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
             node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
             environment_id=(plan.get("trial") or {}).get("environment_id"),  # IC-12 (S7b)
         )  # fmt: skip
         entry = {
-            "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason[:600],
+            "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason,
             "previous_contract_ref": plan["contract_ref"],
             "previous_graph_ref": plan["graph_ref"], "at": now(),
         }  # fmt: skip
@@ -2440,12 +2477,20 @@ class LocalExecutionService:
             target = self.apps[item["app"]]
             a = target.config.app_id
             depends = list(item.get("after_nodes") or []) or ["node-" + b for b in item["after"]]
+            node_id = item.get("node_id") or "node-" + a
             nodes.append(
                 {
-                    "node_id": item.get("node_id") or "node-" + a,
+                    "node_id": node_id,
                     "work_id": new_id("work-" + a),
                     "target_ref": target.binding_ref,
-                    "objective": item["objective"],
+                    # within the node bound, or named by reference with its digest (D-124): a
+                    # whole-goal node names this contract's objective, any other node its work
+                    # item; agents read the full text (text_bounds.full_objective)
+                    "objective": text_bounds.node_objective(
+                        item["objective"],
+                        node_id,
+                        whole_goal=item["objective"] == draft["objective"],
+                    ),
                     "strategy": "bounded_loop",
                     "depends_on": depends,
                     "join": "all_required",

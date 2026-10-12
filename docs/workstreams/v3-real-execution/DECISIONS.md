@@ -616,3 +616,31 @@
   실제 결과(canary 목표, merge 된 PR, D-078)와의 일치, 영역 비중, 결론당 비용. 평가 변경(과제 퇴출·추가·가중치,
   반복, 단계)은 별도 버전 트랙이다: 따로 검증하고 운영자가 승인하며 후보 실험 안에서 바꾸지 않는다.
 - Reason: 평가를 후보와 함께 바꾸면 효과를 구분할 수 없다(`design-reference/design/16_META_HARNESS.md:27`).
+
+## D-124 — Planning Text Is Never Cut; A Long Node Objective Is A Digest Reference
+
+- Status: accepted (운영자 결정 2026-10-12, option A)
+- Date: 2026-10-12
+- Context: pilot calibration 10(corpus 2.1.0)에서 `_clean_draft` 가 planner text 를 말없이 4000자로
+  잘랐다(`value.strip()[:4000]`, main 의 `runtime/execution/product.py:303-307`). implementer prompt 는
+  잘린 objective 만 받았다(`loop.py:809,819`). 4000자를 넘는 task 는 16개이고 그중 15개가 4096자를 넘는다(최장
+  7750). feature task 6개(customer-returns, purchase-receiving, warehouse-transfers, stock-allocation,
+  recurring-orders, price-lists)는 끝부분의 reader/CLI 규칙이 잘려 모든 cell 에서 실패했다. fairness check 는
+  planner/contract 경로를 거치지 않아 이 문제를 잡지 못했다.
+- Decision: contract, workgraph, prompt 로 가는 planner·strategy·operator text 는 말없이 자르지 않는다. frozen
+  3.0.0 schema 한도(contract objective 8192, node objective·항목 text 4096, steering text·replan_reason 4096)까지
+  받는다. 넘으면 coded Hold 를 낸다(`PLANNING_OBJECTIVE_LENGTH`, `PLANNING_TEXT_LENGTH`, `STEER_TEXT_LENGTH`,
+  `REPLAN_REASON_LENGTH`; details 는 field, length, limit). corpus v2 loader 는 8192자를 넘는 objective 를
+  `TASK_OBJECTIVE_LENGTH` 로 거부한다. 4096자를 넘는 node objective 는 참조 문장으로 남기고, 원문 그대로의
+  `sha256:` digest 를 함께 적는다. whole-goal node 의 참조는 graph `contract_ref` 가 가리키는 immutable contract
+  objective 를 원본으로 삼는다. integration node(goal + notes) 의 참조는 plan work item 을 원본으로 삼는다. agent 와
+  PR body 는 항상 원문을 읽는다(`text_bounds.full_objective`). 원문은 digest 로 검증하고, 일치하는 원본이 없으면
+  `OBJECTIVE_REFERENCE_MISMATCH` Hold 를 낸다.
+- Rejected: 4096자에서 Hold 한다. 그러면 단일 app goal 의 objective 가 contract 한도(8192)가 아니라 node 한도로
+  막혀, 영향받은 6개 task 를 포함해 4096자를 넘는 15개 task 가 돌지 못한다. 긴 objective 를 자동으로 split
+  한다. 사용자 요청의 의미를 시스템이 임의로 나누게 되고, 나눈 결과를 검증할 근거가 없다.
+- Consequence: objective 가 4096자를 넘으면 workgraph 만으로는 완결되지 않는다. node 의 원문은 contract 또는 plan
+  work item 에 있다. 대신 digest 가 node definition 에 들어가므로 objective 가 다르면 node definition digest 도
+  달라진다(`design-reference/design/06_WORKGRAPH_REPLAN.md:40` 의 reuse 조건 node definition digest). 원문은 언제든 검증할 수 있다. 표시·logging 용 excerpt 와 §5.2 auxiliary-turn 한도는
+  이번 결정 범위 밖이다(PR #85 에 지점별로 기록).
+- Source: PR #85, `src/amplai_foundry/runtime/execution/text_bounds.py`.

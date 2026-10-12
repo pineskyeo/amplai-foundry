@@ -29,6 +29,7 @@ from typing import Any
 
 from ..contracts.identity import digest, now
 from ..errors import Conflict, Hold, RuntimeFault
+from . import text_bounds
 from .product import PORT, LocalExecutionService
 
 KIND = "publication"
@@ -246,8 +247,11 @@ class GitPublisher:
         if value["mode"] == "draft_pr" and not value.get("pr_url"):
             draft = plan["draft"]
             body = self._body(
-                plan, draft, value, node=node if multi else None, earlier=earlier, app=app_id
-            )
+                plan, draft, value, node=node if multi else None, earlier=earlier, app=app_id,
+                contract_objective=lambda: str(
+                    self.store.get(self.scope, "goal-contract", plan["contract_ref"])["objective"]
+                ),
+            )  # fmt: skip
             prefix = "[AMPLAI design] " if plan.get("mode") == "design" else "[AMPLAI] "
             suffix = f" ({app_id})" if multi else ""
             value["pr_url"] = self.pr_creator(
@@ -331,6 +335,7 @@ class GitPublisher:
         node: dict[str, Any] | None = None,
         earlier: list[str] | None = None,
         app: str | None = None,
+        contract_objective: Callable[[], str],
     ) -> str:
         if node is not None:  # one app of a multi-app goal: its own acceptance and base
             mapping = plan.get("acceptance_map") or {}
@@ -340,7 +345,8 @@ class GitPublisher:
             )
             app = app or node["node_id"][len("node-") :]
             base_commit = (plan.get("base_commits") or {}).get(app, plan["base_commit"])
-            head = f"{draft['objective']}\n\nThis PR: {node['objective']} ({app})"
+            part = text_bounds.full_objective(plan, node, contract_objective)
+            head = f"{draft['objective']}\n\nThis PR: {part} ({app})"
         else:
             acceptance = "\n".join(
                 f"- {a['statement']} (`{a['verifier']}`)" for a in draft["acceptance"]
