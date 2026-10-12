@@ -568,12 +568,12 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 | Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 → 결정: B, N-9 조건부 (2026-10-11) | S1d |
 | Q-9 | 제어 기록 위치 → 결정: 제품 store (2026-10-11, 운영자 "정석대로") | S1d |
 | Q-10 | notifier 의 Slack 방식 → 결정: Incoming Webhook, Hermes 와 다른 Slack 앱 (보내기만, 최소 권한, 독립 채널). 여러 사람 DM·메시지 갱신이 필요해지면 bot 구현을 추가 (2026-10-11) | S1c |
-| Q-11 | Ubuntu 18.04 서버: sudo(전용 계정, system unit) 가능 여부, 사용자 systemd(linger) 사용 가능 여부, crontab 사용 가능 여부, docker daemon(`appdocker`)의 관리 주체 | S4a 서비스 관리·계정 |
+| Q-11 | Ubuntu 서버: 신청하면 sudo·systemd·crontab 을 모두 쓸 수 있고, 받은 기간 동안 한시적으로 쓴다 → 결정: system unit 1순위(D-118). 한시 사용이라 반납 전 백업·이전 절차가 필요하다 (운영자 답 2026-10-12) | S4a |
 | Q-12 | RHEL 7 지원 여부. 사실: 엔진 없음, glibc 2.17, git 1.8.3.1, `/home` 여유 1.8G, RHEL 7 유지보수 지원 종료(2024-06). 권장: 실행 호스트 미지원 | S4b 묶음 platform, 지원 표 |
 | Q-13 | RHEL 8 사이트 점검 (`site_env_check.sh`): Python 3.11 유무, podman 버전·rootless·cgroup 버전, SELinux 모드 | S4a 엔진·권한 |
-| Q-14 | 사내 반입 절차(매체, 검사, 승인자)와 사내 공용 컨테이너 registry 유무 | S4b |
-| Q-15 | 사내 git 서버 종류·API (PR 게시는 지금 `gh` 전용, `runtime/execution/publish.py:86-104`; K-9 승인 증거도 같은 서버) | S4c, S2a |
-| Q-16 | WSL2 를 상시 서버로 쓰나. Windows 절전·재부팅·WSL 유휴 종료 때 systemd 서비스가 유지되나 | S4a, 야간 루프 |
+| Q-14 | 사내 공용 컨테이너 registry 는 없다. 서버만 있다 (운영자 답 2026-10-12) → 이미지는 tar 로 반입해 `docker load` 하고, registry 없이 이미지 ID(config digest)로 고정하는 방식으로 바꾼다 (지금 `sandbox/container.py:34` 는 `@sha256` registry digest 만 받는다, D-121 수정 대상). 반입 매체·승인자 절차는 확인 필요 | S4b |
+| Q-15 | 사내 GitHub 가 있다 (운영자 답 2026-10-12; GitHub Enterprise Server 인지는 확인 필요) → 코드 저장소 연결도 모듈로 둔다 (OD-15, `git_host` kind: 첫 구현 GitHub·GitHub Enterprise, 다른 서버는 나중에). PR 게시 `runtime/execution/publish.py:86-104` 의 `gh` 고정을 이 모듈 뒤로 옮긴다 | S4c, S2a |
+| Q-16 | WSL2 는 Windows 절전·재부팅 뒤에도 유지된다 (운영자 답 2026-10-12). systemd 는 `/etc/wsl.conf` 로 켤 수 있고 켜졌다(PID 1 systemd), docker.io 29.1.3 설치됨 | S4a |
 | Q-17 | 데이터·백업 디스크의 파일 시스템 종류(NFS 여부)와 용량 | S4a 경로, AC-C9 |
 | Q-18 | bind 쓰기 시험 결과 (Ubuntu 18.04 는 이미지 하나로 `sh site_env_check.sh <image>`, WSL 은 엔진 도달부터) | S4a uid·ACL |
 | Q-19 | 각 호스트 CPU 아키텍처 (`uname -m`) | S4b wheel·이미지 platform |
