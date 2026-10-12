@@ -75,7 +75,11 @@ def _work030(task_ids: list[str], repeats: int) -> int:
 
 
 def _v2(root: Path, domains: list[str] | None, task_ids: list[str], repeats: int) -> int:
-    corpus = corpus_v2.load(root)
+    try:
+        corpus = corpus_v2.load(root)
+    except CorpusError as exc:  # e.g. TASK_OBJECTIVE_LENGTH: an objective over the contract's
+        print(f"{exc.code}: {exc}")
+        return 1
     known = {t.task_id for t in corpus.tasks}
     unknown = sorted(set(task_ids) - known)
     if unknown:

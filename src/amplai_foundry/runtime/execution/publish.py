@@ -29,6 +29,7 @@ from typing import Any
 
 from ..contracts.identity import digest, now
 from ..errors import Conflict, Hold, RuntimeFault
+from . import text_bounds
 from .product import PORT, LocalExecutionService
 
 KIND = "publication"
@@ -340,7 +341,8 @@ class GitPublisher:
             )
             app = app or node["node_id"][len("node-") :]
             base_commit = (plan.get("base_commits") or {}).get(app, plan["base_commit"])
-            head = f"{draft['objective']}\n\nThis PR: {node['objective']} ({app})"
+            part = text_bounds.full_objective(plan, node)
+            head = f"{draft['objective']}\n\nThis PR: {part} ({app})"
         else:
             acceptance = "\n".join(
                 f"- {a['statement']} (`{a['verifier']}`)" for a in draft["acceptance"]

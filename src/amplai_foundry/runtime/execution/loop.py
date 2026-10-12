@@ -38,7 +38,7 @@ from ..contracts.intake import (
     stop_requested,
 )
 from ..errors import Hold, RuntimeFault
-from . import context_assembly, policies, prompts
+from . import context_assembly, policies, prompts, text_bounds
 from .cells import DispatchOptions, resolve_options
 from .product import PLAN_ENDED, PORT, LocalExecutionService
 from .steering import SteeringService
@@ -133,7 +133,11 @@ class ExecutionLoop:
         acceptance do not change; to change them, replan."""
         operator.require("goal.steer")
         check_goal_access(self.store, operator, goal_id)
-        message = text.strip()[:4000]
+        # never cut (option A, 2026-10-12): the agent gets the whole message or none
+        message = text_bounds.bounded(
+            text, field="steering message", limit=text_bounds.STEERING_TEXT,
+            code="STEER_TEXT_LENGTH", hint="Shorten the message.",
+        )  # fmt: skip
         if not message:
             raise Hold("STEER_TEXT", "Steering needs a message")
         return self._request(operator, goal_id, "pause", message, kind="steer")
@@ -144,7 +148,10 @@ class ExecutionLoop:
         nothing runs until the operator approves that revision."""
         operator.require("goal.steer")
         check_goal_access(self.store, operator, goal_id)
-        why = reason.strip()[:4000]
+        why = text_bounds.bounded(
+            reason, field="replan reason", limit=text_bounds.STEERING_TEXT,
+            code="REPLAN_REASON_LENGTH", hint="Shorten the reason.",
+        )  # fmt: skip
         if not why:
             raise Hold("REPLAN_REASON", "Replanning needs a reason")
         return self._request(operator, goal_id, "acceptance_change", why, kind="replan")
@@ -826,7 +833,8 @@ class ExecutionLoop:
         lines += ["Constraints: " + "; ".join(c["statement"] for c in contract["constraints"])]
         mapping = plan.get("acceptance_map")
         if node is not None and len(plan.get("work_items") or []) > 1:
-            lines.append(f"This part of the goal, in {app.app_id}: {node['objective']}")
+            part = text_bounds.full_objective(plan, node)
+            lines.append(f"This part of the goal, in {app.app_id}: {part}")
         lines.append("Acceptance (each must pass):")
         if mapping and node is not None:
             for ac in node["acceptance_ids"]:
