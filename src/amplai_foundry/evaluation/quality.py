@@ -541,13 +541,14 @@ class QualityService:
         }
 
     def _drift_summary(self, summary: dict[str, Any]) -> bool:
-        """eval-11: the summary's plan is a drift calibration (``calibration.is_drift_plan``)."""
+        """eval-11: the summary's plan is a drift calibration (``calibration.is_drift_plan``) or
+        cannot be read (then it cannot be shown not to be one, so it is left out too)."""
         from .calibration import PLAN_KIND, is_drift_plan
 
         try:
             plan = self.store.get(self.scope, PLAN_KIND, summary["plan_ref"])
         except (RuntimeFault, KeyError, TypeError):
-            return False
+            return True
         return is_drift_plan(plan)
 
     # -- saturation and flakiness ----------------------------------------------------------------

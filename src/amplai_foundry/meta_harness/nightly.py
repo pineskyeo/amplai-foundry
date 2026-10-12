@@ -162,6 +162,11 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
         if bad:
             raise RuntimeFault("NIGHTLY_CONFIG", "Invalid nightly config (§2.14, §12.2)",
                                details=bad)  # fmt: skip
+        # eval-11 review: a drift task listed twice would be counted twice in the band
+        duplicates = sorted({t for t in self.drift_tasks if self.drift_tasks.count(t) > 1})
+        if duplicates:
+            raise Hold("NIGHT_CONFIG", "meta.nightly.drift_tasks lists a task more than once",
+                       details={"duplicates": duplicates})  # fmt: skip
 
     @classmethod
     def from_entry(cls, entry: Any) -> NightlyConfig:
@@ -272,6 +277,23 @@ def phase_budget(budget: int, shares: dict[str, float], *, screening: bool) -> d
         "search": search_all - design,
         "confirmation": budget - drift - search_all,
     }
+
+
+def _unchecked_reason(
+    cell: str, batch: dict[str, Any] | None, findings: list[str], budget_stops: frozenset[str]
+) -> str | None:
+    """Why a drift unit measured nothing usable (eval-11 review), or None: the unit was refused
+    (the code of its ``DRIFT <cell>:`` finding), ran no known trial (``NO_RUNS``), or stopped for a
+    reason that is not its budget (the stop reason)."""
+    if batch is None:
+        codes = [f.split(": ", 1)[1] for f in findings if f.startswith(f"DRIFT {cell}: ")]
+        return codes[-1] if codes else "PHASE_SHARE"
+    if not batch.get("runs"):
+        return "NO_RUNS"
+    stopped = batch.get("stopped")
+    if stopped is not None and stopped not in budget_stops:
+        return str(stopped)
+    return None
 
 
 # -- the backend ----------------------------------------------------------------------------------
@@ -472,7 +494,8 @@ class NightlyRunner:
     # -- drift ------------------------------------------------------------------------------------
     def drift_check(self, cell_id: str) -> dict[str, Any]:
         """The champion's snapshot now vs at calibration, and the calibrated band of the drift
-        tasks (no trial runs here). ``status``: ``changed`` | ``ok`` | ``uncalibrated``."""
+        tasks (no trial runs here). ``status``: ``changed`` | ``ok`` | ``uncalibrated`` (``_drift``
+        may then set ``outside_band``, ``unchecked`` or ``recalibration_pending``)."""
         seen = self.backend.snapshot(cell_id, self.config.drift_tasks)
         current = dict(seen.get("current") or {})
         calibrated = seen.get("calibrated")
@@ -786,6 +809,9 @@ class NightlyRunner:
             self._phase(night, "preflight", "stopped", reason="kill_switch")
             raise _Stop("kill_switch")
         problems = self.backend.preflight(self.config.cells)
+        fit = self._drift_fit(night)
+        if fit is not None:
+            problems = [*problems, fit]
         if float(self.clock()) >= night.stop_at:
             problems = [*problems, {"code": "STOP_AT", "stop_at": self.config.stop_at}]
         if problems:
@@ -795,9 +821,28 @@ class NightlyRunner:
                     stop_at=datetime.fromtimestamp(night.stop_at).astimezone().isoformat(),
                     )  # fmt: skip
 
+    def _drift_fit(self, night: _Night) -> dict[str, Any] | None:
+        """eval-11 review: the drift tasks must fit one cell's drift share (the per-cell limit of
+        ``_drift``), else every night would skip drift with PHASE_SHARE; a NIGHT_CONFIG
+        preflight problem, before any trial."""
+        tasks = len(set(self.config.drift_tasks))
+        cells = len(self.config.cells)
+        if not tasks or not cells:
+            return None
+        limit = int(night.caps["drift"]) // cells
+        if tasks <= limit:
+            return None
+        return {"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_share",
+                "drift_tasks": tasks, "limit_per_cell": limit, "cells": cells,
+                "budget_trials": night.plan["budget_trials"],
+                "share": night.plan["shares"]["drift"]}  # fmt: skip
+
     def _drift(self, night: _Night) -> None:
+        from ..evaluation.calibration import BUDGET_STOPS
+
         results: dict[str, Any] = {}
         drifted: list[str] = []
+        unchecked: list[str] = []
         pending: set[str] = set()
         for cell in self.config.cells:
             check = self.drift_check(cell)
@@ -837,10 +882,22 @@ class NightlyRunner:
                         check["outside_band"] = not lower <= passes <= upper
                         if check["outside_band"]:
                             check["status"] = "outside_band"
+                # eval-11 review (fail closed): a calibrated cell whose drift unit was refused,
+                # ran nothing, or stopped for a reason other than its budget is not measured;
+                # search stays stopped for the night (no re-calibration is scheduled)
+                why = _unchecked_reason(cell, batch, night.data["findings"], BUDGET_STOPS)
+                if why is not None and check["status"] == "ok":
+                    check["status"], check["unchecked_reason"] = "unchecked", why
+                    night.data["findings"].append(f"DRIFT {cell}: UNCHECKED {why}")
+                    unchecked.append(cell)
             results[cell] = check
             if check["status"] in ("changed", "outside_band", "recalibration_pending"):
                 drifted.append(cell)
         night.data["drift"] = results
+        if unchecked:
+            night.search_blocked = True
+            if not drifted:
+                self._stopped(night, "drift", {"cells": [], "unchecked": unchecked})
         if drifted:
             night.search_blocked = True
             for cell in drifted:
@@ -863,9 +920,9 @@ class NightlyRunner:
                     night.data["proposals"] += self.backend.removal_sweep(cell, reason)
                 except Hold as exc:
                     night.data["findings"].append(f"REMOVAL_SWEEP {cell}: {exc.code}")
-            self._stopped(night, "drift", {"cells": drifted})
-        self._phase(night, "drift", "drift" if drifted else "done", cells=sorted(results),
-                    drifted=drifted)  # fmt: skip
+            self._stopped(night, "drift", {"cells": drifted, "unchecked": unchecked})
+        self._phase(night, "drift", "drift" if drifted or unchecked else "done",
+                    cells=sorted(results), drifted=drifted, unchecked=unchecked)  # fmt: skip
 
     def _screening(self, night: _Night) -> None:
         name = "screening_design"
@@ -1304,7 +1361,7 @@ class LocalNightlyBackend:
             if refs:
                 calibrated = composition_snapshot(self.store, self.scope, refs[0])
             rows = ((summary.get("cells") or {}).get(cell_id) or {}).get("tasks") or {}
-            picked = [rows[t] for t in drift_tasks if isinstance(rows.get(t), dict)]
+            picked = [rows[t] for t in dict.fromkeys(drift_tasks) if isinstance(rows.get(t), dict)]
             if picked:
                 band = {"passes": sum(int(r.get("passes") or 0) for r in picked),
                         "runs": sum(int(r.get("runs") or 0) for r in picked)}  # fmt: skip
@@ -1336,6 +1393,16 @@ class LocalNightlyBackend:
         case_ids = [cid for cid in frozen if cid in wanted]
         if not case_ids:
             raise Hold("NIGHT_CONFIG", "The night names no drift task", details={"unknown": []})
+        # eval-11 review: band and observed count the same tasks, so every drift task needs a
+        # row in the operator's baseline calibration (when there is one)
+        latest = self._calibration(cell_id, corpus_ref)
+        if latest is not None:
+            rows = ((latest[1].get("cells") or {}).get(cell_id) or {}).get("tasks") or {}
+            missing = [t for t in case_ids if not isinstance(rows.get(t), dict)]
+            if missing:
+                raise Hold("DRIFT_BASELINE",
+                           "A drift task has no row in the operator's baseline calibration",
+                           details={"missing": missing})  # fmt: skip
         if len(case_ids) > limit:
             raise Hold("NIGHT_STOPPED", "The drift calibration needs more than the drift share",
                        details={"reason": "phase_share", "needs": len(case_ids)})  # fmt: skip
@@ -1380,7 +1447,7 @@ class LocalNightlyBackend:
         ]
         summary = self.store.get(self.scope, calibration.SUMMARY_KIND, summary_ref)
         rows = summary["cells"][cell_id]["tasks"]
-        picked = [rows[t] for t in tasks if isinstance(rows.get(t), dict)]
+        picked = [rows[t] for t in case_ids if isinstance(rows.get(t), dict)]
         return {
             "trials": len(trials),
             "passes": sum(int(r.get("passes") or 0) for r in picked),

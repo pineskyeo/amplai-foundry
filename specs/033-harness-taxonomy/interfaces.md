@@ -4076,7 +4076,27 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
   the calibrated splits that are in `drift_tasks`, in corpus order; a drift task that is not such a
   case holds `NIGHT_CONFIG` (`details.unknown`, sorted) before any trial (the night records the
   finding `DRIFT <cell>: NIGHT_CONFIG`); the phase-share check (`NIGHT_STOPPED` `phase_share`) and
-  the trial guard count the subset. The plan carries `"purpose": "drift"`.
+  the trial guard count the subset. The plan carries `"purpose": "drift"`. When the operator has a
+  baseline calibration, every drift task needs a row in it, else `drift_run` holds `DRIFT_BASELINE`
+  (`details.missing`) before any trial, so the band and the observed count cover the same tasks.
+- **Config fit** (PR #88 review): `meta.nightly.drift_tasks` lists each task once
+  (`NightlyConfig` holds `NIGHT_CONFIG` `details.duplicates` otherwise). The drift tasks must fit
+  one cell's drift share, `len(drift_tasks) <= floor(budget_trials x shares.drift) // len(cells)`
+  (the first cell's limit in `_drift`); otherwise the night's preflight records the problem
+  `{"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_share", "drift_tasks", "limit_per_cell",
+  "cells", "budget_trials", "share"}` and the night stops at preflight before any trial, instead of
+  skipping drift with `PHASE_SHARE` every night. The pilot meta config (20 drift tasks, 2 cells,
+  B=150, share 0.1, limit 7) therefore needs fewer drift tasks, fewer cells or a larger B.
+- **Fail closed** (PR #88 review, D-117 "못 읽으면 멈춘다"): a cell with a calibrated band whose
+  drift unit was refused (any Hold, including `PHASE_SHARE`, `NIGHT_CONFIG`, `DRIFT_BASELINE`,
+  `NO_DRIFT_CORPUS`, `CELL_UNKNOWN`), ran no known trial (`NO_RUNS`), or stopped for a reason that
+  is not its budget (`calibration.BUDGET_STOPS`; e.g. `pre_run_failures`, `provider_failures`) gets
+  status `unchecked` with `unchecked_reason` and the finding `DRIFT <cell>: UNCHECKED <reason>`.
+  Search, screening and confirmation are skipped for the night as for `changed`/`outside_band`
+  (`stopped: "drift"`, `stop_details.unchecked`), but no re-calibration or removal sweep is
+  scheduled, so the next night measures again. `uncalibrated` (no operator baseline band) keeps its
+  existing behaviour (`drift_check`, `test_an_uncalibrated_cell_is_not_drift`): there is nothing to
+  compare, so search runs.
 - **Never a baseline**: a drift summary is never a cell's calibration (every reader uses
   `calibration.is_drift_plan`). `LocalNightlyBackend._calibration` (the band) skips drift plans as
   well as derived approvals; `LocalMetaOps.latest_summary` (a new stage plan's summary) skips them;
@@ -4099,5 +4119,7 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
   cases, ordinary subset refused, out-of-order/repeated/unknown/holdout refused, purpose values),
   `tests/v3/test_033_s12_nightly.py` (`test_eval11_*` on `RealNight`: plan pins the subset in
   corpus order, band and observed count the same tasks, phase share counts the subset, unknown
-  drift task holds `NIGHT_CONFIG`, a drift summary is never the band or `latest_summary`, drift
-  purpose off the regression set derives no approval).
+  drift task holds `NIGHT_CONFIG`, a drift task without a baseline row holds `DRIFT_BASELINE`, a
+  drift summary is never the band, `latest_summary` or the dashboard's, drift purpose off the
+  regression set derives no approval; on the fake backend: drift tasks over the per-cell share stop
+  the night at preflight, duplicates hold, each unmeasured trigger is `unchecked` and stops search).
