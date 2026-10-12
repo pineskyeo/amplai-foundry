@@ -36,6 +36,7 @@ from amplai_foundry.runtime.storage.store import Scope, Store
 from rc06_rig import FixedPlanner
 
 FEED = "/api/v3/intake/hermes/events"
+SNAPSHOT = "/api/v3/intake/hermes/snapshot"
 
 
 def start(home: Path, config: Path | None = None) -> LocalProductDeployment:
@@ -59,6 +60,12 @@ def product(tmp_path: Path) -> Any:
 def feed(client: TestClient, cursor: str | None = None) -> Any:
     params = {**SLACK_USER, **({"cursor": cursor} if cursor is not None else {})}
     return client.get(FEED, headers=HERMES, params=params)
+
+
+def snapshot(client: TestClient) -> Any:
+    response = client.get(SNAPSHOT, headers=HERMES, params=SLACK_USER)
+    assert response.status_code == 200, response.text
+    return response.json()
 
 
 # -- the store incarnation -----------------------------------------------------------------------
@@ -91,10 +98,11 @@ def test_without_a_cursor_the_feed_starts_from_a_snapshot(product: Any) -> None:
     goal = submit(client).json()["goal_id"]
     wait_status(client, goal, {"planning"})
     first = feed(client).json()
-    assert first["items"] == []
-    assert [g["goal_id"] for g in first["snapshot"]] == [goal]
+    assert first["items"] == [] and "snapshot" not in first
+    assert first["snapshot_ref"] == SNAPSHOT  # H-16: the snapshot is a route, not inline
     incarnation, _, seq = first["cursor"].rpartition(":")
     assert incarnation == dep.store.incarnation and int(seq) > 0
+    assert [g["goal_id"] for g in snapshot(client)["items"]] == [goal]
 
 
 def test_notifications_name_only_the_operator_goals_and_never_carry_raw_text(
@@ -137,8 +145,11 @@ def test_a_cursor_past_the_newest_event_or_of_another_generation_is_expired(
         response = feed(client, stale)
         assert response.status_code == 409
         body = response.json()
-        assert body["code"] == "CURSOR_EXPIRED" and body["cursor"] == fresh
-        assert [g["goal_id"] for g in body["snapshot"]] == [goal]
+        assert body["code"] == "CURSOR_EXPIRED" and body["snapshot_ref"] == SNAPSHOT
+        assert "snapshot" not in body and "cursor" not in body  # resume from the snapshot's
+        again = snapshot(client)
+        assert [g["goal_id"] for g in again["items"]] == [goal]
+        assert again["cursor"].startswith(incarnation + ":")
     for malformed in ("12", "abc:", ":12", f"{incarnation}:\u00b2", f"{incarnation}:\u0661\u0662"):
         response = feed(client, malformed)  # other-script digits too: 400, never a 500
         assert response.status_code == 400 and response.json()["code"] == "EVENT_CURSOR"
@@ -172,7 +183,11 @@ def test_after_a_restore_old_cursors_expire_and_a_revoked_token_stays_revoked(
             new = {"Authorization": "Bearer test-only-new-token-" + "n" * 40}
             response = again.get(FEED, headers=new, params={**SLACK_USER, "cursor": cursor})
             assert response.status_code == 409 and response.json()["code"] == "CURSOR_EXPIRED"
-            assert [g["goal_id"] for g in response.json()["snapshot"]] == [goal]
+            assert response.json()["snapshot_ref"] == SNAPSHOT
+            assert again.get(SNAPSHOT, headers=HERMES, params=SLACK_USER).status_code == 401
+            resumed = again.get(SNAPSHOT, headers=new, params=SLACK_USER).json()
+            assert [g["goal_id"] for g in resumed["items"]] == [goal]
+            assert resumed["cursor"].startswith(restored.store.incarnation + ":")
     finally:
         restored.close()
 

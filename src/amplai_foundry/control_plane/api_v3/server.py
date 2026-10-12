@@ -26,6 +26,10 @@ from amplai_foundry.runtime.errors import Conflict, Hold, RuntimeFault
 from amplai_foundry.runtime.execution.steering import SteeringService
 from amplai_foundry.runtime.storage.store import Store
 
+from . import cursor as event_cursor
+
+SNAPSHOT_LIMIT = 1000  # heads in one operator snapshot; more is reported as truncated
+
 
 class Body(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -828,33 +832,44 @@ def create_app(services: ApiServices) -> FastAPI:
     @app.get("/api/v3/events")
     async def events(
         request: Request,
-        after: int = 0,
+        after: str | None = None,
         limit: int = 100,
         follow: bool = False,
         last_event_id: str = Header(default="", alias="Last-Event-ID"),
         a: Actor = Depends(actor),
     ) -> Any:
+        """The scope's events after a generation cursor ``<incarnation>:<seq>`` (H-16), given as
+        ``after`` or, on an SSE reconnect, ``Last-Event-ID`` (which wins: it is the newer). No
+        cursor streams from the start of this generation. A bare number (the cursor before
+        H-16) cannot be tied to a generation, so it is ``CURSOR_EXPIRED`` like a cursor of
+        another generation or past the newest event; the caller resumes from the snapshot."""
         reader(a)
-        if after < 0 or not 1 <= limit <= 1000:
+        if not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event cursor/limit")
-        if last_event_id:
-            if not last_event_id.isdigit():
-                raise RuntimeFault("EVENT_CURSOR", "Event cursor must be numeric")
-            after = max(after, int(last_event_id))
+        given = last_event_id or after
+        incarnation, start = store.incarnation, 0
+        if given is not None:
+            if event_cursor.is_bare_seq(given):
+                return event_cursor.expired_response(event_cursor.OPERATOR_SNAPSHOT)
+            incarnation, start = event_cursor.parse(given)
+            if event_cursor.expired(store, a.scope, incarnation, start):
+                return event_cursor.expired_response(event_cursor.OPERATOR_SNAPSHOT)
         authorization = request.headers.get("authorization", "")
 
         async def stream() -> Any:
-            cursor = after
+            cursor = start
             for _ in range(60 if follow else 1):
                 current_actor = services.authenticate(authorization)
                 current_actor.require("runtime.read")
                 if current_actor.scope != a.scope:
                     raise Hold("EVENT_SCOPE_CHANGED", "Reauthentication changed scope")
+                if store.incarnation != incarnation:  # never mix two histories in one stream
+                    break
                 batch = store.events(a.scope, after=cursor, limit=limit)
                 for event in batch:
                     yield (
                         "id: "
-                        + str(event["seq"])
+                        + f"{incarnation}:{event['seq']}"
                         + "\nevent: "
                         + event["event_type"]
                         + "\ndata: "
@@ -872,6 +887,29 @@ def create_app(services: ApiServices) -> FastAPI:
             media_type="text/event-stream",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
+
+    @app.get(event_cursor.OPERATOR_SNAPSHOT)
+    def snapshot(a: Actor = Depends(actor)) -> Any:
+        """The operator's projection to resume the event stream from (H-16, design/18 §4): the
+        head (state, row_version) of each goal and each goal's execution plan in the scope,
+        and the cursor after the newest event, read under the store lock so that every event
+        after the cursor is newer than the projection. Same scope and permission as
+        ``/api/v3/events``."""
+        reader(a)
+        with store._lock:
+            cursor = event_cursor.current(store, a.scope)
+            rows = store.conn.execute(
+                "SELECT kind,id,state,row_version FROM heads WHERE tenant=? AND project=? "
+                "AND kind IN ('goal','execution-plan') ORDER BY kind,id LIMIT ?",
+                (*a.scope.keys(), SNAPSHOT_LIMIT + 1),
+            ).fetchall()
+        items = [dict(r) for r in rows[:SNAPSHOT_LIMIT]]
+        return {
+            "items": items,
+            "truncated": len(rows) > SNAPSHOT_LIMIT,
+            "cursor": cursor,
+            "scope": a.scope.wire(),
+        }
 
     @app.post("/api/v3/meta/proposals")
     def meta_submit(body: RegistryBody, a: Actor = Depends(actor), k: str = Depends(key)) -> Any:

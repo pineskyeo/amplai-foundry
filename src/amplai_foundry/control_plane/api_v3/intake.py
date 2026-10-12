@@ -21,6 +21,7 @@ Routes under ``/api/v3/intake/{adapter_id}``:
     POST /goals/{goal_id}/replan change a running goal's plan; the operator approves the revision
     POST /goals/{goal_id}/cancel stop the goal, saying why
     GET  /events                 notifications after a cursor (fixed schema, H-8, AC-H10)
+    GET  /snapshot               the goals projection and the cursor to resume the feed from
 
 A message is accepted once: the server derives the idempotency key from the message's transport
 identity (``<adapter_id>:<digest>``, H-7, F-2). A goal of another subject is not found (AC-H3).
@@ -28,9 +29,11 @@ Submissions and controls are rate limited per actor and operation with the adapt
 limits (H-3, H-7). Reads need ``runtime.read`` and every control its own permission, so an adapter
 configured with fewer permissions than H-2 gets ``FORBIDDEN`` for the rest.
 
-The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8). A cursor of another
-incarnation (the store was restored) or past the newest event is ``CURSOR_EXPIRED`` and carries a
-snapshot of the goals and a fresh cursor (design/18 §4, AC-H6).
+The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8, ``cursor.py``). A
+cursor of another incarnation (the store was restored) or past the newest event is
+``CURSOR_EXPIRED`` with a ``snapshot_ref`` to this adapter's ``/snapshot`` route, which returns the
+fixed-schema goals projection and the cursor to resume from (design/18 §4, AC-H6, H-16). A feed
+read without a cursor names the same route and the cursor of now.
 """
 
 from __future__ import annotations
@@ -47,7 +50,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, Header
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -63,6 +65,7 @@ from amplai_foundry.runtime.contracts.intake import (
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 from amplai_foundry.runtime.storage.store import Scope, Store
 
+from . import cursor as event_cursor
 from .server import ApiCommands
 
 ROUTE_ROOT = "/api/v3/intake/"
@@ -326,7 +329,6 @@ def project(store: Store, scope: Scope, goal_id: str, record: dict[str, Any]) ->
 
 
 _EVENT_TYPE = re.compile(r"[a-z][a-z0-9_]*(\.[a-z0-9_]+)*")
-_SEQ = re.compile(r"[0-9]{1,18}")  # ASCII digits only: str.isdigit() takes other scripts too
 
 
 def submitted_before(store: Store, actor: Actor, key: str) -> bool:
@@ -338,14 +340,6 @@ def submitted_before(store: Store, actor: Actor, key: str) -> bool:
             (*actor.scope.keys(), actor.subject_id, key),
         ).fetchone()
     return row is not None
-
-
-def newest_seq(store: Store, scope: Scope) -> int:
-    with store._lock:
-        row = store.conn.execute(
-            "SELECT COALESCE(MAX(seq),0) FROM events WHERE tenant=? AND project=?", scope.keys()
-        ).fetchone()
-    return int(row[0])
 
 
 def intake_router(services: IntakeServices) -> APIRouter:
@@ -486,32 +480,20 @@ def intake_router(services: IntakeServices) -> APIRouter:
     ) -> Any:
         """Notifications for the linked operator's goals after ``cursor``. Each names the goal, the
         event type (an AMPLAI identifier), the goal's current status and the event time; never an
-        event payload. Without a cursor: a snapshot and the cursor to follow from."""
+        event payload. Without a cursor: the cursor of now and the snapshot route (H-16)."""
         actor = reader(authorization, provider, user_id, workspace_id)
         if not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event limit")
-        newest = newest_seq(store, actor.scope)
-        fresh = f"{store.incarnation}:{newest}"
+        snapshot_ref = prefix(adapter_id) + "/snapshot"
         if cursor is None:
-            return {"items": [], "snapshot": listing(actor), "cursor": fresh}
-        incarnation, _, seq = cursor.rpartition(":")
-        if not incarnation or not _SEQ.fullmatch(seq):
-            raise RuntimeFault("EVENT_CURSOR", "A cursor is <incarnation>:<seq>")
-        if incarnation != store.incarnation or int(seq) > newest:
-            return JSONResponse(
-                {
-                    "code": "CURSOR_EXPIRED",
-                    "message": "The cursor is from another store generation; start again from "
-                    "the snapshot",
-                    "outcome": "rejected",
-                    "snapshot": listing(actor),
-                    "cursor": fresh,
-                },
-                status_code=409,
-            )
+            fresh = event_cursor.current(store, actor.scope)
+            return {"items": [], "snapshot_ref": snapshot_ref, "cursor": fresh}
+        incarnation, seq = event_cursor.parse(cursor)
+        if event_cursor.expired(store, actor.scope, incarnation, seq):
+            return event_cursor.expired_response(snapshot_ref)
         owners: dict[str, bool] = {}
-        items, last = [], int(seq)
-        for event in store.events(actor.scope, after=int(seq), limit=limit):
+        items, last = [], seq
+        for event in store.events(actor.scope, after=seq, limit=limit):
             last = event["seq"]
             goal_id = event["aggregate_id"]
             if event["aggregate_type"] != "goal":
@@ -538,5 +520,19 @@ def intake_router(services: IntakeServices) -> APIRouter:
                 }
             )
         return {"items": items, "cursor": f"{store.incarnation}:{last}"}
+
+    @router.get("/snapshot")
+    def snapshot(
+        provider: str,
+        user_id: str,
+        workspace_id: str | None = None,
+        authorization: str = Header(default=""),
+    ) -> Any:
+        """The linked operator's goals (the fixed-schema projection, H-8) and the cursor to follow
+        the feed from, read under the store lock: every event after the cursor is newer than the
+        projection."""
+        actor = reader(authorization, provider, user_id, workspace_id)
+        with store._lock:
+            return {"items": listing(actor), "cursor": event_cursor.current(store, actor.scope)}
 
     return router
