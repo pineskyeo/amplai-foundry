@@ -1038,7 +1038,8 @@ def test_the_budget_ends_the_night_normally_and_no_trial_goes_past_it(env: Env) 
 
 
 def test_a_zero_budget_runs_no_trial_and_ends_on_budget(env: Env) -> None:
-    cfg = config(env.clock, budget_trials=0)
+    # no drift task: any drift task would not fit a zero drift share (preflight NIGHT_CONFIG)
+    cfg = config(env.clock, budget_trials=0, drift_tasks=())
     runner = env.ready(cfg, budget_trials=0)
     runner.run(DATE)
     data = env.head()["data"]
@@ -1048,11 +1049,119 @@ def test_a_zero_budget_runs_no_trial_and_ends_on_budget(env: Env) -> None:
 def test_the_drift_share_is_a_cap_on_the_drift_unit(env: Env) -> None:
     cfg = config(env.clock, budget_trials=30, shares=dict(SHARES_NO_SCREEN))  # drift share 3
     runner = env.ready(cfg, budget_trials=30)
-    runner.run(DATE)  # the fake drift unit asks 5 trials > 3: refused as a share, not a stop
+    # the fake drift unit asks 5 trials > 3: refused as a share; the calibrated cell is then
+    # unmeasured, so search stays stopped for the night (eval-11 review, fail closed)
+    with pytest.raises(Hold) as caught:
+        runner.run(DATE)
+    assert caught.value.details["reason"] == "drift"
     data = env.head()["data"]
     assert data["trials"] <= 30
     assert f"DRIFT {CELL}: PHASE_SHARE" in data["findings"]
+    assert f"DRIFT {CELL}: UNCHECKED PHASE_SHARE" in data["findings"]
     assert data["drift"][CELL]["observed"] is None
+    assert data["drift"][CELL]["status"] == "unchecked"
+
+
+# --- eval-11 review: drift tasks must fit, an unmeasured cell fails closed -----------------------
+def test_drift_tasks_that_never_fit_a_cells_share_stop_the_night_at_preflight(env: Env) -> None:
+    # the pilot meta config: 20 drift tasks, 2 cells, B=150, drift share 0.1 -> 15 // 2 = 7
+    tasks = tuple(f"t{i}" for i in range(20))
+    cfg = config(env.clock, budget_trials=150, cells=(CELL, OTHER_CELL), drift_tasks=tasks)
+    runner = env.ready(cfg, budget_trials=150)
+    with pytest.raises(Hold) as caught:
+        runner.run(DATE)
+    assert caught.value.details["reason"] == "preflight"
+    data = env.head()["data"]
+    (entry,) = [p for p in data["phases"] if p["phase"] == "preflight"]
+    assert entry["problems"] == [
+        {"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_share", "drift_tasks": 20,
+         "limit_per_cell": 7, "cells": 2, "budget_trials": 150, "share": 0.1}
+    ]  # fmt: skip
+    assert data["trials"] == 0 and "drift_run" not in env.fake.names()
+
+
+def test_drift_tasks_at_the_per_cell_limit_fit(env: Env) -> None:
+    tasks = tuple(f"t{i}" for i in range(7))
+    cfg = config(env.clock, budget_trials=150, cells=(CELL, OTHER_CELL), drift_tasks=tasks)
+    env.fake.drift_batch = {"trials": 7, "passes": 6, "runs": 7}
+    env.ready(cfg, budget_trials=150).run(DATE)
+    data = env.head()["data"]
+    assert data["stopped"] is None
+    assert [a[-1] for a in env.fake.args("drift_run")] == [7, 8]  # 15 // 2, then the rest
+
+
+def test_a_drift_task_listed_twice_is_a_night_config_hold() -> None:
+    with pytest.raises(Hold) as caught:
+        config(drift_tasks=("t1", "t2", "t1"))
+    assert caught.value.code == "NIGHT_CONFIG"
+    assert caught.value.details == {"duplicates": ["t1"]}
+
+
+@pytest.mark.parametrize(
+    ("batch", "reason"),
+    [
+        ({"trials": 0, "passes": 0, "runs": 0}, "NO_RUNS"),
+        ({"trials": 5, "passes": 4, "runs": 5, "stopped": "pre_run_failures"}, "pre_run_failures"),
+        ({"trials": 5, "passes": 4, "runs": 5, "stopped": "provider_failures"},
+         "provider_failures"),
+    ],
+)  # fmt: skip
+def test_an_unmeasured_drift_unit_stops_search_without_a_recalibration(
+    env: Env, batch: dict[str, Any], reason: str
+) -> None:
+    env.fake.drift_batch = batch
+    with pytest.raises(Hold) as caught:
+        env.ready().run(DATE)
+    assert caught.value.details["reason"] == "drift"
+    data = env.head()["data"]
+    check = data["drift"][CELL]
+    assert check["status"] == "unchecked" and check["unchecked_reason"] == reason
+    assert f"DRIFT {CELL}: UNCHECKED {reason}" in data["findings"]
+    assert data["stop_details"] == {"cells": [], "unchecked": [CELL]}
+    assert phases(data)["search"] == "skipped" and phases(data)["confirmation"] == "skipped"
+    assert "search_run" not in env.fake.names()
+    assert data["recalibration"] == [] and "schedule_recalibration" not in env.fake.names()
+
+
+def test_a_refused_drift_unit_stops_search(env: Env) -> None:
+    def refuse(*_a: Any) -> dict[str, Any]:
+        raise Hold("NO_DRIFT_CORPUS", "No frozen amplai-regression-v1 corpus")
+
+    env.fake.drift_run = refuse  # type: ignore[method-assign]
+    with pytest.raises(Hold):
+        env.ready().run(DATE)
+    data = env.head()["data"]
+    assert data["drift"][CELL]["status"] == "unchecked"
+    assert f"DRIFT {CELL}: NO_DRIFT_CORPUS" in data["findings"]
+    assert f"DRIFT {CELL}: UNCHECKED NO_DRIFT_CORPUS" in data["findings"]
+    assert "search_run" not in env.fake.names()
+
+
+def test_an_unmeasured_cell_does_not_stay_stopped_on_the_next_night(env: Env) -> None:
+    env.fake.drift_batch = {"trials": 0, "passes": 0, "runs": 0}
+    runner = env.ready()
+    with pytest.raises(Hold):
+        runner.run(DATE)
+    env.fake.drift_batch = {"trials": 5, "passes": 4, "runs": 5}
+    runner.run(NEXT)
+    data = env.head(NEXT)["data"]
+    assert data["drift"][CELL]["status"] == "ok" and data["stopped"] is None
+
+
+def test_a_budget_stop_with_runs_is_still_a_measurement(env: Env) -> None:
+    env.fake.drift_batch = {"trials": 5, "passes": 4, "runs": 5, "stopped": "META_TOKEN_BUDGET"}
+    env.ready().run(DATE)
+    data = env.head()["data"]
+    assert data["drift"][CELL]["status"] == "ok" and data["stopped"] is None
+
+
+def test_an_uncalibrated_cell_whose_drift_unit_is_refused_stays_uncalibrated(env: Env) -> None:
+    env.fake.snaps[CELL] = {"current": SNAP, "calibrated": None, "band": None}
+    env.fake.drift_batch = {"trials": 0, "passes": 0, "runs": 0}
+    env.ready().run(DATE)
+    data = env.head()["data"]
+    assert data["drift"][CELL]["status"] == "uncalibrated" and data["stopped"] is None
+    assert "search_run" in env.fake.names()
 
 
 def test_stop_at_ends_the_night_at_the_next_unit(env: Env) -> None:
@@ -1789,12 +1898,33 @@ class RealNight:
         self.backend = nightly_module.LocalNightlyBackend(world.ops, self.runner)
         self.runner._backend = self.backend
 
+    def configure(self, *, drift_tasks: tuple[str, ...], budget_trials: int = 100) -> None:
+        """The night's ``meta.nightly`` with these drift tasks and budget (the standing policy
+        does not bind drift_tasks; its budget_trials stays 100)."""
+        from dataclasses import replace
+
+        self.cfg = replace(self.cfg, drift_tasks=drift_tasks, budget_trials=budget_trials)
+        self.runner = NightlyRunner(self.w.dep, self.cfg)
+        self.backend = nightly_module.LocalNightlyBackend(self.w.ops, self.runner)
+        self.runner._backend = self.backend
+
+    def drift_plans(self) -> list[dict[str, Any]]:
+        """The calibration plans the nightly identity froze (drift runs)."""
+        out = []
+        for _ref, plan in self.w.store.list_objects(self.w.scope, "calibration-plan"):
+            if not isinstance(plan.get("approval_ref"), dict):
+                continue
+            approval = self.w.store.get(self.w.scope, APPROVAL_KIND, plan["approval_ref"])
+            if approval["approved_by"]["kind"] != "human":
+                out.append(plan)
+        return out
+
     def outcome(self, success: bool) -> None:
         self.w.executor.outcome = lambda role, case_id, repeat: success
 
-    def calibrate(self) -> dict[str, Any]:
+    def calibrate(self, **over: Any) -> dict[str, Any]:
         """The human operator's calibration of the cell on the regression corpus (as
-        `LocalMetaOps.calibrate`, on this corpus)."""
+        `LocalMetaOps.calibrate`, on this corpus); ``over`` replaces plan fields."""
         from amplai_foundry.evaluation import calibration
         from amplai_foundry.runtime.contracts.identity import digest, now
         from amplai_foundry.runtime.execution.meta_local import EXECUTOR_ID
@@ -1809,6 +1939,7 @@ class RealNight:
                          "borderline": list(calibration.INFORMATIVE)},
             "budget": dict(self.budget), "max_parallel": 1, "frozen_at": now(),
         }  # fmt: skip
+        plan.update(over)
         plan["approval_ref"] = w.local.approvals.issue(
             w.operator, "experiment.execute", digest(plan)
         )
@@ -1871,6 +2002,9 @@ def test_local_backend_drift_derives_a_nightly_approval_and_never_rebaselines_it
     assert len(real.w.executor.calls) - calls == REGRESSION_TASKS
     # the drift run's approval is derived by the nightly identity under the standing approval
     (derived,) = real.drift_approvals()
+    (drift_plan,) = real.drift_plans()
+    assert drift_plan["purpose"] == "drift"  # eval-11
+    assert drift_plan["case_ids"] == list(real.cfg.drift_tasks)
     assert derived["plan_kind"] == "drift" and derived["action"] == "experiment.execute"
     assert derived["approved_by"]["subject_id"] == NIGHTLY_ID
     assert derived["approved_by"]["kind"] == "service"
@@ -1919,6 +2053,156 @@ def test_local_backend_a_standing_approval_revoked_mid_calibration_stops_the_nig
     assert night["stopped"] == "standing_approval"
     assert len(seen) == 2  # the trial guard re-checks the derived approval before each trial
     assert phases(night)["dreaming"] == "skipped"
+
+
+# --- eval-11: the drift calibration runs the night's drift_tasks only (decision 3, 2026-10-11) --
+SUBSET = (1, 4, 6)  # positions in the regression set; drift_tasks lists them out of corpus order
+
+
+def subset_tasks(real: RealNight) -> tuple[str, ...]:
+    return tuple(real.case_ids[i] for i in reversed(SUBSET))
+
+
+def test_eval11_the_drift_calibration_freezes_and_runs_only_the_drift_tasks(
+    real: RealNight,
+) -> None:
+    real.outcome(True)
+    real.calibrate()  # the operator's baseline on all 8 regression tasks
+    real.configure(drift_tasks=subset_tasks(real))
+    calls = len(real.w.executor.calls)
+    real.outcome(False)
+    real.run(DATE)
+    night = real.head(DATE)
+    (plan,) = real.drift_plans()
+    assert plan["purpose"] == "drift"
+    assert plan["case_ids"] == [real.case_ids[i] for i in SUBSET]  # corpus order
+    ran = real.w.executor.calls[calls:]
+    assert len(ran) == len(SUBSET) == night["trials"]
+    # band (the operator's rows of the drift tasks) and observed count the same tasks
+    check = night["drift"][CELL]
+    assert check["band"]["passes"] == check["band"]["runs"] == len(SUBSET)
+    assert check["observed"] == {"passes": 0, "runs": len(SUBSET)}
+    # 0 of 3 is inside the 99 % prediction range of a calibrated 3/3 (small n, drift_range)
+    assert check["prediction_99"][0] == 0 and check["status"] != "outside_band"
+
+
+def test_eval11_the_phase_share_check_counts_the_drift_subset(real: RealNight) -> None:
+    real.outcome(True)
+    real.calibrate()
+    # B=50 and drift share 0.1: 5 drift trials, so the 8-task regression set never fits: the
+    # night's preflight refuses it before any trial (NIGHT_CONFIG) ...
+    real.configure(drift_tasks=tuple(real.case_ids), budget_trials=50)
+    calls = len(real.w.executor.calls)
+    ref, reason = real.run(DATE)
+    assert reason == "preflight" and ref is None
+    (entry,) = [p for p in real.head(DATE)["phases"] if p["phase"] == "preflight"]
+    assert entry["problems"] == [
+        {"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_share",
+         "drift_tasks": REGRESSION_TASKS, "limit_per_cell": 5, "cells": 1,
+         "budget_trials": 50, "share": 0.1}
+    ]  # fmt: skip
+    assert len(real.w.executor.calls) == calls and real.drift_plans() == []
+    # ... and the 3 drift tasks do
+    real.configure(drift_tasks=subset_tasks(real), budget_trials=50)
+    ref, reason = real.run(NEXT)
+    assert reason is None and ref is not None, real.head(NEXT)["findings"]
+    night = real.head(NEXT)
+    assert not [f for f in night["findings"] if f.startswith("DRIFT ")]
+    assert night["drift"][CELL]["observed"] == {"passes": len(SUBSET), "runs": len(SUBSET)}
+    assert len(real.w.executor.calls) - calls == len(SUBSET)
+
+
+def test_eval11_an_unknown_drift_task_holds_night_config_and_runs_nothing(
+    real: RealNight,
+) -> None:
+    real.outcome(True)
+    real.calibrate()
+    with pytest.raises(Hold) as caught:
+        real.backend.drift_run(CELL, [real.case_ids[0], "no-such-task"], lambda n: None, 100)
+    assert caught.value.code == "NIGHT_CONFIG"
+    assert caught.value.details == {"unknown": ["no-such-task"]}
+    real.configure(drift_tasks=(real.case_ids[0], "no-such-task"))
+    calls = len(real.w.executor.calls)
+    ref, reason = real.run(DATE)
+    assert reason == "drift" and ref is None  # unmeasured: search stays stopped (fail closed)
+    night = real.head(DATE)
+    assert f"DRIFT {CELL}: NIGHT_CONFIG" in night["findings"]
+    assert f"DRIFT {CELL}: UNCHECKED NIGHT_CONFIG" in night["findings"]
+    assert night["drift"][CELL]["status"] == "unchecked"
+    assert night["recalibration"] == []  # not a drift: nothing to re-calibrate
+    assert f"DRIFT {CELL}: PHASE_SHARE" not in night["findings"]
+    assert len(real.w.executor.calls) == calls and real.drift_plans() == []
+
+
+def test_eval11_a_drift_summary_is_never_a_cells_calibration(real: RealNight) -> None:
+    from amplai_foundry.evaluation import versions
+
+    real.outcome(True)
+    baseline = real.calibrate()
+    real.configure(drift_tasks=subset_tasks(real))
+    real.outcome(False)
+    real.run(DATE)  # the nightly drift subset: 0 of 3
+    # a drift plan the human operator froze is not a baseline either
+    real.calibrate(purpose="drift", case_ids=[real.case_ids[i] for i in SUBSET])
+    snap = real.backend.snapshot(CELL, subset_tasks(real))
+    assert snap["band"] == {"passes": len(SUBSET), "runs": len(SUBSET)}
+    version_ref = versions.current_version_ref(real.w.store, real.w.scope)
+    assert version_ref is not None
+    found = real.w.ops.latest_summary(real.refs["corpus_ref"], CELL, version_ref)
+    assert found == baseline
+
+
+def test_eval11_the_dashboard_shows_the_operators_calibration_not_a_drift_subset(
+    real: RealNight,
+) -> None:
+    from amplai_foundry.meta_harness import dashboard
+
+    real.outcome(True)
+    baseline = real.calibrate()
+    real.configure(drift_tasks=subset_tasks(real))
+    real.outcome(False)
+    real.run(DATE)
+    assert real.drift_plans()  # the night froze and ran a drift subset after the baseline
+    reader = dashboard._Reader(real.w.store, real.w.scope)
+    builder = dashboard._Builder(reader, [], None, "now", {})  # type: ignore[arg-type]
+    held = builder.summaries()[CELL]
+    assert held[0] == baseline
+    assert set(held[2]["tasks"]) == set(real.case_ids)  # the whole regression set
+    assert builder.baseline_of(CELL, held) == real.w.ops.app.compositions[CELL]
+    # the whole feed (matrix, cell pages, corpora all read summaries()) still builds
+    assert dashboard.build_feed(real.w.store, real.w.scope).matrix is not None
+
+
+def test_eval11_a_drift_task_without_a_baseline_row_holds_before_any_trial(
+    real: RealNight, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real.outcome(True)
+    real.calibrate()
+    found = real.backend._calibration(CELL, real.refs["corpus_ref"])
+    assert found is not None
+    plan, summary = found
+    gone = real.case_ids[4]
+    rows = dict(summary["cells"][CELL]["tasks"])
+    del rows[gone]
+    short = {**summary, "cells": {CELL: {**summary["cells"][CELL], "tasks": rows}}}
+    monkeypatch.setattr(real.backend, "_calibration", lambda *_a: (plan, short))
+    calls = len(real.w.executor.calls)
+    with pytest.raises(Hold) as caught:
+        real.backend.drift_run(CELL, list(subset_tasks(real)), lambda n: None, 100)
+    assert caught.value.code == "DRIFT_BASELINE"
+    assert caught.value.details == {"missing": [gone]}
+    assert len(real.w.executor.calls) == calls and real.drift_plans() == []
+
+
+def test_eval11_a_drift_plan_off_the_regression_set_derives_no_approval(real: RealNight) -> None:
+    main = real.w.ops.frozen_corpus()["corpus_ref"]
+    plan = {"schema": "amplai.calibration-plan.v1", "corpus_ref": main, "cells": [CELL]}
+    assert real.w.local.approvals.standing_kind(plan) == ("calibration", [CELL])
+    with pytest.raises(Hold) as caught:
+        real.w.local.approvals.standing_kind({**plan, "purpose": "drift"})
+    assert caught.value.code == "STANDING_APPROVAL"
+    regression = {**plan, "corpus_ref": real.refs["corpus_ref"], "purpose": "drift"}
+    assert real.w.local.approvals.standing_kind(regression) == ("drift", [CELL])
 
 
 def pin_in_memory_only(self: Any, basis: str, evidence: list[str], per_trial_tokens: int) -> None:

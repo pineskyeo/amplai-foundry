@@ -919,9 +919,17 @@ class _Builder:
         return {cid: v for cid, (_r, v) in self.r.latest("harness-cell").items()}
 
     def summaries(self) -> dict[str, tuple[Ref, dict[str, Any], dict[str, Any]]]:
-        """cell -> (summary ref, summary, that cell's entry) of the newest summary naming it."""
+        """cell -> (summary ref, summary, that cell's entry) of the newest summary naming it.
+        eval-11: a drift calibration's summary (a subset of the cases) is never a cell's
+        calibration, so it is skipped; so is a summary whose plan cannot be read (it cannot be
+        shown not to be a drift calibration)."""
+        from ..evaluation.calibration import is_drift_plan
+
         out: dict[str, tuple[Ref, dict[str, Any], dict[str, Any]]] = {}
         for ref, summary in self.r.latest("calibration-summary").values():
+            plan = self.r.get("calibration-plan", summary.get("plan_ref"))
+            if plan is None or is_drift_plan(plan):
+                continue
             for cell, entry in _d(summary.get("cells")).items():
                 if not isinstance(entry, dict):
                     continue

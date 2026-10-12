@@ -83,7 +83,7 @@ from statistics import mean
 from typing import TYPE_CHECKING, Any
 
 from ..evaluation import versions
-from ..evaluation.calibration import select_cases
+from ..evaluation.calibration import is_drift_plan, select_cases
 from ..evaluation.corpus import CorpusService
 from ..evaluation.receipts import read_receipt
 from ..evaluation.sequential import mde, min_tasks_for_margin, noise_band
@@ -813,6 +813,9 @@ class StageRunner:
         calibration = self.store.get(self.scope, "calibration-plan", summary["plan_ref"])
         if calibration["corpus_ref"] != self.corpus["corpus_ref"]:
             raise RuntimeFault("STAGE_PLAN", "The calibration summary is of another corpus")
+        if is_drift_plan(calibration):
+            # eval-11: a drift calibration pins a subset of the cases; never a stage's summary
+            raise RuntimeFault("STAGE_PLAN", "The calibration summary is a drift calibration")
         return summary
 
     def _app_of(self, plan: dict[str, Any] | None) -> InstalledApp:
