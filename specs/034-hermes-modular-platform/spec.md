@@ -160,6 +160,14 @@
     - 운영자 snapshot 은 `{items: [{kind, id, state, row_version}], truncated, cursor, scope}` 이고 kind 는 `goal`·
       `execution-plan` 이다 (`server.py:907-912`). 상한은 1000 개다 (`server.py:31`). `truncated: true` 는 projection 이
       불완전하다는 뜻이고, 나머지를 이어 받는 방법(continuation)은 아직 없다.
+    - 추가 경로 두 개는 Work 034 추가분이다. 고정된 3.0.0 api-catalog(`runtime/contracts/data/api-catalog.json`,
+      design-reference 사본과 같음) 밖에 있고, 그 catalog 는 바꾸지 않는다.
+      - `GET /api/v3/snapshot` (`get_operator_snapshot`): 인증된 scope, `runtime.read`, intake actor 403.
+        응답 `{items: [{kind, id, state, row_version}], truncated, cursor: "<incarnation>:<seq>", scope}`.
+        `/api/v3/events` 의 `CURSOR_EXPIRED` 가 가리키는 `snapshot_ref` 대상이다.
+      - `GET /api/v3/intake/{adapter_id}/snapshot` (`get_intake_snapshot`): adapter token, query `provider`·`user_id`·
+        `workspace_id` 로 연결표를 찾고 연결된 운영자의 goal 만 준다 (AC-H3). 응답
+        `{items: [{goal_id, status, at}], cursor: "<incarnation>:<seq>"}` (H-8). 그 adapter feed 의 `snapshot_ref` 대상이다.
 
 ### F. 앞단 에이전트·메신저 교체 (OD-13)
 - F-1 세 층으로 나눈다.

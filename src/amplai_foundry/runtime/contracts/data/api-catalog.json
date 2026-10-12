@@ -323,30 +323,6 @@
       "scope_rule": "authenticated scope, not caller field trust"
     },
     {
-      "method": "GET",
-      "path": "/snapshot",
-      "operation_id": "get_operator_snapshot",
-      "request_contract": "none (authenticated scope)",
-      "response_contract": "items[kind,id,state,row_version] of goal and execution-plan heads,truncated,cursor <incarnation>:<seq>,scope; the snapshot_ref target of /events CURSOR_EXPIRED (Work 034 H-16, proposal D-127)",
-      "success_status": 200,
-      "gate": "G-01",
-      "auth_required": true,
-      "idempotency_required": false,
-      "scope_rule": "authenticated scope, not caller field trust; runtime.read, operator only (intake actor 403)"
-    },
-    {
-      "method": "GET",
-      "path": "/intake/{adapter_id}/snapshot",
-      "operation_id": "get_intake_snapshot",
-      "request_contract": "provider,user_id,workspace_id (identity map lookup)",
-      "response_contract": "items[goal_id,status,at] fixed-schema projection (H-8),cursor <incarnation>:<seq>; the snapshot_ref target of the adapter's /events feed (Work 034 H-16, proposal D-127)",
-      "success_status": 200,
-      "gate": "G-01",
-      "auth_required": true,
-      "idempotency_required": false,
-      "scope_rule": "adapter token; the linked operator's goals only (AC-H3)"
-    },
-    {
       "method": "POST",
       "path": "/migrations/dry-run",
       "operation_id": "migration_dry_run",
