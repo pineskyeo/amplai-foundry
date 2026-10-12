@@ -1,0 +1,14 @@
+{
+ "version": "eval-10",
+ "changes": [
+  {
+   "kind": "add_tasks",
+   "detail": "operator decision 2026-10-11 (option A): corpus 2.1.0 adds 48 harder bench tasks (8 per domain; 12 holdout, 36 validation, none development) under the append split rule (existing 71 assignments unchanged, PR #78); calibration 9 found 3-8 informative validation tasks per cell against the focused stage's 16 (IC-20)"
+  }
+ ],
+ "corpus_ref": {
+  "id": "amplai-bench-v2-2.1.0",
+  "revision": 1,
+  "digest": "sha256:865fea4bab09db5e4765052ec3870e8d8bc6db32b624d4c3462855a7954ec294"
+ }
+}

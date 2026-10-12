@@ -373,7 +373,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 | OS | 필요한 것 | 지금 상태 (2026-10-12) | 권장 |
 |---|---|---|---|
 | Ubuntu 18.04 서버 | 묶음(py3.11, glibc 2.27), docker 20.10 + ACL, systemd 또는 supervisor, 로컬 fs | Python·docker 있음. bind 시험·sudo·systemd 사용 권한·git 2.17 호환성 확인 필요. Ubuntu 18.04 표준 지원은 2023-05 에 끝났다 | **조건부 지원**. 사이트 점검 + Linux container qualify 통과 시 |
-| WSL2 Ubuntu 24.04 | 묶음(py3.12), docker.io 29 + ACL, systemd, ext4 경로(`/mnt/c` 금지) | systemd·sudo 있음. 엔진 도달·bind 시험 확인 대기. 상시 가동(Q-16) 미정 | **지원** (개발·시험 호스트로 먼저). 앞단 에이전트 격리는 같은 배포판이 아닌 별도 컨테이너 (C-5) |
+| WSL2 Ubuntu 24.04 | 묶음(py3.12), docker.io 29 + ACL, systemd, ext4 경로(`/mnt/c` 금지) | systemd·sudo 있음. 엔진 도달·bind 시험 확인 대기. 절전·재부팅 뒤에도 유지(Q-16) | **지원** (개발·시험 호스트로 먼저). 앞단 에이전트 격리는 같은 배포판이 아닌 별도 컨테이너 (C-5) |
 | RHEL 8 | 묶음(py3.11, glibc 2.28), podman(rootful 또는 rootless + keep-id), SELinux 라벨 | 미점검 | 점검 후 결정. `site_env_check.sh` 를 먼저 돌린다 (Q-13) |
 | RHEL 7.6 | 컨테이너 엔진(없음), glibc 2.17 wheel, git 1.8.3.1 호환, 디스크 | 엔진 없음, `/home` 1.8G. RHEL 7 유지보수 지원은 2024-06 에 끝났다 | **실행 호스트로 미지원 권장**. 결정은 운영자 (Q-12) |
 
@@ -534,7 +534,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 - 평가기 digest 범위의 파일을 바꾸는 PR 은 eval-N 승인을 함께 묶는다.
 - 메타하네스 파일럿과 같은 Claude 계정을 쓴다. 구현은 파일럿이 쉬는 시간에.
 
-## 6. 결정 후보 (승인 후 `DECISIONS.md`)
+## 6. 결정 (`docs/workstreams/v3-real-execution/DECISIONS.md` D-106~D-123 에 기록)
 
 - D-106 Hermes = IntakeAdapter + 오케스트레이터. `intake` actor(비 human), store 밖 토큰·연결표, 종류 제한, projection 알림.
 - D-107 배포는 upstream → 사내 한 방향.
@@ -544,7 +544,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 - D-111 모델 게이트웨이 (OD-4). D-112 Hermes 일시정지·취소 허용, 재개는 Hermes 가 멈춘 goal 만, `goal.cancel` 신설 (OD-5).
   D-113 승인 페이지 passkey (OD-6).
 - D-114 Q-suite 배포 자산화 (OD-7).
-- D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확인 대기).
+- D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확정 2026-10-12).
 - D-116 앞단 에이전트·메신저는 세 층 모듈(접수 어댑터, 앞단 에이전트 키트, notifier)이다. wire `source_channel=hermes` 는 앞단 에이전트 채널 이름으로 두고, adapter 는 `authn_context_ref` 로 구분한다 (OD-13).
 - D-117 야간 루프 제어: 시계 tick(서비스 관리자, D-118), 진행 NightlyRunner, 앞단 에이전트는 조이기와 조건부 시작(N-9, `nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12, Q-8 = B).
 - D-118 서비스 관리자 인터페이스 하나에 launchd·systemd·supervisor 구현을 둔다. AMPLAI 는 unit 을 출력만 한다. 동결은 서비스 정지 + 동결 표지 + owner lock 이중 잠금이다 (C-8).
