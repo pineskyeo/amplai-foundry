@@ -209,6 +209,16 @@
 - C-3 사내 trial 의 토큰·시간을 게이트웨이가 측정한다 (지금 OpenCode 는 `usage: None`, `agent_drivers/http.py:641`).
 - C-4 사내 과제는 L2 에 있고 배포 릴리스에 없다.
 
+- C-5 사내 설치 대상은 WSL2 와 Ubuntu 서버다 (운영자 2026-10-12; 사내 환경 확인은 운영자가 한다). 지금까지 실제 컨테이너 실행은
+  이 Mac 의 colima 에서만 검증했다. CI 는 ubuntu-latest 에서 test 만 돈다 (`.github/workflows/ci.yml:11`).
+  - colima 전제 두 곳을 Linux 에서 확인한다: 작업 공간이 `$HOME` 아래여야 한다는 전제 (`runtime/local_deployment.py:300`),
+    bind mount 소유자를 colima 가 컨테이너 uid 로 맞춰 준다는 전제 (`runtime/execution/codex.py:78`,
+    `agent_drivers/opencode_port.py:104`). Linux Docker 는 호스트 소유자를 그대로 쓰므로 uid 65534 가 쓰지 못할 수 있다 (추정, 확인 필요).
+  - 앞단 에이전트 격리: AMPLAI 와 앞단 에이전트를 같은 사용자·같은 파일 시스템에 두지 않는다. 권장 구성은 앞단 에이전트를 호스트 폴더
+    연결 없는 별도 컨테이너에 두고 접수 전용 listener(H-12)만 여는 것이다. WSL2 의 배포판끼리는 같은 가상 컴퓨터를 쓰고 Windows 를 거쳐
+    파일에 닿을 수 있어 격리로 보지 않는다.
+  - Linux 자격 시험(container qualify, 칸 probe, 짧은 calibration)을 WSL2 와 Ubuntu 에서 각각 통과해야 사내 설치를 시작한다.
+
 ### J. Jev
 - J-1 `judge` kind. 접근 권한 확보 후 연결, 질문 유형별 자격 시험 전 사용 금지, 사내는 데이터 정책 허용 시만.
 
