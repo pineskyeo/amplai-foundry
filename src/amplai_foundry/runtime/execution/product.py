@@ -300,19 +300,25 @@ def _offline_turn(planner: Any) -> bool:
     return True
 
 
-def _clean_draft(draft: dict[str, Any]) -> dict[str, Any]:
+REPLAN_HINT = (
+    "The replan's draft is over the bound: cancel the goal and submit a shorter goal (or split "
+    "it into several goals)."
+)
+
+
+def _clean_draft(draft: dict[str, Any], *, hint: str = text_bounds.SPLIT_HINT) -> dict[str, Any]:
     """Model text within contract schema bounds: trimmed and non-empty, never cut (operator
     decision 2026-10-12, option A). A value over its wire bound Holds: the objective over the
     contract's 8192 or a work item's own objective over the node's 4096 with
     PLANNING_OBJECTIVE_LENGTH, any other text over 4096 with PLANNING_TEXT_LENGTH
-    (``text_bounds``)."""
+    (``text_bounds``). ``hint`` ends the Hold message (what the operator can do about it)."""
 
     def text(value: str, field: str, limit: int = text_bounds.ITEM_TEXT) -> str:
-        return text_bounds.bounded(value, field=field, limit=limit)
+        return text_bounds.bounded(value, field=field, limit=limit, hint=hint)
 
     def objective(value: str, field: str, limit: int) -> str:
         return text_bounds.bounded(
-            value, field=field, limit=limit, code=text_bounds.OBJECTIVE_LENGTH
+            value, field=field, limit=limit, code=text_bounds.OBJECTIVE_LENGTH, hint=hint
         )
 
     def texts(values: list[str] | None, field: str) -> list[str]:
@@ -1167,7 +1173,8 @@ class LocalExecutionService:
         drafted, _facts = self._draft(
             planner, request, targets, verifiers, bases, mode=mode, args=args
         )
-        draft = _clean_draft(drafted["draft"])
+        # the replan's planner output overran a bound: the operator cannot shorten that draft
+        draft = _clean_draft(drafted["draft"], hint=REPLAN_HINT)
         if draft["questions"]:
             raise Hold("REPLAN_QUESTIONS", "The replan needs answers", details=draft["questions"])
         items = (
@@ -2018,13 +2025,19 @@ class LocalExecutionService:
             mode=plan.get("mode", "work"), items=plan["work_items"],
             policy_ref=previous["policy_ref"], revision=revision,
             previous_graph_ref=plan["graph_ref"],
-            replan_reason=f"escalation to {to_cell}: {reason}"[:4000], budget=budget,
+            # a short internal string; checked against the workgraph bound, never cut (D-124)
+            replan_reason=text_bounds.bounded(
+                f"escalation to {to_cell}: {reason}", field="escalation reason",
+                limit=text_bounds.STEERING_TEXT, code="ESCALATION_REASON_LENGTH",
+                hint="The escalation reason is internal; report this as a defect.",
+            ),
+            budget=budget,
             trial_scope=bool(plan.get("trial")),  # a trial revision keeps its write scope (IC-03)
             node_attempts=self._node_attempts(self.strategy_runner(), strategy, budget),
             environment_id=(plan.get("trial") or {}).get("environment_id"),  # IC-12 (S7b)
         )  # fmt: skip
         entry = {
-            "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason[:600],
+            "from_cell": was.get("cell_id"), "to_cell": to_cell, "reason": reason,
             "previous_contract_ref": plan["contract_ref"],
             "previous_graph_ref": plan["graph_ref"], "at": now(),
         }  # fmt: skip
