@@ -5,7 +5,8 @@
 #          Used only for the bind-mount write test. If omitted, the test is skipped.
 OUT="amplai-env-$(hostname)-$(date +%Y%m%d-%H%M).txt"
 IMAGE="$1"
-exec > "$OUT" 2>&1
+echo "AMPLAI 환경 확인을 시작합니다 (1~2분). 결과 파일: $PWD/$OUT"
+exec 3>&1 > "$OUT" 2>&1
 
 section() { printf '\n== %s ==\n' "$1"; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -84,3 +85,4 @@ fi
 
 section "done"
 echo "report: $OUT"
+echo "끝났습니다. 결과 파일: $PWD/$OUT" >&3
