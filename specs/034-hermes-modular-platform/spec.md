@@ -145,6 +145,21 @@
   세대가 다르거나 seq 가 최대값보다 크면 `CURSOR_EXPIRED` 와 공통 snapshot 경로 `GET /api/v3/snapshot` 을 돌려준다
   (design/18 §4). intake feed 응답 안의 snapshot 도 이 경로로 통일한다. SSE `Last-Event-ID` 도 같은 형식이다.
   지금 운영자 목록은 숫자 cursor 이고 저장소 안에 읽는 곳은 없다 (`control_plane/api_v3/server.py` events, client·cli 검색 0건).
+  - 제안 (운영자 확인 대기, D-127) — S1f 구현(PR #87)이 위 문장과 다른 점과 세부:
+    - snapshot 경로는 둘로 나눈다. `GET /api/v3/snapshot` 은 운영자 전용이다 (`runtime.read`, intake actor 는 403,
+      `control_plane/api_v3/server.py:397-401`). scope 전체 heads 를 돌려주므로, intake feed 가 이 경로를 공유하면
+      scope 전체 자료가 앞단 에이전트에 새거나(H-8, AC-H3 위반) intake actor 에게는 항상 403 이 된다.
+      intake feed 의 snapshot 은 adapter 별 경로 `GET /api/v3/intake/{adapter_id}/snapshot` 이고 schema 는
+      `{items: [{goal_id, status, at}], cursor}` 다 (고정 schema projection, `control_plane/api_v3/intake.py:487,525-536`).
+      intake feed 는 inline snapshot 대신 이 경로를 `snapshot_ref` 로 준다.
+    - 숫자만 있는 cursor(`0` 포함)는 어느 세대인지 알 수 없으므로 409 `CURSOR_EXPIRED` 다
+      (`server.py:852-853`, `control_plane/api_v3/cursor.py:46-48`). cursor 가 없으면 지금 세대의 처음부터 준다.
+    - `Last-Event-ID` 와 `after` 가 함께 오면 `Last-Event-ID` 를 쓴다 (`server.py:849`, SSE 재연결이 보내는 더 새 위치).
+    - 409 본문은 `{code: "CURSOR_EXPIRED", message, outcome: "rejected", snapshot_ref}` 이고 cursor 는 없다. 이어 받기는
+      snapshot 이 projection 과 함께 준 cursor 에서만 한다 (`cursor.py:55-64`).
+    - 운영자 snapshot 은 `{items: [{kind, id, state, row_version}], truncated, cursor, scope}` 이고 kind 는 `goal`·
+      `execution-plan` 이다 (`server.py:907-912`). 상한은 1000 개다 (`server.py:31`). `truncated: true` 는 projection 이
+      불완전하다는 뜻이고, 나머지를 이어 받는 방법(continuation)은 아직 없다.
 
 ### F. 앞단 에이전트·메신저 교체 (OD-13)
 - F-1 세 층으로 나눈다.
