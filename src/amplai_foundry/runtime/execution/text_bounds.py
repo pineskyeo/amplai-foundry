@@ -45,10 +45,41 @@ SPLIT_HINT = "Shorten the request or split it into several goals."
 # the sources a node reference names (D-124)
 FROM_CONTRACT = "contract.objective"
 FROM_WORK_ITEM = "plan.work_item"
-REFERENCE = re.compile(
-    r"named by reference: source (contract\.objective|plan\.work_item), "
-    r"digest (sha256:[0-9a-f]{64})\b"
+# the fixed parts of a node reference (``node_objective``); ``full_objective`` reads a node
+# objective as a reference only when it is this whole template, so an objective that merely quotes
+# a reference is the node's own text
+_HEAD = (
+    "The objective of {node_id} is {length} characters, over the workgraph node bound of {bound}"
 )
+_CONTRACT_NOTE = (
+    "(the objective of the immutable goal contract this workgraph's contract_ref names)"
+)
+_ITEM_NOTE = "(the plan's work item for {node_id})"
+_TAIL = "Every agent of this node is given the full text."
+_DIGEST = r"(sha256:[0-9a-f]{64})"
+
+
+def _reference(objective: str, node_id: str) -> tuple[str, str] | None:
+    """``(source, digest)`` when ``objective`` is exactly the reference ``node_objective`` writes
+    for ``node_id`` (a length over the node bound); otherwise None (the node's own text)."""
+    head = (
+        re.escape(_HEAD)
+        .replace(re.escape("{length}"), "([0-9]+)")
+        .replace(re.escape("{bound}"), str(NODE_OBJECTIVE))
+        .replace(re.escape("{node_id}"), re.escape(node_id))
+    )
+    pattern = (
+        rf"{head}, so it is named by reference: source "
+        rf"(?:{re.escape(FROM_CONTRACT)}, digest {_DIGEST} {re.escape(_CONTRACT_NOTE)}"
+        rf"|{re.escape(FROM_WORK_ITEM)}, digest {_DIGEST} "
+        rf"{re.escape(_ITEM_NOTE.format(node_id=node_id))})\. {re.escape(_TAIL)}"
+    )
+    named = re.fullmatch(pattern, objective)
+    if named is None or int(named.group(1)) <= NODE_OBJECTIVE:
+        return None
+    if named.group(2) is not None:
+        return FROM_CONTRACT, named.group(2)
+    return FROM_WORK_ITEM, named.group(3)
 
 
 def bounded(
@@ -84,17 +115,13 @@ def node_objective(objective: str, node_id: str, *, whole_goal: bool) -> str:
     if len(objective) <= NODE_OBJECTIVE:
         return objective
     where = (
-        f"source {FROM_CONTRACT}, digest {text_digest(objective)} (the objective of the "
-        "immutable goal contract this workgraph's contract_ref names)"
+        f"source {FROM_CONTRACT}, digest {text_digest(objective)} {_CONTRACT_NOTE}"
         if whole_goal
-        else f"source {FROM_WORK_ITEM}, digest {text_digest(objective)} (the plan's work item "
-        f"for {node_id})"
+        else f"source {FROM_WORK_ITEM}, digest {text_digest(objective)} "
+        + _ITEM_NOTE.format(node_id=node_id)
     )
-    return (
-        f"The objective of {node_id} is {len(objective)} characters, over the workgraph node "
-        f"bound of {NODE_OBJECTIVE}, so it is named by reference: {where}. Every agent of this "
-        "node is given the full text."
-    )
+    head = _HEAD.format(node_id=node_id, length=len(objective), bound=NODE_OBJECTIVE)
+    return f"{head}, so it is named by reference: {where}. {_TAIL}"
 
 
 def _const(text: str) -> Callable[[], str]:
@@ -109,13 +136,15 @@ def full_objective(
     A node within the bound holds it itself. A node named by reference (``node_objective``) is
     resolved from the plan's work item and, for a whole-goal node, falls back to
     ``contract_objective()`` (the goal contract's objective, the source of truth). The text must
-    match the reference's digest; Hold OBJECTIVE_REFERENCE_MISMATCH when no source does.
+    match the reference's digest; Hold OBJECTIVE_REFERENCE_MISMATCH when no source does. Only
+    the whole reference template of this node is a reference: an objective that quotes one is
+    the node's own text.
     """
     own = str(node["objective"])
-    named = REFERENCE.search(own)
+    named = _reference(own, str(node["node_id"]))
     if named is None:
         return own
-    source, expected = named.group(1), named.group(2)
+    source, expected = named
     readers: list[tuple[str, Callable[[], str]]] = []
     for item in plan.get("work_items") or []:
         if (item.get("node_id") or "node-" + str(item.get("app"))) == node["node_id"]:

@@ -322,6 +322,36 @@ def test_an_integration_reference_is_its_work_item_and_never_the_contract() -> N
     assert set(held.details["found"]) == {"plan.work_item"}  # the contract is not its source
 
 
+def test_an_objective_that_quotes_a_reference_is_the_nodes_own_text() -> None:
+    long = _long(5000)
+    digest = text_bounds.text_digest(long)
+    quoted = (
+        "Fix the parser of lines like 'named by reference: source contract.objective, digest "
+        f"{digest}' and of 'source plan.work_item, digest {digest}'."
+    )
+    assert len(quoted) <= text_bounds.NODE_OBJECTIVE
+    assert text_bounds.node_objective(quoted, "node-app", whole_goal=True) == quoted
+    own = {"node_id": "node-app", "objective": quoted}
+    assert text_bounds.full_objective({}, own, _never) == quoted
+    # the whole template of another node, or with a length within the bound, is own text too
+    other = text_bounds.node_objective(long, "node-other", whole_goal=True)
+    assert text_bounds.full_objective({}, {**own, "objective": other}, _never) == other
+    within = other.replace("node-other is 5000", "node-app is 4096")
+    assert text_bounds.full_objective({}, {**own, "objective": within}, _never) == within
+    # an actual reference still resolves, and a tampered digest still Holds
+    node = {"node_id": "node-app", "objective": text_bounds.node_objective(
+        long, "node-app", whole_goal=True)}  # fmt: skip
+    assert text_bounds.full_objective({}, node, lambda: long) == long
+    tampered = {**node, "objective": node["objective"].replace(digest, "sha256:" + "0" * 64)}
+    held = _held(lambda: text_bounds.full_objective({}, tampered, lambda: long))
+    assert held.code == "OBJECTIVE_REFERENCE_MISMATCH"
+    assert held.details["expected"] == "sha256:" + "0" * 64
+    part = {"node_id": "node-app.int", "objective": text_bounds.node_objective(
+        long, "node-app.int", whole_goal=False)}  # fmt: skip
+    item = {"app": "app", "node_id": "node-app.int", "objective": long}
+    assert text_bounds.full_objective({"work_items": [item]}, part, _never) == long
+
+
 # -- operator steering and replanning -------------------------------------------------------------
 
 
