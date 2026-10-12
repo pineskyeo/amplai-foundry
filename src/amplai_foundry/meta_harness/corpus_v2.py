@@ -38,6 +38,7 @@ from ..runtime.contracts.authority import Actor
 from ..runtime.contracts.identity import ID, canonical, digest
 from ..runtime.errors import Hold, RuntimeFault
 from ..runtime.evidence.cas import ArtifactStore
+from ..runtime.execution.text_bounds import CONTRACT_OBJECTIVE
 from ..runtime.storage.store import Store
 from . import local_corpus, tb2_grading
 from .local_corpus import HIDDEN_DIR, CorpusError, Outcome
@@ -309,6 +310,13 @@ def _load_task(folder: Path, bases: dict[str, Any], in_tb2_dir: bool) -> TaskV2:
         or not all(_text(s) for s in acceptance)
     ):
         raise CorpusError("TASK_META", f"{task_id}: objective and acceptance are required")
+    if len(meta["objective"].strip()) > CONTRACT_OBJECTIVE:
+        # the objective becomes the goal contract's, never cut (option A, 2026-10-12)
+        raise CorpusError(
+            "TASK_OBJECTIVE_LENGTH",
+            f"{task_id}: objective is {len(meta['objective'].strip())} characters, over the goal "
+            f"contract's {CONTRACT_OBJECTIVE}; shorten it or split the task",
+        )
     if in_tb2_dir:
         hidden, reference = _files(folder / "tests", Path("tests")), _files(folder / "solution")
         hidden_alt, reference_alt = {}, {}
