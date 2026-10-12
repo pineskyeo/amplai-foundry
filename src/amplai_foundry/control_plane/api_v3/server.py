@@ -839,21 +839,28 @@ def create_app(services: ApiServices) -> FastAPI:
         a: Actor = Depends(actor),
     ) -> Any:
         """The scope's events after a generation cursor ``<incarnation>:<seq>`` (H-16), given as
-        ``after`` or, on an SSE reconnect, ``Last-Event-ID`` (which wins: it is the newer). No
-        cursor streams from the start of this generation. A bare number (the cursor before
-        H-16) cannot be tied to a generation, so it is ``CURSOR_EXPIRED`` like a cursor of
-        another generation or past the newest event; the caller resumes from the snapshot."""
+        ``after`` or, on an SSE reconnect, ``Last-Event-ID`` (tried first: it is the newer; an
+        expired one falls back to a usable ``after``). No cursor streams from the start of this
+        generation. A bare number (the cursor before H-16) cannot be tied to a generation, so it
+        is ``CURSOR_EXPIRED`` like a cursor of another generation or past the newest event; the
+        caller resumes from the snapshot. A malformed cursor is 400."""
         reader(a)
         if not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event cursor/limit")
-        given = last_event_id or after
+        given = [c for c in (last_event_id, after) if c]
         incarnation, start = store.incarnation, 0
-        if given is not None:
-            if event_cursor.is_bare_seq(given):
+        if given:
+            usable = None
+            for candidate in given:
+                if event_cursor.is_bare_seq(candidate):
+                    continue
+                parsed = event_cursor.parse(candidate)
+                if not event_cursor.expired(store, a.scope, *parsed):
+                    usable = parsed
+                    break
+            if usable is None:
                 return event_cursor.expired_response(event_cursor.OPERATOR_SNAPSHOT)
-            incarnation, start = event_cursor.parse(given)
-            if event_cursor.expired(store, a.scope, incarnation, start):
-                return event_cursor.expired_response(event_cursor.OPERATOR_SNAPSHOT)
+            incarnation, start = usable
         authorization = request.headers.get("authorization", "")
 
         async def stream() -> Any:

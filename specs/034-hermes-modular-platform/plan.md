@@ -121,11 +121,12 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 8. 이벤트 cursor: `<store incarnation>:<seq>`. 세대가 다르거나 seq 가 최대값보다 크면 `CURSOR_EXPIRED` + `GET /api/v3/snapshot`
    (design/18 §4, AC-H6). 복원은 세대를 바꾼다.
    제안 (운영자 확인 대기, D-127): `GET /api/v3/snapshot` 은 운영자 전용(scope 전체 heads, intake actor 403)이고, intake feed 의
-   snapshot 은 adapter 별 `GET /api/v3/intake/{adapter_id}/snapshot` (`{items: [{goal_id, status, at}], cursor}`, H-8)로 둔다.
+   snapshot 은 adapter 별 `GET /api/v3/intake/{adapter_id}/snapshot` (`{items: [{goal_id, status, at}], truncated, cursor}`,
+   끝나지 않은 goal 전부, 상한 1000, H-8)로 둔다.
    공유하면 scope 전체 자료가 새거나 intake actor 에게 항상 403 이다 (H-8, AC-H3). 숫자만 있는 cursor(`0` 포함)는 409
-   `CURSOR_EXPIRED`, `Last-Event-ID` 가 `after` 보다 우선, 409 본문은 `snapshot_ref` 만 주고 cursor 는 없다. 운영자 snapshot 은
+   `CURSOR_EXPIRED`, `Last-Event-ID` 가 `after` 보다 우선(만료면 쓸 수 있는 `after` 로), 409 본문은 `snapshot_ref` 만 주고 cursor 는 없다. 운영자 snapshot 은
    `{items[kind, id, state, row_version], truncated, cursor, scope}`, 상한 1000, `truncated: true` 의 이어 받기는 아직 없다.
-   세부와 근거는 spec H-16 의 제안 항목.
+   복원은 `amplai ops restore` 로만 (파일 복사·disk rollback 금지). 세부와 근거는 spec H-16 의 제안 항목.
 9. 승인 CLI: `amplai approve` 가 AMPLAI 렌더 계약(무엇이 달라지나 / 안 건드리나 / 끝 기준, design/17 §1)과 contract digest 를 보여 주고
    `expected_contract_ref` 를 보낸다. 서버는 현재 revision 과 다르면 거부 (H-13, AC-H1).
 10. 빈도 제한: steer·replan·submit actor 별 (H-7).

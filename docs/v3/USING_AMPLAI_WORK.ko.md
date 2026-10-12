@@ -217,6 +217,10 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - 취소·실패로 멈춘 goal 은 승인이 철회된 상태로 남는다. 다시 하려면 새 `amplai work` 를 연다.
 - `local-serve` 는 시작할 때 기록을 맞춘다. 멈춘 goal 의 runtime 상태와 점유를 닫는다. 죽은 프로세스가
   남긴 실행 중 goal 은 실패로 끝낸다. 한 번도 시도하지 못한 승인 goal 은 다시 대기열에 넣는다.
+- **복원은 `amplai ops restore` 로만 한다. store 파일 복사나 disk snapshot·VM rollback 으로 되돌리지 않는다.**
+  `ops restore` 만 store 세대(incarnation)를 새로 만들어 이전 이벤트 cursor 를 `CURSOR_EXPIRED` 로 만든다
+  (`runtime/recovery/service.py`, Work 034 H-16). 파일째 되돌리면 세대가 그대로라 같은 seq 가 다른 이벤트에
+  다시 쓰이고, 운영자 이벤트 stream 과 앞단 에이전트 알림이 이벤트를 건너뛰거나 엉뚱하게 이어 받는다.
 
 ## 지표
 

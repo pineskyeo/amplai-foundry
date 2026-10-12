@@ -63,12 +63,14 @@ from amplai_foundry.runtime.contracts.intake import (
     intake_actor,
 )
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.execution.product import PLAN_ENDED
 from amplai_foundry.runtime.storage.store import Scope, Store
 
 from . import cursor as event_cursor
 from .server import ApiCommands
 
 ROUTE_ROOT = "/api/v3/intake/"
+SNAPSHOT_LIMIT = 1000  # goals in one intake snapshot; more is reported as truncated
 # v1 (S1a): (provider, user id). v2 (S1c, F-2): (provider, workspace, user id).
 IDENTITY_MAP_VERSIONS = ("intake-identity-1", "intake-identity-2")
 # a messenger's own identifiers: bounded, no whitespace (provider-neutral, H-11)
@@ -528,11 +530,46 @@ def intake_router(services: IntakeServices) -> APIRouter:
         workspace_id: str | None = None,
         authorization: str = Header(default=""),
     ) -> Any:
-        """The linked operator's goals (the fixed-schema projection, H-8) and the cursor to follow
-        the feed from, read under the store lock: every event after the cursor is newer than the
-        projection."""
+        """Every goal of the linked operator that has not ended (``PLAN_ENDED``), newest first, as
+        the fixed-schema projection (H-8), at most ``SNAPSHOT_LIMIT`` with ``truncated``, and the
+        cursor to follow the feed from.
+
+        One statement under the store lock reads each candidate's status (the plan head's state,
+        which the product writes as the record's status) and its latest event time, and the
+        cursor: every event after the cursor is newer than the projection. The owner check runs
+        after the lock: a goal's owner is its intent's first revision, which never changes."""
         actor = reader(authorization, provider, user_id, workspace_id)
+        ended = sorted(PLAN_ENDED)
         with store._lock:
-            return {"items": listing(actor), "cursor": event_cursor.current(store, actor.scope)}
+            cursor = event_cursor.current(store, actor.scope)
+            rows = store.conn.execute(
+                "SELECT h.id, h.state, (SELECT e.created_at FROM events e WHERE e.tenant=h.tenant "
+                "AND e.project=h.project AND e.aggregate_type='goal' AND e.aggregate_id=h.id "
+                "ORDER BY e.seq DESC LIMIT 1) AS at FROM heads h WHERE h.tenant=? AND h.project=? "
+                "AND h.kind='execution-plan' AND h.state NOT IN ("
+                + ",".join("?" * len(ended))
+                + ") "
+                "ORDER BY h.rowid DESC",
+                (*actor.scope.keys(), *ended),
+            ).fetchall()
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            try:
+                mine = goal_owner(store, actor.scope, row["id"]) == actor.subject_id
+            except RuntimeFault:
+                continue
+            if not mine:
+                continue
+            if len(items) == SNAPSHOT_LIMIT:
+                return {"items": items, "truncated": True, "cursor": cursor}
+            status = row["state"]
+            items.append(
+                {
+                    "goal_id": row["id"],
+                    "status": status if status in PLAN_STATUSES else "unknown",
+                    "at": row["at"],
+                }
+            )
+        return {"items": items, "truncated": False, "cursor": cursor}
 
     return router

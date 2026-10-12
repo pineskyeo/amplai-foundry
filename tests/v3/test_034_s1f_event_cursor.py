@@ -28,6 +28,7 @@ from test_034_s1a_intake_route import (
     with_intake,
 )
 
+from amplai_foundry.control_plane.api_v3 import intake as intake_api
 from amplai_foundry.control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from amplai_foundry.integrations.intake_mcp.server import IntakeCaller, Settings
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -104,6 +105,17 @@ def test_stream_ids_are_generation_cursors_and_resume_from_either_form(product: 
     first = frames[0]["id"]
     both = stream(client, {**operator, "Last-Event-ID": middle}, after=first)
     assert [f["id"] for f in both] == rest
+    # an expired header (another generation, a bare number) falls back to a usable `after`
+    for stale in (f"incarnation-{'0' * 32}:1", "7"):
+        fallback = stream(client, {**operator, "Last-Event-ID": stale}, after=middle)
+        assert [f["id"] for f in fallback] == rest
+    # neither usable: expired
+    expired(
+        client.get(
+            EVENTS, headers={**operator, "Last-Event-ID": "7"},
+            params={"after": f"incarnation-{'0' * 32}:1"},
+        )
+    )  # fmt: skip
     # the newest cursor resumes to nothing; no cursor streams this generation from its start
     assert stream(client, operator, after=frames[-1]["id"]) == []
     assert [f["id"] for f in stream(client, operator)] == [f["id"] for f in frames]
@@ -251,7 +263,7 @@ def test_the_intake_snapshot_is_the_fixed_schema_projection_only(product: Any) -
     response = client.get(INTAKE_SNAPSHOT, headers=HERMES, params=SLACK_USER)
     assert response.status_code == 200
     body = response.json()
-    assert set(body) == {"items", "cursor"}
+    assert set(body) == {"items", "truncated", "cursor"} and body["truncated"] is False
     assert [i["goal_id"] for i in body["items"]] == [goal]
     assert all(set(i) == {"goal_id", "status", "at"} for i in body["items"])
     assert injected not in response.text and theirs["goal_id"] not in response.text
@@ -265,6 +277,38 @@ def test_the_intake_snapshot_is_the_fixed_schema_projection_only(product: Any) -
     # the operator token does not open it, and it needs the adapter's own token
     assert client.get(INTAKE_SNAPSHOT, headers=operator, params=SLACK_USER).status_code == 401
     assert client.get(INTAKE_SNAPSHOT, params=SLACK_USER).status_code == 401
+
+
+def test_the_intake_snapshot_holds_every_open_goal_up_to_its_bound(
+    product: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review P2-1: not the 20 most recent. An older goal still awaiting approval stays in the
+    resync projection however many goals came after it; ended goals are left out."""
+    dep, client, _operator, _home = product
+    old = a_goal(client)
+    assert wait_status(client, old, {"planning"})["status"] == "awaiting_approval"
+    operator = dep.operator()
+    newer = []
+    for n in range(25):
+        goal = dep.goals.submit(operator, text=f"goal {n}", key=f"p2-1-{n}")["goal_id"]
+        status = "cancelled" if n % 8 == 0 else "running"  # 4 ended, 21 open
+        with dep.store.tx() as db:
+            dep.store.cas(db, dep.scope, "execution-plan", goal, 0, status, {"status": status})
+        newer.append((goal, status))
+    open_newer = [g for g, s in newer if s == "running"]
+    assert len(open_newer) == 21
+    body = client.get(INTAKE_SNAPSHOT, headers=HERMES, params=SLACK_USER).json()
+    assert body["truncated"] is False
+    assert [i["goal_id"] for i in body["items"]] == [*reversed(open_newer), old]  # newest first
+    assert body["items"][-1]["status"] == "awaiting_approval"
+    # at the bound: the first SNAPSHOT_LIMIT open goals and truncated
+    monkeypatch.setattr(intake_api, "SNAPSHOT_LIMIT", 5)
+    capped = client.get(INTAKE_SNAPSHOT, headers=HERMES, params=SLACK_USER).json()
+    assert capped["truncated"] is True
+    assert [i["goal_id"] for i in capped["items"]] == list(reversed(open_newer))[:5]
+    monkeypatch.setattr(intake_api, "SNAPSHOT_LIMIT", 22)  # exactly the open goals: not truncated
+    exact = client.get(INTAKE_SNAPSHOT, headers=HERMES, params=SLACK_USER).json()
+    assert exact["truncated"] is False and len(exact["items"]) == 22
 
 
 def test_the_mcp_server_reads_its_own_snapshot_route_never_a_path_from_the_answer() -> None:
