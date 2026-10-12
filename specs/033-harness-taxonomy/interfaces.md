@@ -451,7 +451,8 @@ the only reader, which holds `LEAK_INDEX_ACL` for such an actor, §3.11):
 "adaptive": {"max_repeats": 5, "rule": "disagree_or_borderline_v1", "borderline": [0.2, 0.9]},
 "budget": $defs.budget, "max_parallel": 1..4, "approval_ref": ref, "frozen_at"}` — the operator
 approval (`experiment.execute`) binds `digest(plan without approval_ref)` as today
-(`runtime/execution/meta_ops.py:255-257`).
+(`runtime/execution/meta_ops.py:255-257`). Optional fields: `"app"` (S7b) and `"purpose": "drift"`
+(eval-11: a drift plan may pin a subset of the cases; see "Clarification: Drift Subset").
 
 `calibration-run` head (id = plan id): `{"plan_ref", "state": "frozen"|"running"|"done"|"stopped",
 "trial_refs": [ref], "repeats_added": {case_id: int}, "stop_reason": str|null, "owner_epoch"}`.
@@ -4076,10 +4077,16 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
   case holds `NIGHT_CONFIG` (`details.unknown`, sorted) before any trial (the night records the
   finding `DRIFT <cell>: NIGHT_CONFIG`); the phase-share check (`NIGHT_STOPPED` `phase_share`) and
   the trial guard count the subset. The plan carries `"purpose": "drift"`.
-- **Never a baseline**: a drift summary is never a cell's calibration. `LocalNightlyBackend.
-  _calibration` (the band) skips drift plans as well as derived approvals, `LocalMetaOps.
-  latest_summary` (a new stage plan's summary) skips drift plans, and `StageRunner._summary` refuses
-  a drift plan's summary (`STAGE_PLAN`). A human-approved drift plan is no baseline either.
+- **Never a baseline**: a drift summary is never a cell's calibration (every reader uses
+  `calibration.is_drift_plan`). `LocalNightlyBackend._calibration` (the band) skips drift plans as
+  well as derived approvals; `LocalMetaOps.latest_summary` (a new stage plan's summary) skips them;
+  `StageRunner._summary` refuses a drift plan's summary (`STAGE_PLAN`) and
+  `EvaluationService._subset` refuses it as a stage subset's `calibration_summary_ref`
+  (`SAMPLING_PLAN`, defense in depth); the dashboard (`meta_harness/dashboard.py` `summaries()`,
+  so the matrix, `baseline_of` and the corpus page's task classes) skips them; and
+  `QualityService.measure` leaves them out of `inputs.calibration_summaries`, saturation and
+  grader flakiness (§11.1 measure the corpus, not a 3-20 task subset). A human-approved drift plan
+  is no baseline either.
 - **Standing approval** (`LocalMetaApprovals.standing_kind`): a plan with `"purpose": "drift"` on a
   corpus that is not a regression corpus is refused (`STANDING_APPROVAL`).
 - **Evaluator version**: `calibration.py` is in the service digest (`evaluation/versions.py`

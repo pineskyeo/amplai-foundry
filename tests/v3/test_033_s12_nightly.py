@@ -2034,6 +2034,27 @@ def test_eval11_a_drift_summary_is_never_a_cells_calibration(real: RealNight) ->
     assert found == baseline
 
 
+def test_eval11_the_dashboard_shows_the_operators_calibration_not_a_drift_subset(
+    real: RealNight,
+) -> None:
+    from amplai_foundry.meta_harness import dashboard
+
+    real.outcome(True)
+    baseline = real.calibrate()
+    real.configure(drift_tasks=subset_tasks(real))
+    real.outcome(False)
+    real.run(DATE)
+    assert real.drift_plans()  # the night froze and ran a drift subset after the baseline
+    reader = dashboard._Reader(real.w.store, real.w.scope)
+    builder = dashboard._Builder(reader, [], None, "now", {})  # type: ignore[arg-type]
+    held = builder.summaries()[CELL]
+    assert held[0] == baseline
+    assert set(held[2]["tasks"]) == set(real.case_ids)  # the whole regression set
+    assert builder.baseline_of(CELL, held) == real.w.ops.app.compositions[CELL]
+    # the whole feed (matrix, cell pages, corpora all read summaries()) still builds
+    assert dashboard.build_feed(real.w.store, real.w.scope).matrix is not None
+
+
 def test_eval11_a_drift_plan_off_the_regression_set_derives_no_approval(real: RealNight) -> None:
     main = real.w.ops.frozen_corpus()["corpus_ref"]
     plan = {"schema": "amplai.calibration-plan.v1", "corpus_ref": main, "cells": [CELL]}

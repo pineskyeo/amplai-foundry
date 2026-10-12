@@ -437,11 +437,13 @@ class QualityService:
         either, that metric is `no_data`."""
         version = versions.read_version(self.store, self.scope, evaluator_version_ref)
         floor = _instant(since)
+        # eval-11: a drift calibration (a subset of the cases) is not a calibration of the corpus
         summaries = [
             (ref, value)
             for ref, value in self._latest("calibration-summary")
             if value.get("evaluator_version_ref") == evaluator_version_ref
             and (_stamp(value.get("summarized_at")) or 0.0) >= floor
+            and not self._drift_summary(value)
         ]
         plans = [
             (ref, value)
@@ -537,6 +539,16 @@ class QualityService:
             "unit": "task (development split, mean over runs)",
             "cells": rows,
         }
+
+    def _drift_summary(self, summary: dict[str, Any]) -> bool:
+        """eval-11: the summary's plan is a drift calibration (``calibration.is_drift_plan``)."""
+        from .calibration import PLAN_KIND, is_drift_plan
+
+        try:
+            plan = self.store.get(self.scope, PLAN_KIND, summary["plan_ref"])
+        except (RuntimeFault, KeyError, TypeError):
+            return False
+        return is_drift_plan(plan)
 
     # -- saturation and flakiness ----------------------------------------------------------------
     @staticmethod

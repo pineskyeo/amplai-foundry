@@ -1346,6 +1346,8 @@ class LocalMetaOps:
         ``app_id`` (S7b): only a summary whose calibration plan names that app or names no app
         (a plan without ``app`` covers every case of its splits, so that app's cases too); a
         plan of another app calibrated only that app's cases on that app's compositions."""
+        from ...evaluation.calibration import is_drift_plan
+
         found = []
         for ref, value in self.store.list_objects(self.scope, "calibration-summary"):
             if value.get("evaluator_version_ref") != version_ref or cell_id not in (
@@ -1355,7 +1357,7 @@ class LocalMetaOps:
             plan = self.store.get(self.scope, "calibration-plan", value["plan_ref"])
             if plan.get("corpus_ref") != corpus_ref:
                 continue
-            if plan.get("purpose") == "drift":
+            if is_drift_plan(plan):
                 continue  # eval-11: a drift calibration (a subset) is never a cell's calibration
             if app_id is not None and "app" in plan and plan["app"].get("app_id") != app_id:
                 continue

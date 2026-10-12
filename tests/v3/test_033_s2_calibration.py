@@ -941,3 +941,20 @@ def test_a_real_summary_selects_the_informative_subset_for_a_versioned_plan(w):
     assert {t["task_id"] for t in w.trials(report_ref)} == {"val-01"}
     wrong = w.experiment(s, policy(c.ev), ids=["val-00", "val-01"], sampling=sampling)
     hold("SAMPLING_CHANGED", w.freeze, wrong)
+
+
+def test_eval11_a_drift_summary_never_selects_a_stage_subset(w):
+    c = make(w)
+    ids = [x["case_id"] for x in c.cases]
+    r = run_plan(w, c, purpose="drift", case_ids=ids[2:4],
+                 adaptive={"max_repeats": 1, "rule": "disagree_or_borderline_v1",
+                           "borderline": [0.2, 0.9]})  # fmt: skip
+    base, cand = c.comps["cell-a"], c.comps["cell-b"]
+    s = SimpleNamespace(
+        corpus_ref=c.corpus_ref, cases=c.cases, ev=c.ev, base=base, cand=cand,
+        prop=w.proposal(base, cand), ref=None,
+    )  # fmt: skip
+    sampling = subset("informative_v1", 12, cell="cell-a", summary=r.summary_ref)
+    plan = w.experiment(s, policy(c.ev), ids=["val-01"], sampling=sampling)
+    error = fault("SAMPLING_PLAN", w.freeze, plan)
+    assert "drift" in str(error)

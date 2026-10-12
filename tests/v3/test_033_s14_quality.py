@@ -1168,6 +1168,21 @@ def test_saturation_reports_the_newest_summary_and_honours_since_and_the_version
     assert got["status"] == "no_data"
 
 
+def test_eval11_a_drift_summary_is_not_measured_for_saturation_or_flakiness(w):
+    ev, plan_ref, comps, summary_cells = calibration_world(w)
+    whole = add_summary(w, ev, plan_ref, summary_cells, at="2026-09-20T00:00:00Z",
+                        saturated=["t1"])  # fmt: skip
+    drift_plan = put(w, "calibration-plan", new_id("calplan"),
+                     {"composition_refs": comps, "purpose": "drift"})  # fmt: skip
+    drift_cells = {"cell-a": {"tasks": {"t2": {"class": "flaky_grading"}}}}
+    add_summary(w, ev, drift_plan, drift_cells, at="2026-09-25T00:00:00Z", saturated=["t2"])
+    got, record = metric(w, "saturation")
+    assert got["latest_summary"]["summary_ref"] == whole and got["share"] == 0.25
+    assert record["inputs"]["calibration_summaries"] == [whole]
+    flaky, _ = metric(w, "grader_flakiness")
+    assert flaky["calibration_flaky_tasks"] == []
+
+
 def test_grader_flakiness_is_the_share_of_tasks_flagged_by_the_corpus_check(w):
     ev, plan_ref, _, summary_cells = calibration_world(w)
     summary_cells["cell-a"]["tasks"]["t3"] = {"class": "flaky_grading"}

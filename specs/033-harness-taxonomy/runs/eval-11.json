@@ -3,7 +3,7 @@
  "changes": [
   {
    "kind": "analysis_code",
-   "detail": "operator decision 3 (2026-10-11, option A): a calibration plan with purpose drift (the nightly drift calibration) may pin a non-empty subset of the cases of its splits (meta.nightly.drift_tasks), distinct and in corpus order; every other calibration plan still pins every case. With B=150 and drift share 0.1 (15 trials) the 20-task regression set never fit a cell, so every drift calibration was skipped (DRIFT <cell>: PHASE_SHARE). A drift summary is never a cell's calibration baseline or a stage plan's calibration summary"
+   "detail": "operator decision 3 (2026-10-11, option A): a calibration plan with purpose drift (the nightly drift calibration) may pin a non-empty subset of the cases of its splits (meta.nightly.drift_tasks), distinct and in corpus order; every other calibration plan still pins every case. With B=150 and drift share 0.1 (15 trials) the 20-task regression set never fit a cell, so every drift calibration was skipped (DRIFT <cell>: PHASE_SHARE). A drift summary is never a cell's calibration baseline or a stage plan's calibration summary, and EvaluationService refuses it as a stage subset's calibration_summary_ref (service.py)"
   }
  ]
 }
