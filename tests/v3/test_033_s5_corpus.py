@@ -269,6 +269,7 @@ def _refused(root: Path, code: str) -> None:
         ({"difficulty_declared": "hard"}, "TASK_META"),  # difficulty is measured (D-098)
         ({"acceptance": []}, "TASK_META"),
         ({"objective": "  "}, "TASK_META"),
+        ({"objective": "o" * 8193}, "TASK_OBJECTIVE_LENGTH"),  # over the goal contract's
         ({"set": "other"}, "TASK_META"),
         (
             {"source": {"kind": "tb2", "ref": "r", "author": "a", "created": "2026-09-30"}},
@@ -287,6 +288,23 @@ def _refused(root: Path, code: str) -> None:
 def test_load_refuses_invalid_task_json(root: Path, over: dict[str, Any], code: str) -> None:
     _task_dir(root, "bug-01-b", _meta("bug-01-b", **over))
     _refused(root, code)
+
+
+def test_load_keeps_an_objective_of_exactly_the_contract_bound(root: Path) -> None:
+    """The objective becomes the goal contract's, never cut (option A, 2026-10-12)."""
+    objective = "o" * 8179 + " end of rules"
+    _task_dir(root, "bug-01-b", _meta("bug-01-b", objective=objective))
+    (task,) = _load(root).tasks
+    assert len(task.objective) == 8192 and task.objective == objective
+
+
+def test_every_committed_v2_task_objective_fits_the_contract() -> None:
+    """Pilot calibration 10: 16 tasks are over the old 4000 cut, the longest 7750; none is over
+    the contract's 8192 (the loader would refuse it)."""
+    tasks = corpus_v2.load(V2_ROOT).tasks
+    longest = max(len(t.objective.strip()) for t in tasks)
+    assert 4000 < longest <= 8192
+    assert sum(len(t.objective.strip()) > 4000 for t in tasks) >= 16
 
 
 def test_load_refuses_a_missing_or_extra_task_json_field(root: Path) -> None:
@@ -1156,6 +1174,13 @@ def test_corpus_check_v2_mode(root: Path) -> None:
     only = _check("--corpus", str(root), "--domain", "bug")
     assert "1/1 fair" in only.stdout and "amb-01-scale" not in only.stdout
     assert _check("--corpus", str(root), "no-such-task").returncode == 2
+
+
+def test_corpus_check_v2_reports_an_objective_over_the_contract(root: Path) -> None:
+    _task_dir(root, "bug-01-b", _meta("bug-01-b", objective="o" * 8193))
+    done = _check("--corpus", str(root))
+    assert done.returncode == 1, done.stdout + done.stderr
+    assert done.stdout.startswith("TASK_OBJECTIVE_LENGTH: ") and "8193 characters" in done.stdout
 
 
 def test_corpus_check_v2_reports_an_unfair_task(root: Path) -> None:
