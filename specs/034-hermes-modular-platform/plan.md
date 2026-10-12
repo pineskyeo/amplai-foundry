@@ -1,6 +1,6 @@
 # Work 034 Plan: 구조, 인터페이스, 순서
 
-- 상태: 설계 초안 r7 (Q-8 = B 반영 r7; 독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 운영자 지시 2026-10-11 반영 r6: 야간 루프 제어 OD-12, 앞단 에이전트·메신저 모듈 OD-13; r6 의 코드 근거는 main `76e2874`). spec: `spec.md`.
+- 상태: 설계 초안 r8 (사내 설치 세부 §3.5a 반영 r8, 코드 근거 main `2ab10a2`, 사내 점검 2026-10-12; Q-8 = B 반영 r7; 독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 운영자 지시 2026-10-11 반영 r6: 야간 루프 제어 OD-12, 앞단 에이전트·메신저 모듈 OD-13; r6 의 코드 근거는 main `76e2874`). spec: `spec.md`.
 
 ## 0. 검토 이력
 
@@ -8,6 +8,7 @@
 |---|---|---|---|
 | r1 → r2 | 원본 설계 부합성·코드 실현성 | 막힘 2, 큼 8, 작음 5 | 권한 이름, 취소, 모듈 전달 경로, 두 층 모듈, 대리 identity, 승인 페이지 분리, 이벤트 API, migration-plan 용도, 되돌리기, release-set 충돌, AC 보강 |
 | r2 → r3 | 보안·업그레이드 운영·r2 사실 확인 | 막힘 3, 큼 7, 작음 4 | steering 경로 취소 차단, Q-suite 자산화, 동결·명시적 이전, 되돌리기 순서, cursor 세대, 눈 감은 승인, 원격 listener, 승격 부품 가림, 백업 범위, 신뢰 루트, classify digest 범위, 알림 projection |
+| r7 → r8 | 사내 설치 세부 (운영자 사내 점검 2026-10-12, `scripts/site_env_check.sh`) | 독립 검토 전 | §3.5a 추가: 서비스 관리자(systemd·supervisor), 샌드박스 uid·ACL, 엔진 설정, 오프라인 묶음, 경로·로그·백업, 지원 OS 표, 업그레이드 리허설. C-8~C-14, U-9, AC-C4~C10, AC-U9, D-118~D-123, Q-11~Q-20 |
 
 ## 1. 근거
 
@@ -81,7 +82,7 @@ API·권한
    │                                              │ 야간 제어(조이는 방향만)
    ▼                                              ▼
 AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검증 → PR
-   │  nightly-control 기록 ──읽기 전용──▶ 야간 루프 (meta 배포: launchd 시계 → NightlyRunner → 메타하네스)
+   │  nightly-control 기록 ──읽기 전용──▶ 야간 루프 (meta 배포: 서비스 관리자 시계 → NightlyRunner → 메타하네스)
    │ 설정 부품 ─가리킴─▶ 코드 모듈 (고정 배포물, 외부 입력 kind 는 프로세스 밖)
    ▼
 작업 에이전트 (샌드박스) ── (사내) 모델 게이트웨이(별도 프로세스) ──▶ 사내 LLM
@@ -168,7 +169,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 
 **업그레이드 명령** `amplai ops upgrade --release <id>`:
 1. 릴리스 서명·protocol major 3·의존 확인 (G-07). 실패 시 아무것도 안 바꿈.
-2. **동결**: kill switch 켬 → 서버·야간 launchd agent bootout → 모든 store owner lock 획득 → drain 확인 (U-2, AC-U4).
+2. **동결**: kill switch 켬 → 서비스 관리자(§3.5a.1)로 서버·게이트웨이·listener 정지와 야간 시계 해제 → 모든 store owner lock 획득 → drain 확인 (U-2, AC-U4).
 3. 미리보기: 소유 경로 파일 작업은 `migration-plan`(KitInstaller 가 실행), store 레코드는 번호 붙은 `migrate` 단계 목록, 되돌릴 수
    없는 변환, 되돌리기 방법. 보고서 digest 산출.
 4. 운영자 승인 (보고서 digest, G-20). 승인 대기 동안 동결 유지.
@@ -176,7 +177,9 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 6. 적용: wheel 설치, `amplai ops migrate` (store 는 열 때 자동 이전 안 함, U-3), KitInstaller, 검증, 영수증.
 7. 평가기: 릴리스의 Q-suite 자산으로 새 평가기 버전을 사내에서 승인 (U-5, AC-U5). 승인 전 실험·calibration 불가 (기존 fail-closed).
 8. 재기준화: 승격 부품마다 기준 digest 와 새 기본값 비교 → 다르면 `stale` + 재비교 제안 (U-7, AC-U7). 포인터는 승인 전까지 그대로.
-9. 동결 해제: launchd agent bootstrap, kill switch 끔.
+9. 동결 해제: 서비스 관리자로 시계·서비스 재개(§3.5a.1), kill switch 끔.
+
+**끝 기준에 리허설 포함** (U-9, AC-U9, §3.5a.6): S3 는 업그레이드 리허설 test 가 통과해야 끝난다.
 
 **되돌리기** (U-6, AC-U6): 새 디렉터리로 복원 → store 밖 폐기 기록 재적용 → reconcile → admission 재개 → 권한 재승인.
 데이터 되돌리기는 admission 재개 전에만. 지식 저장소는 governed revert commit, pack 은 KitInstaller 되돌리기.
@@ -191,6 +194,219 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 - OpenCode 사내 모델 (C-2, AC-C3): OpenAI 호환 provider 설정을 qualification probe 로 확인한 뒤 의존. 추론 강도 축 없음.
 - 가격 없음 → 비용 비교 안 함 (D-088). 사내 과제는 L2.
 - 사내 Hermes 는 사내 모델이 도구 호출·64k 를 지원해야 한다 (Q-6).
+- Linux 이식·닫힌 망 설치·서비스·지원 OS 는 §3.5a 다.
+
+### 3.5a 사내 배포 세부 (S4a, S4b; C-8~C-14, U-9)
+
+근거: 코드는 main `2ab10a2`. 사내 사실은 운영자 점검(2026-10-12, `scripts/site_env_check.sh`, 브랜치 `origin/feat/034-site-env-check`)이다.
+
+#### 사내 점검 사실 (2026-10-12)
+
+| 호스트 | 자원 | 기반 | 엔진 | 서비스 관리 | 네트워크 |
+|---|---|---|---|---|---|
+| Ubuntu 18.04 서버 | 32 CPU, 157 GiB | glibc 2.27, Python 3.11.4(`/usr/local/bin`), git 2.17.1 | docker 20.10.21, cgroup v1, 사용자가 `appdocker` 그룹 | systemd 여부·sudo 여부 확인 필요 | 외부 접속 전부 없음, proxy 없음 |
+| RHEL 7.6 | 8 CPU, 15 GiB, `/home` 여유 1.8G | glibc 2.17, Python 3.11.7(사용자 설치), git 1.8.3.1, SELinux disabled | docker·podman 없음 | 확인 필요 | 외부 접속 없음 |
+| WSL2 Ubuntu 24.04 (WSL 3.0.1.0, kernel 6.18) | 16 CPU, 15.5 GiB | Python 3.12.3, git 2.43 | docker.io 29.1.3 설치됨. 엔진 도달·bind 쓰기 시험은 운영자 확인 대기 | systemd(PID 1, `/etc/wsl.conf`), sudo 는 비밀번호로 됨 | proxy `http://12.26.204.100:8080` 경유만. GitHub·PyPI 200, Anthropic·OpenAI·Slack 403 |
+| RHEL 8 | 미점검 | — | — | — | — |
+
+- 운영자가 전달한 점검 요약에 세 호스트의 CPU 아키텍처 값이 없다 (`uname -m` 는 스크립트가 찍는다, `site_env_check.sh:16`). 확인 필요 (Q-19).
+- Ubuntu 18.04 서버의 bind 쓰기 시험(`site_env_check.sh:48-71`, 이미지 인자가 있을 때만 돈다) 결과도 요약에 없다. 확인 필요 (Q-18).
+
+#### 3.5a.1 서비스 관리 (C-8, AC-C4, AC-C5)
+
+지금: 서버는 launchd agent `ai.amplai.local-serve`(`RunAtLoad`·`KeepAlive`, `docs/v3/USING_AMPLAI_WORK.ko.md:59`)이고 그 plist 는 저장소에
+없다. 야간은 `deployment/launchd/ai.amplai.meta-nightly.plist.template` 를 `meta nightly print-agent` 가 채워 출력만 한다
+(`runtime/meta_commands/nightly.py:18-19,309-318`). `ops local-update` 는 `launchctl kickstart` 를 부른다 (`runtime/cli.py:1012-1019`).
+notifier 는 서버 프로세스 안의 thread 다 (`runtime/local_deployment.py:1150-1157`, `runtime/notifier/pump.py:205-210`). 그래서 notifier 를 위한
+별도 unit 은 없다. 서버는 `127.0.0.1:5083` 에만 묶인다 (`runtime/cli.py:1027-1040`).
+
+**인터페이스** `ServiceManager` (설계, 새 코드):
+`render(units) -> files`(출력만), `status()`, `stop(names)`, `start(names)`, `timer_off()`, `timer_on()`, `is_quiescent()`.
+구현 세 개: `launchd`, `systemd`, `supervisor`. 설정 `service.manager` 로 고르고, 기본값은 OS 로 정한다 (macOS → launchd, Linux 에서 PID 1 이
+systemd 면 systemd, 아니면 supervisor).
+
+**관리 대상** (unit 이름은 `amplai-` 접두):
+
+| 대상 | 형태 | 비고 |
+|---|---|---|
+| `amplai-server` | 상시 (`Restart=on-failure`) | `amplai ops local-serve --config …`. notifier 포함 |
+| `amplai-model-gateway` | 상시 | S4c 의 `model_gateway`, 별도 프로세스 (M-5) |
+| `amplai-intake-listener` | 상시 | S1b 원격 listener 가 별도 프로세스로 정해질 때만 (H-12). 지금 코드에 없다 |
+| `amplai-meta-tick.service` + `.timer` | `Type=oneshot`, timer `OnCalendar=*:0/5` | `amplai meta nightly tick` (N-1, S1d). 밤이 돌고 있으면 `ACTIVE_OWNER` 로 바로 끝난다 |
+| 앞단 에이전트 컨테이너 | 엔진의 컨테이너, 호스트 mount 없음 | H-12, OD-8. AMPLAI 서비스 관리자 밖이다. 엔진 restart 정책 또는 운영자 unit 으로 띄운다 |
+
+**systemd**:
+- 1순위 system unit(`/etc/systemd/system/`, `User=<AMPLAI 전용 계정>`). 설치에 sudo 가 한 번 필요하다.
+- 2순위 user unit(`~/.config/systemd/user/`) + `loginctl enable-linger`. linger 를 본인이 켤 수 있는지는 호스트 polkit 설정에 달렸다. 확인 필요.
+- unit 에 `NoNewPrivileges=yes`, `PrivateTmp=yes`, `UMask=0077` 을 둔다. 엔진 소켓 접근이 필요하므로 `ProtectSystem=strict` 같은 강한 제한의
+  호환성은 자격 시험에서 확인한다 (확인 필요).
+- 로그는 stdout·stderr → journald (`journalctl -u amplai-server`). 보존 기간은 호스트 journald 설정이다. 확인 필요.
+- 렌더: `amplai ops service print --manager systemd` 가 unit 파일을 출력한다. 설치·`systemctl enable` 은 운영자가 한다 (C-8, 자동 설치 없음).
+
+**supervisor (systemd·sudo 가 없을 때)**: `amplai ops supervise --config …` 한 프로세스가 자식으로 서버·게이트웨이를 띄우고, 죽으면 지수
+backoff 로 다시 띄우고, 5분마다 tick 을 자식 프로세스로 돌린다.
+- store 를 열지 않는다. store 의 단일 owner 는 그대로 자식이다 (`runtime/storage/store.py:166-173`).
+- pid 파일을 `flock` 으로 잡아 두 개가 뜨지 않게 한다.
+- 로그는 `<log_root>/<name>.log`, 크기 기준 회전.
+- 재부팅 뒤 자동 시작은 호스트 수단(사용자 crontab `@reboot`, 운영자 수동)에 맡긴다. crontab 사용 가능 여부는 확인 필요 (Q-11).
+
+**동결 일반화 (U-2, S3 단계 2·9)**:
+- 동결은 `ServiceManager.timer_off()` → `stop(all)` → `is_quiescent()` 확인 → 모든 store owner lock 획득 순서다.
+- systemd: `systemctl stop` 은 `Restart=` 재시작을 일으키지 않는다. timer 는 `systemctl stop` + 동결 표지.
+- supervisor: 동결 표지 파일 `<runtime_root>/../freeze` 를 보면 자식을 내리고 새로 띄우지 않는다.
+- 세 구현 공통 이중 잠금: 동결 표지가 있으면 `local-serve` 와 `meta nightly tick` 은 store 를 열기 전에 `FROZEN` 으로 끝난다. 서비스 관리자가
+  실수로 프로세스를 띄워도 owner lock 은 업그레이드가 잡고 있어 `ACTIVE_OWNER` 로 막힌다.
+- `ops local-update` 의 재시작도 `ServiceManager` 를 거친다 (U-8 로 local-dev 전용은 그대로).
+
+**WSL2**: systemd 가 PID 1 이므로 systemd 구현을 쓴다. Windows 절전·재부팅·WSL 유휴 종료 때 배포판과 서비스가 멈추는지는 확인 필요 (Q-16).
+WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정이다.
+
+#### 3.5a.2 컨테이너 권한 (C-9, C-10, AC-C6, AC-C7)
+
+**지금 전제**:
+- 샌드박스는 uid·gid 65534(`sandbox/container.py:22-23`), `--read-only`, `--cap-drop=ALL`, `no-new-privileges`, 작업 공간 bind
+  (`:89-118`), run home bind(`:135-137`)로 돈다. uid 0 은 거부한다 (`:37`).
+- 자격 파일은 0700 부모 안에 0644 로 둔다. colima 가 bind 소유자를 컨테이너 uid 로 맞춰 준다는 주석이 근거다
+  (`runtime/execution/codex.py:78-79`, `agent_drivers/opencode_port.py:104-105`).
+- 작업 공간이 `$HOME` 아래여야 한다는 전제는 `runtime/local_deployment.py:398`(`workspace_root`, colima 가 `$HOME` 만 공유)과
+  `meta_harness/tb2.py:733`, `meta_harness/proposer.py:518`, `meta_harness/tb2_grading.py:213` 에 있다. Linux 엔진은 이 제약이 없다
+  (colima 의 공유 범위 제약이므로). 단 C-12 의 로컬 파일 시스템 조건은 남는다.
+- Linux 엔진(userns 없음)에서 컨테이너 uid 65534 는 호스트 권한 검사도 uid 65534 로 받는다. 그러면 호스트 사용자 소유 0700 부모 아래는
+  읽지 못한다 (추정, 사이트 점검 `site_env_check.sh:57-70` 의 700·755·777 시험이 이를 확인한다, Q-18).
+
+**선택지**:
+
+| 안 | 방법 | root 필요 | 탈출 시 호스트 권한 | 정리·diff | 판단 |
+|---|---|---|---|---|---|
+| A chown | 작업 공간을 65534 로 chown | chown 마다 root (또는 엔진을 통한 root 우회) | nobody | 호스트가 못 지우는 파일이 남아 다시 root 필요 | 제외 |
+| B 호스트 uid | `--user $(id -u):$(id -g)` | 없음 | AMPLAI 계정 = store·`authority.pem`·토큰 소유자 | 단순 | 기각 (키 노출, design/10 §5 격리) |
+| C userns-remap | daemon `userns-remap` | daemon 설정·재시작 (root) | subuid 범위 | uid 가 다시 어긋나 A 와 같은 문제 | 제외 (공유 daemon, 운영 주체가 다름, Q-11) |
+| D rootless | rootless docker/podman, podman `--userns=keep-id` | `/etc/subuid` 설정에 root 한 번 | 호스트 사용자 | 단순 | RHEL8 후보, 별도 자격 시험 (cgroup v1 rootless 의 자원 제한 적용 여부 확인 필요) |
+| E ACL | uid 65534 유지, 호스트 사용자가 `setfacl` 로 작업 공간·run home 에 `u:65534:rwx` 와 default ACL `u:65534:rwx`, `u:<host>:rwx` | 없음 (소유자가 ACL 설정) | nobody | 호스트가 default ACL 로 읽고 지움 | **권장** |
+
+**권장 (D-119)**: E. 컨테이너 uid 는 호스트 사용자와 다른 고정 uid(설정 `container.sandbox_uid`, 기본 65534)이고, 접근은 ACL 로만 준다.
+- 자격 사본은 0600 + ACL `u:<sandbox_uid>:r` 로 둔다. 0644 로 바꾸는 줄(`codex.py:79`, `opencode_port.py:105`)은 Linux 에서 ACL 부여로
+  바뀐다. macOS colima 경로는 그대로다.
+- `workspace_root` 부모는 0700 + ACL 로 sandbox uid 만 통과시킨다. 같은 uid(nobody)로 도는 다른 호스트 daemon 도 통과할 수 있으므로
+  sandbox uid 는 호스트에서 쓰지 않는 값으로 바꿀 수 있게 한다.
+- 남는 위험: default ACL 의 mask 는 생성 mode 에서 온다. 컨테이너가 0755 디렉터리·0644 파일을 만들면 호스트 사용자의 실효 권한이 줄어
+  지우지 못할 수 있다 (추정). 그래서 S4a 의 Linux container qualify 에 "컨테이너가 git checkout·중첩 mkdir 한 뒤 호스트가 diff 를 읽고
+  전부 지운다" 시험을 넣고(AC-C6), 실패하면 정리를 sandbox uid 컨테이너 안의 `rm` 으로 한다(`--network none`, 같은 프로필).
+- ACL 지원은 파일 시스템 조건이다 (ext4·xfs 는 지원, 실제 마운트 옵션 확인 필요, C-14 점검 항목).
+- docker 그룹 사용자(`appdocker`)는 엔진을 통해 호스트 root 와 같은 일을 할 수 있다. AMPLAI 계정이 침해되면 호스트 root 침해다. 그래서
+  AMPLAI 는 사람과 분리된 전용 계정으로 돌린다 (§4).
+
+**엔진 (C-10, D-120)**:
+- 설정 `container.engine: docker|podman` 하나를 `LocalConfig` 에 두고 모든 `ContainerSandbox(...)` 생성(`local_deployment.py:617,644,711,722,913,1314,1323`,
+  `execution/codex.py:470,483,500`)과 정리 호출(C-10 의 `docker kill`·`docker rm -f` 9곳)에 넘긴다. `ContainerSandbox.kill(name)`·`remove(name)`
+  메서드로 모아 직접 `subprocess.run(["docker", …])` 를 없앤다.
+- `meta_harness/tb2.py:727`·`tb2_grading.py:242`·`agent_drivers/opencode_launcher.py:148` 은 이미 engine 인자를 받는다. 기본값 문자열
+  `"docker"` 대신 설정을 넘긴다.
+- 정적 test: `src/` 에 `["docker"` 리터럴이 없다 (AC-C7).
+- 스크립트(`scripts/sandbox_up.sh` 등)는 `docker` 를 직접 쓴다 (`sandbox_up.sh:35-82`). Linux·닫힌 망 설치 경로는 이 스크립트 대신
+  §3.5a.3 의 설치 명령이 맡는다.
+- podman 차이 중 확인할 것: `--init`, `--pids-limit`·`--memory` 의 cgroup v1 적용(rootless), `--network none`, `--mount type=bind` 의
+  SELinux 라벨(`:Z`, `site_env_check.sh:61`). 모두 limits·egress·container qualify 로 확인한다 (확인 필요).
+
+#### 3.5a.3 오프라인 설치 묶음 (C-11, AC-C8)
+
+**묶음 구성** `amplai-bundle-<release>-<platform>/`:
+
+| 항목 | 내용 | 검증 |
+|---|---|---|
+| `release.json` | `distribution-release` manifest (U-1): 버전, 각 파일 sha256, 이미지 목록, 지원 platform 태그, protocol major 3 | upstream 서명 (Ed25519, 신뢰 루트 M-4). 지금 pack 신뢰는 Ed25519 공개 키 표다 (`runtime/cli.py:1080-1096`) |
+| `release.json.sig` | 위 서명 | 설치 시 고정한 upstream 키 |
+| `wheelhouse/` | `amplai_foundry` wheel + 의존 closure 전체 (서버용, intake MCP 용, 게이트웨이용 extra 별) | `requirements-hashes-<extra>.txt` 로 `pip install --no-index --find-links wheelhouse --require-hashes` |
+| `images/*.tar` | worker, worker-opencode, worker-app 기반, egress sidecar, 사이트 로컬 registry 이미지, 앞단 에이전트 이미지 | `release.json` 의 이미지 config digest(= `docker image inspect` 의 `Id`) |
+| `qsuite/` | Q-suite 자산 (OD-7, U-5) | `release.json` sha256 |
+| `units/` | 서비스 unit 틀 (§3.5a.1) | sha256 |
+
+- **hash 고정**: 지금 hash 고정 목록은 intake MCP 용 하나다 (`integrations/intake_mcp/requirements-hashes.txt:1-11`, `uv pip compile …
+  --generate-hashes`). 같은 방법을 서버·게이트웨이 extra 로 넓힌다. 저장소에 그 밖의 lock 파일은 없다 (같은 파일 :3-4).
+- **platform**: 대상 Python 은 3.11(Ubuntu 18.04, RHEL 7.6)과 3.12(WSL2 24.04)다. wheelhouse 는 Python 버전·glibc 별로 만든다. glibc 2.17
+  (RHEL 7)은 `manylinux2014` wheel 이 있어야 하고, 고정 버전의 `cryptography`·`pydantic-core` 등이 그 태그를 내는지는 확인 필요다. 소스
+  빌드는 받지 않는다(`--only-binary=:all:`).
+- **도구 버전 고정**: worker Dockerfile 의 기본 ARG 가 `latest` 다 (`deployment/worker/Dockerfile:5-6`). 릴리스 빌드는 버전을 고정하고
+  `release.json` 에 기록한다 (지금 `deployment/local-container.json` 의 `tools` 와 같은 정보).
+- **이미지와 digest**: `ContainerSandbox` 는 `<name>@sha256:<64hex>` 만 받는다 (`sandbox/container.py:34-35`). `docker load` 한 이미지는
+  registry digest 가 없다 (추정, docker 20.10 과 29 에서 확인 필요). 그래서:
+  1. 이미지 tar 를 load 하고 `Id`(config digest)를 `release.json` 과 대조한다. 다르면 거부.
+  2. 사이트 로컬 registry(묶음 안의 이미지, loopback 전용)에 push 해서 `localhost:<port>/<name>@sha256:…` 를 얻는다. 지금 Mac 도 같은 방식이다
+     (`scripts/sandbox_up.sh:18`, `deployment/local-container.json:5`).
+  3. push 로 생긴 manifest digest 는 엔진·압축에 따라 upstream 과 다를 수 있다 (추정). 신뢰 근거는 config digest 이고, 사이트 manifest
+     digest 는 사이트 설치 영수증에 기록한다.
+  - 사내 공용 registry 가 있으면 2단계를 그 registry 로 바꿀 수 있다. 있는지 확인 필요 (Q-14).
+- **설치 순서** `amplai-bundle verify` → `install` (최초 설치는 묶음 안의 POSIX `install.sh` + 고정 Python 으로 시작):
+  1. 서명 검증 → 모든 파일 sha256 → 실패 시 종료 (아무것도 안 바꿈).
+  2. 새 venv `<install_root>/releases/<release>/` 에 `--no-index --require-hashes` 설치.
+  3. 이미지 load → config digest 대조 → 로컬 registry push → 사이트 영수증.
+  4. 사이트 점검(C-14) → container qualify·limits·egress qualify → 칸 probe.
+  5. 최초 설치면 `ops local-init`, 업그레이드면 S3 `ops upgrade --release <release>` 가 이 묶음을 쓴다 (동결 → 미리보기 → 승인 → 백업 →
+     적용 → `current` 링크 전환). 이전 venv 는 되돌리기용으로 남긴다 (U-6).
+- **새 릴리스 반입 경로**: upstream 에서 빌드·서명 → 운영자가 반입 가능한 기기(WSL 은 GitHub 에 닿는다)로 받음 → `bundle verify` → 사내 반입
+  절차 → 서버에서 다시 `bundle verify` → S3 업그레이드. 사내 반입 절차(매체, 검사, 승인자)는 확인 필요 (Q-14).
+- **사내 overlay**: 사내 서명 overlay(M-3, M-4)는 별도 묶음이고 upstream 묶음에 섞지 않는다 (U-1, AC-U3).
+
+#### 3.5a.4 경로·프로세스·로그·백업 (C-12, AC-C9)
+
+| 용도 | 기본 경로 (설정 가능) | 권한 | 비고 |
+|---|---|---|---|
+| 설치본 | `<install_root>/releases/<release>/`, `<install_root>/current` 링크 | AMPLAI 계정 | sudo 가 있으면 `/opt/amplai`, 없으면 `~/.amplai/install` |
+| 설정 | `<amplai_home>/local/local.json`, `<amplai_home>/meta/local.json` | 0600 | 지금 기본값 `~/.amplai/local/local.json` (`runtime/cli.py:1029`) |
+| 비밀 | `<amplai_home>/secrets/` (운영자 토큰, intake 토큰·연결표, 서명 키, 웹훅 URL 파일) | 0700/0600 | store 밖 (H-6) |
+| 데이터 | 제품 `runtime_root`, meta root, CAS, `workspace_root` | 0700 + sandbox ACL (작업 공간만) | 로컬 파일 시스템만 |
+| 로그 | systemd 는 journald, supervisor 는 `<amplai_home>/logs/` | 0700 | 서버는 access log 를 끈다 (`runtime/cli.py:1040`) |
+| 백업 | `<backup_root>/<timestamp>/` | 0700 | live store 밖 (`runtime/recovery/service.py:43-44`). 다른 디스크 권장 |
+
+- **로컬 파일 시스템 검사** (AC-C9): 서버·tick 시작 시 `runtime_root`·`workspace_root` 의 파일 시스템 종류를 읽어 `nfs`, `cifs`, `9p`,
+  `drvfs`(WSL `/mnt/<drive>`) 등이면 `Hold("STORE_FILESYSTEM")`. 근거는 store 의 `flock` + WAL (`runtime/storage/store.py:169,186`)이다.
+  허용 목록(ext4, xfs, btrfs, apfs)으로 둔다.
+- **용량**: RHEL 7.6 의 `/home` 여유는 1.8G 다. 이미지 tar·wheelhouse·작업 공간·백업 크기 합계는 묶음 빌드 때 계산해 `release.json` 에
+  싣고, 설치가 여유 공간을 먼저 확인한다. 실제 크기 숫자는 확인 필요.
+- **백업**: U-4 manifest 범위를 `ops backup --manifest` 로 만든다 (S3). 지금 백업은 DB + CAS 뿐이다 (`runtime/recovery/service.py:47-100`).
+  보존 개수·주기(systemd timer 또는 supervisor 주기)는 운영자 설정. 기본 숫자는 정하지 않는다.
+- **프로세스 계정**: AMPLAI 전용 계정 하나(서버·tick·게이트웨이). 사람 계정·앞단 에이전트와 나눈다 (C-5). 전용 계정 생성은 root 가 필요하다
+  (Q-11).
+
+#### 3.5a.5 지원 OS 표 (C-13, C-14, AC-C10)
+
+| OS | 필요한 것 | 지금 상태 (2026-10-12) | 권장 |
+|---|---|---|---|
+| Ubuntu 18.04 서버 | 묶음(py3.11, glibc 2.27), docker 20.10 + ACL, systemd 또는 supervisor, 로컬 fs | Python·docker 있음. bind 시험·sudo·systemd 사용 권한·git 2.17 호환성 확인 필요. Ubuntu 18.04 표준 지원은 2023-05 에 끝났다 | **조건부 지원**. 사이트 점검 + Linux container qualify 통과 시 |
+| WSL2 Ubuntu 24.04 | 묶음(py3.12), docker.io 29 + ACL, systemd, ext4 경로(`/mnt/c` 금지) | systemd·sudo 있음. 엔진 도달·bind 시험 확인 대기. 상시 가동(Q-16) 미정 | **지원** (개발·시험 호스트로 먼저). 앞단 에이전트 격리는 같은 배포판이 아닌 별도 컨테이너 (C-5) |
+| RHEL 8 | 묶음(py3.11, glibc 2.28), podman(rootful 또는 rootless + keep-id), SELinux 라벨 | 미점검 | 점검 후 결정. `site_env_check.sh` 를 먼저 돌린다 (Q-13) |
+| RHEL 7.6 | 컨테이너 엔진(없음), glibc 2.17 wheel, git 1.8.3.1 호환, 디스크 | 엔진 없음, `/home` 1.8G. RHEL 7 유지보수 지원은 2024-06 에 끝났다 | **실행 호스트로 미지원 권장**. 결정은 운영자 (Q-12) |
+
+- RHEL 7 사실 정리: AMPLAI 실행은 컨테이너 샌드박스가 필수다 (`ContainerSandbox`, design/10 격리). RHEL 7.6 에는 엔진이 없고, 설치하려면
+  root 가 필요하다. podman 을 RHEL 7 에 쓸 수 있는지, user namespace(`user.max_user_namespaces`)가 켜져 있는지는 확인 필요. 또 서버 API 는
+  loopback 전용이라(`runtime/cli.py:1040`) RHEL 7 을 다른 호스트 서버의 원격 클라이언트로 쓰는 경로도 지금은 없다.
+- git 최소 버전: 저장소 코드가 쓰는 git 기능(`git apply --binary`, `fetch --no-tags`, `-C`, `push <commit>:<ref>`;
+  `sandbox/git_workspace.py:266`, `runtime/execution/product.py:114`, `runtime/execution/publish.py:321`)의 최소 버전은 정리돼 있지 않다.
+  확인 필요. container qualify 에 host git 버전 시험을 더한다.
+- PR 게시: 지금 `publish` 는 GitHub CLI `gh` 를 부른다 (`runtime/execution/publish.py:86-104`). 사내 git 서버 종류에 맞는 게시 경로가
+  필요하다 (Q-15, K-9 와 같은 git 서버).
+- 표의 각 행은 `deployment/support-evidence.json` 근거로 남긴다. 근거 없는 행은 `disabled` 다 (`deployment/README.md:5-13`).
+
+#### 3.5a.6 업그레이드 리허설 (U-9, AC-U9; S3 끝 기준)
+
+- **데이터 생성**: 이전 릴리스 wheel(N-1)을 격리 venv 에 설치하고, 그 버전의 CLI·API 만으로 사내 모양 데이터를 만든다. 새 코드로 옛 모양을
+  흉내 내지 않는다.
+  - L2: 사내 승격 부품(기준 digest 포함, 하나는 다음 릴리스에서 기준이 바뀌게), 사내 과제, 사내 칸, 사내 서명 overlay 모듈 하나.
+  - L3: 완료·실패·취소 goal, 증거 CAS, 결정 기록, 예산, 승인 원장, 지식 저장소 commit, notifier outbox 미전송 항목, 야간 제어 기록,
+    meta store 밤 기록.
+  - store 밖: 운영자 토큰, intake 토큰·연결표, 폐기된 토큰 하나(폐기 기록 포함).
+- **실행**: N-1 데이터 → 묶음(N)으로 `ops upgrade` 전 단계(동결, 미리보기, 승인, 백업, 이전, 평가기 승인, 재기준화, 해제).
+- **불변식 (기계 비교)**:
+  - AC-U2: L2·L3 레코드 수와 내용 digest 가 같다 (이전 단계가 바꾸는 필드는 미리보기 보고서에 적힌 것만).
+  - AC-U7: 기준이 바뀐 부품만 `stale`, 포인터는 그대로.
+  - AC-H7·AC-U6: 폐기 토큰은 계속 거부. 이어서 되돌리기 리허설(U-6 순서) 뒤에도 같다.
+  - 업그레이드 뒤 기존 goal 조회, 새 goal 접수, notifier 전송, 야간 dry-run 이 된다.
+- **어디서 돌리나**:
+  - CI: 릴리스 후보마다 N-1 → N. Linux 컨테이너 안에서 돌린다 (CI 는 `ubuntu-latest`, Python 3.11·3.12, `.github/workflows/ci.yml:11,14`).
+    컨테이너 엔진이 필요한 단계(이미지 load)는 `container` marker 로 나눈다 (`pyproject.toml:63`).
+  - 사내: 실제 업그레이드 전, 최신 백업을 새 디렉터리에 복원한 사본(U-6 의 복원 방식)에 같은 리허설을 돌리고 결과 보고서를 업그레이드
+    승인(S3 단계 4) 화면에 붙인다.
+- **건너뛰기 업그레이드**(N-2 → N)를 지원할지는 Q-20.
 
 ### 3.6 Jev (S5)
 
@@ -232,7 +448,7 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 
 | 층 | 누가 | 하는 일 |
 |---|---|---|
-| 시계 | launchd | 5분마다 `amplai meta nightly tick` (지금은 01:00 에 `run` 한 번, `deployment/launchd/ai.amplai.meta-nightly.plist.template`). tick 은 예정 시각 또는 유효한 시작 요청(N-9)일 때만 그날 밤을 시작하고, 밤이 이미 돌고 있으면(`ACTIVE_OWNER`) 바로 끝난다 |
+| 시계 | 서비스 관리자 (macOS launchd, Linux systemd timer 또는 supervisor, §3.5a.1) | 5분마다 `amplai meta nightly tick` (지금은 01:00 에 `run` 한 번, `deployment/launchd/ai.amplai.meta-nightly.plist.template`). tick 은 예정 시각 또는 유효한 시작 요청(N-9)일 때만 그날 밤을 시작하고, 밤이 이미 돌고 있으면(`ACTIVE_OWNER`) 바로 끝난다 |
 | 밤 진행 | `NightlyRunner` | preflight → drift → 설계 → search → confirmation → dreaming → dashboard, 결정적 (`meta_harness/nightly.py:89-91`) |
 | 제어 요청 | 앞단 에이전트·운영자 | 멈춤·건너뛰기·조이기·시작(N-9) → 제품 authority service → `nightly-control` 기록 |
 | 승인 | 사람 | 상시 허락 발급·연장, 단계 gate (CLI, 승인 페이지) |
@@ -289,6 +505,12 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | 알림 차단 | 침해된 앞단 에이전트가 경고를 숨김 | 앞단 에이전트와 독립된 `notifier` | AC-F3, AC-N1 |
 | adapter 혼동 | 한 adapter 토큰으로 다른 adapter 행세 | adapter 별 토큰·연결표·경로 | AC-F2 |
 | 제어 채널 장애 | 제어 기록을 못 읽어 멈춤 요청이 무시됨 | 읽지 못하면 밤을 멈춤 (fail closed) | AC-N5 |
+| 반입 묶음 변조 | 닫힌 망으로 들어오는 wheel·이미지 바꿔치기 | 서명 manifest, wheel hash, 이미지 config digest, 검증 전 무변경 | AC-C8 |
+| 샌드박스 탈출 → 키 | 컨테이너가 호스트 uid 로 돌면 store·`authority.pem` 에 닿음 | 호스트와 다른 sandbox uid, ACL 은 작업 공간·run home 에만 | AC-C6 |
+| 엔진 그룹 = root | `appdocker` 그룹 계정 침해가 호스트 root 침해 | AMPLAI 전용 계정, 사람·앞단 에이전트와 분리, 앞단 에이전트 컨테이너는 엔진 소켓 mount 없음 | AC-C6, AC-H8 |
+| 동결 우회 | 서비스 관리자 재시작·timer 가 동결 중 store 를 엶 | 서비스 정지 + 동결 표지 + owner lock 이중 잠금 | AC-C5, AC-U4 |
+| 공유 파일 시스템 store 손상 | NFS·drvfs 위 SQLite WAL·`flock` | 로컬 파일 시스템 허용 목록, 시작 거부 | AC-C9 |
+| 검증 안 된 업그레이드 | 사내 데이터가 새 릴리스에서 깨짐 | 이전 릴리스가 만든 데이터로 리허설, 사내는 백업 사본 리허설 후 승인 | AC-U9 |
 
 ## 5. 슬라이스와 순서 (OD-3)
 
@@ -298,13 +520,15 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | S1a | `intake` actor, store 밖 토큰·연결표, 접수 경로, steering·질문 종류 제한, 조회 필터, projection, 세대 cursor, 승인 CLI digest, 빈도 제한, MCP 서버, cron 알림, VM runbook | AC-H1~H10 | — | S0 |
 | S1b | 승인 페이지 (OD-6), 원격 listener (OD-8 이 원격일 때) | AC-H11 | — | S1a |
 | S1c | 앞단 에이전트·메신저 모듈: adapter 별 intake 설정, 경로·표지 일반화, `notifier` kind + Slack, 도구 계약 v1, MCP 서버, Hermes 키트 | AC-F1~F3, AC-H8, AC-H9 | — | S1a |
-| S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, launchd tick, 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N6 | class C(권한) | S1c |
+| S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, tick(launchd; Linux systemd·supervisor 는 S4a), 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N6 | class C(권한) | S1c |
 | S1e | 진짜 일시정지(H-15): Run `pausing → paused`, 체크포인트 보존, 같은 세션 재개 또는 이어 실행, 멈춘 동안 지시 반영, 자원·시간 초과 | 추가 예정 | — | S1a |
 | S1f | 운영자 이벤트 세대 cursor 와 공통 snapshot 경로 (H-16) | 추가 예정 | — | S1a |
 | S2a | 지식 모듈 | AC-K1, AC-K3 | G-04 | S0 |
 | S2b | 문서 최신성 모듈 | AC-K2 | — | S2a |
-| S3 | 배포 릴리스·Q-suite 자산, 동결, 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한 | AC-U1~U8 | G-07, G-15, G-20 | S0 |
-| S4 | onprem qualify, 모델 게이트웨이, OpenCode 사내 모델, 사내 과제 도구 | AC-C1~C3 | G-07 | S0, S3, OD-4 |
+| S3 | 배포 릴리스·Q-suite 자산, 동결(`ServiceManager` 인터페이스 + launchd 구현), 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한, 업그레이드 리허설 | AC-U1~U9 | G-07, G-15, G-20 | S0 |
+| S4a | Linux 이식: `ServiceManager` systemd·supervisor 구현, unit 출력, 동결 표지, 엔진 설정 단일화, sandbox uid + ACL, 로컬 파일 시스템 검사, 사이트 점검 확장, Linux container qualify | AC-C4~C7, AC-C9 | — | S3(인터페이스), S1d(tick) |
+| S4b | 오프라인 묶음: 묶음 빌드·서명, wheelhouse(hash, platform 별), 이미지 tar + config digest + 사이트 로컬 registry, `bundle verify`·설치, 지원 OS 근거 | AC-C8, AC-C10 | G-07 | S3, S4a |
+| S4c | onprem qualify, 모델 게이트웨이, OpenCode 사내 모델, 사내 과제 도구 (기존 S4) | AC-C1~C3 | G-07 | S0, S3, S4b, OD-4, Q-6 |
 | S5 | Jev | 자격 시험 | — | S0, 접근 권한 |
 
 - 평가기 digest 범위의 파일을 바꾸는 PR 은 eval-N 승인을 함께 묶는다.
@@ -322,7 +546,13 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 - D-114 Q-suite 배포 자산화 (OD-7).
 - D-115 지식 공간과 git 서버 승인을 사람 승인 증거로 쓰는 대응 (OD-10, 확인 대기).
 - D-116 앞단 에이전트·메신저는 세 층 모듈(접수 어댑터, 앞단 에이전트 키트, notifier)이다. wire `source_channel=hermes` 는 앞단 에이전트 채널 이름으로 두고, adapter 는 `authn_context_ref` 로 구분한다 (OD-13).
-- D-117 야간 루프 제어: 시계 launchd tick, 진행 NightlyRunner, 앞단 에이전트는 조이기와 조건부 시작(N-9, `nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12, Q-8 = B).
+- D-117 야간 루프 제어: 시계 tick(서비스 관리자, D-118), 진행 NightlyRunner, 앞단 에이전트는 조이기와 조건부 시작(N-9, `nightly.control`), 제어 기록은 제품 store, 밤은 읽기 전용으로 확인하고 못 읽으면 멈춘다 (OD-12, Q-8 = B).
+- D-118 서비스 관리자 인터페이스 하나에 launchd·systemd·supervisor 구현을 둔다. AMPLAI 는 unit 을 출력만 한다. 동결은 서비스 정지 + 동결 표지 + owner lock 이중 잠금이다 (C-8).
+- D-119 Linux 샌드박스는 호스트와 다른 고정 uid(기본 65534)를 유지하고 접근은 POSIX ACL 로만 준다. 호스트 uid 실행은 기각, chown·userns-remap 은 제외, rootless podman `keep-id` 는 별도 자격 시험 후보 (C-9).
+- D-120 컨테이너 엔진은 설정 한 곳에서 정하고 직접 `docker` 호출을 없앤다 (C-10).
+- D-121 닫힌 망 배포는 서명된 묶음(hash 고정 wheelhouse, 이미지 tar + config digest, 사이트 로컬 registry)으로 한다. 검증 전에는 아무것도 바꾸지 않는다 (C-11, G-07).
+- D-122 지원 OS: WSL2 Ubuntu 24.04 지원, Ubuntu 18.04 조건부 지원, RHEL 8 점검 후 결정, RHEL 7 은 실행 호스트 미지원 권장. 운영자 결정 대기 (Q-12, C-13).
+- D-123 업그레이드 리허설(이전 릴리스가 만든 사내 모양 데이터 → 새 릴리스)을 S3 끝 기준으로 하고, 사내 업그레이드 승인 전 백업 사본 리허설을 필수로 한다 (U-9).
 
 ## 7. 열린 질문
 
@@ -338,6 +568,16 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
 | Q-8 | 앞단 에이전트가 상시 허락 안에서 밤을 "지금 시작" 할 수 있나 → 결정: B, N-9 조건부 (2026-10-11) | S1d |
 | Q-9 | 제어 기록 위치 → 결정: 제품 store (2026-10-11, 운영자 "정석대로") | S1d |
 | Q-10 | notifier 의 Slack 방식 → 결정: Incoming Webhook, Hermes 와 다른 Slack 앱 (보내기만, 최소 권한, 독립 채널). 여러 사람 DM·메시지 갱신이 필요해지면 bot 구현을 추가 (2026-10-11) | S1c |
+| Q-11 | Ubuntu 18.04 서버: sudo(전용 계정, system unit) 가능 여부, 사용자 systemd(linger) 사용 가능 여부, crontab 사용 가능 여부, docker daemon(`appdocker`)의 관리 주체 | S4a 서비스 관리·계정 |
+| Q-12 | RHEL 7 지원 여부. 사실: 엔진 없음, glibc 2.17, git 1.8.3.1, `/home` 여유 1.8G, RHEL 7 유지보수 지원 종료(2024-06). 권장: 실행 호스트 미지원 | S4b 묶음 platform, 지원 표 |
+| Q-13 | RHEL 8 사이트 점검 (`site_env_check.sh`): Python 3.11 유무, podman 버전·rootless·cgroup 버전, SELinux 모드 | S4a 엔진·권한 |
+| Q-14 | 사내 반입 절차(매체, 검사, 승인자)와 사내 공용 컨테이너 registry 유무 | S4b |
+| Q-15 | 사내 git 서버 종류·API (PR 게시는 지금 `gh` 전용, `runtime/execution/publish.py:86-104`; K-9 승인 증거도 같은 서버) | S4c, S2a |
+| Q-16 | WSL2 를 상시 서버로 쓰나. Windows 절전·재부팅·WSL 유휴 종료 때 systemd 서비스가 유지되나 | S4a, 야간 루프 |
+| Q-17 | 데이터·백업 디스크의 파일 시스템 종류(NFS 여부)와 용량 | S4a 경로, AC-C9 |
+| Q-18 | bind 쓰기 시험 결과 (Ubuntu 18.04 는 이미지 하나로 `sh site_env_check.sh <image>`, WSL 은 엔진 도달부터) | S4a uid·ACL |
+| Q-19 | 각 호스트 CPU 아키텍처 (`uname -m`) | S4b wheel·이미지 platform |
+| Q-20 | 건너뛰기 업그레이드(N-2 → N)를 지원하나, 연속 릴리스만 지원하나 | S3 리허설 범위 |
 
 ## 8. 위험
 
@@ -345,6 +585,8 @@ AMPLAI Control Plane (제품) ── 계약 → 승인(human) → 실행 → 검
   지속시킬 수 있는지 확인 필요 → 스킬 자동 작성을 끄거나 주기 검토를 qualification 항목으로.
 - S0·S3 는 코어(권한, store 열기, 릴리스)를 건드린다. 동작 불변 PR 과 장애 훈련 test 로 나눈다.
 - S2a 이식 크기는 추정이 어렵다.
-- S4 는 사내 확인 사항(Q-6, OpenCode provider 설정)에 막힐 수 있다.
+- S4 는 사내 확인 사항(Q-6, OpenCode provider 설정)에 막힐 수 있다. S4a·S4b 는 Q-11~Q-19 의 사이트 사실에 막힐 수 있다.
+- Ubuntu 18.04·docker 20.10 은 오래된 기반이다. 고정한 의존 wheel 이 glibc 2.27(RHEL 7 이면 2.17) 태그를 계속 낼지, 엔진 동작 차이가 있는지는 릴리스마다 자격 시험으로 확인한다.
+- ACL 방식은 default ACL mask 때문에 호스트 정리가 막힐 수 있다 (추정). Linux container qualify 로 확인하고, 막히면 컨테이너 안 정리로 대신한다.
 - 알림은 cron 주기만큼 늦다.
 - 계정 한도: 구현·리뷰와 파일럿이 같은 Claude 계정.

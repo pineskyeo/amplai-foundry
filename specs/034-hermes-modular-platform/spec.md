@@ -1,7 +1,8 @@
 # Work 034 Spec: Hermes 오케스트레이터, 모듈 체계, 사내 설치
 
-- 상태: 설계 초안 r5 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영). 구현 없음.
+- 상태: 설계 초안 r8 (독립 검토 2회 반영 r3, 운영자 결정 2026-10-11 반영 r5, 사내 점검 2026-10-12 반영 r8: 사내 설치 세부 C-8~C-14, 업그레이드 리허설 U-9). 구현 없음.
 - 근거 표기: `file:line` 은 HEAD `5e38d6b`, design-reference 는 `design/NN §k`. 추정은 "(추정)", 미확인은 "확인 필요".
+  r8 에서 더한 C-8~C-14, U-9 의 `file:line` 은 main `2ab10a2` 이다.
 
 ## 1. 목적
 
@@ -129,7 +130,7 @@
 
 ### N. 야간 메타 루프 제어 (OD-12)
 - N-1 역할을 나눈다.
-  - 시계: launchd. 5분마다 `amplai meta nightly tick` 을 실행한다. tick 은 결정적 규칙으로 "예정 시각이 됐거나 유효한 시작
+  - 시계: 서비스 관리자(macOS launchd, Linux systemd timer 또는 supervisor, C-8). 5분마다 `amplai meta nightly tick` 을 실행한다. tick 은 결정적 규칙으로 "예정 시각이 됐거나 유효한 시작
     요청이 있으면 그날 밤을 시작" 하고, 아니면 바로 끝난다. 지금은 01:00 에 `run` 한 번이다
     (`deployment/launchd/ai.amplai.meta-nightly.plist.template`).
   - 밤 진행: `NightlyRunner`. 결정적 절차다 (`meta_harness/nightly.py`).
@@ -188,7 +189,7 @@
 ### U. 업그레이드
 - U-1 배포 릴리스는 별도 kind `distribution-release`. 부품 릴리스 포인터와 섞지 않는다 (`runtime/execution/releases.py:241-242`).
   사내 overlay·데이터·사내 과제는 들어가지 않는다.
-- U-2 **동결 먼저**: 업그레이드 시작 시 kill switch 를 켜고, 서버·야간 launchd agent 를 내리고, 모든 store(제품, meta)의
+- U-2 **동결 먼저**: 업그레이드 시작 시 kill switch 를 켜고, 서버·야간 시계(서비스 관리자: macOS launchd, Linux systemd 또는 supervisor, C-8)를 내리고, 모든 store(제품, meta)의
   owner lock 을 잡은 뒤에 drain 을 확인한다. 동결은 적용·검증이 끝날 때까지 유지한다.
 - U-3 store 이전은 명시적 `migrate` 단계로만 한다. store 를 열 때 자동 이전하지 않고, 버전이 다르면 열기를 거부한다
   (지금은 열 때마다 DDL·inline 이전, `runtime/storage/store.py:188-189`). 이전 단계는 번호·재실행 안전, 미리보기 보고서,
@@ -203,6 +204,10 @@
   지금은 class A 필드만 같으면 후보 전체가 적용돼 새 upstream 의 다른 필드(class C 검증 정책 포함)를 가린다
   (`runtime/execution/releases.py:244-253,300-301`). 포인터 변경은 기존 승격 승인 (design/16 §7-9).
 - U-8 `ops local-update` 는 local-dev 에서만 허용한다 (`runtime/cli.py:868-925`, 승인 없는 우회 경로).
+- U-9 **업그레이드 리허설**: 이전 배포 릴리스로 만든 사내 모양 데이터(L2 승격 부품·사내 과제·사내 칸, L3 실행 기록·CAS·지식 저장소·
+  store 밖 토큰·폐기 기록·notifier outbox·야간 제어 기록)를 새 릴리스로 `ops upgrade` 하고, 불변식(AC-U2, AC-U6, AC-U7)을 기계로
+  비교한다. 데이터는 새 코드가 아니라 이전 릴리스 wheel 이 만든다. CI 리허설은 S3 끝 기준이고, 사내 실제 업그레이드 전에는 최신 백업을
+  새 디렉터리에 복원한 사본으로 같은 리허설을 돌린다 (plan §3.5a.6).
 
 ### C. 사내 구성
 - C-1 정의돼 있는 `onprem` profile(disabled, 전제 9개, T-112, `deployment/README.md:10-13`)을 qualify 한다.
@@ -226,6 +231,29 @@
   (Anthropic·OpenAI·Slack 은 403, 원인 확인 중).
 - C-7 닫힌 망 설치: 서버에서 PyPI·이미지 레지스트리에 닿지 못하므로 배포물은 wheel 묶음(hash 고정)과 이미지 tar(또는 사내 레지스트리)로
   들어간다. 메신저도 사내 메신저 구현을 `notifier`·앞단 에이전트 키트로 추가할 수 있어야 한다 (F-1, F-5).
+
+- C-8 **서비스 관리자**: 상시 프로세스(제품 서버, 모델 게이트웨이, 원격 listener)와 야간 시계는 서비스 관리자 하나로 다룬다. 구현은
+  launchd(macOS), systemd(Linux, system unit 우선, user unit + linger 차선), AMPLAI supervisor(systemd·sudo 가 없는 호스트)다.
+  AMPLAI 는 unit 파일을 출력만 하고 설치하지 않는다 (지금 `meta nightly print-agent` 와 같은 원칙,
+  `runtime/meta_commands/nightly.py:18-19`). 업그레이드 동결(U-2)은 이 인터페이스로 세 구현 모두에서 같은 결과를 낸다.
+  지금 서비스 관리 코드는 launchd 뿐이다 (`runtime/cli.py:923,1012-1019`, `deployment/launchd/`; main 의 저장소 전체에서 `systemd` 검색 0건).
+- C-9 **샌드박스 uid**: Linux 에서 컨테이너 uid 는 AMPLAI 호스트 사용자와 다른 고정 uid(기본 65534)로 둔다. 작업 공간과 run home 접근은
+  호스트 사용자가 POSIX ACL 로 그 uid 에만 준다. 컨테이너를 호스트 uid 로 돌리지 않는다 (탈출 시 store·키 노출). 지금 코드는 colima 가
+  bind 소유자를 맞춰 준다는 전제로 자격 파일을 0644 로 바꾼다 (`runtime/execution/codex.py:78-79`, `agent_drivers/opencode_port.py:104-105`).
+- C-10 **컨테이너 엔진 설정**: 엔진(`docker`|`podman`)은 설정 한 곳에서 정하고 모든 컨테이너 호출이 그것을 쓴다. 지금 `ContainerSandbox` 는
+  engine 인자를 받지만(`sandbox/container.py:33,56-59`) 제품 경로는 기본값만 쓰고(`runtime/local_deployment.py:617,644,711,722,913`),
+  정리 호출은 `docker` 를 직접 부른다 (`runtime/execution/readonly_turn.py:207,290,394`,
+  `verification/runtime/patch_commands.py:80,96,159,171`, `verification/runtime/integration.py:108,114`).
+- C-11 **오프라인 설치 묶음**: 서명된 묶음 하나가 wheel 묶음(의존 closure 전체, 버전·hash 고정), 이미지 tar, 이미지 config digest 목록,
+  Q-suite 자산(OD-7), 설치 검증 도구를 싣는다. 설치는 서명·hash 검증을 통과하기 전에는 아무것도 바꾸지 않는다 (G-07). 지금 hash 고정
+  목록은 intake MCP 서버용 하나뿐이다 (`integrations/intake_mcp/requirements-hashes.txt:1-4`).
+- C-12 **경로·로그·백업 배치**: 설치본(릴리스별 venv), 데이터(store, CAS, 작업 공간), 비밀, 로그, 백업을 설정 가능한 별도 경로로 둔다.
+  store 와 작업 공간은 로컬 Linux 파일 시스템이어야 한다 (store 는 `flock` + SQLite WAL, `runtime/storage/store.py:169,186`).
+  NFS·WSL 의 `/mnt/<drive>` 같은 경로는 거부한다. 백업은 live store 밖이어야 한다 (지금 검사, `runtime/recovery/service.py:43-44`).
+- C-13 **지원 OS 표**: 사내 대상 OS 마다 필요한 것(Python, git, 엔진, cgroup, 서비스 관리자, 파일 시스템)과 자격 시험 결과를
+  `deployment/support-evidence.json` 의 근거로 남긴다. 근거 없는 OS 는 `supported` 가 아니다 (`deployment/README.md:5-13`).
+- C-14 **사이트 사전 점검**: `scripts/site_env_check.sh`(읽기 전용, `origin/feat/034-site-env-check`)를 C-9·C-10·C-12 항목(파일 시스템 종류,
+  ACL 지원, 엔진 도달, cgroup 제한 적용, 아키텍처)까지 넓히고, 그 보고서가 C-13 의 첫 근거가 된다.
 
 ### J. Jev
 - J-1 `judge` kind. 접근 권한 확보 후 연결, 질문 유형별 자격 시험 전 사용 금지, 사내는 데이터 정책 허용 시만.
@@ -274,6 +302,14 @@
 | AC-C1 | 사내 모델 trial 토큰이 게이트웨이 영수증으로 기록되고 결과 누락이 되지 않는다 |
 | AC-C2 | onprem profile 에서 허용 목록 밖 외부 연결이 막힌다 (T-112 포함) |
 | AC-C3 | OpenCode 사내 모델 qualification probe 가 통과한다 |
+| AC-C4 | systemd 와 supervisor 각각에서: 서버가 죽으면 다시 뜨고, 야간 tick 이 5분마다 돌며 밤이 돌고 있으면 바로 끝나고(`ACTIVE_OWNER`), AMPLAI 는 unit 을 출력만 하고 설치하지 않는다 |
+| AC-C5 | launchd·systemd·supervisor 세 구현 모두에서 동결 중 서버가 다시 뜨지 않고 tick 이 밤을 시작하지 않는다. AC-U4 가 세 구현에서 통과한다 |
+| AC-C6 | Linux 에서 컨테이너 uid 가 호스트 uid 와 다르고, 에이전트가 작업 공간에 쓰고, 호스트가 diff 를 읽고 정리한다. 컨테이너는 runtime root·키·자격 원본을 읽지 못한다 |
+| AC-C7 | 설정 엔진이 `podman` 이면 실행·정리 경로 어디에서도 `docker` 를 부르지 않는다 |
+| AC-C8 | 네트워크 없는 호스트에서 묶음으로 설치된다(`--no-index`). 서명·wheel hash·이미지 config digest 중 하나라도 어긋나면 아무것도 바꾸기 전에 거부된다 |
+| AC-C9 | runtime root·작업 공간이 로컬 파일 시스템이 아니면(NFS, 9p/drvfs) 서버가 시작을 거부한다 |
+| AC-C10 | 지원 표의 OS 마다 `support-evidence.json` 근거(사이트 점검 보고서, container qualify, 칸 probe)가 있고, 근거 없는 OS 는 `supported` 가 아니다 |
+| AC-U9 | 이전 릴리스가 만든 사내 모양 데이터를 새 릴리스로 올린 리허설에서 AC-U2·AC-U6·AC-U7 불변식이 기계 비교로 통과하고, 같은 리허설이 백업 복원 사본에서도 돈다 |
 | AC-X1 | 서명 불일치 모듈·pack, 평가기 자기 변경 시도가 거부된다 (design/10 §8) |
 
 ## 6. 제약
