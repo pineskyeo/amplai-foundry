@@ -22,6 +22,13 @@ app, `"app": {"app_id": str, "base_ids": [str]}` (the corpus bases whose app it 
 names one of those bases, in corpus order (`SAMPLING_CHANGED` otherwise), so the bench app and
 `amplai-tb2` are calibrated separately on their own compositions. A plan without `app` keeps
 every case of its splits (unchanged).
+
+eval-11 (operator decision 3, 2026-10-11, interfaces.md "Clarification: Drift Subset"): a plan
+with `"purpose": "drift"` (the nightly drift calibration, `LocalNightlyBackend.drift_run`) may pin
+a non-empty subset of those cases (the night's `meta.nightly.drift_tasks`), still distinct and in
+corpus order; a case outside them is `SAMPLING_CHANGED` with the unknown ids. Any other plan keeps
+the every-case rule. A drift summary is never a cell's calibration baseline or a stage plan's
+calibration summary (`is_drift_plan`).
 """
 
 from __future__ import annotations
@@ -104,8 +111,11 @@ PLAN_FIELDS = frozenset(
         "frozen_at",
     }
 )
-# S7b: the app whose cases a plan calibrates (absent: every case of the splits)
-OPTIONAL_PLAN_FIELDS = frozenset({"app"})
+# S7b: the app whose cases a plan calibrates (absent: every case of the splits); eval-11: the
+# plan's purpose (absent: an ordinary calibration; "drift": the nightly drift calibration)
+OPTIONAL_PLAN_FIELDS = frozenset({"app", "purpose"})
+DRIFT_PURPOSE = "drift"
+PURPOSES = (DRIFT_PURPOSE,)
 BUDGET_FIELDS = frozenset(
     {
         "max_wall_seconds",
@@ -214,6 +224,8 @@ def validate_calibration_plan(plan: dict[str, Any]) -> None:
         and len(set(app["base_ids"])) == len(app["base_ids"])
     ):
         raise RuntimeFault("CALIBRATION_PLAN", "app names one app id and its corpus bases")
+    if "purpose" in plan and plan["purpose"] not in PURPOSES:
+        raise RuntimeFault("CALIBRATION_PLAN", "purpose is absent or one of " + ", ".join(PURPOSES))
     cells, refs = plan["cells"], plan["composition_refs"]
     adaptive, splits = plan["adaptive"], plan["splits"]
     ok = (
@@ -258,6 +270,12 @@ def validate_calibration_plan(plan: dict[str, Any]) -> None:
     if not ok:
         raise RuntimeFault("CALIBRATION_PLAN", "Invalid calibration plan (§2.8)")
     validate_budget(plan["budget"])
+
+
+def is_drift_plan(plan: dict[str, Any]) -> bool:
+    """eval-11: the plan is a drift calibration (``"purpose": "drift"``). It may pin a subset of
+    the cases; its summary is never a cell's calibration baseline."""
+    return isinstance(plan, dict) and plan.get("purpose") == DRIFT_PURPOSE
 
 
 def plan_id(plan: dict[str, Any]) -> str:
@@ -465,12 +483,36 @@ class CalibrationService:
         app = plan.get("app")
         if app is not None:
             cases = [c for c in cases if self._base_of(actor, c) in set(app["base_ids"])]
+        if is_drift_plan(plan):
+            return self._drift_cases(plan, cases)
         if not cases or plan["case_ids"] != [c["case_id"] for c in cases]:
             raise Hold(
                 "SAMPLING_CHANGED",
                 "Pin every case of the calibrated splits (of the plan's app) in corpus order",
             )
         return cases
+
+    @staticmethod
+    def _drift_cases(plan: dict[str, Any], cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """eval-11: a drift plan pins a non-empty subset of ``cases``, distinct and in corpus
+        order; a case outside them is SAMPLING_CHANGED with the unknown ids."""
+        pinned = plan["case_ids"]
+        known = {c["case_id"] for c in cases}
+        unknown = [cid for cid in pinned if not isinstance(cid, str) or cid not in known]
+        if unknown:
+            raise Hold(
+                "SAMPLING_CHANGED",
+                "A drift plan pins cases of the calibrated splits (of the plan's app) only",
+                details={"unknown": unknown},
+            )
+        chosen = set(pinned)
+        subset = [c for c in cases if c["case_id"] in chosen]
+        if not subset or pinned != [c["case_id"] for c in subset]:
+            raise Hold(
+                "SAMPLING_CHANGED",
+                "A drift plan pins a non-empty subset of distinct cases in corpus order",
+            )
+        return subset
 
     def _base_of(self, actor: Actor, case: dict[str, Any]) -> str | None:
         """The ``base_id`` of a frozen case payload (§2.7); None when it names none."""

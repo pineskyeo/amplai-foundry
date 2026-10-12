@@ -813,6 +813,9 @@ class StageRunner:
         calibration = self.store.get(self.scope, "calibration-plan", summary["plan_ref"])
         if calibration["corpus_ref"] != self.corpus["corpus_ref"]:
             raise RuntimeFault("STAGE_PLAN", "The calibration summary is of another corpus")
+        if calibration.get("purpose") == "drift":
+            # eval-11: a drift calibration pins a subset of the cases; never a stage's summary
+            raise RuntimeFault("STAGE_PLAN", "The calibration summary is a drift calibration")
         return summary
 
     def _app_of(self, plan: dict[str, Any] | None) -> InstalledApp:

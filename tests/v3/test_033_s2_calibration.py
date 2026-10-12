@@ -725,6 +725,82 @@ def test_the_pinned_cases_must_be_every_case_of_the_splits_in_corpus_order(w):
     assert ref["id"].startswith("calplan-")
 
 
+# --- eval-11: a drift plan pins a subset of the cases (operator decision 3, 2026-10-11) ---------
+
+
+def test_eval11_an_ordinary_calibration_with_a_subset_is_refused(w):
+    c = make(w)
+    ids = [x["case_id"] for x in c.cases]
+    hold("SAMPLING_CHANGED", service(w).freeze, w.m.reviewer,
+         plan_for(w, c, case_ids=[ids[0], ids[2]]))  # fmt: skip
+
+
+def test_eval11_a_drift_plan_freezes_a_subset_and_runs_only_it(w):
+    c = make(w)
+    ids = [x["case_id"] for x in c.cases]
+    subset_ids = [ids[0], ids[2], ids[3]]  # dev-00, val-00, val-01 in corpus order
+    r = run_plan(w, c, purpose="drift", case_ids=subset_ids,
+                 adaptive={"max_repeats": 1, "rule": "disagree_or_borderline_v1",
+                           "borderline": [0.2, 0.9]})  # fmt: skip
+    assert r.head["state"] == "done"
+    assert sorted({t["task_id"] for t in r.trials()}) == sorted(subset_ids)
+    assert len(r.trials()) == len(subset_ids) * len(CELLS)
+    for cell in CELLS:
+        assert list(r.summary["cells"][cell]["tasks"]) == subset_ids
+    stored = w.m.d.store.get(w.scope, "calibration-plan", r.plan_ref)
+    assert calibration_module().is_drift_plan(stored)
+
+
+@pytest.mark.parametrize(
+    "pick",
+    [
+        lambda ids: [ids[2], ids[0]],  # not in corpus order
+        lambda ids: [ids[0], ids[0]],  # not distinct
+        lambda ids: [ids[0], "val-09"],  # unknown case
+        lambda ids: [ids[0], 7],  # not a case id
+    ],
+)
+def test_eval11_a_drift_subset_out_of_order_repeated_or_unknown_is_refused(w, pick):
+    c = make(w)
+    ids = [x["case_id"] for x in c.cases]
+    hold("SAMPLING_CHANGED", service(w).freeze, w.m.reviewer,
+         plan_for(w, c, purpose="drift", case_ids=pick(ids)))  # fmt: skip
+
+
+def test_eval11_an_unknown_drift_case_names_the_unknown_ids(w):
+    c = make(w)
+    ids = [x["case_id"] for x in c.cases]
+    with pytest.raises(Hold) as caught:
+        service(w).freeze(w.m.reviewer,
+                          plan_for(w, c, purpose="drift", case_ids=[ids[0], "val-09"]))  # fmt: skip
+    assert caught.value.code == "SAMPLING_CHANGED"
+    assert caught.value.details == {"unknown": ["val-09"]}
+
+
+def test_eval11_a_drift_subset_of_the_holdout_split_is_unknown(w):
+    corpus_ref, cases = w.corpus(val=2, hold_n=2)
+    w.evaluator(corpus_ref)
+    comps = {"cell-a": w.composition("cell-a")}
+    held = [x["case_id"] for x in cases if x["split"] == "holdout"]
+    c = SimpleNamespace(corpus_ref=corpus_ref, cases=cases, refs={"cell-a": [comps["cell-a"]]})
+    hold("SAMPLING_CHANGED", service(w).freeze, w.m.reviewer,
+         plan_for(w, c, cells=["cell-a"], splits=["validation"], purpose="drift",
+                  case_ids=held[:1]))  # fmt: skip
+
+
+@pytest.mark.parametrize("purpose", ["calibration", "", None, "DRIFT"])
+def test_eval11_purpose_is_absent_or_drift(w, purpose):
+    c = make(w)
+    fault("CALIBRATION_PLAN", service(w).freeze, w.m.reviewer,
+          plan_for(w, c, purpose=purpose))  # fmt: skip
+
+
+def calibration_module():
+    from amplai_foundry.evaluation import calibration
+
+    return calibration
+
+
 def test_the_holdout_is_never_read_by_a_calibration(w):
     corpus_ref, cases = w.corpus(val=2, hold_n=3)
     comps = {"cell-a": w.composition("cell-a")}

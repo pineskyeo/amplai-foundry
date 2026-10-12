@@ -1355,6 +1355,8 @@ class LocalMetaOps:
             plan = self.store.get(self.scope, "calibration-plan", value["plan_ref"])
             if plan.get("corpus_ref") != corpus_ref:
                 continue
+            if plan.get("purpose") == "drift":
+                continue  # eval-11: a drift calibration (a subset) is never a cell's calibration
             if app_id is not None and "app" in plan and plan["app"].get("app_id") != app_id:
                 continue
             found.append((str(value.get("summarized_at")), ref["id"], ref))

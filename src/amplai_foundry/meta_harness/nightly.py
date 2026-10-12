@@ -1278,6 +1278,8 @@ class LocalNightlyBackend:
                 continue
             if plan.get("corpus_ref") != corpus_ref or not self._human_approved(plan):
                 continue
+            if calibration.is_drift_plan(plan):  # eval-11: a drift subset is never the baseline
+                continue
             found.append((str(summary.get("summarized_at")), plan, summary))
         if not found:
             return None
@@ -1317,12 +1319,23 @@ class LocalNightlyBackend:
         if regression is None:
             raise Hold("NO_DRIFT_CORPUS", "No frozen amplai-regression-v1 corpus")
         corpus_ref, corpus = regression
-        case_ids = [c["case_id"] for c in corpus["cases"] if c["split"] in calibration.SPLITS]
+        frozen = [c["case_id"] for c in corpus["cases"] if c["split"] in calibration.SPLITS]
         present = {c["split"] for c in corpus["cases"]}
         splits = [s for s in calibration.SPLITS if s in present]
         installed = self._drift_compositions()
         if cell_id not in installed:
             raise Hold("CELL_UNKNOWN", "Not an installed cell", details=[cell_id])
+        # eval-11 (operator decision 3, 2026-10-11): the drift calibration runs the night's
+        # drift_tasks only, in corpus order (a drift plan may pin a subset of the cases)
+        known = set(frozen)
+        unknown = sorted({t for t in tasks if t not in known})
+        if unknown:
+            raise Hold("NIGHT_CONFIG", "A drift task is not a case of the frozen regression set",
+                       details={"unknown": unknown})  # fmt: skip
+        wanted = set(tasks)
+        case_ids = [cid for cid in frozen if cid in wanted]
+        if not case_ids:
+            raise Hold("NIGHT_CONFIG", "The night names no drift task", details={"unknown": []})
         if len(case_ids) > limit:
             raise Hold("NIGHT_STOPPED", "The drift calibration needs more than the drift share",
                        details={"reason": "phase_share", "needs": len(case_ids)})  # fmt: skip
@@ -1332,6 +1345,7 @@ class LocalNightlyBackend:
         budget = dict(standing["max_budget"])
         plan: dict[str, Any] = {
             "schema": calibration.PLAN_SCHEMA,
+            "purpose": calibration.DRIFT_PURPOSE,
             "scope": self.scope.wire(),
             "cells": [cell_id],
             "composition_refs": {cell_id: [installed[cell_id]]},

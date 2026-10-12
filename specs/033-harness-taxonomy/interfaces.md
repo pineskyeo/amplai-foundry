@@ -4050,3 +4050,47 @@ the rest validation, none to development.
   after the operator's re-calibration on 2.1.0.
 - Tests: `tests/v3/test_033_pilot_split.py` (the 2.0.0 file is the pilot rule; the committed
   `splits.json` is the append rule over it; `write_splits` and `corpus_check` reproduce it).
+
+## Clarification: Drift Subset (eval-11, 2026-10-12)
+
+Operator decision 3 (2026-10-11, option A): the nightly drift calibration runs on the night's
+`meta.nightly.drift_tasks`, a subset of the regression set, instead of every case. Source: the
+§8.8 phase list already names `drift_tasks`, and the band (`LocalNightlyBackend.snapshot`) and the
+observed count (`drift_run`) already summed only the `drift_tasks` rows, but `drift_run` pinned
+every regression case of the calibrated splits, because `CalibrationService` refused a plan whose
+`case_ids` were not every case (`SAMPLING_CHANGED`, §8.2). With B=150 and drift share 0.1 a night
+has 15 drift trials; the 20-task regression set never fits one cell, so every drift calibration was
+skipped (`DRIFT <cell>: PHASE_SHARE`).
+
+- **Drift plan** (`evaluation/calibration.py`): a calibration plan has an optional field
+  `"purpose"`; absent is an ordinary calibration, `"drift"` (`DRIFT_PURPOSE`, `is_drift_plan`) is
+  a drift calibration. Any other value is `CALIBRATION_PLAN`. The field is part of the approved
+  content (the approval subject and the plan id bind it).
+- **Case rule**: an ordinary plan still pins every case of its splits (of its app, S7b) in corpus
+  order. A drift plan pins a non-empty subset of those cases, distinct and in corpus order; a case
+  id outside them (another split, holdout, a case not in the corpus, a non-string) is
+  `SAMPLING_CHANGED` with `details.unknown`; an empty, repeated or out-of-order list is
+  `SAMPLING_CHANGED`. Freeze and run apply the same rule.
+- **Nightly** (`meta_harness/nightly.py` `drift_run`): `case_ids` = the frozen regression cases of
+  the calibrated splits that are in `drift_tasks`, in corpus order; a drift task that is not such a
+  case holds `NIGHT_CONFIG` (`details.unknown`, sorted) before any trial (the night records the
+  finding `DRIFT <cell>: NIGHT_CONFIG`); the phase-share check (`NIGHT_STOPPED` `phase_share`) and
+  the trial guard count the subset. The plan carries `"purpose": "drift"`.
+- **Never a baseline**: a drift summary is never a cell's calibration. `LocalNightlyBackend.
+  _calibration` (the band) skips drift plans as well as derived approvals, `LocalMetaOps.
+  latest_summary` (a new stage plan's summary) skips drift plans, and `StageRunner._summary` refuses
+  a drift plan's summary (`STAGE_PLAN`). A human-approved drift plan is no baseline either.
+- **Standing approval** (`LocalMetaApprovals.standing_kind`): a plan with `"purpose": "drift"` on a
+  corpus that is not a regression corpus is refused (`STANDING_APPROVAL`).
+- **Evaluator version**: `calibration.py` is in the service digest (`evaluation/versions.py`
+  `SERVICE_FILES`), so this is evaluator version eval-11 (`runs/eval-11.json`, kind
+  `analysis_code`); the operator proposes, qualifies and approves it after merge
+  (`runs/eval11-propose.sh`, `runs/eval11-qualify-approve.sh`). A proposed version must be higher
+  than the current one (`evaluation/quality.py`), so a planned eval-10 is approved first or not at
+  all.
+- Tests: `tests/v3/test_033_s2_calibration.py` (`test_eval11_*`: subset freezes and runs only its
+  cases, ordinary subset refused, out-of-order/repeated/unknown/holdout refused, purpose values),
+  `tests/v3/test_033_s12_nightly.py` (`test_eval11_*` on `RealNight`: plan pins the subset in
+  corpus order, band and observed count the same tasks, phase share counts the subset, unknown
+  drift task holds `NIGHT_CONFIG`, a drift summary is never the band or `latest_summary`, drift
+  purpose off the regression set derives no approval).

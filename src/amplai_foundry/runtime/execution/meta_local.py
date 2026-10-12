@@ -376,6 +376,9 @@ class LocalMetaApprovals:
             if not isinstance(cells, list):
                 raise refuse("The calibration plan names no cells")
             drift = plan["corpus_ref"] in regression_corpus_refs(self.store, self.scope)
+            if plan.get("purpose") == "drift" and not drift:
+                # eval-11: a drift plan (a subset of the cases) runs on the regression set only
+                raise refuse("A drift calibration runs on the regression set only")
             return ("drift" if drift else "calibration"), [str(c) for c in cells]
         if not {"analysis_plan_ref", "sampling_plan_ref", "proposal_ref"} <= set(plan):
             raise refuse("Not an experiment, calibration or drift plan")
