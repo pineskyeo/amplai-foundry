@@ -833,7 +833,7 @@ class ExecutionLoop:
         lines += ["Constraints: " + "; ".join(c["statement"] for c in contract["constraints"])]
         mapping = plan.get("acceptance_map")
         if node is not None and len(plan.get("work_items") or []) > 1:
-            part = text_bounds.full_objective(plan, node)
+            part = text_bounds.full_objective(plan, node, lambda: contract["objective"])
             lines.append(f"This part of the goal, in {app.app_id}: {part}")
         lines.append("Acceptance (each must pass):")
         if mapping and node is not None:

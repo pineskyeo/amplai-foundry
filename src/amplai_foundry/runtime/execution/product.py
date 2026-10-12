@@ -2470,9 +2470,14 @@ class LocalExecutionService:
                     "node_id": node_id,
                     "work_id": new_id("work-" + a),
                     "target_ref": target.binding_ref,
-                    # within the node bound, or named by reference (the full text stays in the
-                    # plan's work item and reaches the agent, text_bounds.full_objective)
-                    "objective": text_bounds.node_objective(item["objective"], node_id),
+                    # within the node bound, or named by reference with its digest (D-124): a
+                    # whole-goal node names this contract's objective, any other node its work
+                    # item; agents read the full text (text_bounds.full_objective)
+                    "objective": text_bounds.node_objective(
+                        item["objective"],
+                        node_id,
+                        whole_goal=item["objective"] == draft["objective"],
+                    ),
                     "strategy": "bounded_loop",
                     "depends_on": depends,
                     "join": "all_required",

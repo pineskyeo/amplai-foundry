@@ -11,6 +11,7 @@ Stand-ins as in the rc06 rig (fixed planner, host "containers").
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -67,7 +68,13 @@ def test_a_7000_character_objective_reaches_the_contract_and_the_prompt_whole(
     (node,) = graph["nodes"]
     assert len(node["objective"]) <= text_bounds.NODE_OBJECTIVE
     assert "7000 characters" in node["objective"] and not node["objective"].startswith("ooo")
-    assert text_bounds.full_objective(plan, node) == objective
+    # D-124: a whole-goal node names the contract objective with the digest of the exact text
+    assert (
+        "named by reference: source contract.objective, digest "
+        + text_bounds.text_digest(objective)
+    ) in node["objective"]
+    assert graph["contract_ref"] == plan["contract_ref"]
+    assert text_bounds.full_objective(plan, node, lambda: contract["objective"]) == objective
     prompt = loop.prompt(contract, plan, None)
     assert "Objective: " + objective + "\n" in prompt
 
@@ -261,15 +268,58 @@ def test_a_split_part_over_the_node_bound_holds(deployment: Any, tmp_path: Path)
 # -- the node objective by reference --------------------------------------------------------------
 
 
-def test_node_objective_names_a_long_objective_by_reference() -> None:
+def _never() -> str:
+    raise AssertionError("the contract is read only for a whole-goal node")
+
+
+def test_node_objective_names_a_long_objective_by_reference_with_its_digest() -> None:
     long = _long(5000)
-    named = text_bounds.node_objective(long, "node-app.int")
-    assert len(named) <= text_bounds.NODE_OBJECTIVE and "node-app.int" in named
-    assert text_bounds.node_objective("short", "node-app") == "short"
-    plan = {"work_items": [{"app": "app", "node_id": "node-app.int", "objective": long}]}
-    assert text_bounds.full_objective(plan, {"node_id": "node-app.int", "objective": named}) == long
-    # a plan without the item keeps the node's own text
-    assert text_bounds.full_objective({}, {"node_id": "node-x", "objective": "own"}) == "own"
+    goal = text_bounds.node_objective(long, "node-app", whole_goal=True)
+    part = text_bounds.node_objective(long, "node-app.int", whole_goal=False)
+    digest = text_bounds.text_digest(long)
+    assert digest == "sha256:" + hashlib.sha256(long.encode("utf-8")).hexdigest()
+    assert f"source contract.objective, digest {digest}" in goal and "contract_ref" in goal
+    assert f"source plan.work_item, digest {digest}" in part and "node-app.int" in part
+    assert max(len(goal), len(part)) <= text_bounds.NODE_OBJECTIVE
+    assert text_bounds.node_objective("short", "node-app", whole_goal=True) == "short"
+    # the node definition differs by content (design/06 reuse key: the node definition digest)
+    other = text_bounds.node_objective(_long(5000, "OTHER-END"), "node-app", whole_goal=True)
+    assert other != goal
+    # a node within the bound is its own text; no source is read
+    own = {"node_id": "node-x", "objective": "own"}
+    assert text_bounds.full_objective({}, own, _never) == "own"
+
+
+def test_a_whole_goal_reference_falls_back_to_the_contract_and_checks_the_digest() -> None:
+    long = _long(5000)
+    node = {"node_id": "node-app", "objective": text_bounds.node_objective(
+        long, "node-app", whole_goal=True)}  # fmt: skip
+    item = {"app": "app", "objective": long}
+    assert text_bounds.full_objective({"work_items": [item]}, node, _never) == long
+    # no work item text, or one that differs: the contract objective is the source of truth
+    assert text_bounds.full_objective({}, node, lambda: long) == long
+    changed = {"work_items": [{**item, "objective": long + "!"}]}
+    assert text_bounds.full_objective(changed, node, lambda: long) == long
+    # no source matches the digest: Hold, never a wrong text
+    held = _held(lambda: text_bounds.full_objective(changed, node, lambda: long[:-1]))
+    assert held.code == "OBJECTIVE_REFERENCE_MISMATCH"
+    assert held.details["source"] == "contract.objective"
+    assert held.details["expected"] == text_bounds.text_digest(long)
+    assert set(held.details["found"]) == {"plan.work_item", "contract.objective"}
+
+
+def test_an_integration_reference_is_its_work_item_and_never_the_contract() -> None:
+    goal = _long(6000)
+    whole = "Integrate the merged parts into one change for: " + goal + "\nIntegration notes: n"
+    node = {"node_id": "node-app.int", "objective": text_bounds.node_objective(
+        whole, "node-app.int", whole_goal=False)}  # fmt: skip
+    item = {"app": "app", "node_id": "node-app.int", "objective": whole}
+    assert "source plan.work_item" in node["objective"]
+    assert text_bounds.full_objective({"work_items": [item]}, node, _never) == whole
+    changed = {"work_items": [{**item, "objective": whole + "!"}]}
+    held = _held(lambda: text_bounds.full_objective(changed, node, lambda: goal))
+    assert held.code == "OBJECTIVE_REFERENCE_MISMATCH"
+    assert set(held.details["found"]) == {"plan.work_item"}  # the contract is not its source
 
 
 # -- operator steering and replanning -------------------------------------------------------------

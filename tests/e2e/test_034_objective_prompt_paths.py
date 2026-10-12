@@ -107,6 +107,12 @@ def test_the_integration_node_gets_the_whole_objective_and_its_merged_section(
     *_parts, integration = w.nodes(goal)
     # "Integrate the merged parts into one change for: <objective>": over the node bound
     assert integration["node_id"] == "node-app.int" and REFERENCE in integration["objective"]
+    # goal + notes is not the contract objective: the reference names the work item (D-124)
+    whole = w.record(goal)["work_items"][2]["objective"]
+    assert whole.startswith("Integrate the merged parts into one change for: " + OBJECTIVE)
+    assert ("source plan.work_item, digest " + text_bounds.text_digest(whole)) in integration[
+        "objective"
+    ]
     record = w.loop.run_goal(goal)
     assert record["status"] == "published" and outcomes(record) == ["pass", "pass", "pass"]
     last = w.agents.prompts[2]
@@ -151,7 +157,12 @@ def test_the_pr_body_of_a_node_named_by_reference_has_the_whole_objective(
     graph = rig.d.store.get(rig.d.scope, "workgraph", plan["graph_ref"])
     node = next(n for n in graph["nodes"] if n["node_id"] == "node-app")
     assert REFERENCE in node["objective"]
-    assert text_bounds.full_objective(plan, node) == OBJECTIVE
+    # the app's item carries the whole goal: its reference names the contract objective
+    assert (
+        "source contract.objective, digest " + text_bounds.text_digest(OBJECTIVE)
+        in node["objective"]
+    )
+    assert text_bounds.full_objective(plan, node, lambda: "unused") == OBJECTIVE
     rig.service.approve(rig.operator, goal)
     record = loop.run_goal(goal)
     assert record["status"] == "published" and len(bodies) == 2
