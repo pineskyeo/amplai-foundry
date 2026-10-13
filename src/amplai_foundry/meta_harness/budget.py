@@ -75,9 +75,14 @@ class EvolutionBudget:
         tokens: int,
         cost: int,
         cost_compared: bool = True,
+        prior_overrun_blocks: bool = True,
     ) -> None:
         """``cost_compared`` False (D-088) is kept on the allocation, so settlement and a later
-        reconciliation both treat a reported cost as ``reported_cost``, never as spending."""
+        reconciliation both treat a reported cost as ``reported_cost``, never as spending.
+
+        ``prior_overrun_blocks`` False (D-128, calibration roots only): a recorded per-trial
+        ceiling overrun of this root does not refuse the reservation (META_PRIOR_OVERRUN). The
+        total token, cost and wall budgets, unknown usage and concurrency still refuse it."""
         if any(type(x) is not int or x < 0 for x in (tokens, cost)):
             raise RuntimeFault("META_RESERVATION", "Executor ceilings must be nonnegative integers")
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
@@ -93,7 +98,7 @@ class EvolutionBudget:
                 "META_USAGE_UNKNOWN",
                 "An uncertain prior allocation must be reconciled before further spending",
             )
-        if any(v.get("overrun") for v in a.values()):
+        if prior_overrun_blocks and any(v.get("overrun") for v in a.values()):
             raise Hold("META_PRIOR_OVERRUN", "A prior ceiling violation prevents further admission")
         active = [v for v in a.values() if v["status"] == "reserved"]
         if len(active) >= limits["max_parallel_works"]:
@@ -130,6 +135,46 @@ class EvolutionBudget:
             {**data, "allocations": {**a, key: allocation}},
         )
 
+    def record_import(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        allocation_id: str,
+        *,
+        source: dict[str, Any],
+    ) -> None:
+        """D-128: the allocation of a trial a calibration imported from another plan. It is
+        settled at 0 tokens and 0 cost and names its ``source`` (plan, trial, finish time, reuse
+        key digest): the tokens were charged to the source plan's root, never twice."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data, a = head["data"], head["data"]["allocations"]
+        if allocation_id in a:
+            raise Conflict("META_ALLOCATION_REPLAY", "An imported trial is recorded once")
+        at = now()
+        allocation = {
+            "status": "settled",
+            "tokens": 0,
+            "cost": 0,
+            "token_ceiling": 0,
+            "cost_ceiling": 0,
+            "overrun": False,
+            "cost_compared": False,
+            "imported": dict(source),
+            "owner_epoch": self.store.epoch,
+            "issued_at": at,
+            "settled_at": at,
+        }
+        self.store.cas(
+            db,
+            scope,
+            "meta-budget",
+            proposal_id,
+            head["row_version"],
+            "active",
+            {**data, "allocations": {**a, allocation_id: allocation}},
+        )
+
     def settle(
         self,
         db: sqlite3.Connection,
@@ -141,24 +186,31 @@ class EvolutionBudget:
         cost: int | None,
         uncertain: bool = False,
         cost_required: bool = True,
+        judged_tokens: int | None = None,
     ) -> dict[str, Any]:
+        """``judged_tokens`` (D-128, calibration): the count the per-trial token ceiling is
+        judged by (a cost-weighted uncached-equivalent count); None judges ``tokens``. The ledger
+        keeps ``tokens``, so the root token budget still counts every token."""
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         data = head["data"]
         a = data["allocations"]
         if allocation_id not in a or a[allocation_id]["status"] != "reserved":
             raise Conflict("META_SETTLEMENT", "No outstanding reservation for this result")
         old = a[allocation_id]
-        if any(v is not None and (type(v) is not int or v < 0) for v in (tokens, cost)):
+        if any(
+            v is not None and (type(v) is not int or v < 0) for v in (tokens, cost, judged_tokens)
+        ):
             raise RuntimeFault(
                 "META_USAGE", "Observed usage must be nonnegative integers or unknown"
             )
+        judged = tokens if judged_tokens is None else judged_tokens
         # D-088: a plan that does not compare cost keeps the reserved cost in the ledger, so a
         # reported cost (an API-equivalent estimate, D-094) is neither an overrun nor spending
         # against the root cost budget; it is kept as ``reported_cost``. Calibration plans
         # calplan-1bdb0658 (overrun) and calplan-3fd084f0 (META_COST_BUDGET at the next reserve)
         # stopped on Claude trials of 0.2 to 0.4 USD against a cost budget of 0 (2026-10-09).
         counted = cost if cost_required else None
-        overrun = (tokens is not None and tokens > old["token_ceiling"]) or (
+        overrun = (judged is not None and judged > old["token_ceiling"]) or (
             counted is not None and counted > old["cost_ceiling"]
         )
         # D-088: when the plan does not compare cost, a missing cost keeps the reserved amount
@@ -175,6 +227,8 @@ class EvolutionBudget:
         }
         if not cost_required:
             new["cost_compared"] = False  # a later reconcile() applies the same rule
+        if judged_tokens is not None:
+            new["judged_tokens"] = judged_tokens
         if counted is None and cost is not None:
             new["reported_cost"] = cost
         self.store.cas(

@@ -415,6 +415,28 @@ class LocalTrialExecutor:
             executed=executed, binding=binding,
         )  # fmt: skip
 
+    def facts(self, composition_ref: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
+        """D-128: what a trial of ``composition_ref`` on ``case`` would run on now, without
+        running anything: the receipt's ``harness_sha``, ``model_snapshot`` (of the composition
+        that would execute: the arm's, or its task-environment sibling, IC-12) and
+        ``corpus_version``, as ``_observe`` records them. Calibration resume and imports compare
+        stored receipts with it. A Hold of ``_spec`` or of the environment lookup propagates."""
+        spec = self._spec(case)
+        if spec.app_id not in self.service.apps:
+            raise Hold("TARGET_UNKNOWN", "Not an installed app", details=[spec.app_id])
+        executed = composition_ref
+        if spec.environment_id != releases.APP_ENVIRONMENT:
+            installed = self.service.apps[spec.app_id]
+            self.service.environment_ref(installed, spec.environment_id)
+            executed = self.service.env_sibling(installed, composition_ref, spec.environment_id)
+        composition = self.store.get(self.scope, "harness-composition", executed)
+        snapshot, _effort = self._snapshot(composition)
+        return {
+            "harness_sha": self.harness_sha,
+            "model_snapshot": snapshot,
+            "corpus_version": spec.corpus_version,
+        }
+
     def _require_offline(self, composition_ref: dict[str, Any]) -> None:
         """Hold DRIVER_WEB_UNDECLARED when the composition's registered driver port does not
         declare how its web tools are turned off (``agent_drivers/offline.py``). A driver with no

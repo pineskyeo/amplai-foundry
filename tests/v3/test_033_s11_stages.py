@@ -402,6 +402,10 @@ class World:
              "corpus_ref": self.refs["corpus_ref"],
              **({"purpose": purpose} if purpose is not None else {})},
         )  # fmt: skip
+        # D-128: a summary is a calibration only when its run ended done
+        with self.store.tx() as db:
+            self.store.cas(db, self.scope, "calibration-run", plan["id"], 0, "done",
+                           {"plan_ref": plan, "state": "done", "trial_refs": []})  # fmt: skip
         row: dict[str, Any] = {"tasks": tasks}
         if discordance is not None:
             row["aa_discordance"] = discordance
@@ -754,6 +758,20 @@ def test_eval11_a_drift_summary_is_never_a_stage_plans_calibration(w: World) -> 
     error = fault("STAGE_PLAN", w.runner(summary_ref=drift).plan, pid, cell_id=CELL,
                   root_budget=BUDGET)  # fmt: skip
     assert "drift" in str(error)
+    assert w.objects("stage-plan") == []
+
+
+def test_d128_a_stopped_runs_partial_summary_is_never_a_stage_plans_calibration(w: World) -> None:
+    pid = w.propose("a2")
+    ref = w.summary()
+    plan_ref = w.store.get(w.scope, "calibration-summary", ref)["plan_ref"]
+    with w.store.tx() as db:
+        head = w.store.head(w.scope, "calibration-run", plan_ref["id"], db=db)
+        w.store.cas(db, w.scope, "calibration-run", plan_ref["id"], head["row_version"],
+                    "stopped", {**head["data"], "state": "stopped"})  # fmt: skip
+    error = hold("CALIBRATION_PARTIAL", w.runner(summary_ref=ref).plan, pid, cell_id=CELL,
+                 root_budget=BUDGET)  # fmt: skip
+    assert error.details["run_state"] == "stopped"
     assert w.objects("stage-plan") == []
 
 

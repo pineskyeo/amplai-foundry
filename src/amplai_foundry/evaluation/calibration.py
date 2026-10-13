@@ -29,6 +29,26 @@ a non-empty subset of those cases (the night's `meta.nightly.drift_tasks`), stil
 corpus order; a case outside them is `SAMPLING_CHANGED` with the unknown ids. Any other plan keeps
 the every-case rule. A drift summary is never a cell's calibration baseline or a stage plan's
 calibration summary (`is_drift_plan`).
+
+D-128 (operator decision 2026-10-14, interfaces.md "Clarification: Calibration Resume (D-128)"):
+
+- A trial over the per-trial token ceiling is recorded (``ceiling_overrun``, the run head's
+  ``overruns``, the summary's ``warnings``) and the run goes on; the root token budget, the wall
+  budget and the kill switch still stop it. The ceiling is judged by a cost-weighted
+  uncached-equivalent count (``ceiling_tokens``, injected; raw tokens without one), never by the
+  ledger tokens, and a recorded overrun does not refuse the next reservation of this root.
+- A trial whose executor proves that it started nothing (``not_run``) settles at 0 tokens.
+- ``resume`` re-runs a ``stopped`` plan under its own approval: completed graded trials stay,
+  unfinished slots run again, and anything behaviour-affecting that differs from the original
+  run (evaluator version, harness sha, driver version, image, model, corpus version) holds
+  ``CALIBRATION_RESUME_CHANGED`` with the differences.
+- A plan may import completed graded round-1 trials of other plans (``imports``, approved with
+  the plan) whose reuse key matches exactly (``reuse_key``), only for cases complete in every
+  cell and composition, within ``import_policy.window_hours``; each gets provenance and a
+  0-charge allocation. A drift check re-runs a sample per cell first and drops a cell's imports
+  when the paired outcomes disagree beyond the cell's A/A discordance.
+- A summary records ``partial`` (the run did not end ``done``) and ``run_segment``; readers use
+  ``complete_summaries`` / ``summary_complete`` and never select a partial one.
 """
 
 from __future__ import annotations
@@ -37,6 +57,8 @@ import json
 import math
 import time
 from collections.abc import Callable
+from datetime import datetime
+from itertools import count
 from statistics import NormalDist, mean, median, stdev
 from typing import Any, Literal
 
@@ -112,8 +134,37 @@ PLAN_FIELDS = frozenset(
     }
 )
 # S7b: the app whose cases a plan calibrates (absent: every case of the splits); eval-11: the
-# plan's purpose (absent: an ordinary calibration; "drift": the nightly drift calibration)
-OPTIONAL_PLAN_FIELDS = frozenset({"app", "purpose"})
+# plan's purpose (absent: an ordinary calibration; "drift": the nightly drift calibration);
+# D-128: the trials imported from other plans and the rule they are pooled by
+OPTIONAL_PLAN_FIELDS = frozenset({"app", "purpose", "imports", "import_policy"})
+IMPORT_POLICY_FIELDS = frozenset(
+    {"window_hours", "drift_share", "drift_min_per_cell", "drift_reference"}
+)
+# D-128 defaults (local.json meta.calibration_import overrides them; the plan records the values)
+IMPORT_WINDOW_HOURS = 72
+DRIFT_SHARE = 0.1
+DRIFT_MIN_PER_CELL = 4
+# §8.5: a reuse key built without the harness sha is never reused (local_executor.UNKNOWN_SHA)
+UNKNOWN_SHA = "unknown"
+# the receipt facts a reuse key binds besides the plan's own refs
+FACT_FIELDS = ("harness_sha", "model_snapshot", "corpus_version")
+SUMMARY_FIELDS = frozenset(
+    {
+        "schema",
+        "scope",
+        "plan_ref",
+        "cells",
+        "saturated_everywhere",
+        "informative_any",
+        "evaluator_version_ref",
+        "summarized_at",
+    }
+)
+# D-128: a summary may also say that its run did not end done, which run segment it covers, the
+# per-trial ceiling overruns, the imports and the drift check
+OPTIONAL_SUMMARY_FIELDS = frozenset(
+    {"partial", "run_segment", "warnings", "imports", "drift_check"}
+)
 DRIFT_PURPOSE = "drift"
 PURPOSES = (DRIFT_PURPOSE,)
 BUDGET_FIELDS = frozenset(
@@ -226,6 +277,7 @@ def validate_calibration_plan(plan: dict[str, Any]) -> None:
         raise RuntimeFault("CALIBRATION_PLAN", "app names one app id and its corpus bases")
     if "purpose" in plan and plan["purpose"] not in PURPOSES:
         raise RuntimeFault("CALIBRATION_PLAN", "purpose is absent or one of " + ", ".join(PURPOSES))
+    _validate_imports(plan)
     cells, refs = plan["cells"], plan["composition_refs"]
     adaptive, splits = plan["adaptive"], plan["splits"]
     ok = (
@@ -270,6 +322,130 @@ def validate_calibration_plan(plan: dict[str, Any]) -> None:
     if not ok:
         raise RuntimeFault("CALIBRATION_PLAN", "Invalid calibration plan (§2.8)")
     validate_budget(plan["budget"])
+
+
+def _validate_imports(plan: dict[str, Any]) -> None:
+    """D-128 shape: ``imports`` is a non-empty list of ``{"plan_ref": ref, "trial_refs": [ref]}``
+    (distinct plans, distinct non-empty trial refs) and comes with ``import_policy``
+    ``{"window_hours": 1..8760, "drift_share": (0, 1], "drift_min_per_cell": >= 1,
+    "drift_reference": {cell: [0, 1] | null}}`` naming every cell; neither field without the
+    other. A drift plan imports nothing."""
+    if "imports" not in plan and "import_policy" not in plan:
+        return
+    imports, policy = plan.get("imports"), plan.get("import_policy")
+    entries_ok = (
+        isinstance(imports, list)
+        and bool(imports)
+        and all(
+            isinstance(e, dict)
+            and set(e) == {"plan_ref", "trial_refs"}
+            and is_ref(e["plan_ref"])
+            and isinstance(e["trial_refs"], list)
+            and bool(e["trial_refs"])
+            and all(is_ref(r) for r in e["trial_refs"])
+            and len({digest(r) for r in e["trial_refs"]}) == len(e["trial_refs"])
+            for e in imports
+        )
+        and len({digest(e["plan_ref"]) for e in imports}) == len(imports)
+    )
+    cells: list[Any] = plan["cells"] if isinstance(plan.get("cells"), list) else []
+    reference = policy.get("drift_reference") if isinstance(policy, dict) else None
+    share: Any = policy.get("drift_share") if isinstance(policy, dict) else None
+    policy_ok = (
+        isinstance(policy, dict)
+        and set(policy) == IMPORT_POLICY_FIELDS
+        and _count(policy["window_hours"], 1, 8760)
+        and type(share) in (int, float)
+        and math.isfinite(share)
+        and 0 < share <= 1
+        and _count(policy["drift_min_per_cell"], 1, 1000)
+        and isinstance(reference, dict)
+        and set(reference) == set(cells)
+        and all(
+            v is None or (type(v) in (int, float) and math.isfinite(v) and 0 <= v <= 1)
+            for v in reference.values()
+        )
+    )
+    if not (entries_ok and policy_ok) or is_drift_plan(plan):
+        raise RuntimeFault(
+            "CALIBRATION_PLAN",
+            "imports name source plans and their trials, with import_policy (D-128)",
+        )
+
+
+def reuse_key(
+    *,
+    composition_ref: dict[str, Any],
+    cell_id: str,
+    task_id: str,
+    corpus_ref: dict[str, Any],
+    facts: dict[str, Any],
+    evaluator_version_ref: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """D-128: what an imported trial must share with the slot it fills. The composition ref pins
+    the cell's driver, model, effort, image and its ``limits`` component; ``harness_sha`` pins
+    the code, including the deployment's goal-budget ceiling (``product.Budget``); the receipt's
+    ``model_snapshot`` the driver version, model id and image that ran; ``corpus_ref``,
+    ``corpus_version`` and ``task_id`` the case; the evaluator version the trial-record rules.
+    The per-trial token ceiling and the root budgets are accounting only (the executor never
+    reads them) and are not part of it."""
+    return {
+        "composition_ref": composition_ref,
+        "cell_id": cell_id,
+        "task_id": task_id,
+        "corpus_ref": corpus_ref,
+        **{k: facts.get(k) for k in FACT_FIELDS},
+        "evaluator_version_ref": evaluator_version_ref,
+        "mode": MODE,
+    }
+
+
+def key_differences(was: dict[str, Any], current: dict[str, Any]) -> list[str]:
+    """The fields of two reuse keys that differ, plus the ones that can never match: an unknown
+    harness sha (§8.5) or an unknown evaluator version."""
+    fields = [k for k in current if was.get(k) != current.get(k)]
+    for key in (was, current):
+        if key.get("harness_sha") in (None, UNKNOWN_SHA) and "harness_sha" not in fields:
+            fields.append("harness_sha")
+        if key.get("evaluator_version_ref") is None and "evaluator_version_ref" not in fields:
+            fields.append("evaluator_version_ref")
+    return fields
+
+
+def _instant(value: Any) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def summary_complete(summary: Any, run_state: str | None, run_plan_ref: Any) -> bool:
+    """D-128: a reader may select a summary only when its run ended ``done`` (not ``stopped``,
+    ``owner_lost`` or still running) and it is not marked ``partial``."""
+    return (
+        isinstance(summary, dict)
+        and summary.get("partial") is not True
+        and run_state == "done"
+        and run_plan_ref == summary.get("plan_ref")
+    )
+
+
+def complete_summaries(store: Store, scope: Scope) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """(ref, value) of the newest revision of every calibration summary whose run ended ``done``
+    (``summary_complete``). A summary whose run head cannot be read is left out (fail closed)."""
+    newest: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+    for ref, value in store.list_objects(scope, SUMMARY_KIND):
+        if ref["id"] not in newest or ref["revision"] > newest[ref["id"]][0]["revision"]:
+            newest[ref["id"]] = (ref, value)
+    out = []
+    for ref, value in newest.values():
+        try:
+            head = store.head(scope, RUN_KIND, value["plan_ref"]["id"])
+        except (RuntimeFault, KeyError, TypeError):
+            continue
+        if summary_complete(value, head["state"], head["data"].get("plan_ref")):
+            out.append((ref, value))
+    return out
 
 
 def is_drift_plan(plan: dict[str, Any]) -> bool:
@@ -403,18 +579,10 @@ def summarize_trials(plan: dict[str, Any], trials: list[dict[str, Any]]) -> dict
 def validate_summary(value: dict[str, Any]) -> None:
     ok = (
         isinstance(value, dict)
-        and set(value)
-        == {
-            "schema",
-            "scope",
-            "plan_ref",
-            "cells",
-            "saturated_everywhere",
-            "informative_any",
-            "evaluator_version_ref",
-            "summarized_at",
-        }
+        and SUMMARY_FIELDS <= set(value) <= SUMMARY_FIELDS | OPTIONAL_SUMMARY_FIELDS
         and value["schema"] == SUMMARY_SCHEMA
+        and ("partial" not in value or type(value["partial"]) is bool)
+        and ("run_segment" not in value or _count(value["run_segment"], 0, 1_000_000))
         and is_ref(value["plan_ref"])
         and is_ref(value["evaluator_version_ref"])
         and isinstance(value["cells"], dict)
@@ -429,6 +597,24 @@ def validate_summary(value: dict[str, Any]) -> None:
         raise RuntimeFault("CALIBRATION_SUMMARY", "Invalid calibration summary (§2.8)")
 
 
+def drift_verdict(
+    sampled: int, flips: list[bool], reference: float | None
+) -> tuple[str, float | None]:
+    """D-128: the drift check of one cell's imports, from the paired outcomes of its sampled
+    tasks (``flips``: the imported round-1 outcome differs from the new run's).
+
+    ``inconclusive`` when fewer than half of the ``sampled`` pairs (at least one) were compared
+    (a re-run without a graded outcome is no comparison). Otherwise ``fail`` when the 95 % Wilson
+    lower bound of flips / compared exceeds ``reference``, the cell's A/A discordance (repeat 0
+    against repeat 1 of the same task, as ``aa_discordance``) in the source runs; without a
+    measured discordance the reference is 0, so any flip fails. Returns (verdict, lower bound)."""
+    compared = len(flips)
+    if compared == 0 or compared < math.ceil(sampled / 2):
+        return "inconclusive", None
+    lower = wilson(sum(flips), compared, _Z95)[0]
+    return ("fail" if lower > (reference or 0.0) else "pass"), lower
+
+
 class CalibrationService:
     def __init__(
         self,
@@ -439,10 +625,20 @@ class CalibrationService:
         approval_check: Callable[..., Any],
         executor_id: str,
         executor_policy: ExecutorPolicy | None,
+        facts: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]] | None = None,
+        ceiling_tokens: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> None:
+        """D-128: ``facts(composition_ref, case)`` gives what a trial of that slot would run on
+        now (``harness_sha``, ``model_snapshot``, ``corpus_version``; ``LocalTrialExecutor.facts``),
+        which resume and imports compare with stored receipts (none: both hold
+        ``CALIBRATION_FACTS_UNAVAILABLE``). ``ceiling_tokens(trial)`` gives the cost-weighted
+        uncached-equivalent count the per-trial ceiling is judged by (``{"tokens", "basis":
+        "price_weighted", "price_table_id"}``, or ``{"basis": "raw", "reason"}``); none judges
+        the raw tokens."""
         self.store, self.contracts, self.artifacts = store, contracts, artifacts
         self.approval_check, self.executor_id = approval_check, executor_id
         self.executor_policy = executor_policy
+        self.facts, self.ceiling_tokens = facts, ceiling_tokens
         self.corpus, self.budgets = CorpusService(store, artifacts), EvolutionBudget(store)
 
     @staticmethod
@@ -560,6 +756,14 @@ class CalibrationService:
             raise RuntimeFault("CALIBRATION_PLAN", "corpus_ref names another kind")
         self._guard(actor, plan)
         self._cases(actor, plan)
+        if "imports" in plan:
+            if plan["adaptive"]["max_repeats"] < 2:
+                raise RuntimeFault(
+                    "CALIBRATION_PLAN",
+                    "A plan with imports needs max_repeats >= 2: its drift check re-runs a "
+                    "sample of the imported tasks (D-128)",
+                )
+            self._import_rows(scope, plan)
         pid = plan_id(plan)
         with self.store.tx() as db:
             ref = self.store.put(db, scope, PLAN_KIND, pid, 1, plan)
@@ -602,19 +806,22 @@ class CalibrationService:
         self._independent(actor, "experiment.run")
         scope = actor.scope
         plan = self.store.get(scope, PLAN_KIND, plan_ref)
-        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
+        pid = plan_ref["id"]
         self._guard(actor, plan)
         policy = self._validate_executor(scope)
         workers = effective_parallel(
             parallel, plan["max_parallel"], plan["budget"]["max_parallel_works"]
         )
         cases = self._cases(actor, plan)
-        if versions.current_version_ref(self.store, scope) is None:
+        version_ref = versions.current_version_ref(self.store, scope)
+        if version_ref is None:
             # The summary pins the evaluator version; do not spend budget without one.
             raise Hold("EVALUATOR_UNQUALIFIED", "No evaluator version matches the running code")
         head = self.store.head(scope, RUN_KIND, pid)
         if head["state"] != "frozen" or head["data"]["plan_ref"] != plan_ref:
             raise Hold("CALIBRATION_STATE", "A calibration plan runs once")
+        # D-128: the imports are checked again against what would run now, before anything runs
+        rows = self._import_rows(scope, plan) if "imports" in plan else []
         with self.store.tx() as db:
             self.store.cas(
                 db,
@@ -623,12 +830,519 @@ class CalibrationService:
                 pid,
                 head["row_version"],
                 "running",
-                {**head["data"], "state": "running", "owner_epoch": self.store.epoch},
+                {
+                    **head["data"],
+                    "state": "running",
+                    "owner_epoch": self.store.epoch,
+                    # D-128: the evaluator version the trials run under (resume and imports
+                    # compare it); the run segment a summary covers
+                    "evaluator_version_ref": version_ref,
+                    "segment": 0,
+                },
             )
+        if rows:
+            self._materialize(scope, plan_ref, plan, rows)
+        return self._drive(actor, plan_ref, plan, policy, workers, cases, executor)
+
+    # -- D-128: resume --------------------------------------------------------------------------
+    def resume(
+        self,
+        actor: Actor,
+        plan_ref: dict[str, Any],
+        executor: Callable[..., TrialObservation],
+        *,
+        parallel: int = 1,
+    ) -> dict[str, Any]:
+        """Run a ``stopped`` calibration plan again under its own approval (D-128, Harbor
+        ``jobs resume``): completed graded trials stay, every unfinished slot runs again, the
+        outcomes are rebuilt from the stored trials and the summary is written as a new revision.
+
+        Hold ``CALIBRATION_RESUME_STATE`` (not stopped), ``CALIBRATION_RESUME_UNRESOLVED`` (the
+        root has reserved or unknown allocations: reconcile them first), ``META_WALL_BUDGET``
+        (the approved wall time since the freeze is spent; resume never resets it) and
+        ``CALIBRATION_RESUME_CHANGED`` (``details.differences``: the evaluator version, or a kept
+        trial's harness sha, model snapshot or corpus version differs from what would run now)."""
+        self._independent(actor, "experiment.run")
+        scope = actor.scope
+        plan = self.store.get(scope, PLAN_KIND, plan_ref)
+        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
+        self._guard(actor, plan)
+        policy = self._validate_executor(scope)
+        workers = effective_parallel(
+            parallel, plan["max_parallel"], plan["budget"]["max_parallel_works"]
+        )
+        cases = self._cases(actor, plan)
+        version_ref = versions.current_version_ref(self.store, scope)
+        if version_ref is None:
+            raise Hold("EVALUATOR_UNQUALIFIED", "No evaluator version matches the running code")
+        head = self.store.head(scope, RUN_KIND, pid)
+        if head["state"] != "stopped" or head["data"]["plan_ref"] != plan_ref:
+            raise Hold(
+                "CALIBRATION_RESUME_STATE",
+                "Only a stopped calibration run is resumed",
+                details={"state": head["state"]},
+            )
+        budget = self.store.head(scope, "meta-budget", root)["data"]
+        unresolved = [
+            {
+                "allocation_id": key,
+                "status": value["status"],
+                "owner_epoch": value.get("owner_epoch"),
+            }
+            for key, value in sorted(budget["allocations"].items())
+            if value["status"] in ("reserved", "unknown")
+        ]
+        if unresolved:
+            raise Hold(
+                "CALIBRATION_RESUME_UNRESOLVED",
+                "Reconcile the root's reserved or unknown allocations first "
+                "(amplai meta reconcile)",
+                details={"root": root, "allocations": unresolved},
+            )
+        elapsed = self.store.clock() - budget["started_epoch"]
+        if elapsed >= budget["limits"]["max_wall_seconds"]:
+            raise Hold(
+                "META_WALL_BUDGET",
+                "The plan's approved wall time since its freeze is spent; import its trials "
+                "into a new plan instead",
+                details={"elapsed_seconds": round(elapsed),
+                         "max_wall_seconds": budget["limits"]["max_wall_seconds"]},
+            )  # fmt: skip
+        kept: list[tuple[dict[str, Any], dict[str, Any]]] = []
+        superseded: list[dict[str, Any]] = []
+        for ref in head["data"]["trial_refs"]:
+            trial = self.store.get(scope, TRIAL_KIND, ref)
+            state = self.store.head(scope, TRIAL_KIND, ref["id"])["state"]
+            if state == "observed" and _known(trial):
+                kept.append((ref, trial))
+            else:
+                superseded.append(ref)
+        differences = self._resume_differences(scope, plan, pid, [t for _, t in kept], version_ref)
+        if differences:
+            raise Hold(
+                "CALIBRATION_RESUME_CHANGED",
+                "What would run now differs from the original run; run a new plan",
+                details={"differences": differences},
+            )
+        with self.store.tx() as db:
+            current = self.store.head(scope, RUN_KIND, pid, db=db)
+            if current["row_version"] != head["row_version"]:
+                raise Hold("CALIBRATION_STATE", "The calibration run changed underneath")
+            data = current["data"]
+            self.store.cas(
+                db,
+                scope,
+                RUN_KIND,
+                pid,
+                current["row_version"],
+                "running",
+                {
+                    **data,
+                    "state": "running",
+                    "owner_epoch": self.store.epoch,
+                    "trial_refs": [ref for ref, _ in kept],
+                    "superseded_trial_refs": [*data.get("superseded_trial_refs", []), *superseded],
+                    "stop_reason": None,
+                    "segment": int(data.get("segment", 0)) + 1,
+                    "evaluator_version_ref": version_ref,
+                    "resumes": [
+                        *data.get("resumes", []),
+                        {"at": now(), "from_stop_reason": data.get("stop_reason"),
+                         "kept": len(kept), "superseded": len(superseded),
+                         "owner_epoch": self.store.epoch},
+                    ],
+                },
+            )  # fmt: skip
+        return self._drive(actor, plan_ref, plan, policy, workers, cases, executor)
+
+    def _run_evaluator(self, scope: Scope, pid: str) -> dict[str, Any] | None:
+        """The evaluator version a run's trials ran under: the run head's (written at its start
+        since D-128), else that of the plan's newest summary (``run`` writes it in the same
+        process); None when neither exists (a run ``recover`` closed before D-128)."""
+        try:
+            head = self.store.head(scope, RUN_KIND, pid)
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            return None
+        found = head["data"].get("evaluator_version_ref")
+        if found is not None:
+            return dict(found)
+        rows = [
+            (ref, value)
+            for ref, value in self.store.list_objects(scope, SUMMARY_KIND)
+            if ref["id"] == "calsum-" + pid
+        ]
+        if not rows:
+            return None
+        newest = max(rows, key=lambda row: row[0]["revision"])[1].get("evaluator_version_ref")
+        return dict(newest) if isinstance(newest, dict) else None
+
+    def _receipt_facts(self, scope: Scope, trial: dict[str, Any]) -> dict[str, Any]:
+        """The reuse-key facts a stored trial's receipt records (§2.10); empty when it has none."""
+        refs = trial.get("artifact_refs") or []
+        receipt: Any = {}
+        if refs:
+            try:
+                receipt = json.loads(self.artifacts.read(scope, refs[0], trusted=True))
+            except (RuntimeFault, ValueError, TypeError, KeyError):
+                receipt = {}
+        receipt = receipt if isinstance(receipt, dict) else {}
+        return {k: receipt.get(k) for k in FACT_FIELDS}
+
+    def _current_facts(
+        self, composition_ref: dict[str, Any], case: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        if self.facts is None:
+            raise Hold(
+                "CALIBRATION_FACTS_UNAVAILABLE",
+                "No executor facts to compare stored trials with (D-128)",
+            )
+        if case is None:
+            raise Hold("SAMPLING_CHANGED", "The case is not in the plan's frozen corpus")
+        return dict(self.facts(composition_ref, case))
+
+    def _frozen_cases(self, scope: Scope, plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        corpus = self.store.get(scope, "eval-corpus", plan["corpus_ref"])
+        return {c["case_id"]: c for c in corpus["cases"]}
+
+    def _resume_differences(
+        self,
+        scope: Scope,
+        plan: dict[str, Any],
+        pid: str,
+        kept: list[dict[str, Any]],
+        version_ref: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """What differs between the original run and what would run now: the evaluator version,
+        and per kept trial its receipt's harness sha, model snapshot and corpus version."""
+        differences: list[dict[str, Any]] = []
+        was = self._run_evaluator(scope, pid)
+        if was is None or was != version_ref:
+            differences.append({"field": "evaluator_version_ref", "was": was, "now": version_ref})
+        cases = self._frozen_cases(scope, plan)
+        cache: dict[tuple[str, str], dict[str, Any]] = {}
+        seen: set[str] = set()
+        for trial in kept:
+            key = (digest(trial["composition_ref"]), trial["task_id"])
+            if key not in cache:
+                cache[key] = self._current_facts(trial["composition_ref"], cases.get(key[1]))
+            stored, current = self._receipt_facts(scope, trial), cache[key]
+            for field in FACT_FIELDS:
+                a, b = stored.get(field), current.get(field)
+                if a == b and not (field == "harness_sha" and a in (None, UNKNOWN_SHA)):
+                    continue
+                row = {"field": field, "cell_id": trial["cell_id"], "was": a, "now": b}
+                mark = digest(row)
+                if mark not in seen:
+                    seen.add(mark)
+                    differences.append(row)
+        return differences
+
+    # -- D-128: imports -------------------------------------------------------------------------
+    def _import_candidates(
+        self,
+        scope: Scope,
+        plan: dict[str, Any],
+        sources: list[tuple[dict[str, Any], list[dict[str, Any]] | None]],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """(eligible rows, excluded rows) of the trials ``sources`` name (each a source plan ref
+        and its listed trial refs; None: every trial of its run) for ``plan``.
+
+        A trial is eligible when it is in its source run, ``observed`` and graded (``_known``),
+        not itself imported, round 1 (repeat 0), of a composition the plan names for its cell,
+        of a case the plan pins, finished at most ``import_policy.window_hours`` before the
+        plan's ``frozen_at``, and its ``reuse_key`` equals the slot's now. Then only cases with
+        one eligible trial for every (cell, composition) of the plan stay (the paired rule)."""
+        policy = plan["import_policy"]
+        window = policy["window_hours"] * 3600
+        frozen = _instant(plan["frozen_at"])
+        current_ev = versions.current_version_ref(self.store, scope)
+        cells = list(plan["cells"])
+        comps = {cell: list(plan["composition_refs"][cell]) for cell in cells}
+        pinned = set(plan["case_ids"])
+        cases = self._frozen_cases(scope, plan)
+        facts: dict[tuple[str, str], dict[str, Any]] = {}
+        eligible: list[dict[str, Any]] = []
+        excluded: list[dict[str, Any]] = []
+
+        def out(trial_id: Any, reason: str, **details: Any) -> None:
+            excluded.append({"trial_id": trial_id, "reason": reason, **details})
+
+        for source_ref, listed in sources:
+            try:
+                kind, source = resolve_ref(self.store, scope, source_ref)
+            except (Hold, RuntimeFault):
+                kind, source = "", {}
+            try:
+                head = self.store.head(scope, RUN_KIND, source_ref["id"])
+            except RuntimeFault:
+                head = None
+            if kind != PLAN_KIND or head is None or head["data"].get("plan_ref") != source_ref:
+                out(None, "source_not_a_calibration_run", plan_ref=source_ref)
+                continue
+            run_refs = list(head["data"].get("trial_refs") or [])
+            source_ev = self._run_evaluator(scope, source_ref["id"])
+            for ref in run_refs if listed is None else listed:
+                trial_id = ref.get("id")
+                if ref not in run_refs:
+                    out(trial_id, "not_in_source_run")
+                    continue
+                trial = self.store.get(scope, TRIAL_KIND, ref)
+                state = self.store.head(scope, TRIAL_KIND, ref["id"])["state"]
+                cell, task_id = trial["cell_id"], trial["task_id"]
+                finished = _instant(trial.get("finished_at"))
+                if state != "observed" or not _known(trial):
+                    out(trial_id, "not_graded")
+                elif "imported_from" in trial:
+                    out(trial_id, "already_imported")
+                elif trial["repeat"] != 0:
+                    out(trial_id, "not_round_one")
+                elif cell not in comps or trial["composition_ref"] not in comps[cell]:
+                    out(trial_id, "composition_mismatch")
+                elif task_id not in pinned:
+                    out(trial_id, "task_not_in_plan")
+                elif (
+                    frozen is None
+                    or finished is None
+                    or not 0 <= (frozen - finished).total_seconds() <= window
+                ):
+                    out(trial_id, "outside_window", finished_at=trial.get("finished_at"))
+                else:
+                    slot = (digest(trial["composition_ref"]), task_id)
+                    if slot not in facts:
+                        try:
+                            facts[slot] = self._current_facts(
+                                trial["composition_ref"], cases.get(task_id)
+                            )
+                        except (Hold, RuntimeFault) as exc:
+                            if exc.code == "CALIBRATION_FACTS_UNAVAILABLE":
+                                raise
+                            facts[slot] = {"unavailable": exc.code}
+                    stored = reuse_key(
+                        composition_ref=trial["composition_ref"], cell_id=cell, task_id=task_id,
+                        corpus_ref=source["corpus_ref"],
+                        facts=self._receipt_facts(scope, trial), evaluator_version_ref=source_ev,
+                    )  # fmt: skip
+                    current = reuse_key(
+                        composition_ref=trial["composition_ref"], cell_id=cell, task_id=task_id,
+                        corpus_ref=plan["corpus_ref"], facts=facts[slot],
+                        evaluator_version_ref=current_ev,
+                    )  # fmt: skip
+                    fields = key_differences(stored, current)
+                    if fields:
+                        out(trial_id, "key_mismatch", fields=sorted(fields))
+                        continue
+                    eligible.append(
+                        {"trial_ref": ref, "trial": trial, "source_plan_ref": source_ref,
+                         "cell_id": cell, "task_id": task_id,
+                         "slot": (cell, digest(trial["composition_ref"])),
+                         "key_digest": digest(current)}
+                    )  # fmt: skip
+        required = {(cell, digest(c)) for cell in cells for c in comps[cell]}
+        kept: list[dict[str, Any]] = []
+        for task_id in plan["case_ids"]:  # corpus order
+            chosen: dict[tuple[str, str], dict[str, Any]] = {}
+            for row in (r for r in eligible if r["task_id"] == task_id):
+                if row["slot"] in chosen:
+                    out(row["trial_ref"]["id"], "duplicate_slot")
+                else:
+                    chosen[row["slot"]] = row
+            if set(chosen) != required:
+                for row in chosen.values():
+                    out(row["trial_ref"]["id"], "partial_case")
+                continue
+            kept.extend(chosen.values())
+        return kept, excluded
+
+    def eligible_imports(
+        self, scope: Scope, plan: dict[str, Any], source_refs: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """For an operator composing a plan before its approval: the ``imports`` value a plan
+        like ``plan`` (with ``import_policy``) gets from the runs of ``source_refs``, the number
+        imported, the imported cases, and every excluded trial with its reason."""
+        kept, excluded = self._import_candidates(scope, plan, [(r, None) for r in source_refs])
+        imports = []
+        for source in source_refs:
+            refs = [row["trial_ref"] for row in kept if row["source_plan_ref"] == source]
+            if refs:
+                imports.append({"plan_ref": source, "trial_refs": refs})
+        cases = {row["task_id"] for row in kept}
+        return {
+            "imports": imports,
+            "imported": len(kept),
+            "cases": [cid for cid in plan["case_ids"] if cid in cases],
+            "excluded": excluded,
+        }
+
+    def drift_reference(
+        self, scope: Scope, plan: dict[str, Any], source_refs: list[dict[str, Any]]
+    ) -> dict[str, float | None]:
+        """Per cell, the A/A discordance of its v1 composition in the source runs (graded
+        repeat 0 against repeat 1 of the same task, pooled over the sources); None when no task
+        has both. ``drift_verdict`` compares the drift check with it."""
+        reference: dict[str, float | None] = {}
+        trials = []
+        for source in source_refs:
+            try:
+                head = self.store.head(scope, RUN_KIND, source["id"])
+            except RuntimeFault:
+                continue
+            trials += [self.store.get(scope, TRIAL_KIND, r) for r in head["data"]["trial_refs"]]
+        for cell in plan["cells"]:
+            v1 = plan["composition_refs"][cell][0]
+            firsts: dict[tuple[str, str], dict[int, bool]] = {}
+            for t in trials:
+                if (
+                    t["cell_id"] == cell
+                    and t["composition_ref"] == v1
+                    and t["repeat"] in (0, 1)
+                    and _known(t)
+                    and "imported_from" not in t
+                ):
+                    key = (digest(t["calibration_plan_ref"]), t["task_id"])
+                    firsts.setdefault(key, {})[t["repeat"]] = t["success"]
+            pairs = [f[0] != f[1] for f in firsts.values() if len(f) == 2]
+            reference[cell] = sum(pairs) / len(pairs) if pairs else None
+        return reference
+
+    def _import_rows(self, scope: Scope, plan: dict[str, Any]) -> list[dict[str, Any]]:
+        """The plan's imports, every one eligible (Hold CALIBRATION_IMPORT with
+        ``details.excluded`` otherwise)."""
+        sources: list[tuple[dict[str, Any], list[dict[str, Any]] | None]] = [
+            (e["plan_ref"], list(e["trial_refs"])) for e in plan["imports"]
+        ]
+        kept, excluded = self._import_candidates(scope, plan, sources)
+        if excluded:
+            raise Hold(
+                "CALIBRATION_IMPORT",
+                "An imported trial is not eligible for this plan (D-128)",
+                details={"excluded": excluded},
+            )
+        return kept
+
+    def _materialize(
+        self,
+        scope: Scope,
+        plan_ref: dict[str, Any],
+        plan: dict[str, Any],
+        rows: list[dict[str, Any]],
+    ) -> None:
+        """Store each imported trial as a trial of this plan with its provenance
+        (``imported_from``: source plan, trial ref and id, finish time, reuse key digest) and a
+        0-charge allocation naming its source; choose each cell's drift-check sample."""
+        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
+        imported = [cid for cid in plan["case_ids"] if any(r["task_id"] == cid for r in rows)]
+        policy = plan["import_policy"]
+        n = len(imported)
+        k = min(n, max(policy["drift_min_per_cell"], math.ceil(policy["drift_share"] * n)))
+        drift: dict[str, Any] = {}
+        for cell in plan["cells"]:
+            order = sorted(
+                imported, key=lambda cid: digest({"plan_id": pid, "cell_id": cell, "task_id": cid})
+            )
+            chosen = set(order[:k])
+            drift[cell] = {
+                "status": "pending",
+                "sample": [cid for cid in imported if cid in chosen],
+                "reference": policy["drift_reference"].get(cell),
+            }
+        refs = []
+        with self.store.tx() as db:
+            for row in rows:
+                source, trial_id = row["trial"], new_id("caltrial")
+                provenance = {
+                    "plan_ref": row["source_plan_ref"],
+                    "trial_ref": row["trial_ref"],
+                    "trial_id": source["trial_id"],
+                    "finished_at": source.get("finished_at"),
+                    "key_digest": row["key_digest"],
+                }
+                trial = {
+                    **source,
+                    "trial_id": trial_id,
+                    "calibration_plan_ref": plan_ref,
+                    "imported_from": provenance,
+                }
+                ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
+                self.store.cas(
+                    db, scope, TRIAL_KIND, trial_id, 0, "observed",
+                    {"calibration_plan_ref": plan_ref, "task_id": source["task_id"],
+                     "cell_id": source["cell_id"], "repeat": source["repeat"],
+                     "owner_epoch": self.store.epoch, "trial_ref": ref,
+                     "imported_from": provenance},
+                )  # fmt: skip
+                self.budgets.record_import(db, scope, root, trial_id, source=provenance)
+                refs.append(ref)
+            head = self.store.head(scope, RUN_KIND, pid, db=db)
+            self.store.cas(
+                db,
+                scope,
+                RUN_KIND,
+                pid,
+                head["row_version"],
+                "running",
+                {
+                    **head["data"],
+                    "trial_refs": [*head["data"]["trial_refs"], *refs],
+                    "imports": {
+                        "sources": [e["plan_ref"] for e in plan["imports"]],
+                        "trial_refs": refs,
+                        "dropped": [],
+                    },
+                    "drift_check": drift,
+                },
+            )
+
+    # -- the run loop ---------------------------------------------------------------------------
+    def _judge(self, trial: dict[str, Any], tokens: int | None) -> dict[str, Any]:
+        """D-128: the count the per-trial ceiling is judged by. A trial with known usage is
+        weighed by ``ceiling_tokens`` (cache reads and writes at their price relative to the
+        uncached input price of the deployment's price table); an unknown usage (its charge), a
+        trial without a weigher or one the weigher cannot price is judged by its raw tokens, and
+        the record says why."""
+        raw: dict[str, Any] = {"tokens": tokens, "basis": "raw", "price_table_id": None}
+        if tokens is None or trial.get("charged_tokens") is not None:
+            return {**raw, "reason": "usage_unknown"}
+        if self.ceiling_tokens is None:
+            return {**raw, "reason": "no_price_weigher"}
+        try:
+            found = self.ceiling_tokens(trial)
+        except (Hold, RuntimeFault, ValueError, KeyError, TypeError) as exc:
+            return {
+                **raw,
+                "reason": "weigher_error:" + str(getattr(exc, "code", type(exc).__name__)),
+            }
+        weighed = found.get("tokens") if isinstance(found, dict) else None
+        if found.get("basis") == "price_weighted" and type(weighed) is int and weighed >= 0:
+            return {
+                "tokens": weighed,
+                "basis": "price_weighted",
+                "price_table_id": found.get("price_table_id"),
+                "reason": None,
+            }
+        return {**raw, "reason": str((found or {}).get("reason") or "unpriced")}
+
+    def _drive(
+        self,
+        actor: Actor,
+        plan_ref: dict[str, Any],
+        plan: dict[str, Any],
+        policy: ExecutorPolicy,
+        workers: int,
+        cases: list[dict[str, Any]],
+        executor: Callable[..., TrialObservation],
+    ) -> dict[str, Any]:
+        """Run a ``running`` calibration from the trials its head already holds (none for a new
+        run; imported ones; the kept ones of a resumed run): the drift check of pending imports,
+        round 1 for every slot without a v1 outcome, then the adaptive rounds (§8.2)."""
+        scope = actor.scope
+        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
         cells = list(plan["cells"])
         compositions = {cell: list(plan["composition_refs"][cell]) for cell in cells}
         v1 = {cell: compositions[cell][0] for cell in cells}
         splits = {c["case_id"]: c["split"] for c in cases}
+        by_id = {c["case_id"]: c for c in cases}
         low, high = plan["adaptive"]["borderline"]
         max_repeats = plan["adaptive"]["max_repeats"]
         wall = plan["budget"]["max_wall_seconds"]
@@ -639,10 +1353,44 @@ class CalibrationService:
             "unknown_usage_streak": 0,
             "not_run": (None, 0),  # (error code, trials in a row not run with it)
         }
-        outcomes: dict[tuple[str, str], list[bool | None]] = {
-            (cell, c["case_id"]): [] for cell in cells for c in cases
-        }
-        refs: list[dict[str, Any]] = []
+        refs: list[dict[str, Any]] = list(
+            self.store.head(scope, RUN_KIND, pid)["data"]["trial_refs"]
+        )
+        loaded: dict[str, dict[str, Any]] = {}
+        outcomes: dict[tuple[str, str], list[bool | None]] = {}
+        used: dict[tuple[str, str], set[int]] = {}
+        have: dict[tuple[str, str, str], set[int]] = {}
+
+        def load(ref: dict[str, Any]) -> dict[str, Any]:
+            if ref["id"] not in loaded:
+                loaded[ref["id"]] = self.store.get(scope, TRIAL_KIND, ref)
+            return loaded[ref["id"]]
+
+        def note(trial: dict[str, Any]) -> None:
+            cell, case_id = trial["cell_id"], trial["task_id"]
+            if (cell, case_id) not in outcomes:
+                return
+            used[(cell, case_id)].add(trial["repeat"])
+            have.setdefault((cell, case_id, digest(trial["composition_ref"])), set()).add(
+                trial["repeat"]
+            )
+            if trial["composition_ref"] == v1[cell]:
+                # an unknown-usage trial is a missing outcome (``success`` null in its record),
+                # unless it attempted an answer lookup: then it is failed (decision (C))
+                outcomes[(cell, case_id)].append(trial["success"] if _known(trial) else None)
+
+        def rebuild() -> None:
+            outcomes.clear()
+            used.clear()
+            have.clear()
+            for cell in cells:
+                for c in cases:
+                    outcomes[(cell, c["case_id"])] = []
+                    used[(cell, c["case_id"])] = set()
+            for trial in sorted((load(r) for r in refs), key=lambda t: t["repeat"]):
+                note(trial)
+
+        rebuild()
 
         def stop(reason: str) -> None:
             if state["stop"] is None:
@@ -666,6 +1414,8 @@ class CalibrationService:
                         tokens=policy.max_trial_tokens,
                         cost=policy.max_trial_cost_microunits,
                         cost_compared=False,  # calibration compares no cost (D-088)
+                        # D-128: a recorded per-trial overrun never refuses the next trial
+                        prior_overrun_blocks=False,
                     )
                     self.store.cas(
                         db,
@@ -759,11 +1509,13 @@ class CalibrationService:
             )
             cost = observation.cost_microunits
             if usage_unknown(observation):
-                # decision (B): charge the reservation, keep running, the outcome is missing
+                # decision (B): charge the reservation, keep running, the outcome is missing;
+                # D-128: a trial that provably started nothing is charged 0
                 fields, tokens, cost = unknown_usage_charge(
                     observation,
                     tokens=policy.max_trial_tokens,
                     cost=policy.max_trial_cost_microunits,
+                    ran="not_run" not in failure,
                 )
                 trial.update(fields)
                 if "not_run" in failure:
@@ -774,6 +1526,12 @@ class CalibrationService:
                 # so the trial is FAILED and the run goes on; an experiment still stops (IC-18)
                 trial["success"] = False
                 trial.pop("outcome_missing", None)
+            # D-128: the per-trial ceiling is judged by the cost-weighted count and recorded;
+            # an overrun no longer stops the run
+            judged = self._judge(trial, tokens)
+            over = judged["tokens"] is not None and judged["tokens"] > policy.max_trial_tokens
+            trial["ceiling_tokens"] = judged
+            trial["ceiling_overrun"] = over
             with self.store.tx() as db:
                 ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
                 th = self.store.head(scope, TRIAL_KIND, trial_id, db=db)
@@ -796,39 +1554,38 @@ class CalibrationService:
                     cost=cost,
                     uncertain=bool(observation.unknown_effects),
                     cost_required=False,
+                    judged_tokens=judged["tokens"],
                 )
                 current = self.store.head(scope, RUN_KIND, pid, db=db)
-                self.store.cas(
-                    db,
-                    scope,
-                    RUN_KIND,
-                    pid,
-                    current["row_version"],
-                    "running",
-                    {**current["data"], "trial_refs": [*current["data"]["trial_refs"], ref]},
-                )
+                data = {**current["data"], "trial_refs": [*current["data"]["trial_refs"], ref]}
+                if over:
+                    data["overruns"] = [
+                        *current["data"].get("overruns", []),
+                        {"trial_id": trial_id, "cell_id": cell, "task_id": case["case_id"],
+                         "repeat": ctx["repeat"], "tokens": tokens,
+                         "ceiling_tokens": judged["tokens"], "basis": judged["basis"],
+                         "ceiling": policy.max_trial_tokens},
+                    ]  # fmt: skip
+                self.store.cas(db, scope, RUN_KIND, pid, current["row_version"], "running", data)
             refs.append(ref)
-            if ctx["composition"] == v1[cell]:
-                # an unknown-usage trial is a missing outcome (``success`` null in its record),
-                # unless it attempted an answer lookup: then it is failed (decision (C))
-                known = trial["success"] is not None and not observation.unknown_effects
-                outcomes[(cell, case["case_id"])].append(trial["success"] if known else None)
+            loaded[trial_id] = trial
+            note(trial)
             unknown_usage = trial.get("outcome_missing") == "usage_unknown"
             state["unknown_usage_streak"] = (
                 state["unknown_usage_streak"] + 1 if unknown_usage else 0
             )
             code = trial.get("error_code") if trial.get("outcome_missing") == "not_run" else None
-            last, count = state["not_run"]
+            last, count_ = state["not_run"]
             state["not_run"] = (
                 code,
-                count + 1 if code is not None and code == last else int(code is not None),
+                count_ + 1 if code is not None and code == last else int(code is not None),
             )
             if post_guard:
                 stop(post_guard)
             elif observation.unknown_effects:
                 stop("safety_or_unknown_effect")
-            elif settlement["overrun"] or settlement["uncertain"]:
-                stop("budget_overrun_or_unknown_usage")
+            elif settlement["uncertain"]:
+                stop("unknown_usage")
             elif state["unknown_usage_streak"] >= PROVIDER_FAILURE_STREAK:
                 stop("provider_failures")
             elif state["not_run"][1] >= PRE_RUN_FAILURE_STREAK:
@@ -847,32 +1604,113 @@ class CalibrationService:
             borderline = runs >= 2 and own is not None and low <= own <= high
             return len(rates) > 1 or borderline
 
-        def items_for(slots: list[tuple[dict[str, Any], str, int]]) -> list[Any]:
+        def next_repeat(cell: str, case_id: str) -> int:
+            """The first repeat index the (cell, task) has no trial at (``len(outcomes)`` in a
+            run without imports or superseded trials)."""
+            return next(n for n in count() if n not in used[(cell, case_id)])
+
+        def slot(case: dict[str, Any], cell: str, repeat: int) -> list[Any]:
+            """The compositions of the cell that have no trial in this slot (all of them for a
+            new slot; the variants paired with an imported or kept v1 trial)."""
             return [
                 (case, cell, composition, repeat)
-                for case, cell, repeat in slots
                 for composition in compositions[cell]
+                if repeat not in have.get((cell, case["case_id"], digest(composition)), set())
             ]
 
-        slots = [(case, cell, 0) for case in cases for cell in cells]
-        while slots and state["stop"] is None:
+        def run_items(items: list[Any]) -> None:
             run_bounded(
-                items_for(slots),
+                items,
                 parallel=workers,
                 dispatch=dispatch,
                 execute=execute,
                 record=record,
                 stopped=lambda: state["stop"] is not None,
             )
-            if state["stop"] is not None:
-                break
+
+        def pool_v1(cell: str, case_id: str) -> list[dict[str, Any]]:
+            return sorted(
+                (
+                    t
+                    for t in (load(r) for r in refs)
+                    if t["cell_id"] == cell
+                    and t["task_id"] == case_id
+                    and t["composition_ref"] == v1[cell]
+                ),
+                key=lambda t: t["repeat"],
+            )
+
+        # D-128: the drift check of the imports, before they are pooled
+        drift = dict(self.store.head(scope, RUN_KIND, pid)["data"].get("drift_check") or {})
+        pending = [cell for cell in cells if (drift.get(cell) or {}).get("status") == "pending"]
+        if pending:
+            items: list[Any] = []
+            for cell in pending:
+                for case_id in drift[cell]["sample"]:
+                    if any("imported_from" not in t for t in pool_v1(cell, case_id)):
+                        continue  # a re-run of this pair already exists (a resumed run)
+                    items += slot(by_id[case_id], cell, next_repeat(cell, case_id))
+            run_items(items)
+            if state["stop"] is None:
+                dropped: list[dict[str, Any]] = []
+                for cell in pending:
+                    entry = dict(drift[cell])
+                    flips = []
+                    for case_id in entry["sample"]:
+                        mine = pool_v1(cell, case_id)
+                        imported = [t for t in mine if "imported_from" in t]
+                        fresh = [t for t in mine if "imported_from" not in t]
+                        if imported and fresh and _known(imported[0]) and _known(fresh[0]):
+                            flips.append(imported[0]["success"] != fresh[0]["success"])
+                    verdict, lower = drift_verdict(len(entry["sample"]), flips, entry["reference"])
+                    entry.update(
+                        status=verdict, compared=len(flips), flips=sum(flips), wilson_lower=lower
+                    )
+                    if verdict != "pass":
+                        # the cell's imports are dropped and its imported tasks run fresh
+                        drop = [
+                            r for r in refs
+                            if "imported_from" in load(r) and load(r)["cell_id"] == cell
+                        ]  # fmt: skip
+                        entry["dropped"] = [r["id"] for r in drop]
+                        dropped += drop
+                    drift[cell] = entry
+                refs[:] = [r for r in refs if r not in dropped]
+                with self.store.tx() as db:
+                    current = self.store.head(scope, RUN_KIND, pid, db=db)
+                    imports = dict(current["data"].get("imports") or {})
+                    imports["dropped"] = [*imports.get("dropped", []), *(r["id"] for r in dropped)]
+                    self.store.cas(
+                        db, scope, RUN_KIND, pid, current["row_version"], "running",
+                        {**current["data"], "trial_refs": list(refs), "drift_check": drift,
+                         "imports": imports},
+                    )  # fmt: skip
+                rebuild()
+        if state["stop"] is None:
+            # round 1: every (case, cell) without a v1 trial once; variants paired with a kept
+            # or imported v1 trial in its slot
+            items = []
+            for case in cases:
+                for cell in cells:
+                    case_id = case["case_id"]
+                    v1_repeats = have.get((cell, case_id, digest(v1[cell])), set())
+                    if not v1_repeats:
+                        items += slot(case, cell, next_repeat(cell, case_id))
+                    else:
+                        items += [i for r in sorted(v1_repeats) for i in slot(case, cell, r)]
+            run_items(items)
+        while state["stop"] is None:
             state["adaptive"] = True
-            slots = [
-                (case, cell, len(outcomes[(cell, case["case_id"])]))
+            items = [
+                item
                 for case in cases
                 for cell in cells
                 if needs_repeat(cell, case["case_id"])
+                for item in slot(case, cell, next_repeat(cell, case["case_id"]))
             ]
+            if not items:
+                break
+            run_items(items)
         # Adaptive repeats per task: v1 runs beyond the first, summed over cells.
         added = {
             c["case_id"]: n
@@ -969,36 +1807,57 @@ class CalibrationService:
         }
 
     def summarize(self, scope: Scope, plan_ref: dict[str, Any]) -> dict[str, Any]:
-        """Write (once) and return the `calibration-summary` of a finished run (§2.8)."""
+        """Write and return the `calibration-summary` of a finished run (§2.8): once per run
+        segment (D-128: a resumed run writes a new revision). ``partial`` is true when the run
+        did not end ``done``; readers never select such a summary (``complete_summaries``)."""
         plan = self.store.get(scope, PLAN_KIND, plan_ref)
         pid = plan_ref["id"]
         head = self.store.head(scope, RUN_KIND, pid)
         if head["state"] not in {"done", "stopped"} or head["data"]["plan_ref"] != plan_ref:
             raise Hold("CALIBRATION_STATE", "Only a finished calibration run is summarized")
+        data = head["data"]
+        segment = int(data.get("segment", 0))
         summary_id = "calsum-" + pid
         existing = [
             ref
             for ref, _ in self.store.list_objects(scope, SUMMARY_KIND)
             if ref["id"] == summary_id
         ]
+        revision = 1
         if existing:
             ref = max(existing, key=lambda r: r["revision"])
-            self.store.get(scope, SUMMARY_KIND, ref)  # digest-checked read
-            return ref
+            stored = self.store.get(scope, SUMMARY_KIND, ref)  # digest-checked read
+            if int(stored.get("run_segment", 0)) == segment:
+                return ref
+            revision = ref["revision"] + 1
         version_ref = versions.current_version_ref(self.store, scope)
         if version_ref is None:
             raise Hold("EVALUATOR_UNQUALIFIED", "No evaluator version matches the running code")
-        trials = [self.store.get(scope, TRIAL_KIND, ref) for ref in head["data"]["trial_refs"]]
+        trials = [self.store.get(scope, TRIAL_KIND, ref) for ref in data["trial_refs"]]
         if any(t["calibration_plan_ref"] != plan_ref for t in trials):
             raise Hold("TRIAL_PROVENANCE", "Foreign trials cannot enter a calibration summary")
-        value = {
+        value: dict[str, Any] = {
             "schema": SUMMARY_SCHEMA,
             "scope": scope.wire(),
             "plan_ref": plan_ref,
             **summarize_trials(plan, trials),
             "evaluator_version_ref": version_ref,
             "summarized_at": now(),
+            "partial": head["state"] != "done",
+            "run_segment": segment,
         }
+        if data.get("overruns"):
+            value["warnings"] = [{"code": "TRIAL_OVER_CEILING", **o} for o in data["overruns"]]
+        if isinstance(data.get("imports"), dict):
+            imports = data["imports"]
+            value["imports"] = {
+                "sources": imports.get("sources", []),
+                "imported": len(imports.get("trial_refs", [])),
+                "pooled": sum(r in data["trial_refs"] for r in imports.get("trial_refs", [])),
+                "dropped": list(imports.get("dropped", [])),
+            }
+        if data.get("drift_check"):
+            value["drift_check"] = data["drift_check"]
         validate_summary(value)
         with self.store.tx() as db:
-            return self.store.put(db, scope, SUMMARY_KIND, summary_id, 1, value)
+            return self.store.put(db, scope, SUMMARY_KIND, summary_id, revision, value)

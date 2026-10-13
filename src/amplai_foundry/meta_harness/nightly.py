@@ -1320,13 +1320,14 @@ class LocalNightlyBackend:
         """(plan, summary) of the newest **human-approved** calibration of ``cell_id`` on
         ``corpus_ref``, or None. A night's drift run is a calibration plan too (``drift_run``);
         it is never read back as the calibrated baseline, so drift never re-baselines itself:
-        only the operator's re-calibration does (§8.8, ``plan.md`` §9)."""
+        only the operator's re-calibration does (§8.8, ``plan.md`` §9). D-128: a partial summary
+        (its run did not end ``done``) is never the baseline (``complete_summaries``)."""
         from ..evaluation import calibration
 
         if corpus_ref is None:
             return None
         found = []
-        for _ref, summary in self.store.list_objects(self.scope, calibration.SUMMARY_KIND):
+        for _ref, summary in calibration.complete_summaries(self.store, self.scope):
             if cell_id not in (summary.get("cells") or {}):
                 continue
             try:
@@ -1432,10 +1433,15 @@ class LocalNightlyBackend:
         }
         guard(len(case_ids))
         plan["approval_ref"] = self.runner.derive(plan)
+        from .trial_metrics import TrialMetrics
+
+        # D-128: the drift calibration is a calibration root too; its per-trial ceiling is
+        # judged by the price-weighted count and an overrun is recorded, not a stop
         service = calibration.CalibrationService(
             self.store, self.ops.dep.contracts, self.ops.dep.artifacts,
             approval_check=self.runner.approvals.check, executor_id=EXECUTOR_ID,
             executor_policy=policy,
+            ceiling_tokens=TrialMetrics(self.ops.dep.service).uncached_equivalent,
         )  # fmt: skip
         nightly = self.runner.identity
         plan_ref = service.freeze(nightly, plan)

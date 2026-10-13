@@ -30,6 +30,7 @@ from amplai_foundry.evaluation import quality, versions
 from amplai_foundry.evaluation.corpus import CorpusService
 from amplai_foundry.evaluation.quality import QualityService, total_variation
 from amplai_foundry.runtime.contracts.identity import canonical, new_id
+from amplai_foundry.runtime.errors import RuntimeFault
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "amplai_foundry"
@@ -998,6 +999,12 @@ def calibration_world(w, *, cells=("cell-a",), tasks=("t1", "t2", "t3", "t4")):
 def add_summary(
     w, ev, plan_ref, summary_cells, *, at="2026-09-30T00:00:00Z", saturated=(), informative=()
 ):
+    # D-128: a summary is measured only when its run ended done
+    try:
+        w.m.d.store.head(w.scope, "calibration-run", plan_ref["id"])
+    except RuntimeFault:
+        put_head(w, "calibration-run", plan_ref["id"], "done",
+                 {"plan_ref": plan_ref, "state": "done", "trial_refs": []})  # fmt: skip
     return put(
         w,
         "calibration-summary",
@@ -1145,6 +1152,17 @@ def test_saturation_is_the_share_of_tasks_saturated_in_every_cell(w):
     assert latest["tasks"] == 4 and latest["saturated_everywhere"] == 2
     assert latest["informative_any"] == 1 and latest["share"] == 0.5
     assert len(record["inputs"]["calibration_summaries"]) == 1
+
+
+def test_a_stopped_runs_partial_summary_is_not_measured(w):
+    # D-128: a summary of a run that did not end done is never a quality input
+    ev, plan_ref, _, summary_cells = calibration_world(w, cells=("cell-a", "cell-b"))
+    put_head(w, "calibration-run", plan_ref["id"], "stopped",
+             {"plan_ref": plan_ref, "state": "stopped", "trial_refs": []})  # fmt: skip
+    add_summary(w, ev, plan_ref, summary_cells, saturated=["t1", "t2"], informative=["t3"])
+    got, record = metric(w, "saturation")
+    assert got["status"] == "no_data"
+    assert record["inputs"]["calibration_summaries"] == []
 
 
 def test_saturation_reports_the_newest_summary_and_honours_since_and_the_version(w):

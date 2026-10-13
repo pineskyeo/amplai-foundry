@@ -1,0 +1,9 @@
+{
+ "version": "eval-12",
+ "changes": [
+  {
+   "kind": "analysis_code",
+   "detail": "D-128 (operator decision 2026-10-14), calibration.py and service.py. (1) A calibration trial over the per-trial token ceiling is recorded (trial ceiling_overrun and ceiling_tokens, run head overruns, summary warnings TRIAL_OVER_CEILING) and the run goes on; the root token budget, the wall budget and the kill switch still stop it, and a recorded overrun no longer refuses the next reservation of a calibration root (EvolutionBudget.reserve prior_overrun_blocks False). The ceiling is judged by a cost-weighted uncached-equivalent count (cache reads and writes at their price over the uncached input price of the deployment price table; raw tokens with the reason when a part cannot be priced); the ledger and the trial tokens stay raw (IC-34 amended for the ceiling judgement only). Stage experiments keep the stop. (2) A trial whose executor proves it started nothing (not_run) settles at 0 tokens in calibrations and experiments (unknown_usage_charge ran=False). (3) CalibrationService.resume runs a stopped plan again under its approval: completed graded trials kept, unfinished slots re-run, outcomes rebuilt, summary rewritten as a new revision; CALIBRATION_RESUME_CHANGED when the evaluator version, harness sha, model snapshot or corpus version differs. (4) Optional plan fields imports and import_policy: completed graded round-1 trials of other plans whose reuse key matches exactly, only for cases complete in every cell and composition, within window_hours of the freeze, stored with provenance and a 0-charge allocation; a drift check re-runs a sample per cell and drops a cell's imports when the Wilson 95 % lower bound of the flip share exceeds the cell's A/A discordance in the source runs. (5) Summaries record partial and run_segment; complete_summaries / summary_complete keep a stopped or owner_lost run's summary out of every reader."
+  }
+ ]
+}

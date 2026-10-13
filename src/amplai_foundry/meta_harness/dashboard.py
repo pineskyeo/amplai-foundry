@@ -922,13 +922,18 @@ class _Builder:
         """cell -> (summary ref, summary, that cell's entry) of the newest summary naming it.
         eval-11: a drift calibration's summary (a subset of the cases) is never a cell's
         calibration, so it is skipped; so is a summary whose plan cannot be read (it cannot be
-        shown not to be a drift calibration)."""
-        from ..evaluation.calibration import is_drift_plan
+        shown not to be a drift calibration). D-128: so is the partial summary of a run that did
+        not end ``done`` (or whose run head cannot be read)."""
+        from ..evaluation.calibration import is_drift_plan, summary_complete
 
+        runs = {rid: (state, data) for rid, state, data in self.r.heads("calibration-run")}
         out: dict[str, tuple[Ref, dict[str, Any], dict[str, Any]]] = {}
         for ref, summary in self.r.latest("calibration-summary").values():
             plan = self.r.get("calibration-plan", summary.get("plan_ref"))
             if plan is None or is_drift_plan(plan):
+                continue
+            run_state, run_data = runs.get(str(_d(summary.get("plan_ref")).get("id")), (None, {}))
+            if not summary_complete(summary, run_state, run_data.get("plan_ref")):
                 continue
             for cell, entry in _d(summary.get("cells")).items():
                 if not isinstance(entry, dict):

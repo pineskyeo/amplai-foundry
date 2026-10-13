@@ -444,6 +444,7 @@ class QualityService:
             if value.get("evaluator_version_ref") == evaluator_version_ref
             and (_stamp(value.get("summarized_at")) or 0.0) >= floor
             and not self._drift_summary(value)
+            and self._complete_summary(value)  # D-128: never a partial (not done) run's
         ]
         plans = [
             (ref, value)
@@ -539,6 +540,17 @@ class QualityService:
             "unit": "task (development split, mean over runs)",
             "cells": rows,
         }
+
+    def _complete_summary(self, summary: dict[str, Any]) -> bool:
+        """D-128: the summary's run ended ``done`` and it is not marked partial
+        (``calibration.summary_complete``); a run head that cannot be read is not done."""
+        from .calibration import RUN_KIND, summary_complete
+
+        try:
+            head = self.store.head(self.scope, RUN_KIND, summary["plan_ref"]["id"])
+        except (RuntimeFault, KeyError, TypeError):
+            return False
+        return summary_complete(summary, head["state"], head["data"].get("plan_ref"))
 
     def _drift_summary(self, summary: dict[str, Any]) -> bool:
         """eval-11: the summary's plan is a drift calibration (``calibration.is_drift_plan``) or

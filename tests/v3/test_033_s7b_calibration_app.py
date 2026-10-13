@@ -278,7 +278,8 @@ def test_the_plan_fields_stay_exactly_the_section_2_8_ones_plus_the_optional_app
     calibration.validate_calibration_plan(plan)  # no app: valid
     calibration.validate_calibration_plan({**plan, "app": TB2_APP})
     calibration.validate_calibration_plan({**plan, "purpose": "drift"})  # eval-11
-    assert {"app", "purpose"} == calibration.OPTIONAL_PLAN_FIELDS
+    # D-128: the imports and their pooling rule
+    assert {"app", "purpose", "imports", "import_policy"} == calibration.OPTIONAL_PLAN_FIELDS
     assert set(plan) | {"app"} > calibration.PLAN_FIELDS
     for extra in ({"environment": "tb2-alpha"}, {"app_id": TB2}, {"apps": [TB2_APP]}):
         fault("CALIBRATION_PLAN", calibration.validate_calibration_plan, {**plan, **extra})

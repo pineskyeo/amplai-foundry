@@ -426,7 +426,10 @@ def test_the_summary_pins_the_running_evaluator_version(w):
     assert set(value) == {
         "schema", "scope", "plan_ref", "cells", "saturated_everywhere", "informative_any",
         "evaluator_version_ref", "summarized_at",
+        # D-128: whether the run ended done, and the run segment the summary covers
+        "partial", "run_segment",
     }  # fmt: skip
+    assert value["partial"] is False and value["run_segment"] == 0
 
 
 def test_no_evaluator_version_means_no_spending(w):
@@ -614,7 +617,8 @@ def test_a_hold_before_any_goal_ran_is_a_missing_outcome_with_its_code(w, code, 
     assert trial["unknown_effects"] == 0 and trial["success"] is None
     assert trial["not_run"] == {"goal_id": evidence["goal_id"], "runs": 0, "dispatches": 0}
     assert trial["outcome_missing"] == "not_run"
-    assert trial["charged_tokens"] == TRIAL_TOKENS  # decision (B): usage unknown, reservation
+    # D-128 (2026-10-14): nothing ran, so the charge is 0, not the reservation of decision (B)
+    assert trial["charged_tokens"] == 0
     store = w.m.d.store
     assert store.head(w.scope, "calibration-trial", trial["trial_id"])["state"] == "observed"
     assert r.head["state"] == "done" and r.head["data"]["stop_reason"] is None

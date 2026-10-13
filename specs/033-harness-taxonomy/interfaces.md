@@ -452,10 +452,16 @@ the only reader, which holds `LEAK_INDEX_ACL` for such an actor, §3.11):
 "budget": $defs.budget, "max_parallel": 1..4, "approval_ref": ref, "frozen_at"}` — the operator
 approval (`experiment.execute`) binds `digest(plan without approval_ref)` as today
 (`runtime/execution/meta_ops.py:255-257`). Optional fields: `"app"` (S7b) and `"purpose": "drift"`
-(eval-11: a drift plan may pin a subset of the cases; see "Clarification: Drift Subset").
+(eval-11: a drift plan may pin a subset of the cases; see "Clarification: Drift Subset"), and
+`"imports": [{"plan_ref": ref, "trial_refs": [ref]}]` with `"import_policy": {"window_hours": int,
+"drift_share": float, "drift_min_per_cell": int, "drift_reference": {cell_id: float|null}}` (D-128:
+trials imported from other plans, part of the approved digest; see "Clarification: Calibration
+Resume (D-128)").
 
 `calibration-run` head (id = plan id): `{"plan_ref", "state": "frozen"|"running"|"done"|"stopped",
 "trial_refs": [ref], "repeats_added": {case_id: int}, "stop_reason": str|null, "owner_epoch"}`.
+D-128 adds `"evaluator_version_ref"` (written at run start), `"segment"` (0, +1 per resume),
+`"overruns"`, `"resumes"`, `"superseded_trial_refs"`, `"imports"` and `"drift_check"`.
 
 `calibration-trial` — the same fields as an `eval-trial` (`evaluation/service.py:324-350`) with
 `"calibration_plan_ref"` instead of `"experiment_ref"`, `"cell_id"` and `"split"` (the case's split);
@@ -478,6 +484,11 @@ tables, proposer inputs, elite archive) filters on `split == "development"` (§2
  "saturated_everywhere": [case_id], "informative_any": [case_id],
  "evaluator_version_ref": ref, "summarized_at": utc}
 ```
+
+D-128: a summary also carries `"partial": bool` (its run did not end `done`) and `"run_segment":
+int` (one summary revision per run segment), and optionally `"warnings"` (per-trial ceiling
+overruns), `"imports"` and `"drift_check"`. A `calibration-trial` may carry `"ceiling_tokens"`,
+`"ceiling_overrun"` and `"imported_from"`.
 
 ### 2.9 Stage Plans And Runs
 
@@ -2115,7 +2126,11 @@ claim (IC-03). Cap = min(`meta.max_parallel_trials` (1–4, default 2), experime
 "repeat_slot"})`. `harness_sha` = `git rev-parse HEAD` of the checkout the deployment runs from,
 read at boot; when it cannot be read the key is not reused. Reuse is allowed for the nightly search
 phase, surrogate fitting and decider tables only; frozen experiments always run their own trials
-(`meta_harness/service.py:350-354`).
+(`meta_harness/service.py:350-354`). Exception (D-128): a calibration plan may import completed
+graded round-1 trials of other calibration plans that its operator approved with it (`imports`,
+with the reuse key, pairing, window and drift-check rules of "Clarification: Calibration Resume
+(D-128)"); a resumed calibration keeps its own completed trials. Stage experiments still run every
+trial themselves.
 
 ### 8.6 Quota Observation Without A Quota API
 
@@ -2565,6 +2580,9 @@ and run as the operator identity (`local_deployment.py:412-417`) unless noted.
 | `amplai ops local-cell add --driver D --model M --effort E [--qualification-report P] [--app A]` / `remove CELL` / `list` / `probe CELL` | register/list cells in `local.json`; `probe` runs one effort probe turn and writes `cell-effort-probe` | S4 |
 | `amplai meta calibrate --cells A,B --max-repeats 5 --max-trials N --parallel P --max-tokens T --max-wall-seconds S` | freeze, approve and run a calibration | S11 |
 | `amplai meta calibration show PLAN` | summary | S11 |
+| `amplai meta calibrate … --import-from PLAN` (repeatable) | import the eligible round-1 trials of PLAN into the new plan (D-128) | D-128 |
+| `amplai meta calibration resume PLAN --per-trial-tokens N --basis B --evidence E [--parallel P]` | run a stopped plan again under its approval (D-128) | D-128 |
+| `amplai meta settle-reservations` | settle ended runs' goal reservations from their driver journals (D-128) | D-128 |
 | `amplai meta component list [--kind K]` / `show ID` / `add --kind K --name N --file F` | catalogue; `add` registers operator-authored content through the proposer identity (source `operator`) | S11 |
 | `amplai meta propose-components --cell C --set SLOT=ID@VERSION… --hypothesis --benefit --risk… [--prediction-file F]` | submit a component candidate | S11 |
 | `amplai meta review PROPOSAL --outcome pass\|fail --note TEXT` | class B human code review receipt; `fail` rejects the proposal (§3.9) | S11 |
@@ -2608,7 +2626,9 @@ optional, so the file stays `schema_version: "local-1"` and a config without the
                 "shares": {"drift": 0.1, "screening_design": 0.0, "search": 0.6, "confirmation": 0.3},
                 "cells": [cell id], "max_parallel": 2, "pilot": true,
                 "stop_at": "07:00", "drift_tasks": [task id], "pilot_nights": 3,
-                "keep_operator_share": 0.5}              // = NightlyConfig (§3.13), shapes §2.14
+                "keep_operator_share": 0.5},             // = NightlyConfig (§3.13), shapes §2.14
+    "calibration_import": {"window_hours": 72, "drift_share": 0.1,
+                           "drift_min_per_cell": 4}      // D-128, copied into import_policy
   } | null,
   "jev": {"enabled": false, "endpoint": null, "token_file": null,
           "data_classes_allowed": ["public"]} | null,
@@ -3283,6 +3303,12 @@ IC-34. The cache amounts stay separate in the usage detail (D-094). Where the me
   (`local_executor.py` `_usage`), the trial reservation settlement (§7.1, §8.3), `tokens_per_solved` (§2.8,
   `calibration.py`, `trial_metrics.py`), `cost_tokens_mean`, the dashboard `tokens_mean`,
   `QuotaWindow.input_tokens` and nightly budget B (§3.13, §8.6).
+- **Amendment D-128 (2026-10-14), the per-trial ceiling judgement of a calibration only**: a calibration trial's
+  token ceiling (`ExecutorPolicy.max_trial_tokens`) is judged by a cost-weighted uncached-equivalent count, each
+  cache read and cache write bucket weighted by its price over the uncached input price of the price table in
+  effect (`pricing.uncached_equivalent`, `trial_metrics.uncached_equivalent`), not by `input_tokens +
+  output_tokens`. The ledger, the root token budget, trial `tokens`, `tokens_per_solved` and every other reader
+  above keep the meaning of (A). See "Clarification: Calibration Resume (D-128)".
 - Cache counts are a part of `input_tokens`, never an addition: `QuotaWindow.cached_input_tokens` (read from the
   usage-detail record's `fields`, `quota.py:104-107`) and the trial-metrics `tokens.cached_input`.
 - Pricing never adds cache to `usage.input_tokens`: a run is priced from its usage detail, which keeps the provider's
@@ -4123,3 +4149,132 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
   drift summary is never the band, `latest_summary` or the dashboard's, drift purpose off the
   regression set derives no approval; on the fake backend: drift tasks over the per-cell share stop
   the night at preflight, duplicates hold, each unmeasured trigger is `unchecked` and stops search).
+
+## Clarification: Calibration Resume (D-128)
+
+Operator decision D-128 (2026-10-14, "전부 추천대로 진행, 승인한다"; `docs/workstreams/v3-real-execution/
+DECISIONS.md`). Budget enforcement is a class C protected control; the operator approved this change.
+Sources: calplan-7c314b2f stopped `budget_overrun_or_unknown_usage` after 207 trials on one trial
+(caltrial-12b6e71f, claude-sonnet-5, 4,703,518 raw tokens against the 4M ceiling; cost-weighted with
+`deployment/prices/2026-09-30.json` 748,609, of which the input side 667,977); calplan-0034e3f6 ended
+`owner_lost` after 488 trials; neither could be continued. Industry practice: Inspect `eval_retry` /
+`eval_set` reuse only completed samples of a task whose identifier hash (incl. token, time and
+message limits; excl. retries, concurrency, timeouts) is the same
+(https://inspect.aisi.org.uk/eval-sets.html); Harbor `jobs resume` refuses a changed config and keeps
+completed trials (https://github.com/harbor-framework/harbor/blob/main/src/harbor/job.py).
+
+- **Overrun is recorded, not a stop (calibration roots only)**: `CalibrationService` judges the
+  per-trial ceiling (`ExecutorPolicy.max_trial_tokens`, the IC-29 qualification's
+  `per_trial_tokens`, accounting only: reserved before dispatch, settled after, never read by
+  `LocalTrialExecutor`) by `ceiling_tokens(trial)`, injected as `TrialMetrics.uncached_equivalent`:
+  every priced part of the trial (its runs' usage details, the real planner's turn, the auxiliary
+  turns, as `_cost`) with cache reads and cache writes at their price over the uncached input price
+  of the table in effect on the goal's approval day, uncached input and output at 1.0
+  (`pricing.uncached_equivalent`). A part that cannot be priced (no receipt or goal, a revision on
+  another cell, an aux turn of unknown usage, no table or row, a malformed breakdown) falls back to
+  the raw tokens for the whole trial with the reason; an unknown usage is judged by its charge. The
+  trial records `ceiling_tokens {"tokens", "basis": "price_weighted"|"raw", "price_table_id",
+  "reason"}` and `ceiling_overrun`; an overrun adds `{"trial_id", "cell_id", "task_id", "repeat",
+  "tokens", "ceiling_tokens", "basis", "ceiling"}` to the run head's `overruns` and the summary's
+  `warnings` (`code` `TRIAL_OVER_CEILING`), and the run goes on. `EvolutionBudget.settle(...,
+  judged_tokens=)` judges the overrun by that count and keeps `tokens` (raw) in the ledger, so the
+  root token budget still counts every token; `reserve(..., prior_overrun_blocks=False)` keeps a
+  recorded overrun from refusing the next reservation of a calibration root (`META_PRIOR_OVERRUN`).
+  The root token budget, the wall budget and the kill switch stay hard stops; an uncertain
+  settlement stops with `unknown_usage`. Stage experiments are unchanged (an overrun still stops
+  them, IC-18). The nightly drift calibration is a calibration root and follows this rule.
+- **Not-run trials settle at 0**: a trial whose executor exception proves nothing started
+  (`nothing_ran`, the record's `not_run`) is charged 0 tokens and 0 cost
+  (`unknown_usage_charge(..., ran=False)`), in calibrations and in experiments (the function is
+  shared). Its outcome stays missing; `PRE_RUN_FAILURE_STREAK` still stops a run.
+- **Ended runs' goal reservations**: `ExecutionService.end_goal` ends a run without settling its
+  root-goal reservation. `amplai meta settle-reservations` (`BudgetService.settle_ended`) settles the
+  `active` reservation of each run that ended `failed`, `cancelled` or `lost` from its driver
+  journal (`<workspace_root>/journal/<dispatch_id>.json`, the host port's record, outside the run
+  workspace and the native home `journal/native/<id>` a sandbox mounts) when the run has one
+  dispatch, the journal names it, ended with `process_stopped` true, has no follow-up or candidate
+  journal and reports input and output tokens; otherwise the run is listed as skipped with its
+  reason and stays `active`. `settle` applies its usual rules (estimated usage settles
+  `estimated`). Copy of the meta store on 2026-10-14: 66 failed runs had `active` reservations
+  (20M each); 33 journals carry estimated usage, 33 (cancelled) none.
+- **Resume, same plan** (`CalibrationService.resume`, `amplai meta calibration resume PLAN`): only
+  a `stopped` run (including `owner_lost`), under the plan's own approval and kill switch. Refused
+  with `CALIBRATION_RESUME_STATE` (not stopped), `CALIBRATION_RESUME_UNRESOLVED` (the root has
+  `reserved` or `unknown` allocations; reconcile them, IC-18), `META_WALL_BUDGET` (the root's wall
+  time runs from the freeze and is never reset), `CALIBRATION_FACTS_UNAVAILABLE` (no executor
+  facts), and `CALIBRATION_RESUME_CHANGED` with `details.differences` `[{"field", "cell_id", "was",
+  "now"}]` when the evaluator version of the original run (the run head's `evaluator_version_ref`,
+  else its newest summary's; unknown never matches) differs from the current one, or a kept
+  trial's receipt `harness_sha` (`unknown` never matches, §8.5), `model_snapshot` (provider model
+  id, driver version, image) or `corpus_version` differs from `LocalTrialExecutor.facts` (what the
+  slot would run on now). Behaviour-affecting limits are pinned by the composition ref (its `limits`
+  component) and the harness sha (the deployment ceiling `product.Budget`). Kept: trials `observed`
+  and graded (`success` not null, no unknown effect); the rest move to `superseded_trial_refs`.
+  The run is rebuilt from the kept trials: round 1 runs every (cell, task) without a v1 trial at
+  its first unused repeat (variants fill the slots of kept v1 trials), then the adaptive rounds as
+  §8.2 at the first unused repeat. `segment` increases by one, `resumes` records the resume, and the
+  summary is written as a new revision with `run_segment`.
+- **Imports into a new plan** (`imports`, `import_policy`; `calibrate --import-from PLAN`): the
+  plan names the source plans and trial refs; both fields are in the approval subject and the plan
+  id. `LocalMetaOps` composes them before the approval from `meta.calibration_import` and
+  `CalibrationService.eligible_imports`, and prints the plan id with "imported N, new M"
+  (`new_round_one`, `drift_reruns`, exclusions by reason) to stderr before anything runs. Freeze
+  and run check every listed trial again (`CALIBRATION_IMPORT` with `details.excluded`); a plan
+  with imports needs `max_repeats >= 2`; a drift plan imports nothing. Eligible: in its source run,
+  `observed`, graded, not itself imported, repeat 0 (round 1), a composition the plan names for its
+  cell, a case the plan pins, finished within `window_hours` (default 72) before the plan's
+  `frozen_at`, and `reuse_key` equal to the slot's now: `{composition_ref, cell_id, task_id,
+  corpus_ref, harness_sha, model_snapshot, corpus_version, evaluator_version_ref, mode}`. The
+  per-trial ceiling and the root budgets are accounting only and not part of it. Pairing (§8.2):
+  only cases with one eligible trial for every (cell, composition) of the plan; other cases are
+  excluded (`partial_case`). Each import is stored as a trial of the new plan with `imported_from`
+  `{"plan_ref", "trial_ref", "trial_id", "finished_at", "key_digest"}` and an allocation `{"status":
+  "settled", "tokens": 0, "cost": 0, "imported": <provenance>}` (`EvolutionBudget.record_import`);
+  its `trial-metrics` row stays the source trial's.
+- **Drift check before pooling**: per cell, `k = min(n, max(drift_min_per_cell, ceil(drift_share x
+  n)))` of the n imported tasks, chosen by `digest({plan_id, cell_id, task_id})` order, run at the
+  next repeat (all compositions of the slot) before round 1. Per cell, `drift_verdict`: fewer than
+  half of the sample compared (a re-run without a graded outcome is no comparison) is
+  `inconclusive`; else `fail` when the 95 % Wilson lower bound of flips / compared exceeds
+  `import_policy.drift_reference[cell]`, the A/A discordance of the cell's v1 trials in the source
+  runs (repeat 0 against repeat 1, as `aa_discordance`; null counts as 0). `fail` or
+  `inconclusive` drops every imported trial of that cell (`drift_check[cell].dropped`,
+  `imports.dropped`) and its tasks run fresh; the re-runs stay in the pool. The run head and the
+  summary record `drift_check {cell: {"status", "sample", "reference", "compared", "flips",
+  "wilson_lower", "dropped"?}}` and `imports {"sources", "imported", "pooled", "dropped"}`.
+- **Partial summaries**: `summarize` writes `partial` (run state is not `done`) and `run_segment`.
+  `complete_summaries` (newest revision of each summary whose run head is `done` and that is not
+  partial; a run head that cannot be read is not done) is what `LocalMetaOps.latest_summary` and the
+  nightly baseline (`LocalNightlyBackend._calibration`) select from; the dashboard matrix and
+  `QualityService` skip a summary that is not `summary_complete`; `StageRunner.plan` holds
+  `CALIBRATION_PARTIAL` for one (or for a revision that is not its summary's newest). Summaries of
+  stopped runs written before D-128 have no `partial` field and are excluded by their run state.
+- **Evaluator version**: `calibration.py` and `service.py` are in the service digest, so this is
+  eval-12 (`runs/eval-12.json`, kind `analysis_code`; `runs/eval12-propose.sh`,
+  `runs/eval12-qualify-approve.sh`). Because the evaluator version and the harness sha are part of
+  the reuse key and of the resume comparison, no run made before eval-12 is resumed or imported.
+- **Runaway guard (reported, not changed)**: a trial goal's root budget is min(the composition's
+  `limits`, the deployment ceiling `product.Budget`: 1800 s, 3 attempts, 60M tokens,
+  `runtime/execution/product.py:129-131`; v1 `limits` the same, `policies.py:114`); each node
+  attempt reserves (60M - aux) / 3 = 20M (`policies.py:529-538`). Wall time is enforced in flight:
+  the loop's deadline is approval + 1800 s over every attempt (`loop.py:491,502-504`) and each native
+  call is cut at its remaining budget (`worker.py:1502,1511` `WORKER_DEADLINE`). Tokens are not
+  enforced in flight: the reservation is checked before a run and settled after it
+  (`budgets/service.py` `reserve`, `settle` `overrun`); only a vote candidate is not started past 80
+  % of the node tokens (`worker.py:1303-1308`). The calibration wall budget is checked at dispatch
+  only. A runaway trial is therefore bounded by 1800 s, not by tokens. Proposal (not implemented): an
+  in-flight stop at the node token budget (20M raw, about 4x the largest trial seen, 4.70M), which
+  needs mid-run usage events from the drivers (확인 필요).
+- Tests: `tests/v3/test_033_d128_calibration_resume.py` (overrun recorded and the run goes on;
+  price-weighted judgement and raw ledger; the 4.70M-token trial weighs 748,608.5; an experiment
+  root still refuses after an overrun; not-run zero charge in a calibration and an experiment;
+  resume keeps graded trials, re-runs the rest and writes revision 2; resume refused on each
+  behaviour-affecting difference, an unknown harness sha, another evaluator version, a frozen or
+  done run, an unknown allocation, a spent wall budget, missing facts; imports with provenance and
+  a zero charge; key mismatch excluded and refused at freeze; partial-case exclusion; the time
+  window; drift check pass and fail; `drift_verdict`; plan validation and approval binding; partial
+  summaries never complete; journal settle rules and the operator command; `calibrate
+  --import-from` announces "imported N, new M"; resume through `LocalMetaOps` and the stage plan
+  waiting for it), `test_033_unknown_usage_charge.py`, `test_033_s2_calibration.py`,
+  `test_033_s11_stages.py`, `test_033_s14_quality.py`, `test_033_s15_dashboard.py` (partial
+  summaries are never read).

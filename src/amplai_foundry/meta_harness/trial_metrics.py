@@ -706,12 +706,64 @@ class TrialMetrics:
         value = json.loads(self.artifacts.read(self.scope, change))
         return diff_stats(self.artifacts.read(self.scope, value["patch"]))
 
-    def _cost(
+    def uncached_equivalent(self, trial: dict[str, Any]) -> dict[str, Any]:
+        """D-128: the count a calibration judges the per-trial token ceiling by. Every part of
+        the trial that ``_cost`` prices (its runs, the real planner's turn, the auxiliary turns)
+        is weighted by ``pricing.uncached_equivalent`` with its model's row of the price table in
+        effect on the goal's approval day: cache reads and cache writes at their price over the
+        uncached input price, uncached input and output at 1.0. ``{"tokens", "basis":
+        "price_weighted", "price_table_id", "notes"}``; ``{"basis": "raw", "reason"}`` when a
+        part cannot be priced (no receipt or goal, a revision on another cell, an aux turn of
+        unknown usage, no table or price row), so the raw tokens are judged and the record says
+        why."""
+        refs = trial.get("artifact_refs") or []
+        if not refs:
+            return {"basis": "raw", "reason": "no_receipt"}
+        receipt = json.loads(self.artifacts.read(self.scope, refs[0], trusted=True))
+        goal_id = receipt.get("goal_id") if isinstance(receipt, dict) else None
+        if not goal_id:
+            return {"basis": "raw", "reason": "no_goal"}
+        plan = self.service.plan_record(goal_id)
+        attempts = [*(plan.get("previous_attempts") or []), *(plan.get("attempts") or [])]
+        planner = receipt.get("planner") or {}
+        real = planner if planner.get("mode") == "real" else None
+        found = self._priced_parts(plan, attempts, real)
+        if isinstance(found, dict):
+            return {"basis": "raw", "reason": found["status"]}
+        priced, day = found
+        table = pricing.table_for(self.tables, day)
+        if table is None:
+            return {"basis": "raw", "reason": "no_table"}
+        if not priced:
+            return {"basis": "raw", "reason": "no_usage"}
+        total, notes = 0.0, set()
+        for one_model, detail, usage in priced:
+            row = table.models.get(one_model)
+            if row is None:
+                return {"basis": "raw", "reason": "no_price"}
+            try:
+                weighed = pricing.uncached_equivalent(row, detail=detail, usage=usage)
+            except pricing.PriceTableError:
+                return {"basis": "raw", "reason": "bad_breakdown"}
+            if weighed is None:
+                return {"basis": "raw", "reason": "no_usage"}
+            total += weighed[0]
+            notes.update(weighed[1])
+        return {
+            "tokens": round(total),
+            "basis": "price_weighted",
+            "price_table_id": table.table_id,
+            "notes": sorted(notes),
+        }
+
+    def _priced_parts(
         self,
         plan: dict[str, Any],
         attempts: list[dict[str, Any]],
-        planner: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        planner: dict[str, Any] | None,
+    ) -> tuple[list[tuple[str, dict[str, Any] | None, dict[str, Any]]], str] | dict[str, Any]:
+        """(model, usage detail, usage) of every priced part of a goal and the pricing day, or
+        the ``_cost`` status that says why it cannot be priced."""
         model = (plan.get("composition") or {}).get("model")
         if plan.get("previous_attempts"):
             # an earlier revision ran (an escalation, M6, Work 033 S9, or a replan) and may have
@@ -724,7 +776,6 @@ class TrialMetrics:
             # complete and is not
             return {"status": "aux_unknown_usage", "model": model}
         day = str(plan.get("approved_at") or "")[:10] or datetime.now().date().isoformat()
-        total, notes, upper, statuses = 0, set(), False, set()
         priced: list[tuple[str, dict[str, Any] | None, dict[str, Any]]] = []
         for attempt in attempts:
             run = self.store.head(self.scope, "run", attempt["run_id"])["data"]["record"]
@@ -744,6 +795,20 @@ class TrialMetrics:
                 return {"status": "aux_unpriced", "model": model}
             usage = entry.get("usage") or {}
             priced.append((aux_model, self._turn_detail(aux_model, day, usage), usage))
+        return priced, day
+
+    def _cost(
+        self,
+        plan: dict[str, Any],
+        attempts: list[dict[str, Any]],
+        planner: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        model = (plan.get("composition") or {}).get("model")
+        found = self._priced_parts(plan, attempts, planner)
+        if isinstance(found, dict):
+            return found
+        priced, day = found
+        total, notes, upper, statuses = 0, set(), False, set()
         for one_model, detail, usage in priced:
             one = pricing.estimate(one_model, day, detail=detail, usage=usage, tables=self.tables)
             statuses.add(one["status"])
