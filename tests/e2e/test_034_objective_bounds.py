@@ -336,6 +336,11 @@ def test_an_objective_that_quotes_a_reference_is_the_nodes_own_text() -> None:
     # the whole template of another node, or with a length within the bound, is own text too
     other = text_bounds.node_objective(long, "node-other", whole_goal=True)
     assert text_bounds.full_objective({}, {**own, "objective": other}, _never) == other
+    # a whole valid reference of this very node, quoted inside other text, is own text too
+    template = text_bounds.node_objective(long, "node-app", whole_goal=True)
+    wrapped = "Handle lines like: " + template + " in the parser."
+    assert len(wrapped) <= text_bounds.NODE_OBJECTIVE
+    assert text_bounds.full_objective({}, {**own, "objective": wrapped}, _never) == wrapped
     within = other.replace("node-other is 5000", "node-app is 4096")
     assert text_bounds.full_objective({}, {**own, "objective": within}, _never) == within
     # an actual reference still resolves, and a tampered digest still Holds

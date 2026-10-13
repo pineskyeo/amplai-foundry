@@ -65,6 +65,8 @@ def _reference(objective: str, node_id: str) -> tuple[str, str] | None:
     head = (
         re.escape(_HEAD)
         .replace(re.escape("{length}"), "([0-9]+)")
+        # stored references name the bound they were written under, so a change of
+        # NODE_OBJECTIVE (the frozen 3.0.0 workgraph schema today) must also accept the old value
         .replace(re.escape("{bound}"), str(NODE_OBJECTIVE))
         .replace(re.escape("{node_id}"), re.escape(node_id))
     )
