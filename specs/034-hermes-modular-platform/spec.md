@@ -145,7 +145,7 @@
   세대가 다르거나 seq 가 최대값보다 크면 `CURSOR_EXPIRED` 와 공통 snapshot 경로 `GET /api/v3/snapshot` 을 돌려준다
   (design/18 §4). intake feed 응답 안의 snapshot 도 이 경로로 통일한다. SSE `Last-Event-ID` 도 같은 형식이다.
   지금 운영자 목록은 숫자 cursor 이고 저장소 안에 읽는 곳은 없다 (`control_plane/api_v3/server.py` events, client·cli 검색 0건).
-  - 제안 (운영자 확인 대기, D-127) — S1f 구현(PR #87)이 위 문장과 다른 점과 세부:
+  - 확정 (운영자 2026-10-14, D-127) — S1f 구현(PR #87)이 위 문장과 다른 점과 세부:
     - snapshot 경로는 둘로 나눈다. `GET /api/v3/snapshot` 은 운영자 전용이다 (`runtime.read`, intake actor 는 403,
       `control_plane/api_v3/server.py:397-401`). scope 전체 heads 를 돌려주므로, intake feed 가 이 경로를 공유하면
       scope 전체 자료가 앞단 에이전트에 새거나(H-8, AC-H3 위반) intake actor 에게는 항상 403 이 된다.
