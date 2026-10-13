@@ -1118,6 +1118,10 @@ def test_an_unmeasured_drift_unit_stops_search_without_a_recalibration(
     assert check["status"] == "unchecked" and check["unchecked_reason"] == reason
     assert f"DRIFT {CELL}: UNCHECKED {reason}" in data["findings"]
     assert data["stop_details"] == {"cells": [], "unchecked": [CELL]}
+    # an unchecked-only night still records the drift phase as "drift", naming the cell
+    assert phases(data)["drift"] == "drift"
+    (drift,) = [p for p in data["phases"] if p["phase"] == "drift"]
+    assert drift["unchecked"] == [CELL] and drift["drifted"] == []
     assert phases(data)["search"] == "skipped" and phases(data)["confirmation"] == "skipped"
     assert "search_run" not in env.fake.names()
     assert data["recalibration"] == [] and "schedule_recalibration" not in env.fake.names()
@@ -2171,6 +2175,27 @@ def test_eval11_the_dashboard_shows_the_operators_calibration_not_a_drift_subset
     assert builder.baseline_of(CELL, held) == real.w.ops.app.compositions[CELL]
     # the whole feed (matrix, cell pages, corpora all read summaries()) still builds
     assert dashboard.build_feed(real.w.store, real.w.scope).matrix is not None
+
+
+def test_eval11_the_dashboard_leaves_out_a_summary_whose_plan_cannot_be_read(
+    real: RealNight,
+) -> None:
+    from amplai_foundry.meta_harness import dashboard
+    from amplai_foundry.runtime.contracts.identity import new_id
+
+    real.outcome(True)
+    baseline = real.calibrate()
+    store, scope = real.w.store, real.w.scope
+    summary = store.get(scope, "calibration-summary", baseline)
+    missing = {**summary["plan_ref"], "id": new_id("calplan")}  # no such calibration-plan
+    assert dashboard._Reader(store, scope).get("calibration-plan", missing) is None
+    with store.tx() as db:
+        unread = store.put(db, scope, "calibration-summary", new_id("calsum"), 1, {
+            **summary, "plan_ref": missing, "summarized_at": "2999-01-01T00:00:00Z"})  # fmt: skip
+    reader = dashboard._Reader(store, scope)
+    builder = dashboard._Builder(reader, [], None, "now", {})  # type: ignore[arg-type]
+    held = builder.summaries()[CELL]
+    assert held[0] == baseline and held[0] != unread
 
 
 def test_eval11_a_drift_task_without_a_baseline_row_holds_before_any_trial(
