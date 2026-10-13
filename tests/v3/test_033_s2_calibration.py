@@ -762,6 +762,7 @@ def test_eval11_a_drift_plan_freezes_a_subset_and_runs_only_it(w):
         lambda ids: [ids[0], ids[0]],  # not distinct
         lambda ids: [ids[0], "val-09"],  # unknown case
         lambda ids: [ids[0], 7],  # not a case id
+        lambda ids: [ids[0], ["x"]],  # unhashable: refused, never a TypeError
     ],
 )
 def test_eval11_a_drift_subset_out_of_order_repeated_or_unknown_is_refused(w, pick):

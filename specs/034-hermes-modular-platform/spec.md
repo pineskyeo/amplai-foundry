@@ -145,6 +145,36 @@
   세대가 다르거나 seq 가 최대값보다 크면 `CURSOR_EXPIRED` 와 공통 snapshot 경로 `GET /api/v3/snapshot` 을 돌려준다
   (design/18 §4). intake feed 응답 안의 snapshot 도 이 경로로 통일한다. SSE `Last-Event-ID` 도 같은 형식이다.
   지금 운영자 목록은 숫자 cursor 이고 저장소 안에 읽는 곳은 없다 (`control_plane/api_v3/server.py` events, client·cli 검색 0건).
+  - 확정 (운영자 2026-10-14, D-127) — S1f 구현(PR #87)이 위 문장과 다른 점과 세부:
+    - snapshot 경로는 둘로 나눈다. `GET /api/v3/snapshot` 은 운영자 전용이다 (`runtime.read`, intake actor 는 403,
+      `control_plane/api_v3/server.py:397-401`). scope 전체 heads 를 돌려주므로, intake feed 가 이 경로를 공유하면
+      scope 전체 자료가 앞단 에이전트에 새거나(H-8, AC-H3 위반) intake actor 에게는 항상 403 이 된다.
+      intake feed 의 snapshot 은 adapter 별 경로 `GET /api/v3/intake/{adapter_id}/snapshot` 이고 schema 는
+      `{items: [{goal_id, status, at}], truncated, cursor}` 다 (고정 schema projection, `control_plane/api_v3/intake.py:489,527-573`).
+      items 는 연결된 운영자의 끝나지 않은 goal 전부다 (`PLAN_ENDED` 가 아닌 것, `runtime/execution/product.py:55`), 최신 순,
+      상한 1000 (`intake.py:73`) 을 넘으면 `truncated: true` 이고 이어 받기는 아직 없다. 목록 조회(`/goals`)의 최근 20개와 다르다.
+      intake feed 는 inline snapshot 대신 이 경로를 `snapshot_ref` 로 준다. MCP 도구 `pending_events` 의 output schema (계약 1.0)
+      에는 `truncated` 자리가 없어 MCP 서버는 그 값을 넘기지 않는다.
+    - 숫자만 있는 cursor(`0` 포함)는 어느 세대인지 알 수 없으므로 409 `CURSOR_EXPIRED` 다
+      (`server.py:855`, `control_plane/api_v3/cursor.py:46-48`). cursor 가 없으면 지금 세대의 처음부터 준다.
+    - `Last-Event-ID` 와 `after` 가 함께 오면 `Last-Event-ID` 를 먼저 쓴다 (SSE 재연결이 보내는 더 새 위치). 그것이 만료(다른 세대,
+      숫자만, 최신보다 큼)이고 `after` 가 지금 세대에서 쓸 수 있으면 `after` 를 쓴다. 둘 다 못 쓰면 409 (`server.py:850-863`).
+    - 409 본문은 `{code: "CURSOR_EXPIRED", message, outcome: "rejected", snapshot_ref}` 이고 cursor 는 없다. 이어 받기는
+      snapshot 이 projection 과 함께 준 cursor 에서만 한다 (`cursor.py:55-64`).
+    - 운영자 snapshot 은 `{items: [{kind, id, state, row_version}], truncated, cursor, scope}` 이고 kind 는 `goal`·
+      `execution-plan` 이다 (`server.py:914-919`). 상한은 1000 개다 (`server.py:31`). `truncated: true` 는 projection 이
+      불완전하다는 뜻이고, 나머지를 이어 받는 방법(continuation)은 아직 없다.
+    - 추가 경로 두 개는 Work 034 추가분이다. 고정된 3.0.0 api-catalog(`runtime/contracts/data/api-catalog.json`,
+      design-reference 사본과 같음) 밖에 있고, 그 catalog 는 바꾸지 않는다.
+      - `GET /api/v3/snapshot` (`get_operator_snapshot`): 인증된 scope, `runtime.read`, intake actor 403.
+        응답 `{items: [{kind, id, state, row_version}], truncated, cursor: "<incarnation>:<seq>", scope}`.
+        `/api/v3/events` 의 `CURSOR_EXPIRED` 가 가리키는 `snapshot_ref` 대상이다.
+      - `GET /api/v3/intake/{adapter_id}/snapshot` (`get_intake_snapshot`): adapter token, query `provider`·`user_id`·
+        `workspace_id` 로 연결표를 찾고 연결된 운영자의 goal 만 준다 (AC-H3). 응답
+        `{items: [{goal_id, status, at}], truncated, cursor: "<incarnation>:<seq>"}` (H-8). 그 adapter feed 의 `snapshot_ref` 대상이다.
+    - 세대는 `amplai ops restore` (`RecoveryService.restore`) 만 새로 만든다. 복원은 이 명령으로만 하고, store 파일 복사나
+      disk snapshot·VM rollback 으로 되돌리지 않는다. 그렇게 되돌리면 세대가 그대로라 같은 seq 가 다른 이벤트에 다시 쓰이고,
+      이전 cursor 가 만료되지 않아 이벤트를 건너뛸 수 있다 (`docs/v3/USING_AMPLAI_WORK.ko.md` 보장과 한계).
 
 ### F. 앞단 에이전트·메신저 교체 (OD-13)
 - F-1 세 층으로 나눈다.

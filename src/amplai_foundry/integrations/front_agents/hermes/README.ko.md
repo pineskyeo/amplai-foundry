@@ -170,7 +170,10 @@ hermes cron create "*/10 * * * *" \
 ```
 
 - cron 의 각 실행이 따로 떨어진 session 이라 `pending_events` 의 cursor 를 다음 실행으로 넘기는 방법 — 확인 필요.
-  cursor 없이 부르면 AMPLAI 는 snapshot(최근 goal 상태)과 새 cursor 를 준다.
+  MCP 도구 `pending_events` 를 cursor 없이 부르거나 cursor 가 만료(`expired: true`)되면, 도구 결과에 snapshot
+  (끝나지 않은 goal 상태)과 새 cursor 가 함께 들어 있다. AMPLAI HTTP feed(`/api/v3/intake/{adapter_id}/events`) 자체는
+  snapshot 을 싣지 않고 `snapshot_ref` 로 `/api/v3/intake/{adapter_id}/snapshot` 을 가리킨다. MCP 서버가 그 경로를 읽어
+  도구 결과에 넣는다.
 - `approvals.cron_mode` 기본값은 `deny` 다. `trust: untrusted` MCP 서버의 쓰기 호출은 cron 에서 거절된다.
   이 키트는 `trust` 를 지정하지 않는다(기본 `full`). 두 cron 작업은 조회 도구만 부른다.
 

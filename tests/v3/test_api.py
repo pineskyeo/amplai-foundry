@@ -153,10 +153,9 @@ def test_api_events_resume_are_scoped(api):
     assert result.status_code == 202
     response = c.get("/api/v3/events")
     assert response.status_code == 200 and "intent.submitted" in response.text
-    last = d.store.events(d.scope)[-1]["seq"]
-    assert (
-        "intent.submitted" not in c.get("/api/v3/events", headers={"Last-Event-ID": str(last)}).text
-    )
+    last = f"{d.store.incarnation}:{d.store.events(d.scope)[-1]['seq']}"
+    resumed = c.get("/api/v3/events", headers={"Last-Event-ID": last})
+    assert resumed.status_code == 200 and "intent.submitted" not in resumed.text
     actors["reader"] = actors["other"]
     assert result.json()["goal_id"] not in c.get("/api/v3/events").text
 
