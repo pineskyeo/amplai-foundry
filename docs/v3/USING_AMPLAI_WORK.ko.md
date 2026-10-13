@@ -148,7 +148,7 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 
 ## 메타하네스 운영 (Work 033)
 
-위 `amplai meta propose`~`rollback` 은 구현자 prompt 하나를 시험하는 Work 030 흐름이다. Work 033 은 harness 를 cell(driver × model × effort)과 component manifest 로 나누고, calibration 과 단계별 실험(screening, focused, ablation, holdout), 야간 loop, dashboard 를 더했다. 설계는 `docs/v3/DEV03_OBSERVATORY_META.ko.md` §10 에 있다. IC-15~IC-21, IC-23~IC-29, IC-31, IC-32 는 잠정(provisional) 결정이고 IC-30 은 미결정이다. IC-22 는 `interfaces.md` §0 결정이며 확정 여부는 확인 필요다. 야간 loop 를 켜기 전에 운영자가 확인해야 한다.
+위 `amplai meta propose`~`rollback` 은 구현자 prompt 하나를 시험하는 Work 030 흐름이다. Work 033 은 harness 를 cell(driver × model × effort)과 component manifest 로 나누고, calibration 과 단계별 실험(screening, focused, ablation, holdout), 야간 loop, dashboard 를 더했다. 설계는 `docs/v3/DEV03_OBSERVATORY_META.ko.md` §10 에 있다. IC-15~IC-32 는 운영자가 확정했다(2026-10-07, D-125). IC-30 은 (A): 야간 신원이 class A 초안의 mechanical screen 을 직접 돌린다.
 
 ### 별도 meta deployment
 
@@ -190,7 +190,7 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 - 야간 신원(`amplai-meta-nightly`)은 standing approval 이 허락한 development split 의 exploratory 실험, calibration, drift 점검만 돌린다. focused, holdout, canary, promote 는 하지 않는다. focused 는 낮에 `approve-stage --queue` 로 승인한 것만 다음 밤에 돈다. holdout 은 사람이 직접 돌린다.
 - proposer 는 `proposer run` 으로 제안만 한다. 검토, 승인, 실행, promote 는 못 한다.
 - agent 가 해도 되는 일: 승인 없는 준비(저장소와 image 만들기, 자격 측정, cell probe), 제안자 실행, dashboard, 결과 읽기. 이 구분은 pilot runbook 의 "원칙" 절을 따른다.
-- 한계(IC-30 미결정): draft 의 screen 에는 사람의 review 권한이 필요해서, 밤에는 낮에 운영자가 screen 한 제안만 screening 과 ablation 을 돈다.
+- IC-30 (A): 밤에는 class A 초안을 스스로 screen 한다(`harness.screen`). class B 초안은 낮에 운영자가 review 한 것만 screening 과 ablation 을 돈다.
 
 ### Pilot
 

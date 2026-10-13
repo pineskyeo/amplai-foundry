@@ -481,6 +481,16 @@ class EvaluationService:
             kind, summary = resolve_ref(self.store, scope, summary_ref)
             if kind != "calibration-summary":
                 raise RuntimeFault("SAMPLING_PLAN", "calibration_summary_ref names another kind")
+            from .calibration import PLAN_KIND, is_drift_plan
+
+            # eval-11: a drift calibration pins a subset of the cases; never a stage's summary
+            plan_ref = summary.get("plan_ref")
+            if (
+                isinstance(plan_ref, dict)
+                and is_ref(plan_ref)
+                and is_drift_plan(self.store.get(scope, PLAN_KIND, plan_ref))
+            ):
+                raise RuntimeFault("SAMPLING_PLAN", "The summary is of a drift calibration")
         chosen = set(
             select_cases(
                 cases,

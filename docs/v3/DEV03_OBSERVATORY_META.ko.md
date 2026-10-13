@@ -149,7 +149,7 @@ DEV-03 ZIP SHA-256/manifest/두 패치를 검증한 뒤 RC 통합을 시작한�
 
 상태: 구현은 repository 에 있고 실제 pilot 실행은 하지 않았다(`specs/033-harness-taxonomy/runs/pilot-runbook.md`). pilot 전의 AC 판정은 확인 필요다. 이 part 는 `specs/033-harness-taxonomy/{spec.md, plan.md, interfaces.md}`와 `src/amplai_foundry/meta_harness/`, `src/amplai_foundry/runtime/meta_commands/`를 기준으로 쓴다. 위 §1~§9 는 Work 030 까지의 내용이고, §10 에서 대체되는 부분은 §10.14 에 모은다. 3.0.0 wire schema 와 `design-reference/` 는 바꾸지 않는다. 새 구조는 내부 store record 에 있고 기존 composition·experiment·report ref 가 그것을 가리킨다.
 
-**잠정 결정.** IC-15~IC-21, IC-23~IC-29, IC-31, IC-32 는 운영자에게 물었으나 확정 답이 없거나 구현 중에 정했다. 추천안으로 구현했고 provisional 이다. 야간 loop 를 켜기 전에 운영자가 명시적으로 확인해야 한다. IC-22 는 `interfaces.md` §0 결정이며 provisional 표에 없다. 확정 여부는 확인 필요. IC-30 은 **미결정**이며 구현하지 않았다(§10.10). 각 항목은 아래 해당 절에 표시한다. 단 IC-23(`TrialContext.domain`: trial 의 L1·L2 decision 이 읽는 과제 domain, 실제 goal 은 `unknown`)과 IC-28(turn 자신의 credential literal 검사: 걸리면 trace 전체를 버린다)은 아래 절에 따로 적지 않았고 여기서만 표시한다.
+**운영자 확정.** IC-15~IC-29, IC-31, IC-32 는 구현한 그대로 운영자가 확정했다(2026-10-07, IC-22 포함, `interfaces.md` "Operator Decisions Of 2026-10-07", D-125). IC-30 은 (A)로 정해 구현했다(§10.10). 단 IC-23(`TrialContext.domain`: trial 의 L1·L2 decision 이 읽는 과제 domain, 실제 goal 은 `unknown`)과 IC-28(turn 자신의 credential literal 검사: 걸리면 trace 전체를 버린다)은 아래 절에 따로 적지 않았고 여기서만 표시한다.
 
 ### 10.1 전체 구조
 
@@ -199,7 +199,7 @@ cell 은 `(driver, model, effort)` 하나이며 하나의 `model-profile`(`reaso
 
 **leak gate**(`meta_harness/leak_gate.py`): component content 가 validation·holdout 과제 id, hidden test 이름, reference 에만 있는 식별자를 담으면 `contamination_findings` 로 기록하고 screening 이 거절한다.
 
-split 현황: 자체 과제만으로 holdout 22(≥ 16), validation 약 13(< 24)이다. `splits.json` 은 TB2 채택 뒤 pilot 에서 고정한다(`interfaces.md` §10.2). corpus 는 앱 하나씩 쓴다(IC-31, provisional): calibration plan 과 stage plan 은 앱 하나의 과제만 고른다.
+split 현황: 자체 과제만으로 holdout 22(≥ 16), validation 약 13(< 24)이다. `splits.json` 은 TB2 채택 뒤 pilot 에서 고정한다(`interfaces.md` §10.2). corpus 는 앱 하나씩 쓴다(IC-31): calibration plan 과 stage plan 은 앱 하나의 과제만 고른다.
 
 ### 10.5 Layer L1~L8 과 decider
 
@@ -242,7 +242,7 @@ split 현황: 자체 과제만으로 holdout 22(≥ 16), validation 약 13(< 24)
 
 - 한 repo 의 write 동시성은 1 이다(design 07 §4). read-only step 은 4개까지다. 병렬 writer 와 Claude native sub-agent, judge 채점 영역의 vote, n > 3 은 이번 round 에서 미룬다(`interfaces.md` §5.4).
 - `workgraph_split` 과 `orchestrator` 의 node 는 integration queue(`integration_queue.py`)에서 합친다. `vote` 는 `fast_checks` 와 같이 쓸 수 없다.
-- 보조 turn(reviewer, investigator, 추가 planner, judge)의 token 은 `limits.aux_max_tokens` 안에서만 쓴다. 기본값 0 이라 보조 turn 이 있는 strategy 는 운영자가 한도를 정하기 전에는 실제 goal 에서 쓰지 못한다(IC-21, provisional).
+- 보조 turn(reviewer, investigator, 추가 planner, judge)의 token 은 `limits.aux_max_tokens` 안에서만 쓴다. 기본값 0 이라 보조 turn 이 있는 strategy 는 운영자가 한도를 정하기 전에는 실제 goal 에서 쓰지 못한다(IC-21).
 - strategy 선택은 L2 decider 가 한다. `route_policy` 는 class B 이고, 바뀐 정책은 후보로 같은 단계를 지난다. 온라인 학습은 없다.
 
 ### 10.7 Evaluator v2 (D-099)
@@ -250,13 +250,13 @@ split 현황: 자체 과제만으로 holdout 22(≥ 16), validation 약 13(< 24)
 evaluator 변경은 후보 실험과 따로 먼저 qualification 을 받는다. 저장된 experiment 는 기존 verdict 를 유지한다. 새 동작은 analysis plan 의 `evaluator_version_ref` 가 있을 때만 켜지고, 없는 legacy plan 은 결과가 바뀌지 않는다(golden test).
 
 - **endpoint**: `noninferiority`(기본) 또는 `superiority`(`minimum_effect` 필요). 성공률로 개선을 주장할 수 있는 길이 생겼다.
-- **decision class**: `improvement`, `efficiency`, `non_inferior`, `regression`, `tradeoff`, `inconclusive`. 성공률 구간(축 S)과 비용 축(C)에서 정한다. 후보 쪽 safety failure 는 `regression`, baseline 쪽만 있으면 `inconclusive`(`baseline_safety_failure`, IC-18, provisional)다. 누락·unknown 비용·drift·오염·표본 부족은 `inconclusive` 다. report verdict 는 `noninferiority` 에서 improvement, efficiency, non_inferior 가 pass 이고, `superiority` 에서는 improvement 만 pass 이며, regression 은 fail, 나머지는 inconclusive 다. class 는 analysis artifact 에 있고 report schema 에는 자리가 없다.
+- **decision class**: `improvement`, `efficiency`, `non_inferior`, `regression`, `tradeoff`, `inconclusive`. 성공률 구간(축 S)과 비용 축(C)에서 정한다. 후보 쪽 safety failure 는 `regression`, baseline 쪽만 있으면 `inconclusive`(`baseline_safety_failure`, IC-18)다. 누락·unknown 비용·drift·오염·표본 부족은 `inconclusive` 다. report verdict 는 `noninferiority` 에서 improvement, efficiency, non_inferior 가 pass 이고, `superiority` 에서는 improvement 만 pass 이며, regression 은 fail, 나머지는 inconclusive 다. class 는 analysis artifact 에 있고 report schema 에는 자리가 없다.
 - **pass^k 와 과제별 비율**: repeat 이 여럿이면 "모든 repeat 통과"가 단위다. 결과에 arm 별 `pass_k` 와 `per_task` 가 추가된다(설명용).
-- **calibration**: cell 마다 과제 1회씩 측정하고 cell 이 엇갈리거나 경계인 과제만 최대 5회까지 반복한다(OD-11, 적응형). 과제는 informative(통과율 0.2~0.9), saturated, flaky 로 분류한다. A/A discordance 로 noise band 를 정한다. noise band 안의 차이는 개선도 악화도 아닌 `unresolved` 다. calibration 은 앱 하나씩 돈다(IC-31, provisional).
+- **calibration**: cell 마다 과제 1회씩 측정하고 cell 이 엇갈리거나 경계인 과제만 최대 5회까지 반복한다(OD-11, 적응형). 과제는 informative(통과율 0.2~0.9), saturated, flaky 로 분류한다. A/A discordance 로 noise band 를 정한다. noise band 안의 차이는 개선도 악화도 아닌 `unresolved` 다. calibration 은 앱 하나씩 돈다(IC-31).
 - **MDE 와 최소 표본**: confirmatory 계획의 `sample_rationale` 에 `MDE: <값> at n=<과제 수>` 줄이 있어야 하고, 과제 수가 margin 에 필요한 최소(`min_tasks_for_margin`)보다 적으면 `SAMPLE_UNDERPOWERED` 이다. 탐색 단계(screening, ablation)는 검사하지 않고 MDE 를 설명용으로만 적는다.
 - **budget 맞춘 best-of-n 기준 arm**: focused 에서 `reference` arm 을 함께 돌린다. 후보가 같은 비용의 best-of-n 에 dominated 이면 verdict 는 `inconclusive`(`dominated_by_budget_matched_reference`)다.
-- **e-process**: 밤을 넘겨 누적하는 always-valid 검정(`sequential_rule: e_process_accumulating`). 다음 밤의 plan 이 이전 상태를 고정해 받는다. "어느 과제에서 더 낫다"는 방향만 검정하고 효과 크기는 검정하지 않으며, 그 한계를 artifact 에 적는다. IC-16(provisional): 같은 arm 의 새 proposal 은 e-process 를 이어 간다.
-- **표본 부분집합**(IC-15, provisional): 버전이 붙은 plan 은 `select_cases` 로 정한 부분집합을 허용하고 freeze 와 run 에서 다시 계산한다.
+- **e-process**: 밤을 넘겨 누적하는 always-valid 검정(`sequential_rule: e_process_accumulating`). 다음 밤의 plan 이 이전 상태를 고정해 받는다. "어느 과제에서 더 낫다"는 방향만 검정하고 효과 크기는 검정하지 않으며, 그 한계를 artifact 에 적는다. IC-16: 같은 arm 의 새 proposal 은 e-process 를 이어 간다.
+- **표본 부분집합**(IC-15): 버전이 붙은 plan 은 `select_cases` 로 정한 부분집합을 허용하고 freeze 와 run 에서 다시 계산한다.
 - **병렬 trial**: dispatch 순서는 결정적이고 `parallel` 개까지 동시에 돈다. 첫 stop reason 뒤에는 새 trial 을 내보내지 않는다.
 - **Q-suite**: Q-01~Q-15(`interfaces.md` §7.8: `tests/v3/test_033_golden_analysis.py`, `test_033_s1_analysis.py`, `test_033_s1_sequential.py`, `test_033_s2_service.py`, `test_033_s2_calibration.py`, `test_033_s2_requalify.py`, `scripts/evaluator_requalify.py`)가 통과해야 evaluator-version 이 쓰인다. 코드 digest 가 다르면 `EVALUATOR_CHANGED` 다.
 
@@ -272,13 +272,13 @@ evaluator 변경은 후보 실험과 따로 먼저 qualification 을 받는다. 
 | holdout | holdout 전체 | baseline, winner | 1 | 확인, 한 번 사용 | 운영자(evaluator 가 holdout 을 소비) |
 
 - `amplai meta search` 가 계획하고 gate 없는 단계를 돌린 뒤 gate 마다 멈춘다. gate 는 `approve-stage` 가 연다. `amplai meta stages` 가 위치를 보여 준다.
-- 결정 규칙: focused 는 `max(16, n_min)` 미만의 informative 과제에서는 `NO_INFORMATIVE_TASKS` 로 보류한다(IC-20, provisional). 파생 ablation proposal 은 screening 도 promote 도 하지 않는다(IC-19, provisional). 제거 후보(removal sweep 변형)는 focused 의 decision class 가 `efficiency` 이거나 token 이 더 적은 `non_inferior` 가 아니면 holdout 에서 `NOT_A_REMOVAL` 로 멈춘다(IC-24, provisional).
+- 결정 규칙: focused 는 `max(16, n_min)` 미만의 informative 과제에서는 `NO_INFORMATIVE_TASKS` 로 보류한다(IC-20). 파생 ablation proposal 은 screening 도 promote 도 하지 않는다(IC-19). 제거 후보(removal sweep 변형)는 focused 의 decision class 가 `efficiency` 이거나 token 이 더 적은 `non_inferior` 가 아니면 holdout 에서 `NOT_A_REMOVAL` 로 멈춘다(IC-24).
 - hack guard 는 trial 마다 기록한다(ask-back rate, edit 크기, 깨진 tool call, 시험 파일 수정, verified-but-hidden-fail). screening 에서 baseline 과 크게 다르면 `HACK_GUARD` 로 실패한다. guard 신호는 거절에만 쓰고 점수에 더하지 않는다.
 - 이 경로의 development trial 은 trace 를 남긴다(§10.9). trial 의 `safety_failures` 와 `unknown_effects` 는 상수 0 이 아니라 run 의 receipt 에서 오는 것이 설계다(`plan.md` §1.4).
 - **canary**(AC-11): corpus v2 proposal 은 `stageplan-<id>` 가 있으면 v2 경로로 `approve-canary`, `run-canary`, `promote`, `rollback` 이 열린다. 과제는 그 plan 앱의 main set 중 development 나 validation 과제이며 각 한 번이다. holdout 과제는 `CANARY_TASKS` 로 거절한다. holdout stage 가 `passed` 이고 evolution head 의 report 에 묶여 있어야 한다(`EVAL_NOT_PASSING`). 네 명령 모두 사람이 아니면 `APPROVAL_HUMAN` 으로 거절한다. 실패하면 canary 가 멈추고 release 는 그대로이며, 그때는 `reject` 가 정상 결과다. 롤백은 Work 030 과 같이 이전 signed release 만 되돌린다. promote 후 새 plan 이 그 composition 을 쓰고 실행 중 goal 은 그대로다.
-- **executor 자격**(IC-29, provisional): `executor-qualification` record 가 `per_trial_tokens`, `basis`, `evidence` 와 자격을 낸 사람을 저장한다. 이후 `run-canary`, 야간 runner, launchd 시작은 그 cell 의 가장 새 사람 운영자 기록으로 복원한다. 기록이 없으면 preflight 에서 멈춘다.
-- **task environment 고정**(IC-32, provisional): task environment 마다 sibling composition id 는 `<설치 id>:env-<env12>` 이다. stage 실험 중 환경 digest 가 고정 값과 다르면 trial 은 실행 없이 `environment_drift` receipt 를 낸다. 설치되지 않은 환경의 trial 은 `ENVIRONMENT_UNQUALIFIED` 로 멈춘다.
-- 중단된 stage 실험이나 unknown 할당은 사람 운영자의 `amplai meta reconcile`(`experiment.reconcile`, IC-18 provisional)로만 정리한다.
+- **executor 자격**(IC-29): `executor-qualification` record 가 `per_trial_tokens`, `basis`, `evidence` 와 자격을 낸 사람을 저장한다. 이후 `run-canary`, 야간 runner, launchd 시작은 그 cell 의 가장 새 사람 운영자 기록으로 복원한다. 기록이 없으면 preflight 에서 멈춘다.
+- **task environment 고정**(IC-32): task environment 마다 sibling composition id 는 `<설치 id>:env-<env12>` 이다. stage 실험 중 환경 digest 가 고정 값과 다르면 trial 은 실행 없이 `environment_drift` receipt 를 낸다. 설치되지 않은 환경의 trial 은 `ENVIRONMENT_UNQUALIFIED` 로 멈춘다.
+- 중단된 stage 실험이나 unknown 할당은 사람 운영자의 `amplai meta reconcile`(`experiment.reconcile`, IC-18)로만 정리한다.
 
 ### 10.9 Proposer
 
@@ -288,21 +288,21 @@ proposer 는 `amplai-meta-proposer` 신원이고 `harness.propose` 만 가진다
 - **제안 ensemble**(`amplai meta proposer run --cell C`): 싼 cell 이 기본 6개(`--drafts`)의 수정을 초안하고, 중복(정규화 digest 동일 또는 단어 집합 Jaccard ≥ 0.9)을 버리고, leak gate 를 통과시킨 뒤, 강한 cell 이 기본 2개(`--refine`)를 다듬는다. 입력은 빈 scratch 디렉터리에 read-only 로 둔다. 제안은 `draft` 로 저장되고 screen 전에는 움직이지 않는다.
 - **예측과 점수**: 모든 수정은 어떤 development 과제가 좋아지고 나빠질지 예측한다. screening 후 precision 과 recall 을 `prediction-score` 로 저장한다(`amplai meta proposer score`). focused·holdout 점수는 validation·holdout 결과를 요약하므로 운영자만 보고 proposer 입력에서는 뺀다.
 - **dreaming**(`amplai meta proposer dream --cell C --night D`): 그날 밤의 development trace 와 현재 `memory_notes` 로 add/merge/delete delta 를 낸다. note 는 (앱, task class) 마다 40개 이하이고 trace id 근거와 절대 날짜가 필요하며 leak gate 를 거친 뒤 class A 제안으로 일반 stage 를 지난다.
-- **removal sweep**(`amplai meta proposer sweep --cell C --reason R`): champion 의 v1 이 아닌 component 마다 v1 로 되돌린 변형을 낸다. model snapshot 이 바뀌었거나 운영자가 요청할 때 쓴다. 변형은 보통 draft proposal 이고 `origin: "removal_sweep"` 이다(IC-24, provisional).
+- **removal sweep**(`amplai meta proposer sweep --cell C --reason R`): champion 의 v1 이 아닌 component 마다 v1 로 되돌린 변형을 낸다. model snapshot 이 바뀌었거나 운영자가 요청할 때 쓴다. 변형은 보통 draft proposal 이고 `origin: "removal_sweep"` 이다(IC-24).
 - **elite archive**(`meta_harness/archive.py`): champion 외에 (domain × 비용 대) bucket 별 최고 composition 을 development 결과(n ≥ 4)로 보관하고 lineage 를 잇는다. proposer 는 parent 를 archive 에서 고른다. focused·holdout 의 verdict 는 lineage 에만 남고 proposer 에게 보이지 않는다.
 
 ### 10.10 야간 loop
 
 사람이 standing approval 을 발급하기 전에는 아무것도 돌지 않는다. 운영자가 `nightly approve` 로 발급해야 한다.
 
-- **standing approval**(IC-17, provisional): action `nightly.explore`, 권한 `nightly.approve`(사람 운영자만), 최대 7밤. 허용 범위는 development split 의 exploratory 실험, calibration, regression set 의 drift 점검이다. 정책에 cell, 밤당 trial 수 B, 단계별 비율, 최대 budget, 유효 기간이 묶인다.
+- **standing approval**(IC-17): action `nightly.explore`, 권한 `nightly.approve`(사람 운영자만), 최대 7밤. 허용 범위는 development split 의 exploratory 실험, calibration, regression set 의 drift 점검이다. 정책에 cell, 밤당 trial 수 B, 단계별 비율, 최대 budget, 유효 기간이 묶인다.
 - **야간 신원**: `amplai-meta-nightly`. 가진 권한은 `experiment.approve`, `experiment.run`, `corpus.read`, `execution.approve` 뿐이다. 이 신원이 쓰는 승인은 standing approval 에서 유도되며(`issue_standing`) 매 trial guard 에서 standing approval 이 아직 유효한지 다시 확인한다. confirmatory, holdout, canary, promote, review, reconcile 은 이 신원이 가질 수 없다.
 - **별도 배포**: 야간은 별도 meta deployment 에서만 돈다. 서버의 설정이나 runtime root 를 주면 `NIGHT_DEPLOYMENT` 로 거절한다. store 는 소유자가 하나다.
 - **phase 순서**: preflight(kill switch, cell 과 evaluator 자격, IC-29 executor 자격, 종료 시각) → drift(약 10%) → screening design(운영자가 `shares.screening_design` 을 0 보다 크게 둘 때 PB12) → search(약 60%: proposer 초안, surrogate 순위, successive halving, 탐색 단계 실험) → confirmation(약 30%: 낮에 운영자가 승인한 실험만, 없으면 몫을 search 로 돌린다) → dreaming → dashboard 갱신.
 - **drift**: 각 cell 의 champion 을 `drift_tasks` 에서 돌려 통과 수 k/n 이 calibration 의 95% Wilson 구간 양끝에서 낸 양측 99% 이항 예측 범위 밖이면 drift 다. driver version, image, model id 변화도 stop 이다. drift 밤에는 search, screening, confirmation 이 멈추고 dreaming 과 dashboard 는 돈다. 재calibration 과 removal sweep 이 예약되며, 그 밤 이후 운영자의 calibration 이 나올 때까지 `recalibration_pending` 이다.
 - **정지 조건**: budget 소진(정상 종료), `stop_at`(밤 길이는 `min(stop_at, 시작 + meta.nightly.max_hours)`, 기본 8시간), quota 신호, standing approval 철회·만료, kill switch, preflight 실패, drift, 첫 unknown effect(`reconcile_pending`). budget 정지를 뺀 정지는 기록을 쓴 뒤 `Hold NIGHT_STOPPED` 로 끝난다.
 - **focused 대기열**(IC-10): 밤이 끝나면 screening 을 통과한 후보의 focused 실험이 동결되어 dashboard 의 approvals 에 올라간다. 운영자가 `approve-stage --stage focused --queue` 로 정확한 digest 를 승인하고(실행하지 않는다), 다음 밤 confirmation 이 한 번 돌린 뒤 ablation 을 이어 가고 holdout gate 에서 멈춘다. holdout 은 운영자가 직접 돌린다.
-- **알려진 한계(IC-30 미결정)**: draft 의 `screen` 에는 `harness.review` 가 필요하고 야간 신원은 그 권한이 없다. 그래서 하룻밤에 운영자가 낮에 screen 한 제안만 screening, ablation 한다. 선택지는 (A) 야간 신원이 class A 초안에 한해 mechanical screen 을 새 권한 `harness.screen` 으로 돌리는 안, (B) 현재 규칙 유지다. 운영자는 아직 정하지 않았다. 추천은 (A)이나 class C 권한을 바꾸므로 결정 전에는 구현하지 않았다.
+- **IC-30 (A)**: 야간 신원은 class A 초안에 한해 mechanical screen(보호 영역 검사와 leak gate)을 권한 `harness.screen` 으로 직접 돌린다(`meta_harness/service.py:61`, `runtime/execution/meta_local.py:98`). class B 초안은 여전히 운영자의 review 를 기다리고, confirmatory·holdout·canary·승격은 사람만 한다.
 - quota 는 observe 만 한다. 구독 window 의 크기를 알 수 없어 rate-limit 신호는 §14 Q5 를 pilot 에서 측정하기 전까지 0 으로 기록하고 `signal_source` 가 `none_stored_v1` 이다. 숫자를 추정하지 않는다. `amplai meta quota` 가 pilot 의 여유와 제안 B 를 보인다.
 - 기록: `nightly-plan`, `nightly-run`, `quota-observation`. launchd 템플릿은 `deployment/launchd/ai.amplai.meta-nightly.plist.template` 이며 `nightly print-agent` 가 채워서 출력한다. 자동 설치는 없다. doc gardening 같은 계획 항목은 이번 round 에서 미뤘다(`interfaces.md` §8.11).
 
@@ -324,9 +324,9 @@ development 밖의 과제는 `<split> task #N` 으로 표시하고 trace 본문,
 
 ### 10.12 평가 품질 track (D-105)
 
-평가 자체를 측정하고 개선한다. 측정(`amplai meta evaluator quality`)은 다음과 같다. discrimination(champion 통과율 − 부정 대조군 통과율, 부정 대조군은 일부러 나쁘게 만든 `role_prompt`), saturation, grader flakiness, contamination(leak gate 와 holdout 사용), dev-vs-holdout gap, 실제 결과와의 일치(canary 와 promote 뒤 merge 비율, 설명용 작은 n), domain coverage(`TASK_CLASS_TO_DOMAIN` 의 total variation distance. IC-27 provisional: bug_fix→bug, new_feature→feature, refactor→refactor, operations→cli_ops, 나머지는 unmapped 로 보고하고 거리에서 뺀다), 판정당 비용.
+평가 자체를 측정하고 개선한다. 측정(`amplai meta evaluator quality`)은 다음과 같다. discrimination(champion 통과율 − 부정 대조군 통과율, 부정 대조군은 일부러 나쁘게 만든 `role_prompt`), saturation, grader flakiness, contamination(leak gate 와 holdout 사용), dev-vs-holdout gap, 실제 결과와의 일치(canary 와 promote 뒤 merge 비율, 설명용 작은 n), domain coverage(`TASK_CLASS_TO_DOMAIN` 의 total variation distance. IC-27: bug_fix→bug, new_feature→feature, refactor→refactor, operations→cli_ops, 나머지는 unmapped 로 보고하고 거리에서 뺀다), 판정당 비용.
 
-과제 폐기·추가·가중치, repeat 수, stage template, 분석 코드의 변경은 **evaluator change** 이며 후보 실험 안에서 하지 않는다. 별도 track 으로 `propose-change` → `qualify-change` → `approve-change`(또는 `reject-change`)를 지난다. `qualify-change` 는 §10.7 의 Q-suite 를 이 interpreter 의 subprocess 로 돌려 결과(`{files, passed, failed, errors, junit_digest, code_digests}`)를 change head 에 저장하고(IC-25 provisional), approve 가 코드 digest 를 다시 확인한다. propose, qualify, approve, reject 와 `requalify` 는 사람만 가진 `evaluator.approve` 권한이다(IC-26 provisional). 저장된 report 가 하나도 없는 범위의 Q-02 는 허용하되 `vacuous` 로 표시한다. 한 proposal 안에서 evaluator version 을 섞으면 `EVALUATOR_CHANGED` 다.
+과제 폐기·추가·가중치, repeat 수, stage template, 분석 코드의 변경은 **evaluator change** 이며 후보 실험 안에서 하지 않는다. 별도 track 으로 `propose-change` → `qualify-change` → `approve-change`(또는 `reject-change`)를 지난다. `qualify-change` 는 §10.7 의 Q-suite 를 이 interpreter 의 subprocess 로 돌려 결과(`{files, passed, failed, errors, junit_digest, code_digests}`)를 change head 에 저장하고(IC-25), approve 가 코드 digest 를 다시 확인한다. propose, qualify, approve, reject 와 `requalify` 는 사람만 가진 `evaluator.approve` 권한이다(IC-26). 저장된 report 가 하나도 없는 범위의 Q-02 는 허용하되 `vacuous` 로 표시한다. 한 proposal 안에서 evaluator version 을 섞으면 `EVALUATOR_CHANGED` 다.
 
 ### 10.13 권한 표
 
@@ -334,7 +334,7 @@ development 밖의 과제는 `<split> task #N` 으로 표시하고 trace 본문,
 |---|---|---|---|
 | component 추가(`component add`) | 운영자가 CLI 로 실행하며, 기록은 proposer 신원(`harness.propose`)으로 source `operator` 로 들어간다 | 불가 | 신원으로서 등록(같은 경로) |
 | 후보 제안·초안(`proposer run`, `propose-components`) | 명령 실행 가능(제출은 `amplai-meta-proposer` 신원으로 기록, 운영자 자신은 `harness.propose` 없음) | 불가 | 가능(`harness.propose`) |
-| draft screen, class B review(`harness.review`) | 가능 | 불가(IC-30 미결정) | 불가 |
+| draft screen, class B review(`harness.review`) | 가능 | class A 초안 screen 만(`harness.screen`, IC-30 A). class B review 불가 | 불가 |
 | calibrate | 가능 | standing approval 범위 안의 calibration 만 | 불가 |
 | screening, ablation(development, exploratory) | 가능 | standing approval 에서 유도한 승인으로 가능 | 불가 |
 | focused 승인(`approve-stage`, `--queue`) | 가능 | 불가(대기열의 승인된 실험만 다음 밤에 실행) | 불가 |

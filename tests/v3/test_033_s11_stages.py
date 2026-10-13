@@ -382,10 +382,12 @@ class World:
         cell: str = CELL,
         discordance: float | None = 0.2,
         extra: tuple[str, ...] = (),
+        purpose: str | None = None,
     ) -> dict[str, Any]:
         """A calibration summary: the first `n` tasks of each split informative (default: all of
         development and validation), the rest saturated; holdout tasks are never calibrated.
-        `extra` task ids (tasks added to the corpus by a test) are informative too."""
+        `extra` task ids (tasks added to the corpus by a test) are informative too. `purpose`
+        (eval-11) is written to the summary's plan when given."""
         limit = {"development": 14, "validation": 18, **(informative or {})}
         tasks: dict[str, Any] = {}
         for split in ("development", "validation"):
@@ -397,7 +399,8 @@ class World:
             "calibration-plan",
             new_id("calplan"),
             {"schema": "amplai.calibration-plan.v1", "scope": self.scope.wire(),
-             "corpus_ref": self.refs["corpus_ref"]},
+             "corpus_ref": self.refs["corpus_ref"],
+             **({"purpose": purpose} if purpose is not None else {})},
         )  # fmt: skip
         row: dict[str, Any] = {"tasks": tasks}
         if discordance is not None:
@@ -743,6 +746,15 @@ def test_ic20_focused_holds_no_informative_tasks_below_16(w: World) -> None:
     # 16 = max(16, n_min): the boundary passes, and a surplus is cut to 16 by the stage rule
     exact = w.summary({"validation": 16})
     assert w.runner(summary_ref=exact).plan(pid, cell_id=CELL, root_budget=BUDGET)
+
+
+def test_eval11_a_drift_summary_is_never_a_stage_plans_calibration(w: World) -> None:
+    pid = w.propose("a2")
+    drift = w.summary(purpose="drift")
+    error = fault("STAGE_PLAN", w.runner(summary_ref=drift).plan, pid, cell_id=CELL,
+                  root_budget=BUDGET)  # fmt: skip
+    assert "drift" in str(error)
+    assert w.objects("stage-plan") == []
 
 
 def test_ic20_there_is_no_all_v1_fallback_for_focused(w: World) -> None:

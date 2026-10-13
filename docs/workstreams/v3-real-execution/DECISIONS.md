@@ -617,6 +617,132 @@
   반복, 단계)은 별도 버전 트랙이다: 따로 검증하고 운영자가 승인하며 후보 실험 안에서 바꾸지 않는다.
 - Reason: 평가를 후보와 함께 바꾸면 효과를 구분할 수 없다(`design-reference/design/16_META_HARNESS.md:27`).
 
+## D-106 — Hermes Is An Intake Adapter And Orchestrator
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: Hermes 는 IntakeAdapter + 오케스트레이터다. `intake` actor 는 human 이 아니다. 토큰·연결표는 store 밖에 두고, 요청 종류를 제한하며, 알림은 projection 으로 보낸다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-1, `specs/034-hermes-modular-platform/plan.md` §6, PR #69
+
+## D-107 — Deployment Flows One Way, Upstream To Site
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 배포는 upstream → 사내 한 방향이다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-2
+
+## D-108 — Two-Layer Module System With Pinned Artifacts
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 두 층 모듈 체계, 고정 배포물만 허용, 신뢰 루트를 둔다. 외부 입력을 받는 kind 는 프로세스 밖에서 돈다.
+- Source: `specs/034-hermes-modular-platform/plan.md` §6
+
+## D-109 — Knowledge And Documentation Freshness Return As V3 Modules
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 지식·문서 최신성을 V3 모듈로 복원한다. S17 `f06a8e5` 의 D1·X9 삭제를 정정한다(design/12 §1).
+- Source: `specs/034-hermes-modular-platform/plan.md` §6
+
+## D-110 — Three-Layer Upgrade
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 업그레이드는 동결, 명시적 이전, 승인 후 백업, 되돌리기 순서, 기준 digest·stale 표시를 갖는다.
+- Source: `specs/034-hermes-modular-platform/plan.md` §6
+
+## D-111 — Site LLM Usage Goes Through A Model Gateway
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 사내 LLM 사용량은 모델 게이트웨이로 측정한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-4
+
+## D-112 — Hermes May Pause And Cancel; It Resumes Only What It Paused
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: Hermes 는 연결된 운영자의 goal 을 일시정지·취소할 수 있다. 재개는 Hermes 가 멈춘 goal 만 할 수 있다. `goal.cancel` 을 신설한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-5
+
+## D-113 — Approval Page Uses Passkeys Only
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 승인 페이지(S1b) 인증은 passkey 만 쓰고, POST + CSRF 로 받는다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-6
+
+## D-114 — The Q-Suite Ships As A Release Asset
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 사내 평가기 재승인용 Q-suite 를 배포 릴리스 자산으로 싣는다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-7
+
+## D-115 — Knowledge-Space And Git-Server Approvals Count As Human Approval
+
+- Status: accepted (운영자 확정 2026-10-12)
+- Date: 2026-10-12
+- Decision: 지식 공간과 git 서버의 승인을 사람 승인 증거로 쓴다. 조건: 보호 브랜치, 공간별 CODEOWNERS, 승인 뒤 새 커밋이 올라오면 승인 무효(dismiss stale approvals). 관리자 우회 병합은 사람 승인으로 인정하지 않는다. AMPLAI 는 git 서버 API 로 승인자와 승인 commit 을 확인한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-10, PR #86
+
+## D-116 — Front Agent And Messenger Are Three Module Layers
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 앞단 에이전트·메신저는 세 층 모듈(접수 어댑터, 앞단 에이전트 키트, notifier)이다. wire `source_channel=hermes` 는 앞단 에이전트 채널 이름으로 두고, adapter 는 `authn_context_ref` 로 구분한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-13
+
+## D-117 — Nightly Loop Control Through The Front Agent
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-11
+- Decision: 시계 tick 은 서비스 관리자(D-118)가, 진행은 NightlyRunner 가 맡는다. 앞단 에이전트는 조이기와 조건부 시작(N-9, `nightly.control`)만 한다. 제어 기록은 제품 store 에 남긴다. 밤에는 읽기 전용으로 확인하고, 못 읽으면 멈춘다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-12 (Q-8 = B)
+
+## D-118 — One Service Manager Interface
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-12
+- Decision: 서비스 관리자 인터페이스 하나에 launchd·systemd·supervisor 구현을 둔다. AMPLAI 는 unit 을 출력만 한다. 동결은 서비스 정지 + 동결 표지 + owner lock 이중 잠금이다. Ubuntu 서버는 system unit 이 1순위다(Q-11).
+- Source: `specs/034-hermes-modular-platform/spec.md` C-8, `specs/034-hermes-modular-platform/plan.md` Q-11
+
+## D-119 — Linux Sandbox Keeps A Fixed Foreign Uid With ACL Access
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-12
+- Decision: Linux 샌드박스는 호스트와 다른 고정 uid(기본 65534)를 유지하고, 접근은 POSIX ACL 로만 준다. 호스트 uid 실행은 기각한다. chown·userns-remap 은 제외한다. rootless podman `keep-id` 는 별도 자격 시험 후보다.
+- Source: `specs/034-hermes-modular-platform/spec.md` C-9, `specs/034-hermes-modular-platform/plan.md` §3.5a
+
+## D-120 — One Configured Container Engine
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-12
+- Decision: 컨테이너 엔진은 설정 한 곳에서 정하고, 직접 `docker` 호출을 없앤다.
+- Source: `specs/034-hermes-modular-platform/spec.md` C-10
+
+## D-121 — Closed-Network Install Uses A Signed Bundle
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-12
+- Decision: 닫힌 망 배포는 서명된 묶음(hash 고정 wheelhouse, 이미지 tar + config digest, 사이트 로컬 registry)으로 한다. 검증 전에는 아무것도 바꾸지 않는다. 사내 공용 registry 는 없으므로(Q-14) 이미지는 tar 로 반입해 config digest 로 고정한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` C-11, `specs/034-hermes-modular-platform/plan.md` Q-14
+
+## D-122 — Supported Operating Systems
+
+- Status: proposed (RHEL 7·8 운영자 결정 대기)
+- Date: 2026-10-12
+- Decision: WSL2 Ubuntu 24.04 지원, Ubuntu 18.04 조건부 지원, RHEL 8 은 점검 후 결정, RHEL 7 은 실행 호스트 미지원을 권장한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` C-13, `specs/034-hermes-modular-platform/plan.md` Q-12
+
+## D-123 — Upgrade Rehearsal Is The S3 Exit Criterion
+
+- Status: accepted (운영자 승인 2026-10-12, PR #69 설계 승인)
+- Date: 2026-10-12
+- Decision: 이전 릴리스가 만든 사내 모양 데이터를 새 릴리스로 올리는 업그레이드 리허설을 S3 완료 기준으로 한다. 사내 업그레이드 승인 전에는 백업 사본으로 리허설해야 한다.
+- Source: `specs/034-hermes-modular-platform/spec.md` U-9
+
 ## D-124 — Planning Text Is Never Cut; A Long Node Objective Is A Digest Reference
 
 - Status: accepted (운영자 결정 2026-10-12, option A)
@@ -644,3 +770,17 @@
   달라진다(`design-reference/design/06_WORKGRAPH_REPLAN.md:40` 의 reuse 조건 node definition digest). 원문은 언제든 검증할 수 있다. 표시·logging 용 excerpt 와 §5.2 auxiliary-turn 한도는
   이번 결정 범위 밖이다(PR #85 에 지점별로 기록).
 - Source: PR #85, `src/amplai_foundry/runtime/execution/text_bounds.py`.
+
+## D-125 — Work 033 Provisional Interface Decisions Are Confirmed
+
+- Status: accepted (운영자 확정 2026-10-07, 2026-10-12 재확인)
+- Date: 2026-10-07
+- Decision: IC-15~IC-32 를 모두 추천안대로 확정한다. 지금까지 provisional 이던 IC-15~IC-21, IC-23~IC-29, IC-31, IC-32 와 §0 결정 IC-22 가 포함된다. IC-30 은 (A)로 정해 구현했다: 야간 identity 가 class A 초안의 mechanical screen 을 권한 `harness.screen` 으로 직접 실행한다. 야간 loop 를 켜기 전 확인 조건은 이것으로 충족된다. 이 결정은 `interfaces.md` "Operator Decisions Of 2026-10-07" 에 먼저 기록됐고, 여기서는 결정 목록에 옮겨 적는다.
+- Source: `specs/033-harness-taxonomy/interfaces.md`, `docs/v3/DEV03_OBSERVATORY_META.ko.md` §10
+
+## D-126 — Every Capability Is An Isolated Module, Including Checks
+
+- Status: accepted (운영자 확정 2026-10-12)
+- Date: 2026-10-12
+- Decision: AMPLAI 는 여러 분야에 쓴다. 모든 기능(에이전트 역할 포함)은 교체·수정·추가·삭제할 수 있는 모듈이고, 그 변경이 다른 기능에 영향을 주지 않는다. 코어에는 저장소·권한·스케줄·검증·레지스트리 골격만 남는다. 모듈은 pack(foundation·kit·plugin)으로 묶는다. 지식 정본은 git 파일, 쓰기는 지식 모듈 하나, 접근은 MCP 다. 코드 저장소 연결은 `git_host` kind 다. 신뢰성 장치도 `check` kind 모듈이다. 추가·강화는 보통 PR 로, 삭제·완화는 사람 승인(class C)으로 한다. 권한·격리·비밀값 기본 검사는 pack 이 끌 수 없다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-15~OD-18, M-10~M-20, K-10~K-12, PR #86
