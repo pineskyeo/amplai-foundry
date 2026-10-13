@@ -1118,12 +1118,17 @@ def test_the_pilot_drift_tasks_fit_and_are_taken_off_the_budget_first(env: Env) 
 
 
 # --- D-129: the free snapshot check every night, the paid measurement once every N nights ------
+# a complete measurement: one run per drift task (10), inside the band of 8 of 10
+FULL = {"trials": len(DRIFT_TASKS), "passes": 8, "runs": len(DRIFT_TASKS)}
+
+
 def drift_of(env: Env, date: str, cell: str = CELL) -> dict[str, Any]:
     entry: dict[str, Any] = env.head(date)["data"]["drift"][cell]
     return entry
 
 
 def test_d129_the_paid_measurement_runs_once_every_drift_every_nights(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
     runner = env.ready()
     assert runner.config.drift_every_nights == 7  # the default
     nights = ("2026-10-01", "2026-10-02", "2026-10-07", "2026-10-08")
@@ -1165,6 +1170,7 @@ def test_d129_drift_every_nights_1_measures_every_night_as_before(env: Env) -> N
 
 
 def test_d129_a_measurement_that_no_longer_counts_forces_a_measuring_night(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
     runner = env.ready()
     runner.run(DATE)
     # the backend no longer recognizes night 1's summary (other evaluator version or corpus)
@@ -1180,6 +1186,7 @@ def test_d129_a_measurement_that_no_longer_counts_forces_a_measuring_night(env: 
 
 
 def test_d129_a_newer_operator_baseline_forces_a_measuring_night(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
     runner = env.ready()
     runner.run(DATE)
     env.fake.snaps[CELL] = {"current": SNAP, "calibrated": SNAP, "band": {"passes": 8, "runs": 10},
@@ -1203,7 +1210,7 @@ def test_d129_outside_band_blocks_search_until_a_clean_measurement(env: Env) -> 
     assert drift_of(env, NEXT)["status"] == "outside_band"
     assert phases(env.head(NEXT)["data"])["search"] == "skipped"
     env.fake.snaps[CELL] = {**env.fake.snaps[CELL], "calibrated_at": nightly_module.now()}
-    env.fake.drift_batch = {"trials": 5, "passes": 4, "runs": 5}
+    env.fake.drift_batch = dict(FULL)
     runner.run(LATER)
     assert drift_of(env, LATER)["cadence"]["reason"] == "not_ok"
     assert drift_of(env, LATER)["status"] == "ok"
@@ -1225,7 +1232,7 @@ def test_d129_an_unchecked_measurement_blocks_search_until_a_clean_one(env: Env)
     assert drift_of(env, NEXT)["status"] == "unchecked"
     assert phases(env.head(NEXT)["data"])["search"] == "skipped"
     assert "search_run" not in env.fake.names()
-    env.fake.drift_batch = {"trials": 5, "passes": 4, "runs": 5}
+    env.fake.drift_batch = dict(FULL)
     runner.run(LATER)
     assert drift_of(env, LATER)["status"] == "ok" and "search_run" in env.fake.names()
     runner.run("2026-10-04")
@@ -1234,6 +1241,7 @@ def test_d129_an_unchecked_measurement_blocks_search_until_a_clean_one(env: Env)
 
 
 def test_d129_a_changed_snapshot_blocks_search_on_a_non_measuring_night(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
     runner = env.ready()
     runner.run(DATE)
     env.fake.snaps[CELL] = {"current": {**SNAP, "provider_model_id": "model-2"},
@@ -1255,6 +1263,53 @@ def test_d129_a_dry_run_is_no_measurement(env: Env) -> None:
     assert env.head(DATE, dry=True)["data"]["drift_cadence"]["reserved_trials"] == 0
     runner.run(NEXT)
     assert drift_of(env, NEXT)["cadence"]["reason"] == "no_measurement"
+    assert len(env.fake.args("drift_run")) == 1
+
+
+def test_d129_a_budget_stopped_partial_measurement_is_measured_again_the_next_night(
+    env: Env,
+) -> None:
+    # that night: a budget stop with runs is still a measurement (status ok, search runs, as
+    # before), but it saw 5 of 10 drift cases, so it does not stay fresh
+    env.fake.drift_batch = {"trials": 5, "passes": 4, "runs": 5, "stopped": "META_TOKEN_BUDGET"}
+    runner = env.ready()
+    runner.run(DATE)
+    first_night = drift_of(env, DATE)
+    assert first_night["status"] == "ok" and first_night["complete"] is False
+    assert phases(env.head(DATE)["data"])["search"] == "done"
+    env.fake.drift_batch = dict(FULL)
+    runner.run(NEXT)
+    assert drift_of(env, NEXT)["cadence"]["reason"] == "incomplete"
+    assert drift_of(env, NEXT)["complete"] is True
+    runner.run(LATER)
+    assert drift_of(env, LATER)["cadence"]["reason"] == "fresh"
+    assert len(env.fake.args("drift_run")) == 2
+
+
+def test_d129_a_cell_without_a_band_skips_the_paid_measurement(env: Env) -> None:
+    env.fake.snaps[CELL] = {"current": SNAP, "calibrated": SNAP, "band": None}
+    runner = env.ready()
+    runner.run(DATE)
+    data = env.head(DATE)["data"]
+    assert "drift_run" not in env.fake.names()
+    check = data["drift"][CELL]
+    assert check["status"] == "uncalibrated" and check["measured"] is False
+    assert check["cadence"] == {"due": False, "reason": "no_band", "last": None}
+    assert data["drift_cadence"]["reserved_trials"] == 0
+    assert data["stopped"] is None and phases(data)["search"] == "done"  # as before
+
+
+def test_d129_a_measurement_recorded_before_d129_is_not_current(env: Env) -> None:
+    # a pre-D-129 night entry: "observed" present, no "measured", "summary_ref" or "complete"
+    env.put("nightly-run", "night-2026-09-30", {
+        "date": "2026-09-30", "dry_run": False, "started_at": nightly_module.now(),
+        "drift": {CELL: {"status": "ok", "observed": {"passes": 8, "runs": 10}}},
+    })  # fmt: skip
+    env.fake.drift_batch = dict(FULL)
+    runner = env.ready()
+    runner.run(DATE)
+    cadence = drift_of(env, DATE)["cadence"]
+    assert cadence["reason"] == "not_current" and cadence["last"]["night"] == "2026-09-30"
     assert len(env.fake.args("drift_run")) == 1
 
 
@@ -2263,6 +2318,26 @@ def test_local_backend_d129_a_fresh_drift_summary_skips_the_next_paid_measuremen
     assert len(real.drift_plans()) == 2
 
 
+def test_local_backend_d129_changed_drift_tasks_make_the_last_measurement_not_current(
+    real: RealNight,
+) -> None:
+    real.outcome(True)
+    real.calibrate()
+    ref, reason = real.run(DATE)
+    assert reason is None and ref is not None
+    summary_ref = real.head(DATE)["drift"][CELL]["summary_ref"]
+    assert real.backend.drift_measurement(CELL, summary_ref) is True
+    # the operator changes meta.nightly.drift_tasks: the summary measured other cases
+    real.configure(drift_tasks=subset_tasks(real))
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
+    ref, reason = real.run(NEXT)
+    assert reason is None and ref is not None
+    check = real.head(NEXT)["drift"][CELL]
+    assert check["cadence"]["reason"] == "not_current" and check["measured"] is True
+    plans = [p["case_ids"] for p in real.drift_plans()]
+    assert len(plans) == 2 and [real.case_ids[i] for i in SUBSET] in plans
+
+
 def test_local_backend_a_standing_approval_revoked_mid_calibration_stops_the_night(
     real: RealNight,
 ) -> None:
@@ -2492,15 +2567,19 @@ def test_ic29_a_fresh_ops_and_a_night_rebuild_the_qualification_from_the_record(
     from amplai_foundry.runtime.execution.meta_ops import LocalMetaOps
 
     w = real.w
+    # D-129 review (P3-1): an uncalibrated cell runs no drift trial any more, so the operator's
+    # baseline comes first and the night's drift measurement is the unit that needs the policy
+    real.outcome(True)
+    real.calibrate()
     w.local.evaluation.executor_policy = None  # a new process: nothing pinned in memory
     fresh = LocalMetaOps(w.dep, w.corpus, w.executor, driver=CELL)  # type: ignore[arg-type]
     policy = fresh.local.evaluation.executor_policy
     assert policy is not None and policy.max_trial_tokens == 10
     w.local.evaluation.executor_policy = None
     assert real.backend.preflight(real.cfg.cells) == []
-    real.outcome(True)
-    ref, reason = real.run(DATE)  # uncalibrated drift: the night searches (nothing to search)
+    ref, reason = real.run(DATE)  # the drift measurement runs: the qualification is rebuilt
     assert reason is None and ref is not None
+    assert real.head(DATE)["drift"][CELL]["measured"] is True
     assert w.local.evaluation.executor_policy is not None
 
 

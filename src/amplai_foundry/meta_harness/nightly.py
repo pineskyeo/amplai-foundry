@@ -874,6 +874,7 @@ class NightlyRunner:
                     "started_at": value.get("started_at"),
                     "status": entry.get("status"),
                     "summary_ref": entry.get("summary_ref"),
+                    "complete": entry.get("complete") is True,
                 }
         return None
 
@@ -885,8 +886,9 @@ class NightlyRunner:
         a drift-purpose calibration summary of the cell under the current evaluator version on the
         current corpus (``NightlyBackend.drift_measurement``), and no operator baseline is newer
         than it; else due: ``no_measurement``, ``stale``, ``not_ok`` (outside_band, unchecked,
-        uncalibrated ... not yet cleared by a clean measurement), ``not_current`` or
-        ``baseline_newer``."""
+        uncalibrated ... not yet cleared by a clean measurement), ``not_current`` (also every
+        measurement recorded before D-129), ``incomplete`` (fewer observed runs than drift cases)
+        or ``baseline_newer``. A cell without a band never measures (``_drift``: ``no_band``)."""
         last = self._last_measurement(cell_id, date)
         if last is None:
             return {"due": True, "reason": "no_measurement", "last": None}
@@ -904,6 +906,8 @@ class NightlyRunner:
             cell_id, last["summary_ref"]
         ):
             reason = "not_current"
+        elif not last["complete"]:
+            reason = "incomplete"  # a budget-stopped partial measurement covers fewer cases
         else:
             base, started = epoch_of(calibrated_at), epoch_of(last["started_at"])
             if base is not None and (started is None or base > started):
@@ -932,6 +936,11 @@ class NightlyRunner:
                     since,
                 )
                 pending.add(cell)
+            elif check["status"] == "uncalibrated" and tasks:
+                # coordinator review of D-129 (P3-1): no band, nothing to compare; no paid trial,
+                # search behaves as before for an uncalibrated cell
+                check["cadence"] = {"due": False, "reason": "no_band", "last": None}
+                check["measured"] = False
             elif check["status"] != "changed" and tasks:
                 cadence = self.drift_due(cell, night.date, check.get("calibrated_at"))
                 check["cadence"] = cadence
@@ -963,6 +972,9 @@ class NightlyRunner:
                 check["measured"] = True
                 check["observed"] = None
                 check["summary_ref"] = batch.get("summary_ref") if batch is not None else None
+                # complete: every drift case observed (a budget-stopped partial run is still this
+                # night's measurement, but it does not stay fresh: the next night measures again)
+                check["complete"] = batch is not None and int(batch["runs"]) >= tasks
                 if batch is None and not any(
                     f.startswith(f"DRIFT {cell}:") for f in night.data["findings"]
                 ):
@@ -1560,7 +1572,8 @@ class LocalNightlyBackend:
     def drift_measurement(self, cell_id: str, summary_ref: Any) -> bool:
         """D-129: ``summary_ref`` is a calibration summary of a drift-purpose plan
         (``calibration.is_drift_plan``) that covers ``cell_id``, on the current regression corpus,
-        under the evaluator version of the running code (``versions.current_version_ref``)."""
+        with ``case_ids`` = the current drift tasks' frozen cases in corpus order, under the
+        evaluator version of the running code (``versions.current_version_ref``)."""
         from ..evaluation import calibration, versions
 
         regression = self._regression_corpus()
@@ -1572,8 +1585,16 @@ class LocalNightlyBackend:
         except (RuntimeFault, KeyError, TypeError):
             return False
         current = versions.current_version_ref(self.store, self.scope)
+        # the plan measured exactly the current drift tasks (the frozen cases of the calibrated
+        # splits in drift_tasks, in corpus order, as ``drift_run`` pins them)
+        wanted = set(self.runner.config.drift_tasks)
+        case_ids = [
+            c["case_id"] for c in regression[1]["cases"]
+            if c["split"] in calibration.SPLITS and c["case_id"] in wanted
+        ]  # fmt: skip
         return (
             calibration.is_drift_plan(plan)
+            and plan.get("case_ids") == case_ids
             and cell_id in (summary.get("cells") or {})
             and plan.get("corpus_ref") == regression[0]
             and current is not None

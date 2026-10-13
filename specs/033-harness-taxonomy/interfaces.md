@@ -4177,3 +4177,10 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
     `test_eval11_the_phase_share_check_counts_the_drift_subset`; and in
     `tests/e2e/test_033_s12_real_night.py` the two ablation tests, whose second night is no
     longer a measuring night (no regression trial in its count).
+    PR #91 review: `test_d129_a_budget_stopped_partial_measurement_*`, `test_d129_a_cell_without_a_band_*`,
+    `test_d129_a_measurement_recorded_before_d129_is_not_current`,
+    `test_local_backend_d129_changed_drift_tasks_*`, the dashboard's
+    `test_d129_the_budget_page_shows_a_nights_phase_budget_*` (`budget.html` shows the night's
+    `drift_cadence.phase_budget` when present, else the plan's shares), and
+    `test_ic29_a_fresh_ops_and_a_night_rebuild_*` (now calibrates first: an uncalibrated cell runs
+    no drift trial).

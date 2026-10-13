@@ -1334,3 +1334,23 @@ def test_q11_a_readonly_open_builds_the_feed_while_a_writer_process_owns_the_sto
         out, err = writer.communicate(timeout=30)
     assert writer.returncode == 0, err
     assert int(out.strip()) >= counts[-1]
+
+
+def test_d129_the_budget_page_shows_a_nights_phase_budget_when_it_recorded_one(world, tmp_path):
+    caps = {"drift": 40, "screening_design": 0, "search": 73, "confirmation": 37}
+    with Store(world) as store:
+        seed_head(store, "nightly-run", "night-2026-10-01", "finished", {
+            "date": "2026-10-01", "finished_at": NOW,
+            "drift_cadence": {"every_nights": 7, "measuring": ["c"], "reserved_trials": 40,
+                              "phase_budget": caps},
+        })  # fmt: skip
+        seed_head(store, "nightly-run", "night-2026-09-30", "finished", {
+            "date": "2026-09-30", "finished_at": NOW,
+        })  # fmt: skip
+    feed = dash.build_feed(world, SCOPE, now_utc=NOW)
+    rows = {n.date: n for n in feed.budget.nights}
+    assert rows["2026-10-01"].shares == caps
+    assert rows["2026-09-30"].shares == {}  # no plan, no phase budget: as before
+    pages = dash.render_pages(feed)
+    assert "phase budget (trials) or shares" in pages["budget.html"]
+    assert_all_pass(pages, tmp_path)
