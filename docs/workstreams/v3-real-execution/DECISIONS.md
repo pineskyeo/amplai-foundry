@@ -784,3 +784,12 @@
 - Date: 2026-10-12
 - Decision: AMPLAI 는 여러 분야에 쓴다. 모든 기능(에이전트 역할 포함)은 교체·수정·추가·삭제할 수 있는 모듈이고, 그 변경이 다른 기능에 영향을 주지 않는다. 코어에는 저장소·권한·스케줄·검증·레지스트리 골격만 남는다. 모듈은 pack(foundation·kit·plugin)으로 묶는다. 지식 정본은 git 파일, 쓰기는 지식 모듈 하나, 접근은 MCP 다. 코드 저장소 연결은 `git_host` kind 다. 신뢰성 장치도 `check` kind 모듈이다. 추가·강화는 보통 PR 로, 삭제·완화는 사람 승인(class C)으로 한다. 권한·격리·비밀값 기본 검사는 pack 이 끌 수 없다.
 - Source: `specs/034-hermes-modular-platform/spec.md` OD-15~OD-18, M-10~M-20, K-10~K-12, PR #86
+
+## D-127 — Resync Uses The Caller's Own Scoped Snapshot
+
+- Status: accepted (운영자 확정 2026-10-14)
+- Date: 2026-10-14
+- Decision: 이벤트 cursor 가 만료되면 호출자는 자기 범위의 snapshot 을 다시 받고 그 cursor 에서 이어 받는다. 운영자 snapshot `GET /api/v3/snapshot` 은 운영자 전용이다(`runtime.read`, intake actor 403). scope 의 goal·execution-plan heads 를 준다. intake snapshot `GET /api/v3/intake/{adapter_id}/snapshot` 은 연결된 운영자의 끝나지 않은 goal(`PLAN_ENDED` 밖)을 고정 schema `{goal_id, status, at}` 로 준다. 둘 다 상한 1000 이고, 넘으면 `truncated: true` 다(이어 받기는 아직 없다). cursor 는 `<incarnation>:<seq>` 이고 projection 과 같은 store lock 안에서 읽는다. 숫자만 있는 cursor(`0` 포함)는 409 `CURSOR_EXPIRED` 다. `Last-Event-ID` 를 먼저 쓰고, 그것을 쓸 수 없으면 쓸 수 있는 `after` 로 넘어간다. 409 본문은 `snapshot_ref` 만 주고 cursor 는 없다. 복원은 `amplai ops restore` 로만 한다(파일 복사·disk snapshot·VM rollback 금지). 그 명령만 store 세대를 새로 만든다.
+- Reason: 표준 방식인 list-then-watch 를 따른다. Kubernetes 는 410 Gone 을 받으면 client 가 cache 를 비우고 다시 list 한 뒤 그 list 의 resourceVersion 부터 watch 를 이어 간다. collection 은 URL 경로(namespaced·cluster)로 범위가 정해지고 그 범위에 권한을 건다 (https://kubernetes.io/docs/reference/using-api/api-concepts/). 최소 권한 원칙도 같은 결론이다. 공유 경로 하나를 두면 scope 전체 자료가 앞단 에이전트에 새거나(H-8, AC-H3) intake actor 에게는 항상 403 이 된다.
+- Rejected: 공유 경로 하나에서 actor 마다 걸러 주는 방식. 경로 하나 안에 권한 분기가 생겨 유출될 수 있는 면이 넓어진다.
+- Source: PR #87, `specs/034-hermes-modular-platform/spec.md` H-16, `src/amplai_foundry/control_plane/api_v3/cursor.py`

@@ -21,6 +21,7 @@ Routes under ``/api/v3/intake/{adapter_id}``:
     POST /goals/{goal_id}/replan change a running goal's plan; the operator approves the revision
     POST /goals/{goal_id}/cancel stop the goal, saying why
     GET  /events                 notifications after a cursor (fixed schema, H-8, AC-H10)
+    GET  /snapshot               the goals projection and the cursor to resume the feed from
 
 A message is accepted once: the server derives the idempotency key from the message's transport
 identity (``<adapter_id>:<digest>``, H-7, F-2). A goal of another subject is not found (AC-H3).
@@ -28,9 +29,11 @@ Submissions and controls are rate limited per actor and operation with the adapt
 limits (H-3, H-7). Reads need ``runtime.read`` and every control its own permission, so an adapter
 configured with fewer permissions than H-2 gets ``FORBIDDEN`` for the rest.
 
-The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8). A cursor of another
-incarnation (the store was restored) or past the newest event is ``CURSOR_EXPIRED`` and carries a
-snapshot of the goals and a fresh cursor (design/18 §4, AC-H6).
+The notification cursor is ``<store incarnation>:<seq>`` (plan.md §3.2 item 8, ``cursor.py``). A
+cursor of another incarnation (the store was restored) or past the newest event is
+``CURSOR_EXPIRED`` with a ``snapshot_ref`` to this adapter's ``/snapshot`` route, which returns the
+fixed-schema goals projection and the cursor to resume from (design/18 §4, AC-H6, H-16). A feed
+read without a cursor names the same route and the cursor of now.
 """
 
 from __future__ import annotations
@@ -47,7 +50,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, Header
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from amplai_foundry.runtime.contracts.authority import Actor
@@ -61,11 +63,14 @@ from amplai_foundry.runtime.contracts.intake import (
     intake_actor,
 )
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
+from amplai_foundry.runtime.execution.product import PLAN_ENDED
 from amplai_foundry.runtime.storage.store import Scope, Store
 
+from . import cursor as event_cursor
 from .server import ApiCommands
 
 ROUTE_ROOT = "/api/v3/intake/"
+SNAPSHOT_LIMIT = 1000  # goals in one intake snapshot; more is reported as truncated
 # v1 (S1a): (provider, user id). v2 (S1c, F-2): (provider, workspace, user id).
 IDENTITY_MAP_VERSIONS = ("intake-identity-1", "intake-identity-2")
 # a messenger's own identifiers: bounded, no whitespace (provider-neutral, H-11)
@@ -326,7 +331,6 @@ def project(store: Store, scope: Scope, goal_id: str, record: dict[str, Any]) ->
 
 
 _EVENT_TYPE = re.compile(r"[a-z][a-z0-9_]*(\.[a-z0-9_]+)*")
-_SEQ = re.compile(r"[0-9]{1,18}")  # ASCII digits only: str.isdigit() takes other scripts too
 
 
 def submitted_before(store: Store, actor: Actor, key: str) -> bool:
@@ -338,14 +342,6 @@ def submitted_before(store: Store, actor: Actor, key: str) -> bool:
             (*actor.scope.keys(), actor.subject_id, key),
         ).fetchone()
     return row is not None
-
-
-def newest_seq(store: Store, scope: Scope) -> int:
-    with store._lock:
-        row = store.conn.execute(
-            "SELECT COALESCE(MAX(seq),0) FROM events WHERE tenant=? AND project=?", scope.keys()
-        ).fetchone()
-    return int(row[0])
 
 
 def intake_router(services: IntakeServices) -> APIRouter:
@@ -486,32 +482,20 @@ def intake_router(services: IntakeServices) -> APIRouter:
     ) -> Any:
         """Notifications for the linked operator's goals after ``cursor``. Each names the goal, the
         event type (an AMPLAI identifier), the goal's current status and the event time; never an
-        event payload. Without a cursor: a snapshot and the cursor to follow from."""
+        event payload. Without a cursor: the cursor of now and the snapshot route (H-16)."""
         actor = reader(authorization, provider, user_id, workspace_id)
         if not 1 <= limit <= 1000:
             raise RuntimeFault("EVENT_BOUNDS", "Invalid event limit")
-        newest = newest_seq(store, actor.scope)
-        fresh = f"{store.incarnation}:{newest}"
+        snapshot_ref = prefix(adapter_id) + "/snapshot"
         if cursor is None:
-            return {"items": [], "snapshot": listing(actor), "cursor": fresh}
-        incarnation, _, seq = cursor.rpartition(":")
-        if not incarnation or not _SEQ.fullmatch(seq):
-            raise RuntimeFault("EVENT_CURSOR", "A cursor is <incarnation>:<seq>")
-        if incarnation != store.incarnation or int(seq) > newest:
-            return JSONResponse(
-                {
-                    "code": "CURSOR_EXPIRED",
-                    "message": "The cursor is from another store generation; start again from "
-                    "the snapshot",
-                    "outcome": "rejected",
-                    "snapshot": listing(actor),
-                    "cursor": fresh,
-                },
-                status_code=409,
-            )
+            fresh = event_cursor.current(store, actor.scope)
+            return {"items": [], "snapshot_ref": snapshot_ref, "cursor": fresh}
+        incarnation, seq = event_cursor.parse(cursor)
+        if event_cursor.expired(store, actor.scope, incarnation, seq):
+            return event_cursor.expired_response(snapshot_ref)
         owners: dict[str, bool] = {}
-        items, last = [], int(seq)
-        for event in store.events(actor.scope, after=int(seq), limit=limit):
+        items, last = [], seq
+        for event in store.events(actor.scope, after=seq, limit=limit):
             last = event["seq"]
             goal_id = event["aggregate_id"]
             if event["aggregate_type"] != "goal":
@@ -538,5 +522,54 @@ def intake_router(services: IntakeServices) -> APIRouter:
                 }
             )
         return {"items": items, "cursor": f"{store.incarnation}:{last}"}
+
+    @router.get("/snapshot")
+    def snapshot(
+        provider: str,
+        user_id: str,
+        workspace_id: str | None = None,
+        authorization: str = Header(default=""),
+    ) -> Any:
+        """Every goal of the linked operator that has not ended (``PLAN_ENDED``), newest first, as
+        the fixed-schema projection (H-8), at most ``SNAPSHOT_LIMIT`` with ``truncated``, and the
+        cursor to follow the feed from.
+
+        One statement under the store lock reads each candidate's status (the plan head's state,
+        which the product writes as the record's status) and its latest event time, and the
+        cursor: every event after the cursor is newer than the projection. The owner check runs
+        after the lock: a goal's owner is its intent's first revision, which never changes."""
+        actor = reader(authorization, provider, user_id, workspace_id)
+        ended = sorted(PLAN_ENDED)
+        with store._lock:
+            cursor = event_cursor.current(store, actor.scope)
+            rows = store.conn.execute(
+                "SELECT h.id, h.state, (SELECT e.created_at FROM events e WHERE e.tenant=h.tenant "
+                "AND e.project=h.project AND e.aggregate_type='goal' AND e.aggregate_id=h.id "
+                "ORDER BY e.seq DESC LIMIT 1) AS at FROM heads h WHERE h.tenant=? AND h.project=? "
+                "AND h.kind='execution-plan' AND h.state NOT IN ("
+                + ",".join("?" * len(ended))
+                + ") "
+                "ORDER BY h.rowid DESC",
+                (*actor.scope.keys(), *ended),
+            ).fetchall()
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            try:
+                mine = goal_owner(store, actor.scope, row["id"]) == actor.subject_id
+            except RuntimeFault:
+                continue
+            if not mine:
+                continue
+            if len(items) == SNAPSHOT_LIMIT:
+                return {"items": items, "truncated": True, "cursor": cursor}
+            status = row["state"]
+            items.append(
+                {
+                    "goal_id": row["id"],
+                    "status": status if status in PLAN_STATUSES else "unknown",
+                    "at": row["at"],
+                }
+            )
+        return {"items": items, "truncated": False, "cursor": cursor}
 
     return router

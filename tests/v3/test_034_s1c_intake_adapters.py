@@ -153,7 +153,9 @@ def test_a_stub_adapter_passes_the_intake_flow_by_configuration_only(two: Any) -
         params={**USER, "cursor": feed["cursor"].rsplit(":", 1)[0] + ":0"},
     ).json()
     assert goal in {item["goal_id"] for item in events["items"]}
-    assert {"goal_id": goal, "status": "approved"}.items() <= feed["snapshot"][0].items()
+    assert feed["snapshot_ref"] == f"{route}/snapshot"
+    snapshot = client.get(feed["snapshot_ref"], headers=bearer(STUB_TOKEN), params=USER).json()
+    assert {"goal_id": goal, "status": "approved"}.items() <= snapshot["items"][0].items()
     # the stub's cancel is recorded with its mark, like the first adapter's
     cancelled = client.post(
         f"{route}/goals/{goal}/cancel",
@@ -190,6 +192,7 @@ def test_one_adapter_token_is_401_on_the_other_adapter_routes(two: Any) -> None:
             ("get", base + "/goals", {"params": USER}),
             ("get", base + "/goals/g-1", {"params": USER}),
             ("get", base + "/events", {"params": USER}),
+            ("get", base + "/snapshot", {"params": USER}),
             ("post", base + "/goals/g-1/steer", {"json": message("m-s", text="x")}),
             ("post", base + "/goals/g-1/replan", {"json": message("m-r", reason="x")}),
             ("post", base + "/goals/g-1/cancel", {"json": message("m-c", reason="x")}),
@@ -209,6 +212,7 @@ def test_each_adapter_has_its_own_permission_ceiling(two: Any) -> None:
     for method, path, kwargs in (
         ("get", route + "/goals", {"params": USER}),
         ("get", route + "/events", {"params": USER}),
+        ("get", route + "/snapshot", {"params": USER}),
         ("post", f"{route}/goals/{goal}/cancel", {"json": message("m-c", reason="stop")}),
         ("post", f"{route}/goals/{goal}/steer", {"json": message("m-s", text="x")}),
     ):
