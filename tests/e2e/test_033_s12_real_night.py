@@ -634,7 +634,9 @@ def test_a_standing_approval_revoked_during_the_ablation_stops_the_night_and_cou
             report = w.store.get(w.scope, "eval-report", entry["report_ref"])
             ablation_trials += len(report["run_refs"])
     assert ablation_trials >= 1  # the trial that ran before the revocation was recorded
-    assert night["trials"] == REGRESSION + focused_trials + ablation_trials
+    # D-129: night 1 measured drift, so night 2 is no measuring night (no regression trial)
+    assert night["drift"][CELL]["measured"] is False
+    assert night["trials"] == focused_trials + ablation_trials
     # the operator's approvals are untouched and the holdout never ran
     assert not [c for c in w.executor.calls if "-hol-" in c[1]]
 
@@ -677,7 +679,9 @@ def test_a_hold_out_of_the_ablation_keeps_the_focused_and_ablation_trials(
             report = w.store.get(w.scope, "eval-report", entry["report_ref"])
             ablation_trials += len(report["run_refs"])
     assert ablation_trials > 0
-    assert night["trials"] == REGRESSION + focused_trials + ablation_trials
+    # D-129: night 1 measured drift, so night 2 is no measuring night (no regression trial)
+    assert night["drift"][CELL]["measured"] is False
+    assert night["trials"] == focused_trials + ablation_trials
     if reason is None:
         (done,) = [p for p in night["phases"] if p["phase"] == "confirmation"]
         assert done["items"][0]["trials"] == focused_trials + ablation_trials

@@ -4123,3 +4123,57 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
   drift summary is never the band, `latest_summary` or the dashboard's, drift purpose off the
   regression set derives no approval; on the fake backend: drift tasks over the per-cell share stop
   the night at preflight, duplicates hold, each unmeasured trigger is `unchecked` and stops search).
+- **Drift cadence (D-129, operator decision 2026-10-14)**: drift has two parts. It supersedes the
+  share cap of "Config fit" above (`drift_tasks_exceed_share`, the per-cell drift share limit).
+  - *Free check, every night*: `NightlyRunner.drift_check` compares the champion snapshot (model
+    id, driver version, image) with the operator's calibration and runs no trial. `changed` still
+    stops search, screening and confirmation, schedules re-calibration and a removal sweep, and
+    `recalibration_pending` still holds later nights, as before.
+  - *Paid measurement, once every N nights per cell*: the drift calibration on all
+    `meta.nightly.drift_tasks` (purpose `"drift"`, eval-11) runs only on a *measuring night* of
+    the cell. New config `meta.nightly.drift_every_nights` (`NightlyEntry`/`NightlyConfig`,
+    integer >= 1, default 7; 1 measures every night, the behaviour before D-129).
+  - *Night*: one `nightly-run` record (`night-<date>`, non-dry; `NightlyRunner._earlier_nights`).
+    A measurement's age is the number of days between its night's `date` and this night's `date`.
+    The last measurement of a cell is the newest earlier night whose `drift[cell]` entry has
+    `"measured": true` (entries written before D-129: `"observed"` present).
+  - *Due* (`NightlyRunner.drift_due`, recorded as `drift[cell].cadence = {"due", "reason",
+    "last"}`): a cell measures unless its last measurement is younger than `drift_every_nights`
+    nights, its status was `ok` (inside the band), its `summary_ref` is a drift-purpose calibration
+    summary of the cell under the current evaluator version on the current regression corpus
+    (`NightlyBackend.drift_measurement`; `LocalNightlyBackend` checks `is_drift_plan`, the cell,
+    `corpus_ref` and `evaluator_version_ref`), and no operator baseline (`calibrated_at`) is newer
+    than that night's start. Reasons when due: `no_measurement`, `stale`, `not_ok` (an
+    `outside_band`, `unchecked` or `uncalibrated` measurement not yet cleared by a clean one),
+    `not_current`, `baseline_newer`; `fresh` when not due. A dry run never measures and is no
+    measurement.
+  - *Budget*: on a measuring night `len(set(drift_tasks))` trials per measuring cell come off the
+    night budget first; `phase_budget(B, shares, screening=, drift=)` splits the rest R by the
+    other shares relative to search + confirmation (`search = floor(R x search / (search +
+    confirmation))`, screening design likewise out of search, confirmation = the rest).
+    `shares.drift` stays in the config and the standing policy (§2.14 shape unchanged) but caps
+    and reserves nothing. Each drift unit's cap is `len(set(drift_tasks))`. A non-measuring night
+    reserves 0. The night records `drift_cadence = {"every_nights", "measuring",
+    "reserved_trials", "phase_budget"}`.
+  - *Fit check*: preflight requires `len(set(drift_tasks)) x len(cells) <= budget_trials`, else the
+    problem `{"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_budget", "drift_tasks",
+    "cells", "needs", "budget_trials"}` stops the night before any trial (every night, measuring
+    or not). The pilot meta config (20 tasks, 2 cells, B=150) fits.
+  - *Between measuring nights* a cell searches only on a fresh `ok` measurement; on a measuring
+    night fail-closed `unchecked` (refused unit, `NO_RUNS`, a non-budget stop) still blocks search
+    for the night, and the next night measures again.
+  - Unchanged: band selection skips drift summaries; the dashboard and quality exclude them.
+    `nightly.py` and `local_deployment.py` are outside the evaluator digest
+    (`evaluation/versions.py` `ANALYSIS_FILES`, `SERVICE_FILES`), so D-129 needs no new evaluator
+    version.
+  - Tests: `tests/v3/test_033_s12_nightly.py` `test_d129_*` (cadence 7 and 1, not current,
+    newer baseline, outside_band and unchecked until clean, changed on a non-measuring night, dry
+    run, config) and `test_local_backend_d129_*` (`drift_measurement` on the real backend);
+    updated for the removed share cap: `test_a_night_derives_the_phase_budgets_from_the_shares`,
+    `test_the_drift_reservation_is_a_cap_on_the_drift_unit`,
+    `test_drift_tasks_that_never_fit_the_budget_stop_the_night_at_preflight`,
+    `test_the_pilot_drift_tasks_fit_and_are_taken_off_the_budget_first`,
+    `test_phase_budgets_add_up_to_the_budget_and_screening_comes_out_of_search`,
+    `test_eval11_the_phase_share_check_counts_the_drift_subset`; and in
+    `tests/e2e/test_033_s12_real_night.py` the two ablation tests, whose second night is no
+    longer a measuring night (no regression trial in its count).

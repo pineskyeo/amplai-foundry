@@ -784,3 +784,12 @@
 - Date: 2026-10-12
 - Decision: AMPLAI 는 여러 분야에 쓴다. 모든 기능(에이전트 역할 포함)은 교체·수정·추가·삭제할 수 있는 모듈이고, 그 변경이 다른 기능에 영향을 주지 않는다. 코어에는 저장소·권한·스케줄·검증·레지스트리 골격만 남는다. 모듈은 pack(foundation·kit·plugin)으로 묶는다. 지식 정본은 git 파일, 쓰기는 지식 모듈 하나, 접근은 MCP 다. 코드 저장소 연결은 `git_host` kind 다. 신뢰성 장치도 `check` kind 모듈이다. 추가·강화는 보통 PR 로, 삭제·완화는 사람 승인(class C)으로 한다. 권한·격리·비밀값 기본 검사는 pack 이 끌 수 없다.
 - Source: `specs/034-hermes-modular-platform/spec.md` OD-15~OD-18, M-10~M-20, K-10~K-12, PR #86
+
+## D-129 — Drift Is A Free Nightly Check And A Weekly Paid Measurement
+
+- Status: accepted (운영자 승인 2026-10-14)
+- Date: 2026-10-14
+- Decision: drift 는 두 부분이다. (1) 무료 점검 — `NightlyRunner.drift_check` 가 champion snapshot(model id, CLI/driver version, image)을 calibration 과 비교한다. trial 없이 매일 밤 돌고, `changed` 는 지금처럼 search 를 막고 재calibration 을 예약한다. (2) 유료 측정 — `meta.nightly.drift_tasks` 전부(현재 20개)에 대한 drift calibration(purpose `"drift"`, eval-11)은 N 밤에 한 번만 돈다(새 설정 `meta.nightly.drift_every_nights`, 기본 7, 1 이면 지금처럼 매일 밤). 측정하는 밤에는 cell 마다 `len(drift_tasks)` trial 을 밤 예산에서 먼저 떼고 나머지 단계 몫을 계산한다. drift share 상한(PHASE_SHARE, `_drift_fit`)은 drift 에 더 이상 적용하지 않는다. preflight 는 trial 전에 `len(drift_tasks) × len(cells) <= budget_trials` 를 확인하고 넘으면 `NIGHT_CONFIG` 로 멈춘다. 측정 사이의 밤에는 마지막 유료 측정(그 cell 의 drift-purpose calibration summary, 지금 evaluator version, 같은 corpus)이 `drift_every_nights` 밤보다 오래되지 않았고 결과가 ok(band 안)인 cell 만 search, screening, confirmation 을 돈다. 아니면(측정이 없거나, 오래됐거나, 이전 측정이 unchecked·outside_band 이고 아직 해소되지 않았으면) 그 밤은 그 cell 의 측정하는 밤이 된다. fail-closed 는 유지한다: 측정하는 밤의 `unchecked` 는 그 밤 search 를 막는다. 밤은 `nightly-run` 기록의 날짜로 센다.
+- Reason: 무료 version 점검이 흔한 원인(말없이 바뀐 model·CLI·image)을 매일 밤 비용 없이 잡는다. 유료 측정은 version 변화 없는 행동 drift 를 잡는다. 20개 task 전부로 주 1회 재는 편이 매일 밤 7개로 재는 것보다 검정력이 높고, 비용은 한 주 예산의 약 4% 다.
+- Rejected: 매일 밤 7개 task(검정력이 낮다). drift share 27%(search 를 깎는다).
+- Source: `src/amplai_foundry/meta_harness/nightly.py`(`drift_due`, `_drift`, `_drift_fit`, `phase_budget`, `LocalNightlyBackend.drift_measurement`), `specs/033-harness-taxonomy/interfaces.md` "Clarification: Drift Subset" 의 "Drift cadence (D-129)", `docs/v3/DEV03_OBSERVATORY_META.ko.md` 야간 절
