@@ -116,6 +116,7 @@ DEFAULT_MAX_HOURS = 8
 DRIFT_LOW_Q, DRIFT_HIGH_Q = 0.005, 0.995
 # D-129 (operator decision 2026-10-14): the paid drift measurement runs once every N nights
 DEFAULT_DRIFT_EVERY_NIGHTS = 7
+MAX_DRIFT_EVERY_NIGHTS = 31  # PR #91 review: a measurement is never older than a month
 
 Guard = Callable[[int], None]
 
@@ -169,7 +170,10 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             bad.append("stop_at")
         if type(self.max_hours) not in (int, float) or not 0 < self.max_hours <= 24:
             bad.append("max_hours")
-        if type(self.drift_every_nights) is not int or self.drift_every_nights < 1:
+        if (
+            type(self.drift_every_nights) is not int
+            or not 1 <= self.drift_every_nights <= MAX_DRIFT_EVERY_NIGHTS
+        ):
             bad.append("drift_every_nights")
         if bad:
             raise RuntimeFault("NIGHTLY_CONFIG", "Invalid nightly config (§2.14, §12.2)",
@@ -285,7 +289,9 @@ def phase_budget(
     other shares relative to search + confirmation (``shares.drift`` caps nothing any more):
     search = floor(R x search / (search + confirmation)), screening design = floor(R x
     screening_design / (search + confirmation)) taken out of it (only when ``screening``),
-    confirmation = the rest (so the four add up to B)."""
+    confirmation = the rest (so the four add up to B). With search + confirmation = 0 (drift-only
+    shares) search and confirmation get 0: the rest is never turned into work the operator's
+    shares did not grant (PR #91 review)."""
     drift = max(0, min(int(drift), budget))
     rest = budget - drift
     other = shares["search"] + shares["confirmation"]
@@ -299,8 +305,21 @@ def phase_budget(
         "drift": drift,
         "screening_design": design,
         "search": search_all - design,
-        "confirmation": rest - search_all,
+        "confirmation": rest - search_all if other > 0 else 0,
     }
+
+
+def _corrupt(value: dict[str, Any], field: str) -> Hold:
+    """PR #91 review: a night record the drift cadence cannot read (fail closed)."""
+    return Hold("NIGHT_STATE", "A night record is corrupt; the drift cadence cannot use it",
+                details={"night": value.get("date"), "field": field})  # fmt: skip
+
+
+def _night_day(value: dict[str, Any], key: str) -> datetime:
+    try:
+        return datetime.strptime(str(value.get(key)), "%Y-%m-%d")
+    except ValueError:
+        raise _corrupt(value, key) from None
 
 
 def _unchecked_reason(
@@ -867,8 +886,16 @@ class NightlyRunner:
         earlier ``date``) that ran a paid drift measurement of ``cell_id`` (its drift entry is
         ``measured``; before D-129 every entry with ``observed`` was one), or None."""
         for value in reversed(self._earlier_nights(date)):
-            entry = (value.get("drift") or {}).get(cell_id)
+            drift = value.get("drift") or {}
+            if not isinstance(drift, dict):
+                raise _corrupt(value, "drift")
+            entry = drift.get(cell_id)
+            if entry is not None and not isinstance(entry, dict):
+                raise _corrupt(value, f"drift.{cell_id}")
             if isinstance(entry, dict) and (entry.get("measured") is True or "observed" in entry):
+                if epoch_of(value.get("started_at")) is None:
+                    raise _corrupt(value, "started_at")
+                _night_day(value, "date")
                 return {
                     "night": str(value.get("date")),
                     "started_at": value.get("started_at"),
@@ -887,14 +914,23 @@ class NightlyRunner:
         current corpus (``NightlyBackend.drift_measurement``), and no operator baseline is newer
         than it; else due: ``no_measurement``, ``stale``, ``not_ok`` (outside_band, unchecked,
         uncalibrated ... not yet cleared by a clean measurement), ``not_current`` (also every
-        measurement recorded before D-129), ``incomplete`` (fewer observed runs than drift cases)
-        or ``baseline_newer``. A cell without a band never measures (``_drift``: ``no_band``)."""
+        measurement recorded before D-129), ``incomplete`` (fewer observed runs than drift cases),
+        ``baseline_newer`` or ``baseline_unknown`` (no known baseline time). The age is
+        max(date difference, whole days since that night started). A corrupt night record holds
+        ``NIGHT_STATE``. A cell without a band never measures (``_drift``: ``no_band``)."""
         last = self._last_measurement(cell_id, date)
         if last is None:
             return {"due": True, "reason": "no_measurement", "last": None}
-        age = (
-            datetime.strptime(date, "%Y-%m-%d") - datetime.strptime(last["night"], "%Y-%m-%d")
-        ).days
+        # PR #91 review: the age is the larger of the date labels' difference and the days since
+        # that night really started, so a night run under a future --date never stays fresh
+        started = epoch_of(last["started_at"])
+        assert started is not None  # _last_measurement holds NIGHT_STATE otherwise
+        age = max(
+            (
+                datetime.strptime(date, "%Y-%m-%d") - datetime.strptime(last["night"], "%Y-%m-%d")
+            ).days,
+            math.floor((float(self.clock()) - started) / 86400),
+        )
         info = {"night": last["night"], "status": last["status"], "age_nights": age,
                 "summary_ref": last["summary_ref"]}  # fmt: skip
         reason = None
@@ -909,8 +945,10 @@ class NightlyRunner:
         elif not last["complete"]:
             reason = "incomplete"  # a budget-stopped partial measurement covers fewer cases
         else:
-            base, started = epoch_of(calibrated_at), epoch_of(last["started_at"])
-            if base is not None and (started is None or base > started):
+            base = epoch_of(calibrated_at)
+            if base is None:
+                reason = "baseline_unknown"  # fail closed, as recalibration_pending does
+            elif base > started:
                 reason = "baseline_newer"
         return {"due": reason is not None, "reason": reason or "fresh", "last": info}
 
@@ -1000,6 +1038,10 @@ class NightlyRunner:
                     night.data["findings"].append(f"DRIFT {cell}: UNCHECKED {why}")
                     unchecked.append(cell)
             results[cell] = check
+            # PR #91 review: each cell's entry is recorded as soon as it is known, so a stop
+            # during a later cell's unit keeps the paid measurements already made
+            night.data["drift"][cell] = check
+            self._save(night, "running")
             if check["status"] in ("changed", "outside_band", "recalibration_pending"):
                 drifted.append(cell)
         night.data["drift"] = results
@@ -1030,6 +1072,13 @@ class NightlyRunner:
                 except Hold as exc:
                     night.data["findings"].append(f"REMOVAL_SWEEP {cell}: {exc.code}")
             self._stopped(night, "drift", {"cells": drifted, "unchecked": unchecked})
+        if not night.search_blocked and night.plan["shares"]["search"] > 0:
+            # PR #91 review: the drift reservation a unit did not use goes to search (never when
+            # the operator's shares grant no search)
+            unused = max(0, self._cap(night, "drift") - night.phase_used.get("drift", 0))
+            night.caps["drift"] -= unused
+            night.caps["search"] += unused
+            night.data["drift_cadence"]["returned_to_search"] = unused
         self._phase(night, "drift", "drift" if drifted or unchecked else "done",
                     cells=sorted(results), drifted=drifted, unchecked=unchecked)  # fmt: skip
 
@@ -1572,8 +1621,9 @@ class LocalNightlyBackend:
     def drift_measurement(self, cell_id: str, summary_ref: Any) -> bool:
         """D-129: ``summary_ref`` is a calibration summary of a drift-purpose plan
         (``calibration.is_drift_plan``) that covers ``cell_id``, on the current regression corpus,
-        with ``case_ids`` = the current drift tasks' frozen cases in corpus order, under the
-        evaluator version of the running code (``versions.current_version_ref``)."""
+        with ``case_ids`` = the current drift tasks' frozen cases in corpus order and the cell's
+        currently installed composition (``_drift_compositions``), under the evaluator version of
+        the running code (``versions.current_version_ref``)."""
         from ..evaluation import calibration, versions
 
         regression = self._regression_corpus()
@@ -1592,9 +1642,13 @@ class LocalNightlyBackend:
             c["case_id"] for c in regression[1]["cases"]
             if c["split"] in calibration.SPLITS and c["case_id"] in wanted
         ]  # fmt: skip
+        # PR #91 review: the measurement ran the cell's champion as installed now
+        installed = self._drift_compositions().get(cell_id)
         return (
             calibration.is_drift_plan(plan)
             and plan.get("case_ids") == case_ids
+            and installed is not None
+            and (plan.get("composition_refs") or {}).get(cell_id) == [installed]
             and cell_id in (summary.get("cells") or {})
             and plan.get("corpus_ref") == regression[0]
             and current is not None

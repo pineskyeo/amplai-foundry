@@ -146,9 +146,13 @@ class Fake:
 
     def snapshot(self, cell_id: str, drift_tasks: tuple[str, ...]) -> dict[str, Any]:
         self.calls.append(("snapshot", cell_id))
+        # the operator's baseline was summarized a day before the test (PR #91 review: an
+        # unknown baseline time makes every night a measuring night, baseline_unknown)
         return self.snaps.get(
-            cell_id, {"current": SNAP, "calibrated": SNAP, "band": {"passes": 8, "runs": 10}}
-        )
+            cell_id,
+            {"current": SNAP, "calibrated": SNAP, "band": {"passes": 8, "runs": 10},
+             "calibrated_at": iso(time.time() - DAY)},
+        )  # fmt: skip
 
     def drift_run(self, cell_id: str, tasks: list[str], guard: Any, limit: int) -> dict[str, Any]:
         self.calls.append(("drift_run", cell_id, tuple(tasks), limit))
@@ -1313,7 +1317,112 @@ def test_d129_a_measurement_recorded_before_d129_is_not_current(env: Env) -> Non
     assert len(env.fake.args("drift_run")) == 1
 
 
-@pytest.mark.parametrize("value", [0, -1, True, 1.5, "7"])
+DRIFT_ONLY = {"drift": 1.0, "screening_design": 0.0, "search": 0.0, "confirmation": 0.0}
+
+
+def test_d129_drift_only_shares_grant_no_search_and_no_confirmation(env: Env) -> None:
+    # PR #91 review (authority): the rest of a drift-only budget is never search or confirmation
+    for drift in (0, 10):
+        assert phase_budget(200, DRIFT_ONLY, screening=False, drift=drift) == {
+            "drift": drift, "screening_design": 0, "search": 0, "confirmation": 0,
+        }  # fmt: skip
+    env.fake.drift_batch = dict(FULL)
+    env.fake.confirm_items = [{"id": "exp-1"}]
+    runner = env.ready(config(env.clock, shares=dict(DRIFT_ONLY)))
+    runner.run(DATE)  # measuring
+    runner.run(NEXT)  # not measuring
+    for date, trials in ((DATE, len(DRIFT_TASKS)), (NEXT, 0)):
+        data = env.head(date)["data"]
+        caps = data["drift_cadence"]["phase_budget"]
+        assert caps["search"] == 0 and caps["confirmation"] == 0
+        assert "returned_to_search" not in data["drift_cadence"]
+        assert data["trials"] == trials  # no search or confirmation trial ran
+    assert drift_of(env, NEXT)["cadence"]["reason"] == "fresh"
+
+
+def test_d129_an_unused_drift_reservation_returns_to_search(env: Env) -> None:
+    runner = env.ready()  # the fake drift unit runs 5 of the 10 reserved trials
+    runner.run(DATE)
+    cadence = env.head(DATE)["data"]["drift_cadence"]
+    assert cadence["reserved_trials"] == 10 and cadence["returned_to_search"] == 5
+    # a blocked night returns nothing
+    env.fake.drift_batch = {"trials": 0, "passes": 0, "runs": 0}
+    stopped(env, runner, NEXT)
+    assert "returned_to_search" not in env.head(NEXT)["data"]["drift_cadence"]
+
+
+def test_d129_age_counts_the_days_since_the_night_really_started(env: Env) -> None:
+    # labelled yesterday, but it started 8 days ago (a night run under a future --date)
+    env.put("nightly-run", "night-2026-09-30", {
+        "date": "2026-09-30", "dry_run": False, "started_at": iso(time.time() - 8 * DAY),
+        "drift": {CELL: {"status": "ok", "measured": True, "complete": True,
+                         "summary_ref": {"id": "calsum-old", "revision": 1},
+                         "observed": {"passes": 8, "runs": 10}}},
+    })  # fmt: skip
+    env.fake.drift_batch = dict(FULL)
+    env.ready().run(DATE)
+    cadence = drift_of(env, DATE)["cadence"]
+    assert cadence["reason"] == "stale" and cadence["last"]["age_nights"] == 8
+
+
+def test_d129_an_unknown_baseline_time_forces_a_measuring_night(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
+    runner = env.ready()
+    runner.run(DATE)
+    env.fake.snaps[CELL] = {"current": SNAP, "calibrated": SNAP, "band": {"passes": 8, "runs": 10}}
+    runner.run(NEXT)
+    assert drift_of(env, NEXT)["cadence"]["reason"] == "baseline_unknown"
+    assert len(env.fake.args("drift_run")) == 2
+
+
+def test_d129_a_stop_during_a_later_cells_unit_keeps_the_earlier_measurement(env: Env) -> None:
+    env.fake.drift_batch = dict(FULL)
+    original = env.fake.drift_run
+
+    def second_unknown(cell_id: str, tasks: list[str], guard: Any, limit: int) -> dict[str, Any]:
+        batch = original(cell_id, tasks, guard, limit)
+        if cell_id == OTHER_CELL:
+            batch.update(unknown_effects=1, root="calibration:x")
+        return batch
+
+    env.fake.drift_run = second_unknown  # type: ignore[method-assign]
+    runner = env.ready(config(env.clock, cells=(CELL, OTHER_CELL)))
+    assert stopped(env, runner).details["reason"] == "unknown_effect"
+    drift = env.head()["data"]["drift"]
+    assert drift[CELL]["measured"] is True and drift[CELL]["complete"] is True
+    assert drift[CELL]["summary_ref"] == {"id": f"calsum-{CELL}-1", "revision": 1}
+    assert OTHER_CELL not in drift
+
+
+@pytest.mark.parametrize(
+    ("record", "field"),
+    [
+        ({"drift": "x"}, "drift"),
+        ({"drift": {CELL: ["x"]}}, f"drift.{CELL}"),
+        ({"started_at": "not a time"}, "started_at"),
+        ({"date": "1999-99-99"}, "date"),
+    ],
+)
+def test_d129_a_corrupt_night_record_holds_night_state(
+    env: Env, record: dict[str, Any], field: str
+) -> None:
+    value = {
+        "date": "2026-09-30", "dry_run": False, "started_at": nightly_module.now(),
+        "drift": {CELL: {"status": "ok", "measured": True, "complete": True,
+                         "summary_ref": {"id": "calsum-old", "revision": 1}}},
+        **record,
+    }  # fmt: skip
+    env.put("nightly-run", "night-corrupt", value)
+    runner = env.ready()
+    with pytest.raises(Hold) as caught:
+        runner.run(DATE)
+    assert caught.value.code == "NIGHT_STATE" and caught.value.details["field"] == field
+    data = env.head()["data"]
+    assert data["stopped"] == "error" and "drift_run" not in env.fake.names()
+    assert phases(data).get("search") is None  # the night ended in the drift phase
+
+
+@pytest.mark.parametrize("value", [0, -1, 32, True, 1.5, "7"])
 def test_d129_drift_every_nights_is_a_positive_integer(value: Any) -> None:
     with pytest.raises(RuntimeFault) as fault:
         config(drift_every_nights=value)
@@ -1330,8 +1439,10 @@ def test_d129_drift_every_nights_comes_from_meta_nightly() -> None:
     assert NightlyConfig.from_entry({**entry, "drift_every_nights": 1}).drift_every_nights == 1
     assert NightlyEntry().drift_every_nights == 7
     assert NightlyConfig.from_entry(NightlyEntry(drift_every_nights=3)).drift_every_nights == 3
-    with pytest.raises(ValueError):
-        NightlyEntry(drift_every_nights=0)
+    assert NightlyConfig.from_entry({**entry, "drift_every_nights": 31}).drift_every_nights == 31
+    for bad in (0, 32):
+        with pytest.raises(ValueError):
+            NightlyEntry(drift_every_nights=bad)
 
 
 def test_a_drift_task_listed_twice_is_a_night_config_hold() -> None:
@@ -2336,6 +2447,24 @@ def test_local_backend_d129_changed_drift_tasks_make_the_last_measurement_not_cu
     assert check["cadence"]["reason"] == "not_current" and check["measured"] is True
     plans = [p["case_ids"] for p in real.drift_plans()]
     assert len(plans) == 2 and [real.case_ids[i] for i in SUBSET] in plans
+
+
+def test_local_backend_d129_another_installed_composition_makes_the_measurement_not_current(
+    real: RealNight, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real.outcome(True)
+    real.calibrate()
+    ref, reason = real.run(DATE)
+    assert reason is None and ref is not None
+    summary_ref = real.head(DATE)["drift"][CELL]["summary_ref"]
+    assert real.backend.drift_measurement(CELL, summary_ref) is True
+    # the cell's champion is now another composition: the summary measured the old one
+    installed = dict(real.backend._drift_compositions())
+    other = {**installed[CELL], "revision": installed[CELL]["revision"] + 1}
+    monkeypatch.setattr(real.backend, "_drift_compositions", lambda: {**installed, CELL: other})
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
+    monkeypatch.setattr(real.backend, "_drift_compositions", lambda: {})
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
 
 
 def test_local_backend_a_standing_approval_revoked_mid_calibration_stops_the_night(

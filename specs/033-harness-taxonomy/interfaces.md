@@ -4184,3 +4184,21 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
     `drift_cadence.phase_budget` when present, else the plan's shares), and
     `test_ic29_a_fresh_ops_and_a_night_rebuild_*` (now calibrates first: an uncalibrated cell runs
     no drift trial).
+  - *PR #91 failure review*: `drift_every_nights` is 1..31 (`NightlyEntry` `le=31`,
+    `NightlyConfig` `NIGHTLY_CONFIG`). With search + confirmation = 0 (drift-only shares)
+    `phase_budget` gives search 0 and confirmation 0, so the rest never becomes work the shares do
+    not grant. `drift_measurement` also requires `plan.composition_refs[cell] ==
+    [_drift_compositions()[cell]]` (the champion installed now). A measurement's age is
+    max(date-label difference, whole days since that night's `started_at`), so a night run under a
+    future `--date` never stays fresh. An unknown baseline time (`calibrated_at` absent) makes the
+    night a measuring night (`baseline_unknown`, fail closed). Each cell's drift entry is written
+    as soon as it is known, so a stop during a later cell's unit keeps the earlier paid
+    measurements. On a night whose search is not blocked and whose `shares.search` > 0, the unused
+    drift reservation (cap - used) goes to search (`drift_cadence.returned_to_search`). A night
+    record the cadence cannot read (non-object `drift` or cell entry, a bad `date` or
+    `started_at`) holds `NIGHT_STATE` (`details.night`, `details.field`); the night ends with
+    `stopped: "error"` before any drift trial. Tests: `test_d129_drift_only_shares_*`,
+    `test_d129_an_unused_drift_reservation_*`, `test_d129_age_counts_*`,
+    `test_d129_an_unknown_baseline_time_*`, `test_d129_a_stop_during_a_later_cells_unit_*`,
+    `test_d129_a_corrupt_night_record_*`,
+    `test_local_backend_d129_another_installed_composition_*`.
