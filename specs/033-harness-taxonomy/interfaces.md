@@ -4506,4 +4506,11 @@ completed trials (https://github.com/harbor-framework/harbor/blob/main/src/harbo
   trial import closure, the evaluator files are bound by the evaluator digest, editing a trial file
   or a data file changes the digest and an allowlisted file or a compiled cache does not),
   `test_033_unknown_usage_charge.py`, `test_033_s2_calibration.py`, `test_033_s11_stages.py`,
-  `test_033_s14_quality.py`, `test_033_s15_dashboard.py` (partial summaries are never read).
+  `test_033_s14_quality.py`, `test_033_s15_dashboard.py` (partial summaries are never read). Regression
+  review (PR #92 at c056093): `test_rm_*` (an admission while another trial is reserved holds the
+  observed max), `test_dr8_*` (Wilson lower bound, not the point estimate), `test_dr11_*`
+  (`source_aa` reference), `test_dr13_*` (inconclusive after the run drops the imports),
+  `test_rk5_*` (an incompatible evaluator version is a key mismatch; a listed one is not),
+  `test_rk4_*` (another corpus is a key mismatch), `test_settle_ended_skips_a_run_without_a_dispatch_*`
+  (coded skip `dispatches:0`), and `test_d128_a_stopped_runs_summary_is_never_the_nightly_baseline`
+  (`tests/v3/test_033_s12_nightly.py`).

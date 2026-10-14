@@ -1136,3 +1136,115 @@ def test_an_evaluator_change_may_declare_trial_compatible_versions(w):
     assert "trial_compatible_with" not in q._target(to, current)
     for bad in (["eval-9"], ["eval-3"], "eval-2", ["eval-2", "eval-2"]):
         fault("EVALUATOR_CHANGE_TARGET", q._target, {**to, "trial_compatible_with": bad}, current)
+
+
+# --- regression review (PR #92 at c056093) -------------------------------------------------------
+
+
+class FakeLedger:
+    """A meta-budget head in memory (EvolutionBudget needs head, cas, clock and epoch)."""
+
+    def __init__(self, data):
+        self.heads = {"root": {"row_version": 1, "data": data}}
+        self.epoch = 1
+
+    def head(self, scope, kind, oid, db=None):
+        return self.heads[oid]
+
+    def cas(self, db, scope, kind, oid, version, state, data):
+        self.heads[oid] = {"row_version": version + 1, "state": state, "data": data}
+
+    def clock(self):
+        return 0.0
+
+
+def test_rm_a_reservation_while_another_trial_is_still_reserved_holds_the_observed_max():
+    # RM: parallel >= 2; one trial settled at 4.7M raw, one still reserved at 1M
+    store = FakeLedger({
+        "limits": {**BUDGET, "max_tokens": 100_000_000, "max_parallel_works": 4},
+        "experiment_refs": [], "started_epoch": 0.0,
+        "allocations": {
+            "done": {"status": "settled", "tokens": 4_700_000, "cost": 0, "overrun": True},
+            "running": {"status": "reserved", "tokens": 1_000_000, "cost": 0},
+            "import": {"status": "settled", "tokens": 0, "cost": 0, "imported": {"x": 1}},
+        },
+    })  # fmt: skip
+    ledger = EvolutionBudget(store)  # type: ignore[arg-type]
+    ledger.reserve(None, None, "root", "next", tokens=1_000_000, cost=0,
+                   prior_overrun_blocks=False, reserve_observed_max=True)  # fmt: skip
+    allocation = store.heads["root"]["data"]["allocations"]["next"]
+    assert allocation["tokens"] == 4_700_000 and allocation["token_ceiling"] == 1_000_000
+    # without the flag (experiments, canary) the reservation stays the ceiling
+    ledger.reserve(None, None, "root", "plain", tokens=1_000_000, cost=0,
+                   prior_overrun_blocks=False)  # fmt: skip
+    assert store.heads["root"]["data"]["allocations"]["plain"]["tokens"] == 1_000_000
+
+
+def test_dr8_the_verdict_uses_the_wilson_lower_bound_not_the_point_estimate():
+    # 1 flip in 8: point estimate 0.125 > 0.05, Wilson 95 % lower bound about 0.022 < 0.05
+    verdict, lower = calibration.drift_verdict(8, [True] + [False] * 7, 0.05)
+    assert verdict == "pass" and lower is not None and lower < 0.05 < 1 / 8
+
+
+def test_dr11_a_source_with_repeat_0_and_1_pairs_gives_a_source_aa_reference(w):
+    # ``outcome``: val-00 agrees with itself in both cells; val-01 alternates (a: T,F; b: F,T)
+    c, facts = make(w), Facts()
+    svc, source = flipping_source(w, c, facts)
+    plan = plan_for(w, c)
+    reference, basis = svc.drift_reference(w.scope, plan, [source])
+    assert basis == {cell: "source_aa" for cell in CELLS}
+    assert reference == {cell: 0.5 for cell in CELLS}  # 1 flip in 2 tasks with both repeats
+
+
+def test_dr13_a_drift_check_inconclusive_after_its_run_drops_the_imports(w):
+    # most re-runs of cell-a have no graded outcome: fewer than 4 pairs compared
+    c, facts = make(w), Facts()
+    svc, source = source_run(w, c, facts)
+    plan, _ = importing_plan(w, c, svc, [source])
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+
+    def ungraded(role, case_id, repeat):
+        if role == "cell-a" and repeat == 1:
+            return None
+        return steady(role, case_id, repeat)
+
+    svc.run(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, ungraded), facts))
+    drift = head(w, plan_ref)["data"]["drift_check"]
+    assert drift["cell-a"]["status"] == "inconclusive" and drift["cell-a"]["compared"] == 0
+    assert len(drift["cell-a"]["dropped"]) == 6 and drift["cell-b"]["status"] == "pass"
+    pooled = trials(w, plan_ref)
+    assert not any("imported_from" in t and t["cell_id"] == "cell-a" for t in pooled)
+
+
+def test_rk5_a_source_under_an_incompatible_evaluator_version_is_a_key_mismatch(w):
+    c, facts = make(w), Facts()
+    svc, source = source_run(w, c, facts)  # under eval-2
+    evaluator_version(w, "eval-3")  # lists nothing compatible
+    plan = plan_for(w, c)
+    plan["import_policy"] = import_policy()
+    found = svc.eligible_imports(w.scope, plan, [source])
+    assert found["imported"] == 0
+    mismatched = [e for e in found["excluded"] if e["reason"] == "key_mismatch"]
+    assert mismatched and all(e["fields"] == ["evaluator_version_ref"] for e in mismatched)
+    # with eval-4 listing eval-2, the same trials are eligible again
+    evaluator_version(w, "eval-4", ["eval-2"])
+    assert svc.eligible_imports(w.scope, plan, [source])["imported"] == 12
+
+
+def test_rk4_a_source_plan_on_another_corpus_is_excluded(w):
+    c, facts = make(w), Facts()
+    svc, source = source_run(w, c, facts)
+    other = make(w)  # another frozen corpus with the same case ids
+    plan = plan_for(w, other, composition_refs=c.refs)
+    plan["import_policy"] = import_policy()
+    found = svc.eligible_imports(w.scope, plan, [source])
+    assert found["imported"] == 0
+    mismatched = [e for e in found["excluded"] if e["reason"] == "key_mismatch"]
+    assert mismatched and all("corpus_ref" in e["fields"] for e in mismatched)
+
+
+def test_settle_ended_skips_a_run_without_a_dispatch_with_a_code(w):
+    store, scope = w.m.d.store, w.scope
+    seed_run(store, scope, "run-nodispatch", "failed", dispatches=0)
+    out = BudgetService(store).settle_ended(scope, lambda dispatch_id: None)
+    assert {"run_id": "run-nodispatch", "reason": "dispatches:0"} in out["skipped"]
