@@ -20,3 +20,6 @@ build/
 
 # Browser render output written next to a view by RenderAcceptance.browser_layer
 specs/**/html-*-render/
+
+# Work 034 M-20: local records of `amplai checks run`
+.check-runs/

@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # a merge queue's candidate commit (the checks step compares it with merge_group.base_sha)
+  merge_group:
 
 jobs:
   validate:
@@ -24,3 +26,46 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
+      # Work 034 OD-18 (M-16..M-20): the registered checks of the `ci` moment, also when an earlier
+      # step failed. pytest, ruff and mypy run as the steps above; only they may be skipped
+      # (checks.lock.json `ci_external`) and the run ends `pass_with_skips`. The check list is
+      # compared with the base commit, whose own check policy code decides (M-19): the PR's base
+      # SHA, the merge queue's base SHA, or on a push the commit before it. A first push (all-zero
+      # SHA) has no base. A base that can not be fetched fails the step for a PR or the merge
+      # queue; on a push (a force push) the run goes on without one, with a warning and a note in
+      # the run record (D-131).
+      - name: amplai checks run --when ci
+        if: always()
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          case "$GITHUB_EVENT_NAME" in
+            pull_request) sha="$PR_BASE" ;;
+            merge_group) sha="$QUEUE_BASE" ;;
+            *) sha="$BEFORE" ;;
+          esac
+          base=()
+          if [ -z "$sha" ] || [ "$sha" = "0000000000000000000000000000000000000000" ]; then
+            echo "::warning::no base commit: loosening against main is not checked"
+            base=(--note "no base commit ($GITHUB_EVENT_NAME)")
+          elif git fetch --no-tags --depth=1 origin "+$sha:refs/amplai/check-base"; then
+            base=(--base-ref refs/amplai/check-base)
+          elif [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "::error::base $sha can not be fetched: a PR or merge queue check needs its base"
+            exit 1
+          else
+            echo "::warning::base $sha can not be fetched: loosening against main is not checked"
+            base=(--note "base $sha can not be fetched ($GITHUB_EVENT_NAME)")
+          fi
+          amplai checks run --when ci "${base[@]}" --record-dir "$RUNNER_TEMP/check-runs" \
+            --skip check.tool_pytest --skip check.tool_ruff --skip check.tool_ruff_format \
+            --skip check.tool_mypy
+      # M-20: the run record (which check passed at which version), kept with the workflow run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-runs-py${{ matrix.python-version }}
+          path: ${{ runner.temp }}/check-runs/
+          if-no-files-found: ignore

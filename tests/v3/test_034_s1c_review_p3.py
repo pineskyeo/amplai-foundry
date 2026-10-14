@@ -36,7 +36,8 @@ from amplai_foundry.integrations.intake_mcp.server import IntakeCaller, Settings
 from amplai_foundry.runtime.contracts.intake import STOP_EVENT, latest_stop
 from amplai_foundry.runtime.keys import private_bytes
 from amplai_foundry.runtime.modules import ModuleSpec
-from amplai_foundry.runtime.notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
+from amplai_foundry.runtime.notifier import NotifierPump, StoreReceipts
+from amplai_foundry.runtime.notifier.slack import SlackWebhookNotifier
 from amplai_foundry.runtime.notifier.slack import spec as slack_spec
 
 USER = {"provider": "slack", "workspace_id": "T1", "user_id": "U0OPERATOR"}

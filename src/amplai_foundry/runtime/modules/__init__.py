@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
-from .builtin import BUILTIN_MODULES, suite_id
+from .builtin import (
+    BUILTIN_CODE,
+    BUILTIN_MODULES,
+    KIND_PACKAGES,
+    KIND_SUITES,
+    BuiltinCode,
+    suite_id,
+)
 from .conformance import ConformanceLedger, ConformanceResult, ConformanceSuite
+from .loader import load
 from .pinned import PinnedManifest, PinnedModule, PinnedPackage, verify_extensions
 from .registry import ModuleRegistry
 from .spec import (
@@ -16,10 +24,14 @@ from .spec import (
 )
 
 __all__ = [
+    "BUILTIN_CODE",
     "BUILTIN_MODULES",
     "INTERFACE_VERSIONS",
     "KINDS",
+    "KIND_PACKAGES",
+    "KIND_SUITES",
     "OUT_OF_PROCESS_KINDS",
+    "BuiltinCode",
     "ConformanceLedger",
     "ConformanceResult",
     "ConformanceSuite",
@@ -30,6 +42,7 @@ __all__ = [
     "PinnedModule",
     "PinnedPackage",
     "Placement",
+    "load",
     "suite_id",
     "verify_extensions",
 ]

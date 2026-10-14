@@ -49,6 +49,10 @@ from . import meta_cli  # noqa: E402  (needs `guarded` defined above)
 
 meta_cli.register(app, guarded)
 
+from . import checks_cli  # noqa: E402  (Work 034 OD-18: `amplai checks`)
+
+checks_cli.register(app, guarded)
+
 
 def client() -> AmplaiClient:
     from .keys import private_bytes

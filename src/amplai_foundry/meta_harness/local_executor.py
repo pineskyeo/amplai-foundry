@@ -160,6 +160,12 @@ TRIAL_CODE_EXCLUDED = (
     "integrations/**",
     "distribution/**",
     "packs/catalog.py",
+    # Work 034 OD-18: the checks and their CLI, and the test transports of the conformance check
+    "runtime/checks/**",
+    "runtime/checks_cli.py",
+    "runtime/notifier/slack_conformance.py",
+    "runtime/git_host/github_conformance.py",
+    "runtime/modules/loader.py",
     "evaluation/analysis.py",
     "evaluation/sequential.py",
     "evaluation/versions.py",

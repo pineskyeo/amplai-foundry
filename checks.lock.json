@@ -1,0 +1,205 @@
+{
+  "checks": {
+    "check.evaluator_qsuite": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core"
+      ],
+      "version": "1",
+      "when": [
+        "upgrade"
+      ]
+    },
+    "check.kind_conformance": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci",
+        "enable"
+      ]
+    },
+    "check.module_boundary": {
+      "config": {
+        "composition_roots": [
+          "amplai_foundry.runtime.local_deployment"
+        ]
+      },
+      "loosens_when_added": [
+        "composition_roots"
+      ],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
+      ]
+    },
+    "check.module_removal": {
+      "config": {
+        "core_tests": [
+          "tests/e2e/test_rc06_execution_e2e.py",
+          "tests/runtime_storage/test_store_migration.py",
+          "tests/v3/test_034_s0_modules.py",
+          "tests/v3/test_034_s1a_approve_digest.py",
+          "tests/v3/test_034_s1a_intake_authority.py",
+          "tests/v3/test_034_s1a_intake_route.py",
+          "tests/v3/test_034_s1f_event_cursor.py",
+          "tests/v3/test_rc01_storage_uow.py",
+          "tests/v3/test_rc02_lease.py",
+          "tests/v3/test_rc02_runtime.py",
+          "tests/v3/test_rc06_local_product.py",
+          "tests/v3/test_rc06_operator_authority.py",
+          "tests/v3/test_rc06_patch_verifier.py",
+          "tests/v3/test_rc07_local_config.py"
+        ],
+        "modules": [
+          "git_host.github",
+          "notifier.slack_webhook"
+        ]
+      },
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "kind:git_host",
+        "kind:notifier"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.policy": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core"
+      ],
+      "version": "1",
+      "when": [
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
+      ]
+    },
+    "check.secret_exposure": {
+      "config": {
+        "allow": [
+          "tests/e2e/test_033_s9_strategies.py::secret-pattern-2::e097165ac6a1b510",
+          "tests/v3/test_033_answer_lookup.py::secret-pattern-2::e8fc1396f593878c",
+          "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::1810b50905100c9d",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::b1f37570ec536443",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::00c67f3a5f917fea",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::48c67971e8b86100",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::c9bfc8f8b9223d1d",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::28c603715568eae0",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::8294745a1b39426d",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3::1a54d5ff2564b145",
+          "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2::e097165ac6a1b510",
+          "tests/v3/test_033_s8_executor.py::secret-pattern-1::aa6b74ac35548bce"
+        ]
+      },
+      "loosens_when_added": [
+        "allow"
+      ],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
+      ]
+    },
+    "check.tool_mypy": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_pytest": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_ruff": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_ruff_format": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    }
+  },
+  "ci_external": [
+    "check.tool_mypy",
+    "check.tool_pytest",
+    "check.tool_ruff",
+    "check.tool_ruff_format"
+  ],
+  "schema": "amplai.checks-lock.v1"
+}

@@ -135,7 +135,7 @@ def code_of(excinfo: pytest.ExceptionInfo[RuntimeFault]) -> str:
 def test_kinds_are_the_closed_first_set_and_two_run_out_of_process() -> None:
     assert set(KINDS) == {
         "driver", "strategy", "decider", "judge", "knowledge", "doc_freshness", "intake_adapter",
-        "model_gateway", "notifier", "git_host",
+        "model_gateway", "notifier", "git_host", "check",
     }  # fmt: skip
     assert set(INTERFACE_VERSIONS) == set(KINDS)
     assert set(OUT_OF_PROCESS_KINDS) == {"intake_adapter", "model_gateway"}

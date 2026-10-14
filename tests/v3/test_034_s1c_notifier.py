@@ -42,10 +42,10 @@ from amplai_foundry.runtime.notifier import (
     MemoryReceipts,
     Projection,
     Receipt,
-    SlackWebhookNotifier,
     StoreReceipts,
 )
 from amplai_foundry.runtime.notifier.interface import sample
+from amplai_foundry.runtime.notifier.slack import SlackWebhookNotifier
 from amplai_foundry.runtime.notifier.slack import spec as slack_spec
 from amplai_foundry.runtime.storage.store import Scope, Store
 from rc06_rig import FixedPlanner

@@ -92,8 +92,7 @@ from .execution.worker import WorkCoordinator
 from .git_host import GitHost
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
-from .notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
-from .notifier.slack import spec as slack_spec
+from .notifier import NotifierPump, StoreReceipts
 from .storage.store import Scope, Store
 
 SERVICE_PERMISSIONS = frozenset(
@@ -899,7 +898,12 @@ class LocalProductDeployment:
         return GitHubHost(host=entry.host, remote_hosts=entry.remote_hosts)
 
     def _notifier(self, entry: NotifierEntry) -> NotifierPump:
-        """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
+        """The operator's direct alert over the store outbox (Work 034 S1c, F-5). Imported here,
+        not at module load, so a deployment without a notifier never loads an implementation
+        (removal test, M-13)."""
+        from .notifier.slack import SlackWebhookNotifier
+        from .notifier.slack import spec as slack_spec
+
         receipts = StoreReceipts(self.store, self.scope, slack_spec().module_id)
         notifier = SlackWebhookNotifier(
             self.local(entry.webhook_url_file), read=private_bytes, receipts=receipts
