@@ -355,6 +355,24 @@ class BoundedBody:
         await self.app(scope, replay, send)
 
 
+def fault_response(exc: RuntimeFault) -> JSONResponse:
+    """A domain fault as the coded JSON body and its HTTP status (every V3 listener)."""
+    status = 409 if isinstance(exc, Conflict) else 423 if exc.outcome == "hold" else 400
+    if exc.code == "UNAUTHENTICATED":
+        status = 401
+    if exc.code == "FORBIDDEN":
+        status = 403
+    if exc.code == "NOT_FOUND":
+        status = 404
+    if exc.code == "RATE_LIMITED":  # design/18 §5
+        status = 429
+    if exc.code == "INTAKE_UNAVAILABLE":  # an untrusted front-agent entry (intake.py)
+        status = 503
+    return JSONResponse(
+        {"code": exc.code, "message": exc.message, "outcome": exc.outcome}, status_code=status
+    )
+
+
 def create_app(services: ApiServices) -> FastAPI:
     runtime, goals, store = services.runtime, services.goals, services.runtime.store
     app = FastAPI(title="AMPLAI V3", version="3.0.0", docs_url=None, redoc_url=None)
@@ -363,20 +381,7 @@ def create_app(services: ApiServices) -> FastAPI:
 
     @app.exception_handler(RuntimeFault)
     async def fault_handler(request: Request, exc: RuntimeFault) -> Any:
-        status = 409 if isinstance(exc, Conflict) else 423 if exc.outcome == "hold" else 400
-        if exc.code == "UNAUTHENTICATED":
-            status = 401
-        if exc.code == "FORBIDDEN":
-            status = 403
-        if exc.code == "NOT_FOUND":
-            status = 404
-        if exc.code == "RATE_LIMITED":  # design/18 §5
-            status = 429
-        if exc.code == "INTAKE_UNAVAILABLE":  # an untrusted front-agent entry (intake.py)
-            status = 503
-        return JSONResponse(
-            {"code": exc.code, "message": exc.message, "outcome": exc.outcome}, status_code=status
-        )
+        return fault_response(exc)
 
     def actor(authorization: str = Header(default="")) -> Actor:
         return services.authenticate(authorization)

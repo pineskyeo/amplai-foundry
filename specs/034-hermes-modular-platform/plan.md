@@ -238,7 +238,7 @@ systemd 면 systemd, 아니면 supervisor).
 |---|---|---|
 | `amplai-server` | 상시 (`Restart=on-failure`) | `amplai ops local-serve --config …`. notifier 포함 |
 | `amplai-model-gateway` | 상시 | S4c 의 `model_gateway`, 별도 프로세스 (M-5) |
-| `amplai-intake-listener` | 상시 | S1b 원격 listener 가 별도 프로세스로 정해질 때만 (H-12). 지금 코드에 없다 |
+| `amplai-intake-listener` | 상시 | S1b 원격 listener 가 별도 프로세스로 정해질 때만 (H-12). S1g 는 접수 listener 를 `amplai-server` 프로세스 안의 두 번째 socket 으로 열어 별도 unit 이 없다 (D-133) |
 | `amplai-meta-tick.service` + `.timer` | `Type=oneshot`, timer `OnCalendar=*:0/5` | `amplai meta nightly tick` (N-1, S1d). 밤이 돌고 있으면 `ACTIVE_OWNER` 로 바로 끝난다 |
 | 앞단 에이전트 컨테이너 | 엔진의 컨테이너, 호스트 mount 없음 | H-12, OD-8. AMPLAI 서비스 관리자 밖이다. 엔진 restart 정책 또는 운영자 unit 으로 띄운다 |
 
@@ -702,6 +702,7 @@ notifier 알림)는 결정 대기다: 새 route, 도구 계약 1.1, notifier pro
 | S1d | 야간 루프 제어: `nightly.control`, `nightly-control` 기록, tick(launchd; Linux systemd·supervisor 는 S4a), 밤의 읽기 전용 확인, 읽기 전용 status, meta feed, CLI | AC-N1~N6 | class C(권한) | S1c |
 | S1e | 진짜 일시정지(H-15): Run `pausing → paused`, 체크포인트 보존, 같은 세션 재개 또는 이어 실행, 멈춘 동안 지시 반영, 자원·시간 초과 | 추가 예정 | — | S1a |
 | S1f | 운영자 이벤트 세대 cursor 와 공통 snapshot 경로 (H-16) | 추가 예정 | — | S1a |
+| S1g | 접수 전용 listener (H-12, OD-8): 같은 프로세스의 두 번째 socket, intake 경로만, 나머지 `404 INTAKE_LISTENER_ROUTE`. 보호 방식(TLS 또는 출발지 고정 토큰)은 결정 대기라 loopback 만 연다 (D-133) | 추가 예정 | — | S1a, S1c |
 | S2a | 지식 모듈 | AC-K1, AC-K3 | G-04 | S0 |
 | S2b | 문서 최신성 모듈 | AC-K2 | — | S2a |
 | S3 | 배포 릴리스·Q-suite 자산, 동결(`ServiceManager` 인터페이스 + launchd 구현), 명시적 이전, 백업 manifest CLI, 업그레이드, 되돌리기, stale, local-update 제한, 업그레이드 리허설 | AC-U1~U9 | G-07, G-15, G-20 | S0 |

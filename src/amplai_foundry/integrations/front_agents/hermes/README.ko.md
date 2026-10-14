@@ -130,6 +130,28 @@ chmod 600 ~/.amplai/secrets/notifier.url
 
 `~/.amplai/intake/hermes.token` 을 지우면 다음 요청부터 401 이다 (AC-H7). 새 토큰을 만들면 VM 의 `.env` 도 바꾼다.
 
+### 2-5. 접수 전용 listener (`intake_listener`, S1g)
+
+VM 의 `127.0.0.1` 은 VM 자신이라 운영자 API(`127.0.0.1:5083`)에 닿지 않는다 (OD-8). VM 은 접수 전용 listener 로만
+들어온다 (H-12). 같은 `local-serve` 프로세스가 두 번째 socket 을 연다.
+
+```json
+"intake_listener": {"host": "<IP 주소>", "port": <정수>}
+```
+
+- 이 listener 는 `/api/v3/intake/<설정된 adapter_id>` 아래 경로만 연다. 그 밖의 경로(운영자 API, meta, `/api/v3/local`,
+  `/healthz`, OpenAPI)는 모두 `404 INTAKE_LISTENER_ROUTE` 다. 운영자 토큰은 이 listener 의 intake 경로에서 `401` 이다.
+- 두 listener 는 같은 intake 경로를 쓴다. adapter 하나의 토큰·연결표·빈도 제한 창은 하나다. 운영자 API 도 intake 경로를
+  계속 연다 (이 동작을 바꿀지는 결정 대기, D-133).
+- `host`·`port` 에는 기본값이 없다. `host` 는 IP 주소 하나다 (이름, `0.0.0.0`, `::` 는 거부). `port` 는 `--port` 와 달라야
+  한다 (`INTAKE_LISTENER_PORT`). 이미 쓰이는 port 는 `INTAKE_LISTENER_BIND` 다. 이 검사는 `local-serve` 만 한다.
+- 이 listener 는 `X-Forwarded-*` 를 믿지 않고 `Server` header 를 보내지 않는다. 인증되지 않은 요청은 검증 오류의 field
+  이름 대신 `401` 을 받는다.
+- **지금은 loopback 주소만 연다.** H-12 는 이 listener 에 TLS 또는 출발지 고정 토큰을 요구한다. 둘 중 무엇을 쓸지는 운영자
+  결정 대기다 (D-133). 그 전에는 loopback 이 아닌 주소가 `INTAKE_LISTENER_UNPROTECTED` 로 시작을 거부한다. 그래서 VM 에서
+  닿는 구성은 아직 없다.
+- VM 의 MCP 서버는 `AMPLAI_INTAKE_URL` 에 이 listener 의 주소를 쓴다 (D-133 결정 뒤).
+
 ## 3. Hermes VM 설정
 
 1. `vm-checklist.ko.md` 를 먼저 채운다.
@@ -218,9 +240,9 @@ schema 를 바꾸면 새 major 다. 키트를 새 minor 로 올릴 때는 `kit.j
   (`gateway/session.py:376-463`). Slack 메시지 id 를 모델에 주는 부분은 찾지 못했다. 그래서 도구의 `user_id`, `workspace_id`,
   `message_id` 는 모델이 채운다. 연결표가 운영자 1인이라 사칭 범위는 같은 운영자다. 그러나 같은 메시지 재전송을 한 번만 받는 것(H-7)은
   모델이 `message_id` 를 일관되게 채울 때만 성립한다. 서버가 보낸 사람을 검증하려면 Hermes 쪽 지원이 필요하다 — 확인 필요.
-- **(P2-7) VM → AMPLAI 경로와 AC-H8**: AMPLAI 서버는 `127.0.0.1:5083` 에만 열린다 (`runtime/cli.py` `local-serve`). VM 안의
-  MCP 서버가 호스트에 닿는 방법(VM 네트워크 설정 또는 S1b 의 원격 listener, H-12/OD-8) — 확인 필요. 이 경로가 정해져야 egress
-  허용 목록과 AC-H8 확인(`vm-checklist.ko.md`)을 끝낼 수 있다.
+- **(P2-7) VM → AMPLAI 경로와 AC-H8**: 운영자 API 는 `127.0.0.1:5083` 에만 열린다 (`runtime/cli.py` `local-serve`). VM 은
+  접수 전용 listener(2-5, S1g)로 들어온다. 그 listener 의 보호 방식(TLS 또는 출발지 고정 토큰)과 VM 이 닿는 주소는 결정
+  대기다 (D-133). 이것이 정해져야 egress 허용 목록과 AC-H8 확인(`vm-checklist.ko.md`)을 끝낼 수 있다.
 - **(P2-8) Hermes 의 파일 도구가 `$HERMES_HOME/.env` 를 읽을 수 있는가**: 토큰은 MCP 서버 환경에만 들어가지만,
   `${AMPLAI_INTAKE_TOKEN}` 치환을 위해 Hermes 의 `.env` 에도 있다. Docker terminal 은 `docker_forward_env` 로 넘긴 변수만 받는다.
   그러나 terminal 밖에서 도는 Hermes 의 파일 읽기 도구가 `.env` 를 읽어 모델 문맥에 넣을 수 있는지는 확인하지 못했다 — 확인 필요.
