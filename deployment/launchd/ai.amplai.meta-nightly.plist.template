@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  AMPLAI nightly meta-harness runner (Work 033 S12, interfaces.md §8.9).
-  Filled by `amplai meta nightly print-agent`; never installed automatically.
+  AMPLAI nightly meta-harness tick (Work 033 S12, interfaces.md §8.9; Work 034 S1d, spec N-1,
+  D-117, D-118). Filled by `amplai meta nightly print-agent`; never installed automatically.
   The operator copies the filled file to ~/Library/LaunchAgents/ and runs
-  `launchctl bootstrap gui/$(id -u) <file>`. The night does nothing until the human operator has
-  issued a standing approval (`amplai meta nightly approve`, IC-17, provisional).
-  Open (reported, not decided): the trial executor's qualification is pinned in memory per
-  command, so a night started by this agent stops at preflight (QUALIFIED_EXECUTOR_REQUIRED)
-  until the operator decides where an unattended night takes it from.
+  `launchctl bootstrap gui/$(id -u) <file>`. Every 300 seconds launchd runs
+  `amplai meta nightly tick`: it starts tonight's night at meta.nightly.start_at (default 01:00,
+  the time this agent ran `run` at before S1d) or on a front agent's start request that meets
+  N-9, and otherwise ends at once (also while a night runs). The night does nothing until the
+  human operator has issued a standing approval (`amplai meta nightly approve`, IC-17,
+  provisional).
   Placeholders (in double braces): LABEL, AMPLAI, CONFIG, LOG_DIR, PATH.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -20,17 +21,12 @@
     <string>{{AMPLAI}}</string>
     <string>meta</string>
     <string>nightly</string>
-    <string>run</string>
+    <string>tick</string>
     <string>--config</string>
     <string>{{CONFIG}}</string>
   </array>
-  <key>StartCalendarInterval</key>
-  <dict>
-    <key>Hour</key>
-    <integer>1</integer>
-    <key>Minute</key>
-    <integer>0</integer>
-  </dict>
+  <key>StartInterval</key>
+  <integer>300</integer>
   <key>StandardOutPath</key>
   <string>{{LOG_DIR}}/meta-nightly.out.log</string>
   <key>StandardErrorPath</key>

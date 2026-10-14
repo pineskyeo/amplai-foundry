@@ -2184,10 +2184,11 @@ def test_print_agent_fills_the_template_and_installs_nothing(no_install: Path) -
     assert "{{" not in text and "}}" not in text
     agent = plistlib.loads(text.encode())
     assert agent["Label"] == "ai.amplai.meta-nightly"
+    # Work 034 S1d (N-1): the service manager runs the tick every five minutes
     assert agent["ProgramArguments"] == [
-        "/opt/bin/amplai", "meta", "nightly", "run", "--config", str(config_path.absolute()),
+        "/opt/bin/amplai", "meta", "nightly", "tick", "--config", str(config_path.absolute()),
     ]  # fmt: skip
-    assert agent["StartCalendarInterval"] == {"Hour": 1, "Minute": 0}
+    assert agent["StartInterval"] == 300 and "StartCalendarInterval" not in agent
     logs = (no_install / ".amplai" / "meta" / "logs").absolute()
     assert agent["StandardOutPath"].startswith(str(logs))
     assert agent["StandardErrorPath"].startswith(str(logs))

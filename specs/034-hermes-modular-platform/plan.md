@@ -453,6 +453,10 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 
 ### 3.8 야간 메타 루프 제어 (S1d, OD-12)
 
+부분 구현 (S1d 1차). 코드: `runtime/nightly_control.py`(기록·접수 서비스·읽기), `meta_harness/nightly.py`(밤 쪽 적용·event),
+`runtime/meta_commands/nightly.py`(`tick`, 읽기 전용 `status`). 접수 경로(제품 서버 route, 운영자 CLI 의 쓰기 명령, MCP 도구,
+notifier 알림)는 결정 대기다: 새 route, 도구 계약 1.1, notifier projection 변경이 필요하다.
+
 | 층 | 누가 | 하는 일 |
 |---|---|---|
 | 시계 | 서비스 관리자 (macOS launchd, Linux systemd timer 또는 supervisor, §3.5a.1) | 5분마다 `amplai meta nightly tick` (지금은 01:00 에 `run` 한 번, `deployment/launchd/ai.amplai.meta-nightly.plist.template`). tick 은 예정 시각 또는 유효한 시작 요청(N-9)일 때만 그날 밤을 시작하고, 밤이 이미 돌고 있으면(`ACTIVE_OWNER`) 바로 끝난다 |

@@ -324,7 +324,8 @@ proposer 는 `amplai-meta-proposer` 신원이고 `harness.propose` 만 가진다
 - **focused 대기열**(IC-10): 밤이 끝나면 screening 을 통과한 후보의 focused 실험이 동결되어 dashboard 의 approvals 에 올라간다. 운영자가 `approve-stage --stage focused --queue` 로 정확한 digest 를 승인하고(실행하지 않는다), 다음 밤 confirmation 이 한 번 돌린 뒤 ablation 을 이어 가고 holdout gate 에서 멈춘다. holdout 은 운영자가 직접 돌린다.
 - **IC-30 (A)**: 야간 신원은 class A 초안에 한해 mechanical screen(보호 영역 검사와 leak gate)을 권한 `harness.screen` 으로 직접 돌린다(`meta_harness/service.py:61`, `runtime/execution/meta_local.py:98`). class B 초안은 여전히 운영자의 review 를 기다리고, confirmatory·holdout·canary·승격은 사람만 한다.
 - quota 는 observe 만 한다. 구독 window 의 크기를 알 수 없어 rate-limit 신호는 §14 Q5 를 pilot 에서 측정하기 전까지 0 으로 기록하고 `signal_source` 가 `none_stored_v1` 이다. 숫자를 추정하지 않는다. `amplai meta quota` 가 pilot 의 여유와 제안 B 를 보인다.
-- 기록: `nightly-plan`, `nightly-run`, `quota-observation`. launchd 템플릿은 `deployment/launchd/ai.amplai.meta-nightly.plist.template` 이며 `nightly print-agent` 가 채워서 출력한다. 자동 설치는 없다. doc gardening 같은 계획 항목은 이번 round 에서 미뤘다(`interfaces.md` §8.11).
+- **제어 기록**(Work 034 S1d, D-117): `meta.control_store` 가 제품 store 를 가리키면 밤은 preflight, 단계 사이, 모든 trial guard 에서 제품 store 의 `nightly-control` 기록을 읽기 전용으로 읽는다(`runtime/nightly_control.py`). 멈춤(`operator_stop`, `front_agent_stop`), 건너뛰기(`skipped`), 못 읽음(`control_unreadable`)은 `Hold NIGHT_STOPPED` 이고 dreaming 을 건너뛴다. 조이기(밤 예산·종료 시각)는 줄이는 방향으로만 적용되고 그 밤 동안 풀리지 않는다. 적용한 제어는 `nightly-run` 의 `data.controls` 에 남는다. 밤은 meta store 에 `nightly.started`·`nightly.ended`·`nightly.drift`·`nightly.approval_pending` event 를 쓴다.
+- 기록: `nightly-plan`, `nightly-run`, `quota-observation`. launchd 템플릿은 `deployment/launchd/ai.amplai.meta-nightly.plist.template` 이며 `nightly print-agent` 가 채워서 출력한다(5분마다 `nightly tick`). 자동 설치는 없다. doc gardening 같은 계획 항목은 이번 round 에서 미뤘다(`interfaces.md` §8.11).
 
 ### 10.11 Dashboard
 
