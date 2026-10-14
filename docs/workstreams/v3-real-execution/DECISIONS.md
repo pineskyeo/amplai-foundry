@@ -896,3 +896,32 @@
 - Not decided here (결정 대기): 접수 route(운영자·intake·`/meta/feed`), MCP 도구 계약 1.1(`night_*`, `night_start` 포함 여부), notifier projection 확장(N-9 시작·앞단 에이전트 멈춤·drift), 제품 → meta config 경로 설정 키.
 - Consequence: 이 변경은 D-128 `trial_code_digest` 범위의 파일(`meta_harness/nightly.py`, `runtime/local_deployment.py`, `runtime/storage/store.py`, `runtime/contracts/intake.py`, 새 `runtime/nightly_control.py`)을 바꾼다. 그래서 merge 하면 digest 가 바뀌고, 이전 trial 은 resume·import key 가 맞지 않는다(예상된 결과). 배포 순서는 7a 다.
 - Source: PR #95, `src/amplai_foundry/runtime/nightly_control.py`, `src/amplai_foundry/meta_harness/nightly.py`, `src/amplai_foundry/runtime/meta_commands/nightly.py`, `src/amplai_foundry/runtime/local_deployment.py` `mark_identity`
+
+## D-133 — The Intake-Only Listener (S1g, H-12)
+
+- Status: proposed (운영자 결정 대기: 보호 방식, VM 이 닿는 주소, 운영자 API 의 intake 경로)
+- Date: 2026-10-14
+- Decision (제안): OD-8 의 VM 은 접수 전용 listener 로만 들어온다 (H-12, plan.md §3.2 item 11).
+  1. 형태: `ops local-serve` 프로세스 안의 두 번째 socket 이다(store owner 는 하나). 설정 `local.json`
+     `intake_listener: {host, port}` 는 둘 다 기본값이 없다. `host` 는 IP 주소 하나이고 이름·`0.0.0.0`·`::` 는 거부한다. 없으면
+     두 번째 listener 가 없고 동작은 이전과 같다. 서비스 관리자 unit `amplai-intake-listener` 는 필요 없다(plan.md §3.5a.1 표).
+  2. 경로: 설정된 adapter 의 `/api/v3/intake/<adapter_id>` 아래만 연다. 운영자 API 와 같은 intake router 를 쓰므로 adapter 하나의
+     토큰·연결표·빈도 제한 창은 하나다(H-7). 그 밖의 경로(운영자 API, meta, evaluation, `/api/v3/local`, `/healthz`, OpenAPI·docs),
+     `.`·`..` path segment, 설정되지 않은 adapter 는 body 를 읽기 전에 `404 INTAKE_LISTENER_ROUTE` 다. adapter root 아래의 없는
+     경로도 같은 코드, method 가 틀리면 `405 METHOD_NOT_ALLOWED` 다. WebSocket 은 accept 전에 닫는다. 운영자 토큰은 intake
+     경로에서 `401 UNAUTHENTICATED` 다(intake gate, `control_plane/api_v3/intake.py`).
+  3. 시작 거부 코드: `INTAKE_LISTENER_NO_INTAKE`(intake adapter 없음), `INTAKE_LISTENER_UNPROTECTED`(loopback 이 아닌 주소,
+     아래 결정 전까지), `INTAKE_LISTENER_PORT`(`--port` 와 같은 port), `INTAKE_LISTENER_BIND`(bind 실패).
+- 운영자 결정 대기:
+  - (A) H-12 의 보호 방식. spec 은 "TLS(또는 출발지 고정 토큰)" 이라 둘 중 하나를 요구하지만 어느 것인지 정하지 않았다. 그래서
+    지금은 loopback 주소만 연다(fail closed). 선택지: (A1) TLS — store 밖 0600 인증서·키 파일, VM 의 MCP 서버가 그 인증서를
+    고정해 검증(MCP 서버에 CA 경로 설정 추가 필요). (A2) 출발지 고정 토큰 — adapter 마다 허용 출발지 IP 목록, TCP peer 주소가
+    목록 밖이면 토큰 비교 전에 거부. (A3) 둘 다.
+  - (B) VM 이 닿는 주소. VM 소프트웨어와 네트워크 모드에 달렸다(확인 필요). host-only·shared 네트워크면 Mac 쪽 bridge 주소를
+    `host` 로 쓴다. 사용자 모드 NAT(QEMU slirp 계열)는 VM 의 gateway 주소가 호스트 loopback 으로 이어질 수 있어 운영자 API
+    (`127.0.0.1:5083`)까지 VM 에서 닿을 수 있다(추정, 확인 필요).
+  - (C) listener 를 켰을 때 운영자 API 가 intake 경로를 계속 열지. 지금은 계속 연다(S1a·S1c 동작 그대로).
+- Consequence: `runtime/local_deployment.py`(설정·조립)를 바꾸므로 D-128 `trial_code_digest` 가 바뀐다. 이전 trial 은 resume·
+  import key 가 맞지 않는다. 새 listener 코드(`control_plane/api_v3/intake_listener.py`)와 `runtime/cli.py` 는 digest 밖이다.
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-8, H-12, `specs/034-hermes-modular-platform/plan.md` §3.2 item 11,
+  `src/amplai_foundry/control_plane/api_v3/intake_listener.py`, `tests/v3/test_034_s1g_intake_listener.py`

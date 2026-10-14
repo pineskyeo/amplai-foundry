@@ -39,6 +39,7 @@ from ..control_plane.api_v3.intake import (
     RateLimiter,
     intake_router,
 )
+from ..control_plane.api_v3.intake_listener import check_protected, create_intake_app
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -444,6 +445,32 @@ class IntakeEntry(BaseModel):
         return self
 
 
+class IntakeListenerEntry(BaseModel):
+    """The intake-only listener (Work 034 S1g, spec H-12, OD-8): a second socket in the server
+    process that serves only ``/api/v3/intake/<adapter_id>`` routes. Absent: no second listener
+    (the operator API on 127.0.0.1 serves the intake routes, as before). Both fields are required:
+    the address the front agent's VM reaches is never a default. ``host`` is an IP address, not a
+    name and not the any-address (``0.0.0.0``, ``::``). Until H-12's TLS or source-pinned token is
+    decided, only a loopback address starts (``INTAKE_LISTENER_UNPROTECTED``)."""
+
+    model_config = ConfigDict(extra="forbid")
+    host: str
+    port: int = Field(ge=1, le=65535)
+
+    @field_validator("host")
+    @classmethod
+    def _address(cls, value: str) -> str:
+        import ipaddress
+
+        try:
+            address = ipaddress.ip_address(value)
+        except ValueError as exc:
+            raise ValueError("intake_listener.host must be an IP address") from exc
+        if address.is_unspecified:
+            raise ValueError("intake_listener.host must name one address, not every interface")
+        return str(address)
+
+
 class NotifierEntry(BaseModel):
     """The operator's direct alert (Work 034 S1c, spec F-5, OD-9, Q-10): a Slack Incoming Webhook
     of a Slack app separate from the front agent's. Absent: no direct alerts. Independent of
@@ -513,6 +540,7 @@ class LocalConfig(BaseModel):
     meta: MetaEntry | None = None
     jev: JevEntry | None = None
     intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
+    intake_listener: IntakeListenerEntry | None = None  # Work 034 S1g; absent = no second listener
     notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
     # Work 034 OD-15: absent = GitHub (the behaviour before the module); null = no git host
     git_host: GitHostEntry | None = Field(default_factory=GitHostEntry)
@@ -637,6 +665,14 @@ class LocalProductDeployment:
         self._compose(cfg)
         self._planning: set[str] = set()
         self._planning_lock = threading.Lock()
+        if cfg.intake_listener is not None:
+            if cfg.intake is None:
+                raise Hold(
+                    "INTAKE_LISTENER_NO_INTAKE",
+                    "intake_listener serves intake adapters; configure intake.adapters first",
+                )
+            check_protected(cfg.intake_listener.host)
+        self.intake_app: Any = None  # the intake-only listener's app (S1g), when configured
         self.app = self._app(start_loop)
 
     def local(self, value: str) -> Path:
@@ -1287,8 +1323,13 @@ class LocalProductDeployment:
 
         app.include_router(router)
         if self.config.intake is not None:
-            for adapter in self.config.intake.adapters:  # one router, token and window each
-                app.include_router(intake_router(self._intake(adapter)))
+            adapters = self.config.intake.adapters
+            # one router, token and window each, shared by both listeners (S1g, H-7)
+            intake = [intake_router(self._intake(adapter)) for adapter in adapters]
+            for intake_routes in intake:
+                app.include_router(intake_routes)
+            if self.config.intake_listener is not None:
+                self.intake_app = create_intake_app(intake, [a.adapter_id for a in adapters])
         if start_loop:
             original = app.router.lifespan_context
 

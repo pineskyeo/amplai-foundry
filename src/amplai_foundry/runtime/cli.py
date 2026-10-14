@@ -1033,15 +1033,27 @@ def local_serve(
     config: Annotated[Path, typer.Option("--config")] = Path("~/.amplai/local/local.json"),
     port: int = 5083,
 ) -> None:
-    """Start the local single-operator product (API + execution loop), loopback only."""
+    """Start the local single-operator product (API + execution loop).
+
+    The operator API listens on 127.0.0.1 only. With ``intake_listener`` in the config, the same
+    process also opens the intake-only listener on that address (Work 034 S1g, H-12): the front
+    agent's intake routes and nothing else.
+    """
     import uvicorn
 
+    from ..control_plane.api_v3.intake_listener import serve_with_listener
     from .local_deployment import LocalProductDeployment
 
     deployment = None
     try:
         deployment = LocalProductDeployment(config)
-        uvicorn.run(deployment.app, host="127.0.0.1", port=port, workers=1, access_log=False)
+        listener = deployment.config.intake_listener
+        if listener is None:
+            uvicorn.run(deployment.app, host="127.0.0.1", port=port, workers=1, access_log=False)
+        else:
+            serve_with_listener(
+                deployment.app, port, deployment.intake_app, listener.host, listener.port
+            )
     except RuntimeFault as exc:
         emit(exc.as_dict())
         raise typer.Exit(3) from exc
