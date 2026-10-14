@@ -57,20 +57,22 @@ from amplai_foundry.runtime.local_deployment import (
 from amplai_foundry.runtime.meta_commands import nightly as commands
 from amplai_foundry.runtime.nightly_control import (
     EVENT,
+    IDENTITY_ID,
+    IDENTITY_KIND,
     KIND,
     SCHEMA,
     ControlReader,
     MetaView,
     NightlyControlService,
     NightPolicy,
-    earlier,
     fold,
+    identity_value,
     in_window,
     night_date,
     read_records,
     summary,
 )
-from amplai_foundry.runtime.storage.store import Store
+from amplai_foundry.runtime.storage.store import Scope, Store
 
 AGENT_PERMISSIONS = INTAKE_PERMISSIONS | {NIGHTLY_CONTROL}
 TONIGHT = "2026-10-15"
@@ -84,6 +86,11 @@ def local_epoch(year: int, month: int, day: int, hour: int, minute: int = 0) -> 
 EVENING = local_epoch(2026, 10, 14, 23)
 
 
+def mark(store: Store, scope: Any, role: str) -> None:
+    with store.tx() as db:
+        store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, 0, role, identity_value(scope, role))
+
+
 class Rig:
     """The meta deployment (``env``), a product store with the controls, and the actors."""
 
@@ -92,6 +99,7 @@ class Rig:
         self.root = root
         self.product = Store(root)
         self.scope = env.scope
+        mark(self.product, self.scope, "product")  # as LocalProductDeployment's boot does
         subject = env.dep.config.operator_subject
         self.agent = intake_actor(subject, self.scope, "hermes", AGENT_PERMISSIONS)
         self.other_agent = intake_actor(subject, self.scope, "other", AGENT_PERMISSIONS)
@@ -225,12 +233,14 @@ def test_a_tighten_only_lowers_the_budget(rig: Rig) -> None:
 
 
 def test_a_tighten_only_brings_the_stop_time_earlier(rig: Rig) -> None:
-    assert earlier("05:00", "07:00", 8) and earlier("23:30", "07:00", 8)
-    assert not earlier("08:00", "07:00", 8) and not earlier("07:00", "07:00", 8)
-    for later in ("08:00", "07:00", "12:00"):
+    # tonight starts at 01:00 and ends at 07:00 (stop_at, within max_hours 8). A stop time at or
+    # after that end, or one that falls on the next day (00:30, 23:30), changes nothing: refused,
+    # with the end in force (PR #95 review P3)
+    for later in ("08:00", "07:00", "12:00", "00:30", "23:30"):
         with pytest.raises(Hold) as widen:
             rig.ask(rig.agent, "tighten", dates=[TONIGHT], limits={"stop_at": later})
         assert widen.value.code == "NIGHT_CONTROL_WIDEN"
+        assert widen.value.details["effective"].startswith(TONIGHT + "T07:00")
     rig.ask(rig.agent, "tighten", dates=[TONIGHT], limits={"stop_at": "05:00"})
     with pytest.raises(Hold):
         rig.ask(rig.agent, "tighten", dates=[TONIGHT], limits={"stop_at": "06:00"})
@@ -427,10 +437,10 @@ def test_ac_n5_controls_that_become_unreadable_stop_the_night(rig: Rig) -> None:
     reader = ControlReader(rig.root, rig.scope)
     broken = {"now": False}
 
-    def read(date: str) -> Any:
+    def read(date: str, started_at: str | None = None) -> Any:
         if broken["now"]:
             raise Hold("NIGHT_CONTROL_UNREADABLE", "gone")
-        return reader(date)
+        return reader(date, started_at)
 
     def breaks(fake: Fake, cid: str, tasks: int) -> None:
         broken["now"] = fake.search_n == 2 or broken["now"]
@@ -468,7 +478,11 @@ def test_a_tightened_stop_time_ends_the_night_earlier(rig: Rig) -> None:
     cfg = config(env.clock)
     later = datetime.fromtimestamp(env.clock.t + 2 * 3600)
     sooner = later.strftime("%H:%M")
-    rig.meta.policy = NightPolicy(**{**rig.policy.__dict__, "stop_at": cfg.stop_at})
+    # the night's scheduled start is the test clock's time of day, so +2 h is before its end
+    start_at = datetime.fromtimestamp(env.clock.t).strftime("%H:%M")
+    rig.meta.policy = NightPolicy(
+        **{**rig.policy.__dict__, "stop_at": cfg.stop_at, "start_at": start_at}
+    )
     rig.env.standing()
     rig.ask(rig.agent, "tighten", dates=[DATE], limits={"stop_at": sooner})
     runner = NightlyRunner(env.dep, cfg, clock=env.clock, backend=env.fake,
@@ -639,9 +653,14 @@ def test_the_tick_ends_at_once_when_the_night_ran_or_the_store_is_held(
 ) -> None:
     env.standing()
     path = meta_config(env, tmp_path, None)
-    busy = Starts(Hold("ACTIVE_OWNER", "Another control plane owns this local store"))
+    busy = Starts(commands.TickBusy())
     clock = local_epoch(2026, 10, 1, 1, 5)
     assert commands.tick(path, clock=lambda: clock, start=busy)["tick"] == "busy"
+    # only the open is busy: an ACTIVE_OWNER from inside the run is the run's result (P3)
+    inside = Starts(Hold("ACTIVE_OWNER", "Another control plane owns this local store"))
+    with pytest.raises(Hold) as raised:
+        commands.tick(path, clock=lambda: clock, start=inside)
+    assert raised.value.code == "ACTIVE_OWNER"
     env.runner().run(DATE)
     starts = Starts()
     out = commands.tick(path, clock=lambda: clock, start=starts)
@@ -667,7 +686,10 @@ def test_ac_n6_the_tick_starts_a_valid_start_request(rig: Rig, tmp_path: Path) -
     done = rig.ask(rig.agent, "start")
     out = commands.tick(path, clock=lambda: EVENING, start=starts)
     assert out["tick"] == "started" and starts.calls == [
-        (TONIGHT, {"by": "start_request", "control_id": done["control_id"]})
+        (
+            TONIGHT,
+            {"by": "start_request", "control_id": done["control_id"], "issued_by": "intake:hermes"},
+        )
     ]
     # checked again right before the start: an operator skip since the request wins
     rig.ask(rig.operator, "skip", dates=[TONIGHT])
@@ -695,3 +717,103 @@ def test_the_nightly_entry_defaults_and_window_shape() -> None:
         NightlyEntry.model_validate({"agent_start_window": {"start": "22:00", "end": "22:00"}})
     with pytest.raises(ValueError):
         NightlyEntry.model_validate({"start_at": "25:00"})
+
+
+# --- PR #95 review -------------------------------------------------------------------------------
+
+
+def test_p2_1_every_deployment_boot_marks_its_store(env: Env) -> None:
+    head = env.store.head(env.scope, IDENTITY_KIND, IDENTITY_ID)
+    # the fixture's config has no meta.nightly: a product deployment
+    assert head["data"] == identity_value(env.scope, "product") and head["state"] == "product"
+
+
+@pytest.mark.parametrize("case", ["wrong_scope", "meta_role", "unmarked", "meta_root"])
+def test_p2_1_the_reader_proves_it_opened_this_scopes_product_store(
+    env: Env, tmp_path: Path, case: str
+) -> None:
+    root = tmp_path / "other"
+    with Store(root) as other:
+        if case == "wrong_scope":
+            mark(other, Scope("local", "another-project"), "product")
+        elif case == "meta_role":
+            mark(other, env.scope, "meta")
+    if case == "meta_root":  # control_store names the meta deployment's own store
+        root = env.dep.local(env.dep.config.runtime_root)
+    reader = ControlReader(root, env.scope, meta_root=env.dep.local(env.dep.config.runtime_root))
+    with pytest.raises(Hold) as caught:
+        reader(DATE)
+    assert caught.value.code == "NIGHT_CONTROL_UNREADABLE"
+    assert caught.value.details == {"code": "NIGHT_CONTROL_STORE"}
+    # and the night stops on it
+    held = stopped(env, controlled(env, root, reader))
+    assert held.details["reason"] == "control_unreadable"
+
+
+def test_p2_1_a_control_store_on_the_meta_root_is_unreadable_from_the_config(
+    env: Env, tmp_path: Path
+) -> None:
+    path = meta_config(env, tmp_path, env.dep.local(env.dep.config.runtime_root))
+    assert commands.status_readonly(path, DATE)["controls"] == {
+        "unreadable": "NIGHT_CONTROL_UNREADABLE"
+    }
+
+
+def test_p2_2_a_stop_the_morning_after_resolves_to_the_next_night(rig: Rig) -> None:
+    rig.env.standing()
+    rig.env.runner().run(DATE)  # the night of DATE ran and ended
+    rig.now = local_epoch(2026, 10, 1, 9)  # the morning after: still the night of DATE
+    done = rig.ask(rig.agent, "stop", reason="not tonight either")
+    assert done["dates"] == ["2026-10-02"] and done["requested_dates"] is None
+    with pytest.raises(Hold) as ended:  # a named night that ended is refused
+        rig.ask(rig.agent, "skip", dates=[DATE])
+    assert ended.value.code == "NIGHT_CONTROL_ENDED"
+    assert ended.value.details == {"dates": [DATE]}
+
+
+def test_p3_fold_ignores_a_front_agent_clear_the_service_would_refuse(rig: Rig) -> None:
+    stop = rig.ask(rig.agent, "stop", dates=[TONIGHT])
+    skip = rig.ask(rig.agent, "skip", dates=["2026-10-16"])
+
+    def forge(control_id: str, at: str, date: str) -> None:
+        value = {
+            "schema": SCHEMA, "scope": rig.scope.wire(), "control_id": "nightctl-x" + at[:4],
+            "action": "clear", "dates": [date], "limits": {}, "issued_by": rig.agent.wire(),
+            "reason": "x", "at": at, "clears": control_id,
+        }  # fmt: skip
+        with rig.product.tx() as db:
+            rig.product.put(db, rig.scope, KIND, value["control_id"], 1, value)
+
+    forge(stop["control_id"], "2026-10-14T23:30:00Z", TONIGHT)  # its own stop: never
+    assert fold(rig.records(), TONIGHT).stop == "front_agent_stop"
+    forge(skip["control_id"], "2027-01-01T00:00:00Z", "2026-10-16")  # after the night started
+    assert fold(rig.records(), "2026-10-16", "2026-10-15T16:00:00Z").stop == "skipped"
+    assert fold(rig.records(), "2026-10-16").stop is None  # before any start it counts
+
+
+def test_p3_start_requests_per_night_count_cleared_ones(rig: Rig) -> None:
+    rig.env.standing()
+    first = rig.ask(rig.agent, "start")
+    rig.ask(rig.agent, "clear", clears=first["control_id"])
+    start_refused(rig, "frequency")
+    rig.meta.policy = NightPolicy(**{**rig.policy.__dict__, "start_limit": 2})
+    rig.ask(rig.agent, "start")
+    assert NightlyEntry().agent_start_limit == 1
+
+
+def test_p3_the_started_event_names_the_trigger(env: Env) -> None:
+    runner = env.ready()
+    runner.trigger = {"by": "start_request", "control_id": "nightctl-1",
+                      "issued_by": "intake:hermes"}  # fmt: skip
+    runner.run(DATE)
+    [started] = [e for e in env.store.events(env.scope) if e["event_type"] == EVENT_STARTED]
+    assert started["data"] == {"date": DATE, "trigger": runner.trigger}
+
+
+def test_p3_the_tick_is_busy_when_the_meta_store_cannot_be_opened(env: Env, tmp_path: Path) -> None:
+    """The real open (no injected start): the fixture's deployment owns the store, as a
+    calibration or a running night would."""
+    env.standing()
+    path = meta_config(env, tmp_path, None)
+    out = commands.tick(path, clock=lambda: local_epoch(2026, 10, 15, 1, 5))
+    assert out == {"tick": "busy", "date": TONIGHT}

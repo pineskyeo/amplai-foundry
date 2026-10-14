@@ -15,7 +15,9 @@ Where things live (Q-9 = product store):
   ``commands`` table, keyed by the actor mark and the caller's key (the S1a path).
 - The night (meta deployment) reads them **read-only** (:class:`ControlReader`, ``Store(readonly=
   True)``) at preflight, between phases and at every trial guard; a record it cannot read or that
-  is malformed stops the night (``control_unreadable``, fail closed).
+  is malformed stops the night (``control_unreadable``, fail closed). It first proves it opened
+  the product store of the configured scope: not the meta deployment's own root, and the store's
+  ``deployment-identity`` head (written by every deployment's boot) is ``product`` for that scope.
 - The service reads the meta deployment read-only (:class:`MetaView`): the standing approval, the
   night heads and ``meta.nightly``. It never opens the meta store for writing, so it works while a
   night holds that store (``ACTIVE_OWNER``).
@@ -28,8 +30,9 @@ Record (``plan.md`` §3.8)::
 Folding (:func:`fold`): a record binds the nights of its ``dates`` until a valid ``clear`` names
 it. The strictest binding control wins: any stop or skip stops the night; the budget is the
 minimum; each tightened ``stop_at`` (``HH:MM``, the night's local clock) can only end the night
-earlier. A ``clear`` by the front agent removes only a record with its own mark; the human
-operator's removes any.
+earlier. A ``clear`` by the front agent removes only its own skip, tighten or start, written
+before that night started; the human operator's removes any. Folding applies these rules again,
+so a record written past the service changes nothing. Proposed contract: D-132.
 
 The night date (:func:`night_date`): a night is named by the date of its scheduled start
 (``meta.nightly.start_at``). With a start before noon, a moment belongs to the night whose start
@@ -78,6 +81,18 @@ RECORD_FIELDS = frozenset(
     {"schema", "scope", "control_id", "action", "dates", "limits", "issued_by", "reason", "at",
      "clears"}
 )  # fmt: skip
+# what a front agent may clear, and only its own, only before the night started (N-2)
+FRONT_AGENT_CLEARS = frozenset({"skip", "tighten", "start"})
+# PR #95 review P2-1: every deployment marks its store (``local_deployment.mark_identity``), so the
+# night can prove it opened the product store of the configured scope, not the meta store or a
+# foreign one
+IDENTITY_KIND = "deployment-identity"
+IDENTITY_ID = "deployment"
+IDENTITY_SCHEMA = "amplai.deployment-identity.v1"
+
+
+def identity_value(scope: Scope, role: str) -> dict[str, Any]:
+    return {"schema": IDENTITY_SCHEMA, "scope": scope.wire(), "role": role}
 
 
 def _bad_record(why: str, details: object = None) -> RuntimeFault:
@@ -133,13 +148,17 @@ def in_window(epoch: float, window: tuple[str, str]) -> bool:
     return start <= tod < end if start < end else (tod >= start or tod < end)
 
 
-def earlier(value: str, than: str, max_hours: float) -> bool:
-    """``value`` comes before ``than`` on a night's clock: within ``max_hours`` (the longest
-    night) before it. 08:00 is not earlier than 07:00; 23:00 is, for a night of 8+ hours."""
-    a, b = minutes(value), minutes(than)
-    if a is None or b is None:
-        return False
-    return 0 < (b - a) % 1440 < max_hours * 60
+def stop_after(start: float, stop_at: str) -> float:
+    """The first local ``stop_at`` after ``start`` (as ``meta_harness.nightly.stop_epoch``)."""
+    from ..meta_harness.nightly import stop_epoch
+
+    return float(stop_epoch(start, stop_at))
+
+
+def _epoch(value: Any) -> float | None:
+    from .execution.meta_local import epoch_of
+
+    return epoch_of(value)
 
 
 def issuer(wire: Any) -> str:
@@ -205,9 +224,14 @@ def read_records(store: Store, scope: Scope) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda v: (v["at"], v["control_id"]))
 
 
-def _active(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The records no valid ``clear`` names. A clear counts only when it names a record that is
-    not a clear and its issuer may clear that record (the operator: any; a front agent: its own)."""
+def _active(
+    records: list[dict[str, Any]], started: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
+    """The records no valid ``clear`` names. The rules the service applies are applied again here,
+    so a record written past the service changes nothing (PR #95 review P3): a clear counts only
+    when it names a record that is not a clear and its issuer may clear it: the operator any; a
+    front agent only its own skip, tighten or start, and only when it was written before the night
+    of each of the target's dates started (``started``: date -> the night's ``started_at``)."""
     by_id = {r["control_id"]: r for r in records}
     cleared: set[str] = set()
     for r in records:
@@ -216,8 +240,16 @@ def _active(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         target = by_id.get(r["clears"])
         if target is None or target["action"] == "clear":
             continue
-        if issuer(r["issued_by"]) == OPERATOR or _same_issuer(r["issued_by"], target["issued_by"]):
-            cleared.add(target["control_id"])
+        if issuer(r["issued_by"]) != OPERATOR:
+            if target["action"] not in FRONT_AGENT_CLEARS:
+                continue
+            if not _same_issuer(r["issued_by"], target["issued_by"]):
+                continue
+            at = _epoch(r["at"])
+            begun = [_epoch((started or {}).get(d)) for d in target["dates"]]
+            if any(b is not None and (at is None or at >= b) for b in begun):
+                continue
+        cleared.add(target["control_id"])
     return [r for r in records if r["action"] != "clear" and r["control_id"] not in cleared]
 
 
@@ -240,9 +272,11 @@ class NightControls:
     records: tuple[dict[str, Any], ...] = field(default=(), repr=False)
 
 
-def fold(records: list[dict[str, Any]], date: str) -> NightControls:
-    """The controls binding the night ``date`` (module docstring)."""
-    mine = [r for r in _active(records) if date in r["dates"]]
+def fold(records: list[dict[str, Any]], date: str, started_at: str | None = None) -> NightControls:
+    """The controls binding the night ``date`` (module docstring); ``started_at`` is when that
+    night started, if it did (a front agent's clear written after it does not count)."""
+    started = {date: started_at} if started_at is not None else None
+    mine = [r for r in _active(records, started) if date in r["dates"]]
     stops = [r for r in mine if r["action"] == "stop"]
     skips = [r for r in mine if r["action"] == "skip"]
     tightens = [r for r in mine if r["action"] == "tighten"]
@@ -270,17 +304,36 @@ def fold(records: list[dict[str, Any]], date: str) -> NightControls:
 class ControlReader:
     """The night's read-only view of the product store's control records (N-4). Every call opens
     the store read-only (no owner lock, so it works while the product server owns the store) and
-    folds the records of one date. Anything that keeps it from reading them, a missing store or a
-    malformed record included, is ``Hold NIGHT_CONTROL_UNREADABLE``: the night stops."""
+    folds the records of one date. It first proves which store it opened (PR #95 review P2-1):
+    the root is not the meta deployment's own (``meta_root``), and the store's deployment
+    identity (``IDENTITY_KIND``) is a ``product`` of this scope. Anything that keeps it from
+    reading them, a missing store, another store or a malformed record included, is ``Hold
+    NIGHT_CONTROL_UNREADABLE``: the night stops."""
 
-    def __init__(self, runtime_root: str | Path, scope: Scope) -> None:
+    def __init__(
+        self, runtime_root: str | Path, scope: Scope, *, meta_root: str | Path | None = None
+    ) -> None:
         self.root, self.scope = Path(runtime_root).expanduser(), scope
+        self.meta_root = Path(meta_root).expanduser() if meta_root is not None else None
+
+    def _check(self, store: Store) -> None:
+        try:
+            head = store.head(self.scope, IDENTITY_KIND, IDENTITY_ID)
+        except RuntimeFault as exc:
+            raise RuntimeFault(
+                "NIGHT_CONTROL_STORE", "The store names no product deployment of this scope"
+            ) from exc
+        if head["data"] != identity_value(self.scope, "product"):
+            raise RuntimeFault("NIGHT_CONTROL_STORE", "The store is not this scope's product store")
 
     def records(self) -> list[dict[str, Any]]:
         try:
+            if self.meta_root is not None and self.root.resolve() == self.meta_root.resolve():
+                raise RuntimeFault("NIGHT_CONTROL_STORE", "control_store is the meta store itself")
             if not (self.root / "runtime.sqlite3").is_file():
                 raise RuntimeFault("NOT_FOUND", "No product store at the control store root")
             with Store(self.root, readonly=True) as store:
+                self._check(store)
                 return read_records(store, self.scope)
         except Exception as exc:
             raise Hold(
@@ -289,8 +342,8 @@ class ControlReader:
                 details={"code": getattr(exc, "code", type(exc).__name__)},
             ) from exc
 
-    def __call__(self, date: str) -> NightControls:
-        return fold(self.records(), date)
+    def __call__(self, date: str, started_at: str | None = None) -> NightControls:
+        return fold(self.records(), date, started_at)
 
 
 # -- the meta deployment, read-only ----------------------------------------------------------------
@@ -305,11 +358,13 @@ class NightPolicy:
     max_hours: float
     start_at: str
     start_window: tuple[str, str] | None  # ``agent_start_window``; None: no front-agent start
+    start_limit: int = 1  # ``agent_start_limit``: front-agent start requests per night (N-9)
 
     @classmethod
     def from_entry(cls, entry: Any) -> NightPolicy:
         window = getattr(entry, "agent_start_window", None)
         return cls(
+            start_limit=int(getattr(entry, "agent_start_limit", 1)),
             budget_trials=int(entry.budget_trials),
             cells=tuple(entry.cells),
             shares=dict(entry.shares),
@@ -460,13 +515,7 @@ class NightlyControlService:
                            details={"condition": "date", "tonight": self._tonight()})  # fmt: skip
             return [self._tonight()]
         if action == "stop" and not dates:
-            running = None
-            if self.meta is not None:
-                try:
-                    running = self.meta.running()
-                except Hold:
-                    running = None  # a stop never waits on the meta store
-            return [running or self._tonight()]
+            return [self._stop_night()]
         if not isinstance(dates, list) or not dates:
             raise RuntimeFault("NIGHT_CONTROL_INPUT", "Name the nights (dates) this applies to")
         days = [_day(d) for d in dates]
@@ -482,7 +531,40 @@ class NightlyControlService:
                     "A date is tonight's night or one of the next seven",
                     details={"tonight": first.isoformat()},
                 )
+        ended = self._ended(list(dates))
+        if ended:
+            raise Hold("NIGHT_CONTROL_ENDED", "That night ended", details={"dates": ended})
         return list(dates)
+
+    def _ended(self, dates: list[str]) -> list[str]:
+        """The dates among ``dates`` whose night ended (a stopped or finished head). A stop or
+        skip never waits on the meta store: when it cannot be read, none is taken as ended."""
+        if self.meta is None:
+            return []
+        try:
+            state = self.meta.read(dates)
+        except Hold:
+            return []
+        return sorted(
+            d for d in dates if (state.nights.get(d) or {}).get("state") not in (None, "running")
+        )
+
+    def _stop_night(self) -> str:
+        """The night a stop without dates is for: the running night, else tonight's; when
+        tonight's night already ended (the morning after), the next night (PR #95 review P2-2).
+        The response names the resolved date."""
+        running = None
+        if self.meta is not None:
+            try:
+                running = self.meta.running()
+            except Hold:
+                running = None  # a stop never waits on the meta store
+        if running is not None:
+            return running
+        tonight = self._tonight()
+        if self._ended([tonight]):
+            return (date_cls.fromisoformat(tonight) + timedelta(days=1)).isoformat()
+        return tonight
 
     def request(
         self,
@@ -545,7 +627,9 @@ class NightlyControlService:
             elif action == "start":
                 assert meta_state is not None
                 self._check_start(resolved[0], records, meta_state)
-            return self._write(db, actor, action, resolved, limits, reason, None)
+            result = self._write(db, actor, action, resolved, limits, reason, None)
+            # what the caller asked (None: resolved here, e.g. the next night after one ended)
+            return {**result, "requested_dates": dates}
 
         return self.store.command(self.scope, mark, key, payload, run, operation=OPERATION)
 
@@ -575,11 +659,17 @@ class NightlyControlService:
         meta: MetaState,
     ) -> None:
         """Only toward less (N-2, AC-N2): below the budget the night would otherwise have, and a
-        stop time earlier than the one it would otherwise end at."""
+        stop time before the end it would otherwise have. That end is measured from the night's
+        start (the running night's ``started_at``, else its scheduled start): min(the configured
+        ``stop_at``, start + ``max_hours``, every tightened stop time in force). A stop time at or
+        after it would change nothing and is refused like a widening (PR #95 review P3)."""
+        from ..meta_harness.nightly import night_end
+
         policy = self._meta().policy
         for date in dates:
             current = fold(records, date)
-            if (meta.nights.get(date) or {}).get("state") not in (None, "running"):
+            head = meta.nights.get(date) or {}
+            if head.get("state") not in (None, "running"):
                 raise Hold("NIGHT_CONTROL_ENDED", "That night ended", details={"date": date})
             if "budget_trials" in limits:
                 bases = [policy.budget_trials]
@@ -594,13 +684,20 @@ class NightlyControlService:
                         details={"date": date, "limit": "budget_trials", "now": min(bases)},
                     )
             if "stop_at" in limits:
-                for than in (policy.stop_at, *current.stop_at):
-                    if not earlier(limits["stop_at"], than, policy.max_hours):
-                        raise Hold(
-                            "NIGHT_CONTROL_WIDEN",
-                            "A tighten only brings the night's stop time earlier",
-                            details={"date": date, "limit": "stop_at", "now": than},
-                        )
+                data = head.get("data") if isinstance(head.get("data"), dict) else {}
+                begin = _epoch((data or {}).get("started_at")) if head else None
+                if begin is None:
+                    begin = scheduled_start(date, policy.start_at)
+                end = night_end(begin, policy.stop_at, policy.max_hours)
+                for value in current.stop_at:
+                    end = min(end, stop_after(begin, value))
+                if stop_after(begin, limits["stop_at"]) >= end:
+                    raise Hold(
+                        "NIGHT_CONTROL_WIDEN",
+                        "A tighten only brings the night's end earlier",
+                        details={"date": date, "limit": "stop_at",
+                                 "effective": local(end).isoformat(timespec="minutes")},
+                    )  # fmt: skip
 
     def _check_start(self, date: str, records: list[dict[str, Any]], meta: MetaState) -> None:
         controls = fold(records, date)
@@ -609,7 +706,17 @@ class NightlyControlService:
             controls=controls,
         )  # fmt: skip
         if why is None and controls.starts:
-            why = "already_requested"  # the frequency limit: one start per night
+            why = "already_requested"  # one start request in force per night
+        if why is None:
+            # the frequency limit (N-9): front-agent start requests per night, cleared ones too,
+            # at most ``meta.nightly.agent_start_limit`` (default 1)
+            made = [
+                r for r in records
+                if r["action"] == "start" and date in r["dates"]
+                and issuer(r["issued_by"]) == FRONT_AGENT
+            ]  # fmt: skip
+            if len(made) >= self._meta().policy.start_limit:
+                why = "frequency"
         if why is not None:
             raise Hold("NIGHT_START_REFUSED", "The start request has no effect (N-9)",
                        details={"condition": why, "date": date})  # fmt: skip
@@ -625,7 +732,7 @@ class NightlyControlService:
         if actor.kind == INTAKE_KIND:
             if not _same_issuer(actor.wire(), target["issued_by"]):
                 raise RuntimeFault("FORBIDDEN", "The front agent clears only its own controls")
-            if target["action"] not in ("skip", "tighten", "start"):
+            if target["action"] not in FRONT_AGENT_CLEARS:
                 raise RuntimeFault("FORBIDDEN", "The front agent clears a skip, tighten or start")
             state = self._meta().read(list(target["dates"]))
             started = sorted(d for d in target["dates"] if d in state.nights)
@@ -637,7 +744,8 @@ class NightlyControlService:
             again = read_records(self.store, self.scope)
             if not any(r["control_id"] == target_id for r in _active(again)):
                 raise RuntimeFault("NOT_FOUND", "No active control with that id")
-            return self._write(db, actor, "clear", list(target["dates"]), {}, reason, target_id)
+            result = self._write(db, actor, "clear", list(target["dates"]), {}, reason, target_id)
+            return {**result, "requested_dates": None}
 
         return self.store.command(self.scope, mark, key, payload, run, operation=OPERATION)
 

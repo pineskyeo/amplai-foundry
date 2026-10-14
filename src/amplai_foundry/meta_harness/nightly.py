@@ -464,7 +464,7 @@ class NightlyRunner:
         *,
         clock: Callable[[], float] = time.time,
         backend: NightlyBackend | None = None,
-        controls: Callable[[str], NightControls] | None = None,
+        controls: Callable[[str, str | None], NightControls] | None = None,
     ) -> None:
         """``backend`` defaults to ``LocalNightlyBackend.open(dep, self)`` on first use.
         ``controls`` (Work 034 S1d) reads the product store's control records of a night
@@ -723,7 +723,8 @@ class NightlyRunner:
         if night.control_stop is not None or self.controls is None:
             return night.control_stop
         try:
-            found = self.controls(night.date)
+            # the night's start: a front agent's clear written after it does not count
+            found = self.controls(night.date, night.data["started_at"])
         except Exception as exc:
             night.control_stop = "control_unreadable"
             night.data["controls"]["unreadable"] = getattr(exc, "code", type(exc).__name__)
@@ -775,7 +776,8 @@ class NightlyRunner:
             if night.dry_run:
                 return
             if started:
-                events = ((EVENT_STARTED, {}), *events)
+                # what started it (PR #95 review P3): the tick's trigger, None for a direct run
+                events = ((EVENT_STARTED, {"trigger": self.trigger}), *events)
             for event_type, extra in events:
                 # N-6: fixed-schema payloads (dates, closed values, counts), never free text
                 self.store.event(db, self.scope, RUN_KIND, night.head_id, event_type,

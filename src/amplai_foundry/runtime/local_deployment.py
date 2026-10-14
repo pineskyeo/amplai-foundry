@@ -303,6 +303,8 @@ class NightlyEntry(BaseModel):
     # N-9: the daily window in which a front agent's start request has effect; only the human
     # operator sets it. Absent: a front agent cannot start a night.
     agent_start_window: StartWindowEntry | None = None
+    # N-9 frequency: front-agent start requests per night, cleared ones included
+    agent_start_limit: int = Field(default=1, ge=1, le=10)
 
     @model_validator(mode="after")
     def _shares(self) -> NightlyEntry:
@@ -559,6 +561,28 @@ class ApproveBody(BaseModel):
     expected_contract_ref: dict[str, Any]
 
 
+def mark_identity(store: Store, scope: Scope, cfg: LocalConfig) -> None:
+    """Work 034 S1d (PR #95 review P2-1): write which deployment owns this store, for this scope
+    (``nightly_control.IDENTITY_KIND``): ``meta`` when the config has ``meta.nightly`` (a separate
+    meta deployment, §8.8), else ``product``. The store's own ``meta`` table names no scope and
+    product and meta deployments are the same class, so nothing else tells a reader which store it
+    opened. Written on every boot; an older store gets it on its next boot."""
+    from .nightly_control import IDENTITY_ID, IDENTITY_KIND, identity_value
+
+    role = "meta" if cfg.meta is not None and cfg.meta.nightly is not None else "product"
+    value = identity_value(scope, role)
+    with store.tx() as db:
+        try:
+            head = store.head(scope, IDENTITY_KIND, IDENTITY_ID, db=db)
+        except RuntimeFault as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+            store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, 0, role, value)
+            return
+        if head["data"] != value:
+            store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, head["row_version"], role, value)
+
+
 class LocalProductDeployment:
     def __init__(self, config_path: Path, *, start_loop: bool = True) -> None:
         self.path = Path(config_path).expanduser().absolute()
@@ -578,6 +602,7 @@ class LocalProductDeployment:
             raise
 
     def _build(self, cfg: LocalConfig, start_loop: bool) -> None:
+        mark_identity(self.store, self.scope, cfg)
         self.artifacts = ArtifactStore(self.store)
         signer = read_key(self.local(cfg.signing_key_file))
         verifier_signer = read_key(self.local(cfg.verifier_key_file))

@@ -35,7 +35,7 @@ import os
 import shutil
 import time
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -240,14 +240,23 @@ def _under(path: Path, value: str) -> Path:
 
 def control_reader(path: Path, cfg: Any) -> Any:
     """The night's read-only reader of the product's control records (``meta.control_store``), or
-    None when the config names none (then no control applies, as before S1d)."""
+    None when the config names none (then no control applies, as before S1d). A control store
+    that is the meta deployment's own runtime root reads as unreadable (PR #95 review P2-1)."""
     from ..nightly_control import ControlReader
     from ..storage.store import Scope
 
     entry = getattr(getattr(cfg, "meta", None), "control_store", None)
     if entry is None:
         return None
-    return ControlReader(_under(path, entry.runtime_root), Scope.parse(entry.scope))
+    return ControlReader(
+        _under(path, entry.runtime_root),
+        Scope.parse(entry.scope),
+        meta_root=_under(path, cfg.runtime_root),
+    )
+
+
+class TickBusy(Exception):
+    """The meta deployment could not be opened because another process owns its store."""
 
 
 def status_readonly(config: Path, date: str) -> dict[str, Any]:
@@ -313,9 +322,16 @@ def tick(
     """The service manager's five-minute tick (N-1, D-117, D-118): start tonight's night when its
     scheduled start (``meta.nightly.start_at``) has come and its stop has not, or when a front
     agent's start request still meets N-9 (``nightly_control.start_refusal``, checked again here
-    right before the start); otherwise end at once. Everything before the start is read-only, so
-    a running night (``ACTIVE_OWNER``) or anything else holding the meta store just ends the tick
-    (``busy``). One date runs once (``NIGHT_STATE``)."""
+    right before the start); otherwise end at once. One date runs once (``NIGHT_STATE``).
+
+    Everything before the start is read-only. A night already recorded for the date ends the tick
+    (``ran``). When the meta deployment cannot be opened because another process owns its store
+    (a calibration, a manual command), the tick ends with ``busy`` (``TickBusy``) and the next
+    tick tries again: for the schedule, every five minutes until the scheduled night's end
+    (min(``stop_at``, start + ``max_hours``)), after which that night does not run; for a start
+    request, while it still meets N-9 (the window above all). Only the open is ``busy``: an
+    ``ACTIVE_OWNER`` raised later, while the night runs, is the night's own result and propagates
+    (PR #95 review P3). ``start`` (tests) raises ``TickBusy`` to say the open failed."""
     from ...meta_harness.nightly import night_end
     from ..nightly_control import (
         MetaView,
@@ -356,21 +372,29 @@ def tick(
                             controls=controls)  # fmt: skip
         if why is not None:
             return {"tick": "idle", "date": date, "start_refused": why}
-        trigger = {"by": "start_request", "control_id": controls.starts[0]["control_id"]}
+        first = controls.starts[0]
+        trigger = {
+            "by": "start_request", "control_id": first["control_id"],
+            "issued_by": first["issued_by"].get("authn_context_ref"),
+        }  # fmt: skip
     why = standing_covers(state.standing, policy)
     if why is not None:  # the run would hold before writing anything: say so once per tick
         return {"tick": "idle", "date": date, "reason": why}
     if start is None:
 
         def start(night: str, why: dict[str, Any]) -> Any:
-            with opened_meta(config) as dep:
+            with ExitStack() as stack:
+                try:
+                    dep = stack.enter_context(opened_meta(config))
+                except Hold as exc:
+                    if exc.code == "ACTIVE_OWNER":
+                        raise TickBusy from exc
+                    raise
                 return run_night(dep, night, trigger=why)
 
     try:
         ref = start(date, trigger)
-    except Hold as exc:
-        if exc.code != "ACTIVE_OWNER":
-            raise
+    except TickBusy:
         return {"tick": "busy", "date": date}
     return {"tick": "started", "date": date, "trigger": trigger, "run_ref": ref}
 

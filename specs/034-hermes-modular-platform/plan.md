@@ -455,7 +455,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 
 부분 구현 (S1d 1차). 코드: `runtime/nightly_control.py`(기록·접수 서비스·읽기), `meta_harness/nightly.py`(밤 쪽 적용·event),
 `runtime/meta_commands/nightly.py`(`tick`, 읽기 전용 `status`). 접수 경로(제품 서버 route, 운영자 CLI 의 쓰기 명령, MCP 도구,
-notifier 알림)는 결정 대기다: 새 route, 도구 계약 1.1, notifier projection 변경이 필요하다.
+notifier 알림)는 결정 대기다: 새 route, 도구 계약 1.1, notifier projection 변경이 필요하다. 코어 계약 제안은 D-132.
 
 | 층 | 누가 | 하는 일 |
 |---|---|---|
