@@ -24,3 +24,23 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
+      # Work 034 OD-18 (M-16..M-20): the registered checks of the `ci` moment. pytest, ruff and
+      # mypy run as the steps above, so they are skipped here (the run record lists them as
+      # skipped). A PR is compared with its base branch's checks.lock.json (M-19).
+      - name: amplai checks run --when ci
+        run: |
+          base=()
+          if [ -n "${GITHUB_BASE_REF:-}" ]; then
+            git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+            base=(--base-ref FETCH_HEAD)
+          fi
+          amplai checks run --when ci "${base[@]}" --record-dir "$RUNNER_TEMP/check-runs" \
+            --skip check.tool_pytest --skip check.tool_ruff --skip check.tool_ruff_format \
+            --skip check.tool_mypy
+      # M-20: the run record (which check passed at which version), kept with the workflow run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-runs-py${{ matrix.python-version }}
+          path: ${{ runner.temp }}/check-runs/
+          if-no-files-found: ignore

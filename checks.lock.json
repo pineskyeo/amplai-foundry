@@ -1,0 +1,185 @@
+{
+  "checks": {
+    "check.evaluator_qsuite": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core"
+      ],
+      "version": "1",
+      "when": [
+        "upgrade"
+      ]
+    },
+    "check.kind_conformance": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci",
+        "enable"
+      ]
+    },
+    "check.module_boundary": {
+      "config": {
+        "composition_roots": [
+          "amplai_foundry.runtime.local_deployment"
+        ]
+      },
+      "loosens_when_added": [
+        "composition_roots"
+      ],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.module_removal": {
+      "config": {
+        "core_tests": [
+          "tests/e2e/test_rc06_execution_e2e.py",
+          "tests/runtime_storage/test_store_migration.py",
+          "tests/v3/test_034_s0_modules.py",
+          "tests/v3/test_034_s1a_approve_digest.py",
+          "tests/v3/test_034_s1a_intake_authority.py",
+          "tests/v3/test_034_s1a_intake_route.py",
+          "tests/v3/test_034_s1f_event_cursor.py",
+          "tests/v3/test_rc01_storage_uow.py",
+          "tests/v3/test_rc02_lease.py",
+          "tests/v3/test_rc02_runtime.py",
+          "tests/v3/test_rc06_local_product.py",
+          "tests/v3/test_rc06_operator_authority.py",
+          "tests/v3/test_rc06_patch_verifier.py",
+          "tests/v3/test_rc07_local_config.py"
+        ],
+        "modules": [
+          "git_host.github",
+          "notifier.slack_webhook"
+        ]
+      },
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "kind:git_host",
+        "kind:notifier"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.policy": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.secret_exposure": {
+      "config": {
+        "allow": [
+          "tests/e2e/test_033_s9_strategies.py::secret-pattern-2",
+          "tests/v3/test_033_answer_lookup.py::secret-pattern-2",
+          "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3",
+          "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2",
+          "tests/v3/test_033_s8_executor.py::secret-pattern-1"
+        ]
+      },
+      "loosens_when_added": [
+        "allow"
+      ],
+      "protected": true,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_mypy": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_pytest": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_ruff": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    },
+    "check.tool_ruff_format": {
+      "config": {},
+      "loosens_when_added": [],
+      "protected": false,
+      "required": true,
+      "targets": [
+        "core",
+        "kind:*"
+      ],
+      "version": "1",
+      "when": [
+        "ci"
+      ]
+    }
+  },
+  "schema": "amplai.checks-lock.v1"
+}

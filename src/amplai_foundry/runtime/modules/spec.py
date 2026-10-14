@@ -28,6 +28,8 @@ KINDS: tuple[str, ...] = (
     "notifier",
     # Work 034 OD-15 (D-126): the code-host connection (push, draft PR, PR outcome)
     "git_host",
+    # Work 034 OD-18 (M-16): a reliability check (lint, test, scan) is a module too
+    "check",
 )  # fmt: skip
 # The interface version a module of each kind must implement (M-2). A module declaring another
 # version is refused; raising a row is an interface change and needs a new conformance suite.

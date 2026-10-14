@@ -38,7 +38,7 @@ from amplai_foundry.runtime.execution.product import (
     app_capabilities,
 )
 from amplai_foundry.runtime.execution.worker import WorkCoordinator
-from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
+from amplai_foundry.runtime.git_host import GitHost
 from amplai_foundry.runtime.reference import PERMISSIONS
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 from amplai_foundry.verification.runtime.patch_commands import (
@@ -500,9 +500,11 @@ def rig_two_apps(
 GITHUB_REMOTE = "https://github.com/o/r.git"
 
 
-def local_github() -> GitHubHost:
+def local_github() -> GitHost:
     """The GitHub git host over a local bare remote: the remote URL lookup answers a github.com
-    URL (the host check, D-130); every other command runs for real."""
+    URL (the host check, D-130); every other command runs for real. The implementation is
+    imported here, so a rig without a git host never loads it (removal test, M-13)."""
+    from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
 
     def run(
         args: list[str], cwd: Path, env: dict[str, str] | None, timeout: float
@@ -540,6 +542,8 @@ class RecordingGitHub:
             return subprocess.CompletedProcess(args, 0, b"", b"")
         if args[0] == "gh":
             raise AssertionError(f"unexpected gh call {args}")
+        from amplai_foundry.runtime.git_host.github import run_process
+
         return run_process(args, cwd, env, timeout)
 
     def of(self, *prefix: str) -> list[list[str]]:
