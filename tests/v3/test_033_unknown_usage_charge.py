@@ -361,13 +361,18 @@ def test_unknown_usage_trials_that_are_not_in_a_row_do_not_stop_a_calibration(w)
     assert any(t.get("outcome_missing") == "usage_unknown" for t in r.trials)
 
 
-def test_a_real_overrun_still_stops_a_calibration(w):
+def test_a_real_overrun_is_recorded_and_the_calibration_goes_on(w):
+    # D-128 (operator decision 2026-10-14): an overrun no longer stops a calibration; it is
+    # recorded on the trial, the run head and the summary (an experiment still stops, above)
     def executor_for(c):
         return UnknownUsage(w, c.roles, outcome, tokens=(6, 5), unknown=lambda *a: False)
 
     r = calibration(w, executor_for)  # 11 tokens against the 10-token reservation
-    assert r.head["state"] == "stopped" and len(r.trials) == 1
-    assert r.head["data"]["stop_reason"] == "budget_overrun_or_unknown_usage"
+    assert r.head["state"] == "done" and r.head["data"]["stop_reason"] is None
+    assert len(r.trials) > 1 and all(t["ceiling_overrun"] is True for t in r.trials)
+    assert len(r.head["data"]["overruns"]) == len(r.trials)
+    assert {w_["code"] for w_ in r.summary["warnings"]} == {"TRIAL_OVER_CEILING"}
+    assert all(a["overrun"] is True for a in r.allocations.values())
 
 
 def test_an_answer_lookup_with_unknown_usage_is_a_failed_calibration_outcome(w):
@@ -394,7 +399,9 @@ def test_an_answer_lookup_with_unknown_usage_is_a_failed_calibration_outcome(w):
     assert sorted(a["tokens"] for a in r.allocations.values())[-1] == 40
 
 
-def test_reported_parts_above_the_reservation_still_stop_a_calibration(w):
+def test_reported_parts_above_the_reservation_are_a_recorded_calibration_overrun(w):
+    # D-128: the charge is still the reported lower bound and an overrun; the run goes on until
+    # its provider-failure streak (four unknown-usage trials in a row) stops it
     def executor_for(c):
         return UnknownUsage(
             w, c.roles, outcome, tokens=(5, 5),
@@ -403,9 +410,12 @@ def test_reported_parts_above_the_reservation_still_stop_a_calibration(w):
         )  # fmt: skip
 
     r = calibration(w, executor_for)  # 11 reported tokens against the 10-token reservation
-    assert r.head["state"] == "stopped" and len(r.trials) == 1
-    assert r.head["data"]["stop_reason"] == "budget_overrun_or_unknown_usage"
-    assert r.trials[0]["charged_tokens"] == 11
+    assert r.head["state"] == "stopped" and len(r.trials) == 4
+    assert r.head["data"]["stop_reason"] == "provider_failures"
+    assert r.trials[0]["charged_tokens"] == 11 and r.trials[0]["ceiling_overrun"] is True
+    assert r.trials[0]["ceiling_tokens"] == {
+        "tokens": 11, "basis": "raw", "price_table_id": None, "reason": "usage_unknown",
+    }  # fmt: skip
 
 
 # --- (B) trial metrics and the executor's lower bound -----------------------------------------

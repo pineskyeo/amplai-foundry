@@ -444,6 +444,7 @@ class QualityService:
             if value.get("evaluator_version_ref") == evaluator_version_ref
             and (_stamp(value.get("summarized_at")) or 0.0) >= floor
             and not self._drift_summary(value)
+            and self._complete_summary(value)  # D-128: never a partial (not done) run's
         ]
         plans = [
             (ref, value)
@@ -510,8 +511,9 @@ class QualityService:
                 if control not in compositions[1:]:
                     continue  # not a variant of this plan's cell
                 champion = compositions[0]
-                good = _task_rates(trials, summary["plan_ref"], cell, champion)
-                bad = _task_rates(trials, summary["plan_ref"], cell, control)
+                members = self._run_members(summary["plan_ref"])
+                good = _task_rates(trials, summary["plan_ref"], cell, champion, members)
+                bad = _task_rates(trials, summary["plan_ref"], cell, control, members)
                 tasks = sorted(set(good) & set(bad))
                 if not tasks:
                     continue
@@ -539,6 +541,29 @@ class QualityService:
             "unit": "task (development split, mean over runs)",
             "cells": rows,
         }
+
+    def _run_members(self, plan_ref: dict[str, Any]) -> set[str]:
+        """D-128 failure review P3: the trial ids the plan's run pools (its head's
+        ``trial_refs``), so a drift-dropped import or a superseded trial of a resumed run is not
+        counted; empty when the run head cannot be read."""
+        from .calibration import RUN_KIND
+
+        try:
+            head = self.store.head(self.scope, RUN_KIND, plan_ref["id"])
+        except (RuntimeFault, KeyError, TypeError):
+            return set()
+        return {str(r.get("id")) for r in head["data"].get("trial_refs") or []}
+
+    def _complete_summary(self, summary: dict[str, Any]) -> bool:
+        """D-128: the summary's run ended ``done`` and it is not marked partial
+        (``calibration.summary_complete``); a run head that cannot be read is not done."""
+        from .calibration import RUN_KIND, summary_complete
+
+        try:
+            head = self.store.head(self.scope, RUN_KIND, summary["plan_ref"]["id"])
+        except (RuntimeFault, KeyError, TypeError):
+            return False
+        return summary_complete(summary, head["state"], head["data"].get("plan_ref"))
 
     def _drift_summary(self, summary: dict[str, Any]) -> bool:
         """eval-11: the summary's plan is a drift calibration (``calibration.is_drift_plan``) or
@@ -1026,11 +1051,12 @@ class QualityService:
         """The validated, completed target of a change: `{"version", "changes", "corpus_ref",
         "stage_templates"}`. `corpus_ref` and `stage_templates` default to the replaced version's;
         the first version needs a `corpus_ref`."""
-        fields = {"version", "changes", "corpus_ref", "stage_templates"}
+        fields = {"version", "changes", "corpus_ref", "stage_templates", "trial_compatible_with"}
         if not isinstance(to, dict) or not {"version", "changes"} <= set(to) or set(to) - fields:
             raise RuntimeFault(
                 "EVALUATOR_CHANGE_TARGET",
-                "`to` holds version and changes, and optionally corpus_ref and stage_templates",
+                "`to` holds version and changes, and optionally corpus_ref, stage_templates and "
+                "trial_compatible_with",
             )
         version = to["version"]
         versions.version_id(version)  # RuntimeFault EVALUATOR_VERSION for a bad name
@@ -1068,12 +1094,29 @@ class QualityService:
         templates = to.get("stage_templates", current[1]["stage_templates"] if current else {})
         if not isinstance(templates, dict):
             raise RuntimeFault("EVALUATOR_CHANGE_TARGET", "stage_templates is an object")
-        return {
+        # D-128 review P2-a: the stored lower versions whose calibration trials the new version
+        # accepts (an evaluator change that does not change grading or trial behaviour); they are
+        # approved with the change and written into the new evaluator-version record
+        compatible = to.get("trial_compatible_with", [])
+        if (
+            not isinstance(compatible, list)
+            or len(set(map(str, compatible))) != len(compatible)
+            or any(c not in stored for c in compatible)
+            or any(_version_number(c) >= _version_number(version) for c in compatible)
+        ):
+            raise RuntimeFault(
+                "EVALUATOR_CHANGE_TARGET",
+                "trial_compatible_with lists distinct stored versions lower than the target",
+            )
+        target = {
             "version": version,
             "changes": [dict(c) for c in changes],
             "corpus_ref": corpus_ref,
             "stage_templates": templates,
         }
+        if compatible:
+            target["trial_compatible_with"] = list(compatible)
+        return target
 
     def _change_head(self, change_id: str) -> dict[str, Any]:
         head = self.store.head(self.scope, CHANGE_KIND, change_id)  # NOT_FOUND if unknown
@@ -1240,6 +1283,7 @@ class QualityService:
             requalification_ref=data["requalification_ref"],
             stage_templates=target["stage_templates"],
             version=target["version"],
+            trial_compatible_with=target.get("trial_compatible_with"),
         )
         self._move(
             change_id,
@@ -1267,14 +1311,20 @@ class QualityService:
 
 
 def _task_rates(
-    trials: list[dict[str, Any]], plan_ref: dict[str, Any], cell: str, composition: dict[str, Any]
+    trials: list[dict[str, Any]],
+    plan_ref: dict[str, Any],
+    cell: str,
+    composition: dict[str, Any],
+    members: set[str] | None = None,
 ) -> dict[str, float]:
     """Per development task: the pass rate over the runs of `composition` in `cell` of the plan
-    (a run with an unknown result or an unknown effect does not count, as in calibration)."""
+    (a run with an unknown result or an unknown effect does not count, as in calibration).
+    `members` (D-128): only the trials the plan's run pools."""
     runs: dict[str, list[bool]] = {}
     for trial in trials:
         if (
-            trial["calibration_plan_ref"] == plan_ref
+            (members is None or trial.get("trial_id") in members)
+            and trial["calibration_plan_ref"] == plan_ref
             and trial["cell_id"] == cell
             and trial["composition_ref"] == composition
             and trial["split"] == "development"

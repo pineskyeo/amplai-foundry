@@ -83,7 +83,8 @@ from statistics import mean
 from typing import TYPE_CHECKING, Any
 
 from ..evaluation import versions
-from ..evaluation.calibration import is_drift_plan, select_cases
+from ..evaluation.calibration import RUN_KIND as CALIBRATION_RUN_KIND
+from ..evaluation.calibration import is_drift_plan, select_cases, summary_complete
 from ..evaluation.corpus import CorpusService
 from ..evaluation.receipts import read_receipt
 from ..evaluation.sequential import mde, min_tasks_for_margin, noise_band
@@ -816,6 +817,26 @@ class StageRunner:
         if is_drift_plan(calibration):
             # eval-11: a drift calibration pins a subset of the cases; never a stage's summary
             raise RuntimeFault("STAGE_PLAN", "The calibration summary is a drift calibration")
+        # D-128: a new stage plan never takes the partial summary of a run that did not end done
+        newest = max(
+            (r["revision"] for r, _ in self.store.list_objects(self.scope, "calibration-summary")
+             if r["id"] == self.summary_ref["id"]),
+            default=0,
+        )  # fmt: skip
+        try:
+            run = self.store.head(self.scope, CALIBRATION_RUN_KIND, summary["plan_ref"]["id"])
+            run_state, run_plan = run["state"], run["data"].get("plan_ref")
+        except RuntimeFault:
+            run_state, run_plan = None, None
+        if self.summary_ref["revision"] != newest or not summary_complete(
+            summary, run_state, run_plan
+        ):
+            raise Hold(
+                "CALIBRATION_PARTIAL",
+                "The calibration summary is of a run that did not end done (or not its newest "
+                "revision); resume or re-run the calibration",
+                details={"summary_ref": self.summary_ref, "run_state": run_state},
+            )
         return summary
 
     def _app_of(self, plan: dict[str, Any] | None) -> InstalledApp:

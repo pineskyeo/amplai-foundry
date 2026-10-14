@@ -144,3 +144,28 @@ def estimate(
         "notes": notes,
         "upper_bound": "no_cache_breakdown" in notes,
     }
+
+
+def uncached_equivalent(
+    row: dict[str, Any], *, detail: dict[str, Any] | None, usage: dict[str, Any] | None
+) -> tuple[float, list[str]] | None:
+    """D-128: a run's tokens with each cache bucket weighted by its price over the uncached input
+    price of ``row`` (a price-table model row); uncached input and output count 1.0. The per-trial
+    token ceiling of a calibration is judged by this count. Without a breakdown every input token
+    counts 1.0 (``no_cache_breakdown``, an upper bound). None when there is no usage or no
+    positive input price. Raises ``PriceTableError`` for a malformed breakdown (``buckets``)."""
+    if detail is not None:
+        tokens, notes = buckets(detail)
+    elif usage and usage.get("input_tokens") is not None and usage.get("output_tokens") is not None:
+        tokens = {"input": usage["input_tokens"], "output": usage["output_tokens"]}
+        notes = ["no_cache_breakdown"]
+    else:
+        return None
+    base = row.get("input")
+    if type(base) is not int or base <= 0:
+        return None
+    total = 0.0
+    for bucket, count in tokens.items():
+        weight = 1.0 if bucket in ("input", "output") else row[bucket] / base
+        total += count * weight
+    return total, notes

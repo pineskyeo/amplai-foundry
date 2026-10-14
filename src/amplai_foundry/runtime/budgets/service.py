@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Callable
 from typing import Any
 
 from ..errors import Hold, RuntimeFault
 from ..storage.store import Scope, Store
+
+# D-128: run heads that ended without settling their reservation, and the journal states of a
+# driver turn that ended (``agent_drivers/ports.py``)
+ENDED_RUN_STATES = frozenset({"failed", "cancelled", "lost"})
+ENDED_JOURNAL_STATES = frozenset({"completed", "failed", "cancelled"})
 
 
 class BudgetService:
@@ -129,6 +135,97 @@ class BudgetService:
             self.store.event(
                 db, scope, "run", run_id, "budget.overrun", {"tokens": tokens, "cost": cost}
             )
+
+    def settle_ended(
+        self, scope: Scope, journal: Callable[[str], dict[str, Any] | None]
+    ) -> dict[str, Any]:
+        """D-128 (operator decision 2026-10-14): settle the ``active`` reservation of every run
+        that ended ``failed``, ``cancelled`` or ``lost`` (``ExecutionService.end_goal`` ends a
+        run without settling it) from its driver journal's usage, the record the worker settles
+        a finished run from. ``journal(dispatch_id)`` reads one journal (None: none).
+
+        Settled only when every check holds, else listed under ``skipped`` with its reason and
+        left ``active``: the run has exactly one worker dispatch; its journal exists, names that
+        dispatch, ended (``completed``, ``failed`` or ``cancelled``) with ``process_stopped``
+        true, has no follow-up or candidate journal (``<id>-f1``, ``<id>-c1``: their usage would
+        be left out), and reports input and output token counts. ``settle`` then applies its
+        usual rules (an estimated usage settles ``estimated``; above the reservation is an
+        ``overrun``). A run still running is never touched."""
+        with self.store._lock:
+            rows = self.store.conn.execute(
+                "SELECT r.run_id,r.goal_id,h.state FROM reservations r JOIN heads h "
+                "ON h.tenant=r.tenant AND h.project=r.project AND h.kind='run' AND h.id=r.run_id "
+                "WHERE r.tenant=? AND r.project=? AND r.status='active' ORDER BY r.run_id",
+                scope.keys(),
+            ).fetchall()
+            ended = [dict(r) for r in rows if r["state"] in ENDED_RUN_STATES]
+            dispatches = {
+                row["run_id"]: [
+                    d["dispatch_id"]
+                    for d in self.store.conn.execute(
+                        "SELECT dispatch_id FROM worker_dispatch "
+                        "WHERE tenant=? AND project=? AND run_id=?",
+                        (*scope.keys(), row["run_id"]),
+                    ).fetchall()
+                ]
+                for row in ended
+            }
+        settled: list[dict[str, Any]] = []
+        skipped: list[dict[str, Any]] = []
+        for row in ended:
+            run_id, ids = row["run_id"], dispatches[row["run_id"]]
+
+            def skip(reason: str, run_id: str = run_id) -> None:
+                skipped.append({"run_id": run_id, "reason": reason})
+
+            if len(ids) != 1:
+                skip(f"dispatches:{len(ids)}")
+                continue
+            dispatch_id = ids[0]
+            record = journal(dispatch_id)
+            usage = (record or {}).get("usage")
+            if record is None:
+                skip("no_journal")
+            elif record.get("dispatch_id") != dispatch_id:
+                skip("journal_mismatch")
+            elif (
+                record.get("state") not in ENDED_JOURNAL_STATES
+                or record.get("process_stopped") is not True
+            ):
+                skip("process_not_stopped")
+            elif (
+                journal(dispatch_id + "-f1") is not None or journal(dispatch_id + "-c1") is not None
+            ):
+                skip("multi_turn")
+            elif not isinstance(usage, dict) or any(
+                type(usage.get(k)) is not int for k in ("input_tokens", "output_tokens")
+            ):
+                skip("no_usage")
+            else:
+                with self.store.tx() as db:
+                    current = db.execute(
+                        "SELECT status FROM reservations WHERE tenant=? AND project=? AND run_id=?",
+                        (*scope.keys(), run_id),
+                    ).fetchone()
+                    if current is None or current["status"] != "active":
+                        skip("not_active")
+                        continue
+                    self.settle(db, scope, run_id, dict(usage))
+                    status = db.execute(
+                        "SELECT tokens,status FROM reservations "
+                        "WHERE tenant=? AND project=? AND run_id=?",
+                        (*scope.keys(), run_id),
+                    ).fetchone()
+                    self.store.event(
+                        db, scope, "run", run_id, "budget.settled_from_journal",
+                        {"dispatch_id": dispatch_id, "tokens": status["tokens"],
+                         "status": status["status"]},
+                    )  # fmt: skip
+                settled.append(
+                    {"run_id": run_id, "dispatch_id": dispatch_id, "tokens": status["tokens"],
+                     "status": status["status"]}
+                )  # fmt: skip
+        return {"settled": settled, "skipped": skipped}
 
     def totals(self, scope: Scope, goal_id: str) -> dict[str, Any]:
         with self.store._lock:

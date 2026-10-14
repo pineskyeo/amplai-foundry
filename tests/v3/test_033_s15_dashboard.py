@@ -724,6 +724,8 @@ def seed_world(store: Store, *, hostile: str = "") -> None:
         "plan-1",
         {"composition_refs": {CELL_A: [base, best]}},
     )
+    # D-128: the matrix reads a calibration only when its run ended done
+    seed_head(store, "calibration-run", "plan-1", "done", {"plan_ref": plan, "state": "done"})
     seed(
         store,
         "harness-cell",
@@ -904,6 +906,17 @@ def test_a_seeded_store_builds_the_matrix_from_calibration_and_trial_metrics(wor
     assert "80.0% [50.0%, 95.0%]" in pages["index.html"]
     cell_page = pages[a.page]
     assert "comp-base" in cell_page and "comp-best" in cell_page and "<circle" in cell_page
+
+
+def test_a_stopped_runs_partial_summary_is_never_a_cells_calibration(world, tmp_path):
+    # D-128: the matrix never reads the summary of a run that did not end done
+    with Store(world) as store, store.tx() as db:
+        head = store.head(SCOPE, "calibration-run", "plan-1", db=db)
+        store.cas(db, SCOPE, "calibration-run", "plan-1", head["row_version"], "stopped",
+                  {**head["data"], "state": "stopped"})  # fmt: skip
+    feed = dash.build_feed(world, SCOPE, now_utc=NOW)
+    a = {m.cell_id: m for m in feed.matrix}[CELL_A]
+    assert a.pass_rate is None and a.interval is None
 
 
 def test_the_seeded_approvals_page_has_class_b_review_reconcile_pending_and_standing(

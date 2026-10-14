@@ -28,7 +28,12 @@ class EvolutionBudget:
         proposal_id: str,
         experiment_ref: dict[str, Any],
         limits: dict[str, Any],
+        *,
+        active_time: bool = False,
     ) -> None:
+        """``active_time`` (D-128 review P1-2, calibration roots): the wall budget counts the
+        time the root's runs are active (``start_segment``/``end_segment``), not the time since
+        the freeze."""
         try:
             head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         except RuntimeFault as exc:
@@ -42,6 +47,11 @@ class EvolutionBudget:
                     "allocations": {},
                     "started_epoch": self.store.clock(),
                     "created_at": now(),
+                    **(
+                        {"wall_used_seconds": 0.0, "segment_started_epoch": None}
+                        if active_time
+                        else {}
+                    ),
                 },
             }
         data = head["data"]
@@ -75,9 +85,21 @@ class EvolutionBudget:
         tokens: int,
         cost: int,
         cost_compared: bool = True,
+        prior_overrun_blocks: bool = True,
+        reserve_observed_max: bool = False,
     ) -> None:
         """``cost_compared`` False (D-088) is kept on the allocation, so settlement and a later
-        reconciliation both treat a reported cost as ``reported_cost``, never as spending."""
+        reconciliation both treat a reported cost as ``reported_cost``, never as spending.
+
+        ``prior_overrun_blocks`` False (D-128, calibration roots only): a recorded per-trial
+        ceiling overrun of this root does not refuse the reservation (META_PRIOR_OVERRUN). The
+        total token, cost and wall budgets, unknown usage and concurrency still refuse it.
+
+        ``reserve_observed_max`` (D-128 failure review P2-4, calibration roots): the reservation
+        holds the larger of ``tokens`` and the largest raw tokens a trial of this root has settled
+        at (imports left out), so once trials run above their ceiling the root token budget stops
+        admission a wave earlier instead of overshooting by one more wave. ``token_ceiling`` stays
+        ``tokens``: the per-trial ceiling judgement does not change."""
         if any(type(x) is not int or x < 0 for x in (tokens, cost)):
             raise RuntimeFault("META_RESERVATION", "Executor ceilings must be nonnegative integers")
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
@@ -93,16 +115,22 @@ class EvolutionBudget:
                 "META_USAGE_UNKNOWN",
                 "An uncertain prior allocation must be reconciled before further spending",
             )
-        if any(v.get("overrun") for v in a.values()):
+        if prior_overrun_blocks and any(v.get("overrun") for v in a.values()):
             raise Hold("META_PRIOR_OVERRUN", "A prior ceiling violation prevents further admission")
         active = [v for v in a.values() if v["status"] == "reserved"]
         if len(active) >= limits["max_parallel_works"]:
             raise Hold("META_CONCURRENCY", "Root experiment concurrency limit reached")
-        if self.store.clock() - data["started_epoch"] >= limits["max_wall_seconds"]:
+        if self.wall_used(data) >= limits["max_wall_seconds"]:
             raise Hold("META_WALL_BUDGET", "The proposal root wall-time budget is exhausted")
+        held = tokens
+        if reserve_observed_max:
+            held = max(
+                [tokens, *(v["tokens"] for v in a.values()
+                           if v["status"] == "settled" and not v.get("imported"))]
+            )  # fmt: skip
         total_tokens = sum(v["tokens"] for v in a.values())
         total_cost = sum(v["cost"] for v in a.values())
-        if total_tokens + tokens > limits["max_tokens"]:
+        if total_tokens + held > limits["max_tokens"]:
             raise Hold("META_TOKEN_BUDGET", "Reservation exceeds the shared root token budget")
         if (
             limits["max_cost_microunits"] is not None
@@ -111,7 +139,7 @@ class EvolutionBudget:
             raise Hold("META_COST_BUDGET", "Reservation exceeds the shared root cost budget")
         allocation = {
             "status": "reserved",
-            "tokens": tokens,
+            "tokens": held,
             "cost": cost,
             "token_ceiling": tokens,
             "cost_ceiling": cost,
@@ -130,6 +158,89 @@ class EvolutionBudget:
             {**data, "allocations": {**a, key: allocation}},
         )
 
+    def wall_used(self, data: dict[str, Any]) -> float:
+        """Seconds of the root's wall budget spent. A root in active-time mode (D-128 review P1-2,
+        calibration roots: ``wall_used_seconds`` present) counts the closed segments plus the
+        open one (``segment_started_epoch``); any other root counts from its freeze
+        (``started_epoch``), as before."""
+        if "wall_used_seconds" not in data:
+            return float(self.store.clock() - data["started_epoch"])
+        used = float(data["wall_used_seconds"])
+        started = data.get("segment_started_epoch")
+        return used + (self.store.clock() - started if started is not None else 0.0)
+
+    def start_segment(
+        self, db: sqlite3.Connection, scope: Scope, proposal_id: str, *, closed_at: float
+    ) -> float:
+        """D-128 review P1-2: open a run segment of a calibration root; returns the seconds
+        already used. A root frozen before active-time mode first counts its elapsed time since
+        the freeze up to ``closed_at`` (conservative); an open segment a lost owner left is
+        closed at ``closed_at`` (the caller passes the last recorded activity)."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data = dict(head["data"])
+        if "wall_used_seconds" not in data:
+            data["wall_used_seconds"] = max(0.0, closed_at - data["started_epoch"])
+        elif data.get("segment_started_epoch") is not None:
+            data["wall_used_seconds"] += max(0.0, closed_at - data["segment_started_epoch"])
+        data["segment_started_epoch"] = self.store.clock()
+        self.store.cas(db, scope, "meta-budget", proposal_id, head["row_version"], "active", data)
+        return float(data["wall_used_seconds"])
+
+    def end_segment(
+        self, db: sqlite3.Connection, scope: Scope, proposal_id: str, *, at: float | None = None
+    ) -> None:
+        """Close the open segment of an active-time root at ``at`` (default: now); a root
+        without an open segment is left as it is."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data = dict(head["data"])
+        started = data.get("segment_started_epoch")
+        if "wall_used_seconds" not in data or started is None:
+            return
+        end = self.store.clock() if at is None else at
+        data["wall_used_seconds"] += max(0.0, end - started)
+        data["segment_started_epoch"] = None
+        self.store.cas(db, scope, "meta-budget", proposal_id, head["row_version"], "active", data)
+
+    def record_import(
+        self,
+        db: sqlite3.Connection,
+        scope: Scope,
+        proposal_id: str,
+        allocation_id: str,
+        *,
+        source: dict[str, Any],
+    ) -> None:
+        """D-128: the allocation of a trial a calibration imported from another plan. It is
+        settled at 0 tokens and 0 cost and names its ``source`` (plan, trial, finish time, reuse
+        key digest): the tokens were charged to the source plan's root, never twice."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data, a = head["data"], head["data"]["allocations"]
+        if allocation_id in a:
+            raise Conflict("META_ALLOCATION_REPLAY", "An imported trial is recorded once")
+        at = now()
+        allocation = {
+            "status": "settled",
+            "tokens": 0,
+            "cost": 0,
+            "token_ceiling": 0,
+            "cost_ceiling": 0,
+            "overrun": False,
+            "cost_compared": False,
+            "imported": dict(source),
+            "owner_epoch": self.store.epoch,
+            "issued_at": at,
+            "settled_at": at,
+        }
+        self.store.cas(
+            db,
+            scope,
+            "meta-budget",
+            proposal_id,
+            head["row_version"],
+            "active",
+            {**data, "allocations": {**a, allocation_id: allocation}},
+        )
+
     def settle(
         self,
         db: sqlite3.Connection,
@@ -141,24 +252,31 @@ class EvolutionBudget:
         cost: int | None,
         uncertain: bool = False,
         cost_required: bool = True,
+        judged_tokens: int | None = None,
     ) -> dict[str, Any]:
+        """``judged_tokens`` (D-128, calibration): the count the per-trial token ceiling is
+        judged by (a cost-weighted uncached-equivalent count); None judges ``tokens``. The ledger
+        keeps ``tokens``, so the root token budget still counts every token."""
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         data = head["data"]
         a = data["allocations"]
         if allocation_id not in a or a[allocation_id]["status"] != "reserved":
             raise Conflict("META_SETTLEMENT", "No outstanding reservation for this result")
         old = a[allocation_id]
-        if any(v is not None and (type(v) is not int or v < 0) for v in (tokens, cost)):
+        if any(
+            v is not None and (type(v) is not int or v < 0) for v in (tokens, cost, judged_tokens)
+        ):
             raise RuntimeFault(
                 "META_USAGE", "Observed usage must be nonnegative integers or unknown"
             )
+        judged = tokens if judged_tokens is None else judged_tokens
         # D-088: a plan that does not compare cost keeps the reserved cost in the ledger, so a
         # reported cost (an API-equivalent estimate, D-094) is neither an overrun nor spending
         # against the root cost budget; it is kept as ``reported_cost``. Calibration plans
         # calplan-1bdb0658 (overrun) and calplan-3fd084f0 (META_COST_BUDGET at the next reserve)
         # stopped on Claude trials of 0.2 to 0.4 USD against a cost budget of 0 (2026-10-09).
         counted = cost if cost_required else None
-        overrun = (tokens is not None and tokens > old["token_ceiling"]) or (
+        overrun = (judged is not None and judged > old["token_ceiling"]) or (
             counted is not None and counted > old["cost_ceiling"]
         )
         # D-088: when the plan does not compare cost, a missing cost keeps the reserved amount
@@ -175,6 +293,8 @@ class EvolutionBudget:
         }
         if not cost_required:
             new["cost_compared"] = False  # a later reconcile() applies the same rule
+        if judged_tokens is not None:
+            new["judged_tokens"] = judged_tokens
         if counted is None and cost is not None:
             new["reported_cost"] = cost
         self.store.cas(

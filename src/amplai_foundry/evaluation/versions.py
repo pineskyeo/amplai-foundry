@@ -47,6 +47,10 @@ FIELDS = frozenset(
         "at",
     }
 )
+# D-128 review P2-a: the earlier versions whose trials this version accepts for calibration reuse
+# and resume (an evaluator change that does not change grading or trial behaviour), approved with
+# the evaluator change that writes this version
+OPTIONAL_FIELDS = frozenset({"trial_compatible_with"})
 _PACKAGE = Path(__file__).resolve().parent
 _VERSION = re.compile(r"^eval-([1-9][0-9]{0,8})$")
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -86,11 +90,27 @@ def _is_ref(value: Any) -> bool:
     )
 
 
+def _compatible_ok(names: Any, version: Any) -> bool:
+    """D-128 review P2-a: ``trial_compatible_with`` is a list of distinct lower ``eval-<n>``
+    names (the versions whose trials this one accepts for calibration reuse and resume)."""
+    if not isinstance(names, list) or len(set(map(str, names))) != len(names):
+        return False
+    match = _VERSION.fullmatch(version) if isinstance(version, str) else None
+    if match is None:
+        return False
+    for name in names:
+        found = _VERSION.fullmatch(name) if isinstance(name, str) else None
+        if found is None or int(found.group(1)) >= int(match.group(1)):
+            return False
+    return True
+
+
 def validate_version(value: dict[str, Any]) -> None:
     """§2.0: a new internal kind is validated before `put` (shape of §2.15)."""
     ok = (
         isinstance(value, dict)
-        and set(value) == FIELDS
+        and FIELDS <= set(value) <= FIELDS | OPTIONAL_FIELDS
+        and _compatible_ok(value.get("trial_compatible_with", []), value.get("version"))
         and value["schema"] == SCHEMA
         and isinstance(value["scope"], dict)
         and isinstance(value["version"], str)
@@ -128,6 +148,7 @@ def write_version(
     requalification_ref: dict[str, Any],
     stage_templates: dict[str, Any] | None = None,
     version: str = VERSION,
+    trial_compatible_with: list[str] | None = None,
 ) -> dict[str, Any]:
     """Write `version` with the digests of the running code after a passing requalification.
 
@@ -174,6 +195,7 @@ def write_version(
             stored["corpus_ref"] == corpus_ref
             and stored["requalification_ref"] == requalification_ref
             and stored["stage_templates"] == templates
+            and stored.get("trial_compatible_with", []) == list(trial_compatible_with or [])
         ):
             return ref
         revision = ref["revision"] + 1
@@ -188,6 +210,8 @@ def write_version(
         "approved_by": actor.wire(),
         "at": now(),
     }
+    if trial_compatible_with:
+        value["trial_compatible_with"] = list(trial_compatible_with)
     validate_version(value)
     with store.tx() as db:
         return store.put(db, scope, KIND, object_id, revision, value)
