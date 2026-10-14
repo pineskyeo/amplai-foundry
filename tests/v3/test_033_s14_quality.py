@@ -767,7 +767,8 @@ def test_a_refused_qualification_runs_no_requalification(w):
 
 def test_the_quality_track_is_not_imported_by_the_evaluation_service_a_stage_or_a_trial():
     """Nothing in this track is reachable from a candidate experiment (design 16 §3): only the
-    meta command module imports `evaluation.quality`."""
+    meta command module imports `evaluation.quality`, and the evaluator Q-suite check (Work 034
+    M-16), which only `amplai checks run --when upgrade` loads, never a stage or a trial."""
     importers = set()
     for path in SRC.rglob("*.py"):
         if path.name == "quality.py" and path.parent.name == "evaluation":
@@ -787,7 +788,7 @@ def test_the_quality_track_is_not_imported_by_the_evaluation_service_a_stage_or_
                 for n in names
             ):
                 importers.add(str(path.relative_to(SRC)))
-    assert importers == {"runtime/meta_commands/evaluator.py"}
+    assert importers == {"runtime/meta_commands/evaluator.py", "runtime/checks/tools.py"}
 
 
 def test_the_quality_service_is_not_wired_into_a_deployment_or_a_stage_runner():
