@@ -176,7 +176,8 @@ def test_license_gate_needs_an_explicit_permissive_license_per_repo() -> None:
         swe_bench.parse_row("multilingual", _ml("redis__redis-1", "redis/redis")),
         swe_bench.parse_row("multilingual", _ml("x__y-1", "x/y")),
     ]
-    passed, held = swe_bench.license_gate(rows, {"jqlang/jq": "MIT", "redis/redis": "AGPL-3.0"})
+    decisions = {("jqlang/jq", SHA): "MIT", ("redis/redis", SHA): "AGPL-3.0"}
+    passed, held = swe_bench.license_gate(rows, decisions)
     assert [i.instance_id for i in passed] == ["jqlang__jq-2681"]
     assert held == [
         {
@@ -187,14 +188,40 @@ def test_license_gate_needs_an_explicit_permissive_license_per_repo() -> None:
         {"instance_id": "x__y-1", "reason": "license_unknown"},
     ]
     with pytest.raises(Hold) as caught:
-        swe_bench.require_licenses(rows, {"jqlang/jq": "MIT"})
+        swe_bench.require_licenses(rows, {("jqlang/jq", SHA): "MIT"})
     assert caught.value.code == "SWE_LICENSE"
-    swe_bench.require_licenses(rows[:1], {"jqlang/jq": "MIT"})
+    swe_bench.require_licenses(rows[:1], {("jqlang/jq", SHA): "MIT"})
+
+
+def test_license_decisions_are_per_base_commit_of_one_repo() -> None:
+    old, new = "a" * 40, "b" * 40
+    rows = [
+        swe_bench.parse_row("multilingual", _ml("r__r-1", "r/r", base_commit=old)),
+        swe_bench.parse_row("multilingual", _ml("r__r-2", "r/r", base_commit=new)),
+    ]
+    # the repository relicensed between the two base commits
+    passed, held = swe_bench.license_gate(rows, {("r/r", old): "MIT", ("r/r", new): "BUSL-1.1"})
+    assert [i.instance_id for i in passed] == ["r__r-1"]
+    assert held == [
+        {"instance_id": "r__r-2", "reason": "license_not_permissive", "license": "BUSL-1.1"}
+    ]
+    # a decision for one commit does not carry over to another commit of the same repository
+    _, held = swe_bench.license_gate(rows, {("r/r", old): "MIT"})
+    assert held == [{"instance_id": "r__r-2", "reason": "license_unknown"}]
+
+
+def test_license_decisions_file_shape() -> None:
+    read = swe_bench.read_license_decisions
+    assert read({"r/r": {SHA: "MIT"}}) == {("r/r", SHA): "MIT"}
+    for bad in ({"r/r": "MIT"}, {"r/r": {"abc": "MIT"}}, {"r/r": {SHA: ""}}, ["r/r"]):
+        with pytest.raises(Hold) as caught:
+            read(bad)
+        assert caught.value.code == "SWE_LICENSE"
 
 
 def test_copyleft_pro_repositories_hold() -> None:
     row = swe_bench.parse_row("pro_hard", _pro(hard=True))
-    _, held = swe_bench.license_gate([row], {"NodeBB/NodeBB": "GPL-3.0"})
+    _, held = swe_bench.license_gate([row], {("NodeBB/NodeBB", SHA): "GPL-3.0"})
     assert held[0]["reason"] == "license_not_permissive"
 
 
@@ -258,7 +285,9 @@ def test_script_scan_licenses_select_hard(tmp_path: Path, capsys: pytest.Capture
     assert scanned["rows"] == 2 and scanned["repos"] == {"jqlang/jq": 1, "redis/redis": 1}
 
     licenses = tmp_path / "licenses.json"
-    licenses.write_text(json.dumps({"jqlang/jq": "MIT", "redis/redis": "BSD-3-Clause"}))
+    licenses.write_text(
+        json.dumps({"jqlang/jq": {SHA: "MIT"}, "redis/redis": {SHA: "BSD-3-Clause"}})
+    )
     argv = ["licenses", "--source", "multilingual", "--rows", str(rows)]
     assert script.main([*argv, "--repo-licenses", str(licenses)]) == 0
     assert json.loads(capsys.readouterr().out)["held"] == []

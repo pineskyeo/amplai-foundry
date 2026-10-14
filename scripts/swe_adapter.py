@@ -29,7 +29,8 @@ the GitHub API):
 What stays open (확인 필요, not defaulted here):
 
 - The license of each upstream repository at the task's ``base_commit``: the caller passes
-  ``repo_licenses`` explicitly; a repository without an entry holds ``SWE_LICENSE``. Only the
+  ``repo_licenses`` explicitly, keyed by ``(repo, base_commit)``; an instance without an entry
+  for its own base commit holds ``SWE_LICENSE``. Only the
   permissive identifiers in ``PERMISSIVE`` pass; copyleft or source-available licenses (all
   SWE-Bench Pro repositories at HEAD) hold ``SWE_LICENSE`` until the operator decides how such
   task content may be stored.
@@ -48,7 +49,7 @@ The command line reads a local JSONL export of a dataset configuration and print
 
     .venv/bin/python scripts/swe_adapter.py scan --source multilingual --rows ROWS.jsonl
     .venv/bin/python scripts/swe_adapter.py licenses --source pro_hard --rows ROWS.jsonl \
-        --repo-licenses LICENSES.json          # {"owner/name": "SPDX"} at the base commits
+        --repo-licenses LICENSES.json          # {"owner/name": {"<base_commit>": "SPDX"}}
     .venv/bin/python scripts/swe_adapter.py select --source multilingual --rows ROWS.jsonl \
         --results per_instance_details.json [--results ...] --max-resolved-share 0.2
     .venv/bin/python scripts/swe_adapter.py hard --source pro_v2 --rows ROWS.jsonl \
@@ -249,19 +250,43 @@ def read_rows(key: str, path: Path) -> list[SweInstance]:
     return instances
 
 
-def license_gate(
-    instances: Sequence[SweInstance], repo_licenses: Mapping[str, str]
-) -> tuple[list[SweInstance], list[dict[str, str]]]:
-    """``(passed, held)``: an instance passes when its repository's license (``repo_licenses``,
-    the license at the task's base commit, supplied by the operator) is in ``PERMISSIVE``.
+LicenseDecisions = Mapping[tuple[str, str], str]  # {(repo, base_commit): SPDX}
 
-    A repository without an entry is held with reason ``license_unknown``; any other license with
-    ``license_not_permissive``. Nothing is inferred from the dataset card or the repository HEAD.
+
+def read_license_decisions(value: Any) -> dict[tuple[str, str], str]:
+    """``{(repo, base_commit): SPDX}`` from the operator's JSON ``{repo: {base_commit: SPDX}}``
+    (``--repo-licenses``). A repository's license can differ between base commits, so each
+    decision names both; anything else holds ``SWE_LICENSE``."""
+    shape = Hold("SWE_LICENSE", "license decisions are {repo: {40-hex base_commit: SPDX}}")
+    if not isinstance(value, dict):
+        raise shape
+    decisions: dict[tuple[str, str], str] = {}
+    for repo, commits in value.items():
+        if not isinstance(repo, str) or not isinstance(commits, dict):
+            raise shape
+        for commit, spdx in commits.items():
+            if not COMMIT.fullmatch(str(commit)) or not isinstance(spdx, str) or not spdx:
+                raise shape
+            decisions[(repo, commit)] = spdx
+    return decisions
+
+
+def license_gate(
+    instances: Sequence[SweInstance], repo_licenses: LicenseDecisions
+) -> tuple[list[SweInstance], list[dict[str, str]]]:
+    """``(passed, held)``: an instance passes when the license of its repository at its base
+    commit (``repo_licenses[(repo, base_commit)]``, supplied by the operator) is in
+    ``PERMISSIVE``.
+
+    An instance without an entry for its ``(repo, base_commit)`` is held with reason
+    ``license_unknown`` (a decision for another commit of the repository does not carry over);
+    any other license with ``license_not_permissive``. Nothing is inferred from the dataset card
+    or the repository HEAD.
     """
     passed: list[SweInstance] = []
     held: list[dict[str, str]] = []
     for instance in instances:
-        spdx = repo_licenses.get(instance.repo)
+        spdx = repo_licenses.get((instance.repo, instance.base_commit))
         if spdx is None:
             held.append({"instance_id": instance.instance_id, "reason": "license_unknown"})
         elif spdx not in PERMISSIVE:
@@ -277,7 +302,7 @@ def license_gate(
     return passed, held
 
 
-def require_licenses(instances: Sequence[SweInstance], repo_licenses: Mapping[str, str]) -> None:
+def require_licenses(instances: Sequence[SweInstance], repo_licenses: LicenseDecisions) -> None:
     """``Hold SWE_LICENSE`` unless every instance passes ``license_gate``."""
     _, held = license_gate(instances, repo_licenses)
     if held:
@@ -386,10 +411,7 @@ def _scan(args: argparse.Namespace) -> int:
 
 def _licenses(args: argparse.Namespace) -> int:
     rows = read_rows(args.source, args.rows)
-    licenses = _json(args.repo_licenses)
-    if not isinstance(licenses, dict):
-        raise RuntimeFault("SWE_LICENSE", f"{args.repo_licenses}: an {{repo: SPDX}} object")
-    passed, held = license_gate(rows, licenses)
+    passed, held = license_gate(rows, read_license_decisions(_json(args.repo_licenses)))
     _print({"passed": [i.instance_id for i in passed], "held": held})
     return 0 if not held else 1
 

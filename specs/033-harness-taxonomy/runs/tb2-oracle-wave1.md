@@ -5,9 +5,18 @@ every run was a local container on the operator Mac. Tool: `scripts/tb2_oracle_w
 
 ## Result
 
-**Admitted: 0 of 89.** No task's own test entry (`bash /tests/test.sh`, `tb2_grading.entry_for`) starts its pytest
-session under V3 egress none, so no reference solution can pass and nothing was written into the corpus
+**Admitted: 0 of 89 (확인).** No task was admitted in this wave and nothing was written into the corpus
 (`corpus/tb2/` and `corpus/bases/tb2.commits.json` stay absent; the corpus stays 2.1.0).
+
+**Cause for all 89: (추정), not shown.** The evidence is narrower than the count:
+
+- 85 tasks were screened, in the earlier screen layout (pinned task image, its own `WorkingDir` on the read-only
+  root, no `/workspace` mount); in none of them did the task's own test entry (`bash /tests/test.sh`,
+  `tb2_grading.entry_for`) start its pytest session under V3 egress none. These were not re-run in the admission
+  layout the script now uses (Root Cause Check, below).
+- 4 tasks were not run at all (`not_pulled_size`); their failure is read from the image history only (Method step 4).
+- Only `chess-best-move` went through the full admission and the network control; for that one task the cause is
+  confirmed to be network at grading time (확인, Root Cause Check).
 
 | Reason | Tasks | Meaning |
 |---|---|---|
@@ -43,7 +52,8 @@ Every screen wrote reward `0` (85 of 85); none wrote `1`.
    (`sandbox/container.py`): `--network none`, `--user 65534:65534`, `--read-only`, `--cap-drop=ALL`,
    `--security-opt=no-new-privileges`, tmpfs `/tmp` and `/home/agent`, `HOME=/home/agent`, memory 2 GB, 2 CPUs, 256
    pids; `tests/` read-only at `/tests`, a fresh `/logs/verifier`. The screen passes when pytest prints `test session
-   starts`.
+   starts`. This wave-1 screen had no `/workspace` mount, unlike admission; the script now screens in the admission
+   layout (Root Cause Check, below).
 2. Why a failed screen is a failed admission: §10.5 step 4 (c) needs the reference to pass. The reference step runs
    the same script in the same image under the same containment; the solution changes only `/workspace`, while the
    runner bootstrap (`curl` of `uv`, `uvx`/`pip` installs, `apt-get`) needs network or a writable root outside it.
@@ -72,6 +82,44 @@ Every screen wrote reward `0` (85 of 85); none wrote `1`.
 - **Docker Hub pull limit**: unauthenticated pulls are limited (`ratelimit-limit: 100;w=3600` read from the registry
   headers). The first pass hit it for 15 tasks (`toomanyrequests` on pull; that the 89 manifest reads counted toward
   it is (추정)); those 15 were re-screened with `--again` and are in the table.
+
+## Root Cause Check: Task Property Or Harness Bug (2026-10-15)
+
+Question: is 0 of 89 caused by the tasks (their test entry needs network) or by our harness (containment flags,
+mounts, working directory)? Two controls on `chess-best-move` (pinned digest `sha256:bb447f94…`), both with the
+upstream Harbor conditions (root, writable root filesystem, no uid/cap/read-only flags), only `--network` differs:
+
+| Network | `solve.sh` | `test.sh` | Result |
+|---|---|---|---|
+| bridge | exit 0 | `1 passed` (`test_move_correct`) | reference passes |
+| none | exit 1 (`apt install stockfish`) | `Could not resolve host: astral.sh`, `uvx: command not found` | fails |
+
+Conclusion for `chess-best-move` (확인): under the Harbor conditions above, removing network alone turns a passing
+reference into a failure, and the full V3 admission of this task (Method step 3) agrees. For this one task the
+cause is a property of the task (its test runner and reference bootstrap from the network at grading time), not a
+harness bug.
+
+Conclusion for all 89 (추정): that the same cause holds for the other 88 tasks is not shown. Only `chess-best-move`
+was run with network and only `chess-best-move` went through the full admission. The basis is the uniform screen
+evidence (77 tasks stop at the same `uvx` bootstrap line), the 4 large images were never run (Method step 4), and
+the wave-1 screen differed from admission (below). Verification path: re-screen the 89 tasks with the fixed screen,
+and run the network control on more than one task. "No task was admitted in this wave" holds (확인); the cause
+behind it for all 89 does not.
+
+Screen vs admission: the wave-1 screen ran `test.sh` in the pinned task image in its own `WorkingDir` (`/app`), on
+the read-only root, with no `/workspace` mount. Admission runs it in the oracle image, where that directory is a link
+to `/workspace`, and mounts a writable copy of its contents there. A task whose `test.sh` writes into its working
+directory (as `cp` into `/app` does for `cancel-async-tasks`, `sam-cell-seg`) can fail the screen and still reach
+its test runner in admission. This commit changes `tb2_oracle_wave.py screen` to the admission layout (oracle image
+built locally from the pinned digest, the working-directory contents copied into a writable workspace at
+`/workspace`, the same containment: network none, uid 65534, read-only root, cap-drop ALL), makes a screen without a
+registry digest fail with `no_digest` instead of running the mutable tag, and re-screens records of the earlier
+layout. The 85 screen results in this file come from the earlier layout and were not re-run (확인 필요). The read-only
+root and uid 65534 add failures on top (`apt-get` needs root). The policy (D-135 egress none) was not loosened.
+
+Decision proposal for the operator: (A) build-time baking of test dependencies (recommended if TB2 is wanted: it
+is how offline graders are normally built, keeps runtime egress none, but is a grading contract change) or (C) move
+on to SWE-bench Multilingual per D-135 now and treat (A) as a later work item. (B) is not recommended (opens egress).
 
 ## What Would Admit TB2 Tasks (Operator Decision, Not Implemented)
 
