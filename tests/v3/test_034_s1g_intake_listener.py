@@ -762,7 +762,7 @@ def test_a_second_ctrl_c_does_not_wait_for_a_stalled_request(listening: Any) -> 
     for conn in slow:
         conn.close()
     assert "error" not in seen, seen
-    assert took < 10, took
+    assert took < 5, took
     assert port_free(op_port) and port_free(side_port)
 
 

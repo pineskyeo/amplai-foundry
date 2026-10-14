@@ -217,6 +217,25 @@ async def run_pair(
         await side_task
 
 
+def force_stop(*servers: Any) -> None:
+    """A second Ctrl-C: stop now. uvicorn's ``force_exit`` skips its own waits, but its shutdown
+    still awaits ``asyncio.Server.wait_closed()``, which since CPython 3.12.1 waits until every
+    connection is dropped (``asyncio/base_events.py`` ``Server.wait_closed``; 3.11 returned at
+    once). A request stalled on its body then holds the shutdown for the whole graceful window.
+    So this also closes each open connection and cancels each running request."""
+    for server in servers:
+        server.force_exit = server.should_exit = True
+        state = getattr(server, "server_state", None)
+        if state is None:
+            continue
+        for connection in list(state.connections):
+            transport = getattr(connection, "transport", None)
+            if transport is not None:
+                transport.close()
+        for task in list(state.tasks):
+            task.cancel()
+
+
 def serve_with_listener(
     operator_app: Any,
     operator_port: int,
@@ -258,17 +277,22 @@ def serve_with_listener(
     )
     side = _side_server(intake_app, graceful)
     captured: list[int] = []
+    running: list[asyncio.AbstractEventLoop] = []
 
     def stop(sig: int, frame: Any) -> None:
-        if captured and sig == signal.SIGINT:  # a second Ctrl-C: do not wait for requests
-            operator.force_exit = side.force_exit = True
+        if captured and sig == signal.SIGINT and running:  # a second Ctrl-C: do not wait
+            running[0].call_soon_threadsafe(force_stop, operator, side)
         captured.append(sig)
         operator.should_exit = side.should_exit = True
+
+    async def main() -> None:
+        running.append(asyncio.get_running_loop())
+        await run_pair(operator, side, [sock])
 
     handled = (signal.SIGINT, signal.SIGTERM)
     originals = {sig: signal.signal(sig, stop) for sig in handled}
     try:
-        asyncio.run(run_pair(operator, side, [sock]))
+        asyncio.run(main())
     finally:
         for sig, handler in originals.items():
             signal.signal(sig, handler)
