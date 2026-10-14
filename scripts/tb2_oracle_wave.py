@@ -66,13 +66,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from amplai_foundry.meta_harness import tb2, tb2_grading
+from amplai_foundry.meta_harness import tb2, tb2_grading, tb2_test_deps
 from amplai_foundry.runtime.errors import RuntimeFault
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 
 SCRATCH = Path.home() / ".amplai-sandbox-probes" / "tb2-wave1"
 # v2: the screen runs in the admission layout (oracle image, writable /workspace copy).
-SCREEN_SCHEMA = "amplai.tb2-oracle-screen.v2"
+# v3: the oracle image bakes the test runner at build time (TB2 option A, tb2_test_deps).
+SCREEN_SCHEMA = "amplai.tb2-oracle-screen.v3"
 SESSION_STARTED = "test session starts"
 SCREEN_TIMEOUT_SEC = 900  # a screen only needs the runner to start
 MAX_COMPRESSED_GB = 3.0
@@ -137,8 +138,18 @@ def classify_screen(output: str, code: int | None, reward: str | None) -> dict[s
     return {"status": status, "exit_status": code, "reward": reward, "tail": tail}
 
 
-def oracle_dockerfile(task: tb2.Tb2Task, pinned_image: str, workdir: str) -> str:
-    """``tb2.image_spec``'s Dockerfile without the driver layer (the admission runs no agent)."""
+def oracle_dockerfile(
+    task: tb2.Tb2Task,
+    pinned_image: str,
+    workdir: str,
+    deps: tb2_test_deps.RunnerDeps | None = None,
+    platform: str = "linux/amd64",
+) -> str:
+    """``tb2.image_spec``'s Dockerfile without the driver layer (the admission runs no agent).
+
+    With ``deps`` the test runner is baked in as root right after ``USER 0:0``
+    (``tb2_test_deps.bake_dockerfile_lines``, TB2 option A), before the image drops to uid 65534.
+    """
     if not tb2.PINNED_IMAGE.fullmatch(pinned_image):
         raise RuntimeFault("TB2_SPEC", f"{task.name}: the task image needs an immutable digest")
     spec = tb2.image_spec(
@@ -154,8 +165,33 @@ def oracle_dockerfile(task: tb2.Tb2Task, pinned_image: str, workdir: str) -> str
         if not line.startswith("COPY --from=") and not line.startswith("FROM ")
     ]
     header, rest = lines[0], lines[1:]
+    if deps is not None:
+        root = rest.index("USER 0:0") + 1
+        rest = [*rest[:root], *tb2_test_deps.bake_dockerfile_lines(deps, platform), *rest[root:]]
     note = "# oracle admission image: no driver layer (no agent runs in admission)"
     return "\n".join([header, note, f"FROM {pinned_image}", *rest]) + "\n"
+
+
+def oracle_build_context(
+    task: tb2.Tb2Task, pinned_image: str, workdir: str, platform: str
+) -> dict[str, str]:
+    """The oracle image build context: the Dockerfile with the task's test runner baked in and
+    the runner shims. ``tb2_test_deps.Unsupported`` when the task's ``test.sh`` runner cannot be
+    pinned (the task is then not admitted; D-135 is not relaxed for it)."""
+    assert task.source_dir is not None
+    deps = tb2_test_deps.parse_test_entry((task.source_dir / "tests" / "test.sh").read_text())
+    return {
+        "Dockerfile": oracle_dockerfile(task, pinned_image, workdir, deps, platform),
+        **tb2_test_deps.shim_files(deps),
+    }
+
+
+def write_build_context(build: Path, files: dict[str, str]) -> None:
+    """Write ``oracle_build_context`` files under ``build``."""
+    for rel, text in files.items():
+        path = build / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
 
 
 def container_profile(image: str, task_toml: dict[str, Any]) -> dict[str, Any]:
@@ -426,7 +462,9 @@ def screen_one(task: tb2.Tb2Task, out: Path, max_gb: float, commit: str) -> dict
     scratch = Path(tempfile.mkdtemp(prefix=f"screen-{task.name}-", dir=SCRATCH))
     oracle = f"amplai-tb2-screen-{task.name}:wave1"
     try:
-        record.update(_screen_in_layout(task, out, scratch, pinned, workdir, oracle))
+        record.update(
+            _screen_in_layout(task, out, scratch, pinned, workdir, oracle, record["platform"])
+        )
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
         _sh(["docker", "image", "rm", oracle])
@@ -436,16 +474,24 @@ def screen_one(task: tb2.Tb2Task, out: Path, max_gb: float, commit: str) -> dict
 
 
 def _screen_in_layout(
-    task: tb2.Tb2Task, out: Path, scratch: Path, pinned: str, workdir: str, oracle: str
+    task: tb2.Tb2Task,
+    out: Path,
+    scratch: Path,
+    pinned: str,
+    workdir: str,
+    oracle: str,
+    platform: str,
 ) -> dict[str, Any]:
     """Build the oracle image locally, copy the workspace and run the entry in that layout."""
     try:
-        dockerfile = oracle_dockerfile(task, pinned, workdir)
+        context = oracle_build_context(task, pinned, workdir, platform)
+    except tb2_test_deps.Unsupported as exc:
+        return {"status": "test_deps_unsupported", "tail": [exc.message]}
     except RuntimeFault as exc:
         return {"status": "oracle_spec", "tail": [exc.message]}
     build = scratch / "build"
     build.mkdir()
-    (build / "Dockerfile").write_text(dockerfile)
+    write_build_context(build, context)
     built = _sh(["docker", "build", "-q", "-t", oracle, str(build)], timeout=3600)
     if built.returncode != 0:
         return {"status": "build_failed", "tail": (built.stdout + built.stderr).splitlines()[-3:]}
@@ -544,9 +590,14 @@ def admit_one(
         if code or not isinstance(commit, str):
             return {**record, "stage": "base-commit", "admitted": False, "reason": "base_commit"}
         _write(base_path, {"task": task.name, "pinned": pinned, "commit": commit})
+    try:
+        context = oracle_build_context(task, pinned, workdir, str(screen.get("platform")))
+    except tb2_test_deps.Unsupported:
+        return {**record, "stage": "build", "admitted": False, "reason": "test_deps_unsupported"}
     build = out / "build" / task.name
-    build.mkdir(parents=True, exist_ok=True)
-    (build / "Dockerfile").write_text(oracle_dockerfile(task, pinned, workdir))
+    shutil.rmtree(build, ignore_errors=True)  # no stale shim of an earlier build
+    build.mkdir(parents=True)
+    write_build_context(build, context)
     tag = f"{args.registry}/amplai-tb2-oracle-{task.name}:wave1"
     built = _sh(["docker", "build", "-q", "-t", tag, str(build)], timeout=3600)
     if built.returncode != 0:

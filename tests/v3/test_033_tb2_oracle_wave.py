@@ -179,6 +179,7 @@ def _screen(**kw: Any) -> dict[str, Any]:
         "source_commit": COMMIT,
         "pinned": PINNED,
         "workdir": "/app",
+        "platform": "linux/amd64",
         "status": "runner_started",
     }
     record.update(kw)
@@ -305,6 +306,10 @@ def _admit_setup(tmp_path: Path, base_pinned: str) -> tuple[Tb2Task, argparse.Na
     source = tmp_path / "fake-task"
     (source / "tests").mkdir(parents=True)
     (source / "task.toml").write_text("[environment]\n")
+    # the runner the oracle image bakes (TB2 option A, tb2_test_deps)
+    (source / "tests" / "test.sh").write_text(
+        "uvx -p 3.13 -w pytest==8.4.1 -w pytest-json-ctrf==0.3.5 pytest /tests/test_outputs.py\n"
+    )
     task = Tb2Task(
         "fake-task", "alexgshaw/fake-task:20251031", True, 0, "games", "hard", 900, 900, source
     )
@@ -401,3 +406,24 @@ def test_report_rows_list_every_task_sorted_and_escape_pipes() -> None:
     )
     assert rows[0].startswith("| `a` |") and "| admitted | `admitted` |" in rows[0]
     assert rows[1].startswith("| `b` |") and "a\\|b" in rows[1] and "| failed |" in rows[1]
+
+
+def test_admit_does_not_build_a_task_whose_runner_cannot_be_baked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    task, args = _admit_setup(tmp_path, base_pinned=PINNED)
+    assert task.source_dir is not None
+    (task.source_dir / "tests" / "test.sh").write_text("uv venv -p 3.12 .tb\nuv run pytest\n")
+    calls: list[list[str]] = []
+
+    def sh(argv: list[str], timeout: int | None = None) -> subprocess.CompletedProcess[str]:
+        calls.append(argv)
+        return _done()
+
+    monkeypatch.setattr(wave, "SCRATCH", tmp_path / "scratch")
+    monkeypatch.setattr(wave, "_sh", sh)
+    monkeypatch.setattr(wave, "_adapter", lambda *argv: 0)
+    record = wave.admit_one(task, _screen(), args)
+    assert (record["stage"], record["reason"]) == ("build", "test_deps_unsupported")
+    assert record["admitted"] is False
+    assert not any(argv[:2] == ["docker", "build"] for argv in calls)
