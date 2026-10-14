@@ -18,7 +18,7 @@ from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
 from amplai_foundry.runtime.git_host import PullRequestState
 from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
-from rc06_rig import git, local_github, rig_two_apps
+from rc06_rig import RecordingGitHub, git, local_github, rig_two_apps
 
 
 def two_app_goal(rig: Any, text: str = "value 2 end to end") -> str:
@@ -219,3 +219,44 @@ def test_a_remote_on_another_host_stops_every_app_before_any_push(
     assert record["publication"]["error"] == "GIT_HOST_MISMATCH"
     for bare in (app_remote, consumer_remote):
         assert git(bare, "for-each-ref", "refs/heads/amplai").strip() == ""  # nothing pushed
+
+
+def test_the_production_pr_path_opens_and_links_one_pr_per_app(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Work 034 OD-15 (PR #93 regression review P2-a): no PR stand-in injected. Every app's
+    remote is checked first, then each app is pushed, gets its draft PR through the module, and
+    the first PR is linked to the second with one comment."""
+    box: dict[str, GitPublisher] = {}
+    rig, loop, _container, consumer = rig_two_apps(
+        deployment, tmp_path, publisher=lambda g: box["p"](g)
+    )
+    remote(rig.repo, tmp_path, "app")
+    remote(consumer, tmp_path, "consumer")
+    host = RecordingGitHub()
+    box["p"] = GitPublisher(rig.service, git_host=GitHubHost(run=host))
+    goal = two_app_goal(rig)
+    rig.service.plan(goal)
+    rig.service.approve(rig.operator, goal)
+    record = loop.run_goal(goal)
+    assert record["status"] == "published", record.get("publication")
+    parts = record["publication"]["publications"]
+    assert [p["branch"] for p in parts.values()] == [
+        f"amplai/{goal}-app",
+        f"amplai/{goal}-consumer",
+    ]
+    lookups = host.of("git", "remote", "get-url")
+    assert set(map(tuple, lookups)) == {("git", "remote", "get-url", "--push", "--all", "origin")}
+    assert len(lookups) == 6  # 2 pre-push checks, then push and PR for each app
+    first_push = host.calls.index(host.of("git", "push")[0])
+    assert host.calls[:first_push].count(lookups[0]) == 3  # both apps checked before any push
+    creates = host.of("gh", "pr", "create")
+    assert [c[3:8] for c in creates] == [
+        ["--draft", "--head", f"amplai/{goal}-app", "--base", "main"],
+        ["--draft", "--head", f"amplai/{goal}-consumer", "--base", "main"],
+    ]
+    assert host.of("gh", "pr", "comment") == [
+        ["gh", "pr", "comment", "https://github.com/o/r/pull/1", "--body",
+         f"Part of AMPLAI goal `{goal}` with: https://github.com/o/r/pull/2"],
+    ]  # fmt: skip
+    assert parts["app"]["linked"] is True

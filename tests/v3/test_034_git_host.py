@@ -38,7 +38,7 @@ from amplai_foundry.runtime.execution.publish import NO_GIT_HOST, GitPublisher
 from amplai_foundry.runtime.git_host import SUITE, PullRequestState
 from amplai_foundry.runtime.git_host.github import GitHubHost
 from amplai_foundry.runtime.git_host.github import spec as github_spec
-from amplai_foundry.runtime.git_host.interface import check_refs, url_host
+from amplai_foundry.runtime.git_host.interface import check_host, check_refs, url_host
 from amplai_foundry.runtime.local_deployment import (
     GitHostEntry,
     LocalConfig,
@@ -80,6 +80,8 @@ class FakeGitHub:
         match args:
             case ["git", "remote", "get-url", "--push", "--all", name] if name in self.remotes:
                 return done("".join(u + "\n" for u in self.remotes[name]).encode())
+            case ["git", "remote", "get-url", name] if name in self.remotes:
+                return done((self.remotes[name][0] + "\n").encode())  # the fetch URL only
             case ["git", "remote", "get-url", *_]:
                 return done(code=2, stderr=b"error: No such remote")
             case ["git", "ls-remote", "conformance-down", _ref]:
@@ -215,10 +217,43 @@ class OtherCodes(GitHubHost):
             raise Hold("COMMENT_FAILED", fault.message) from None
 
 
+class FetchUrlOnly(GitHubHost):
+    """Checks the fetch URL, not the push URLs (a ``pushurl`` elsewhere slips through)."""
+
+    def _check_remote(self, repo: Path, remote: str) -> None:
+        named = self.run(["git", "remote", "get-url", remote], repo, None, 30)
+        check_host(self.remote_hosts, named.stdout.decode().strip())
+
+
+class AcceptsUnknownRemote(GitHubHost):
+    def _check_remote(self, repo: Path, remote: str) -> None:
+        try:
+            super()._check_remote(repo, remote)
+        except Hold as fault:
+            if fault.code != "PUBLISH_REMOTE":
+                raise
+
+
+class SkipsPrUrlCheck(GitHubHost):
+    def comment_pr(self, repo: Path, url: str, body: str) -> None:
+        done_ = self._gh(["pr", "comment", url, "--body", body], repo, 300)
+        if done_.returncode != 0:
+            raise Hold("PR_COMMENT", "gh pr comment failed")
+
+
+class ErrorsOnReconcile(GitHubHost):
+    def push_branch(self, repo: Path, remote: str, branch: str, commit: str) -> None:
+        found = self.run(["git", "ls-remote", remote, "refs/heads/" + branch], repo, None, 300)
+        if found.stdout.strip():
+            raise Hold("PUBLISH_PUSH", "already there")
+        super().push_branch(repo, remote, branch, commit)
+
+
 @pytest.mark.parametrize(
     "broken",
-    [ForcesPush, OpensTwice, StateAsDict, RawErrors, NoHostCheck, TakesOptions, OtherCodes],
-)
+    [ForcesPush, OpensTwice, StateAsDict, RawErrors, NoHostCheck, TakesOptions, OtherCodes,
+     FetchUrlOnly, AcceptsUnknownRemote, SkipsPrUrlCheck, ErrorsOnReconcile],
+)  # fmt: skip
 def test_the_suite_fails_a_host_that_breaks_a_v1_rule(broken: type[GitHubHost]) -> None:
     ledger = ConformanceLedger()
     ledger.register_suite(SUITE)
@@ -494,6 +529,43 @@ def test_a_trailing_dot_is_ignored_in_urls(url: str, host: str) -> None:
     assert url_host(url) == host
 
 
+def test_a_malformed_url_is_a_mismatch_not_a_crash() -> None:
+    assert url_host("https://[x") is None
+    host = GitHubHost(run=FakeGitHub())
+    for call in (
+        lambda: host.pr_state(REPO, "https://[x/o/r/pull/1"),
+        lambda: host.comment_pr(REPO, "https://[x/o/r/pull/1", "x"),
+        lambda: host.check_remote(REPO, "https://[x/o/r.git"),
+    ):
+        with pytest.raises(Hold) as held:
+            call()
+        assert held.value.code == "GIT_HOST_MISMATCH" and held.value.details["remote"] is None
+
+
+def test_a_created_pr_on_another_host_is_refused_with_its_url() -> None:
+    fake = FakeGitHub()  # remotes on github.com
+    fake.host = "elsewhere.example"  # but gh creates the PR elsewhere
+    with pytest.raises(Hold) as held:
+        GitHubHost(run=fake).open_draft_pr(REPO, "origin", "amplai/g", "main", "t", "b")
+    assert held.value.code == "GIT_HOST_MISMATCH"
+    assert held.value.details == {
+        "configured": ["github.com"], "remote": "elsewhere.example",
+        "pr_url": "https://elsewhere.example/o/r/pull/1",
+    }  # fmt: skip
+    assert len(fake.prs) == 1  # the PR exists; the details name it
+
+
+def test_a_url_remote_is_checked_against_remote_hosts_not_the_web_host() -> None:
+    fake = FakeGitHub()
+    corp = GitHubHost(host="github.corp.example", remote_hosts=["ssh.corp.example"], run=fake)
+    corp.check_remote(REPO, "git@ssh.corp.example:o/r.git")
+    with pytest.raises(Hold) as held:
+        corp.check_remote(REPO, "https://github.corp.example/o/r.git")
+    details = {"configured": ["ssh.corp.example"], "remote": "github.corp.example"}
+    assert held.value.details == details
+    assert fake.calls == []  # a URL remote needs no lookup
+
+
 @pytest.mark.parametrize(
     "call",
     [
@@ -608,12 +680,21 @@ def test_absent_git_host_is_github_and_null_is_none(tmp_path: Path) -> None:
         {"remote_hosts": []},
         {"remote_hosts": ["ssh host"]},
         {"remote_hosts": ["git@ssh.example"]},
+        {"remote_hosts": [f"h{i}.example" for i in range(17)]},  # at most 16
     ],
 )
 def test_a_git_host_entry_is_strict(tmp_path: Path, entry: dict[str, Any]) -> None:
     home = init_home(tmp_path)
     with pytest.raises(ValidationError):
         LocalConfig.model_validate(config(home, git_host=entry))
+
+
+def test_sixteen_remote_hosts_are_accepted(tmp_path: Path) -> None:
+    hosts = [f"h{i}.example" for i in range(16)]
+    entry = LocalConfig.model_validate(
+        config(init_home(tmp_path), git_host={"remote_hosts": hosts})
+    ).git_host
+    assert entry is not None and entry.remote_hosts == hosts
 
 
 def deploy(home: Path, **change: Any) -> LocalProductDeployment:
@@ -630,8 +711,47 @@ def test_the_default_deployment_publishes_through_github(tmp_path: Path) -> None
         assert isinstance(dep.git_host, GitHubHost) and dep.git_host.host == "github.com"
         publisher = dep.loop.publisher
         assert isinstance(publisher, GitPublisher) and publisher.git_host is dep.git_host
+        # the production PR path: no stand-in, the module opens and links the PRs
+        assert publisher.pr_creator is None and publisher.pr_linker == dep.git_host.comment_pr
         assert dep.tracker is not None and dep.tracker.reader == dep.git_host.pr_state
     finally:
+        dep.close()
+
+
+def test_the_deployment_builds_the_configured_company_host(tmp_path: Path) -> None:
+    dep = deploy(
+        init_home(tmp_path),
+        git_host={"host": "GitHub.Corp.Example", "remote_hosts": ["ssh.corp.example"]},
+    )
+    try:
+        assert isinstance(dep.git_host, GitHubHost)
+        assert dep.git_host.host == "github.corp.example"
+        assert dep.git_host.remote_hosts == ("ssh.corp.example",)
+    finally:
+        dep.close()
+
+
+def test_pr_sync_shows_unread_prs_only_when_there_are_any(tmp_path: Path) -> None:
+    home = init_home(tmp_path)
+    dep = deploy(home)
+    operator = {"Authorization": "Bearer " + (home / "operator.token").read_text().strip()}
+    try:
+        with TestClient(dep.app) as client:
+            sync = "/api/v3/local/publications/sync"
+            assert client.post(sync, headers={**operator, "Idempotency-Key": "a"}).json() == {
+                "recorded": []
+            }
+            assert dep.tracker is not None
+            details = {"configured": ["github.com"], "remote": "x.example"}
+            held = {
+                "goal_id": "g-1", "app": "app", "code": "GIT_HOST_MISMATCH",
+                "details": details, "at": "t",
+            }  # fmt: skip
+            dep.tracker.unread["g-1"] = held
+            body = client.post(sync, headers={**operator, "Idempotency-Key": "b"}).json()
+            assert body == {"recorded": [], "unread": [held]}
+    finally:
+        settle(dep)
         dep.close()
 
 
