@@ -1883,7 +1883,9 @@ class _Builder:
                 NightRow(
                     date=night_id.removeprefix("night-"),
                     budget_trials=_int(plan.get("budget_trials")),
-                    shares=_d(plan.get("shares")),
+                    # D-129: the night's phase budget (trials) when it recorded one, else shares
+                    shares=_d(_d(data.get("drift_cadence")).get("phase_budget"))
+                    or _d(plan.get("shares")),
                     cells=tuple(str(c) for c in _l(plan.get("cells"))),
                     pilot=plan.get("pilot") if isinstance(plan.get("pilot"), bool) else None,
                     phase=_s(data.get("phase")),
@@ -2935,7 +2937,7 @@ def _budget(feed: DashboardFeed) -> str:
         [
             "night",
             "B (trials)",
-            "shares",
+            "phase budget (trials) or shares",
             "cells",
             "pilot",
             "phase",

@@ -255,6 +255,8 @@ class NightlyEntry(BaseModel):
     keep_operator_share: float = Field(default=0.5, ge=0, le=1)
     # clarification after S12: a night ends at min(stop_at, start + max_hours)
     max_hours: float = Field(default=8.0, gt=0, le=24)
+    # D-129: the paid drift measurement runs once every drift_every_nights nights (1: every night)
+    drift_every_nights: int = Field(default=7, ge=1, le=31)
 
     @model_validator(mode="after")
     def _shares(self) -> NightlyEntry:

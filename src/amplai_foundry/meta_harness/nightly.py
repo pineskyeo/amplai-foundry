@@ -21,9 +21,14 @@ standing approval (``amplai meta nightly approve``, action ``nightly.explore``, 
 - **Night length**: a night ends at ``min(stop_at, start + max_hours)`` (``max_hours`` default 8;
   clarification after S12).
 - **Phases** (in order): preflight (kill switch, cells and evaluator qualified, the IC-29
-  executor qualification record of each cell, stop time) → drift (each cell's champion: snapshot
-  change, then ``drift_tasks``: drift iff the pass count k of n lies outside the two-sided 99 %
-  binomial prediction range at the ends of the calibrated 95 % Wilson interval, ``drift_range``) →
+  executor qualification record of each cell, the drift fit len(drift_tasks) x len(cells) <=
+  budget_trials, stop time) → drift (each cell's champion, every night: the free snapshot change
+  check; then, on a measuring night of the cell only (D-129, ``drift_due``: once every
+  ``drift_every_nights`` nights, or earlier when the last measurement is missing, not ``ok`` or
+  no longer current), the paid ``drift_tasks`` measurement, len(drift_tasks) trials taken off the
+  budget before the other phase shares: drift iff the pass count k of n lies outside the
+  two-sided 99 % binomial prediction range at the ends of the calibrated 95 % Wilson interval,
+  ``drift_range``) →
   screening design (PB12, or its fold-over mirror on the next screening night, when the operator set
   ``shares.screening_design`` > 0) → search (proposer drafts, the nightly screen of class A drafts
   (IC-30), surrogate ranking, successive halving)
@@ -109,6 +114,9 @@ DEFAULT_MAX_HOURS = 8
 # clarification after S12: drift is a pass count outside the two-sided 99 % binomial prediction
 # range at the ends of the calibrated 95 % Wilson interval
 DRIFT_LOW_Q, DRIFT_HIGH_Q = 0.005, 0.995
+# D-129 (operator decision 2026-10-14): the paid drift measurement runs once every N nights
+DEFAULT_DRIFT_EVERY_NIGHTS = 7
+MAX_DRIFT_EVERY_NIGHTS = 31  # PR #91 review: a measurement is never older than a month
 
 Guard = Callable[[int], None]
 
@@ -127,6 +135,9 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
     stop_at: str  # "HH:MM" local time
     # clarification after S12: a night ends at min(stop_at, start + max_hours) (default 8)
     max_hours: float = DEFAULT_MAX_HOURS
+    # D-129: the paid drift measurement (the drift calibration on drift_tasks) runs once every
+    # drift_every_nights nights per cell; 1 measures every night (the behaviour before D-129)
+    drift_every_nights: int = DEFAULT_DRIFT_EVERY_NIGHTS
 
     def __post_init__(self) -> None:
         bad = []
@@ -159,6 +170,11 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             bad.append("stop_at")
         if type(self.max_hours) not in (int, float) or not 0 < self.max_hours <= 24:
             bad.append("max_hours")
+        if (
+            type(self.drift_every_nights) is not int
+            or not 1 <= self.drift_every_nights <= MAX_DRIFT_EVERY_NIGHTS
+        ):
+            bad.append("drift_every_nights")
         if bad:
             raise RuntimeFault("NIGHTLY_CONFIG", "Invalid nightly config (§2.14, §12.2)",
                                details=bad)  # fmt: skip
@@ -184,15 +200,16 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             keep_operator_share=get("keep_operator_share"),
             max_parallel=get("max_parallel"),
             stop_at=get("stop_at"),
-            max_hours=_max_hours(entry),
+            max_hours=_optional(entry, "max_hours", DEFAULT_MAX_HOURS),
+            drift_every_nights=_optional(entry, "drift_every_nights", DEFAULT_DRIFT_EVERY_NIGHTS),
         )
 
 
-def _max_hours(entry: Any) -> Any:
-    """``meta.nightly.max_hours`` when the entry carries it (``local_deployment.NightlyEntry``,
-    0 < h <= 24), else the default 8."""
-    value = entry.get("max_hours") if isinstance(entry, dict) else getattr(entry, "max_hours", None)
-    return DEFAULT_MAX_HOURS if value is None else value
+def _optional(entry: Any, key: str, default: Any) -> Any:
+    """``meta.nightly.<key>`` when the entry carries it (``local_deployment.NightlyEntry``), else
+    ``default`` (``max_hours`` 8, ``drift_every_nights`` 7)."""
+    value = entry.get(key) if isinstance(entry, dict) else getattr(entry, key, None)
+    return default if value is None else value
 
 
 def _stop_minutes(value: Any) -> int | None:
@@ -264,19 +281,45 @@ def nightly_policy(
     return policy
 
 
-def phase_budget(budget: int, shares: dict[str, float], *, screening: bool) -> dict[str, int]:
-    """Trials per phase: drift = floor(B x drift), screening design = floor(B x screening_design)
-    taken out of the search share (only when ``screening``), search = floor(B x search) minus
-    it, confirmation = the rest (so the four add up to B)."""
-    drift = math.floor(budget * shares["drift"])
-    search_all = math.floor(budget * shares["search"])
-    design = min(search_all, math.floor(budget * shares["screening_design"])) if screening else 0
+def phase_budget(
+    budget: int, shares: dict[str, float], *, screening: bool, drift: int = 0
+) -> dict[str, int]:
+    """Trials per phase (D-129): ``drift`` (the paid drift measurement of a measuring night,
+    len(drift_tasks) per measuring cell) comes off the budget first; the rest R is split by the
+    other shares relative to search + confirmation (``shares.drift`` caps nothing any more):
+    search = floor(R x search / (search + confirmation)), screening design = floor(R x
+    screening_design / (search + confirmation)) taken out of it (only when ``screening``),
+    confirmation = the rest (so the four add up to B). With search + confirmation = 0 (drift-only
+    shares) search and confirmation get 0: the rest is never turned into work the operator's
+    shares did not grant (PR #91 review)."""
+    drift = max(0, min(int(drift), budget))
+    rest = budget - drift
+    other = shares["search"] + shares["confirmation"]
+
+    def part(share: float) -> int:
+        return math.floor(rest * share / other + 1e-9) if other > 0 else 0
+
+    search_all = min(rest, part(shares["search"]))
+    design = min(search_all, part(shares["screening_design"])) if screening else 0
     return {
         "drift": drift,
         "screening_design": design,
         "search": search_all - design,
-        "confirmation": budget - drift - search_all,
+        "confirmation": rest - search_all if other > 0 else 0,
     }
+
+
+def _corrupt(value: dict[str, Any], field: str) -> Hold:
+    """PR #91 review: a night record the drift cadence cannot read (fail closed)."""
+    return Hold("NIGHT_STATE", "A night record is corrupt; the drift cadence cannot use it",
+                details={"night": value.get("date"), "field": field})  # fmt: skip
+
+
+def _night_day(value: dict[str, Any], key: str) -> datetime:
+    try:
+        return datetime.strptime(str(value.get(key)), "%Y-%m-%d")
+    except ValueError:
+        raise _corrupt(value, key) from None
 
 
 def _unchecked_reason(
@@ -310,6 +353,9 @@ class NightlyBackend(Protocol):
     def snapshot(self, cell_id: str, drift_tasks: tuple[str, ...]) -> dict[str, Any]: ...
     def drift_run(self, cell_id: str, tasks: list[str], guard: Guard, limit: int
                   ) -> dict[str, Any]: ...  # fmt: skip
+    # D-129: is ``summary_ref`` (a night's drift measurement) a drift-purpose calibration
+    # summary of the cell under the current evaluator version on the current drift corpus?
+    def drift_measurement(self, cell_id: str, summary_ref: Any) -> bool: ...
     def schedule_recalibration(self, cell_id: str, reason: str) -> dict[str, Any]: ...
     def removal_sweep(self, cell_id: str, reason: str) -> list[str]: ...
     def screening_factors(self, cell_id: str) -> list[str]: ...
@@ -573,6 +619,7 @@ class NightlyRunner:
             date=date, dry_run=dry_run, head_id=head_id, standing_ref=standing_ref,
             plan_ref=plan_ref, plan=plan, started=started,
             stop_at=night_end(started, self.config.stop_at, self.config.max_hours),
+            # the drift reservation of a measuring night is set by ``_drift`` (D-129)
             caps=phase_budget(plan["budget_trials"], plan["shares"], screening=screening),
             data={
                 "schema": RUN_SCHEMA, "scope": self.scope.wire(), "date": date,
@@ -580,6 +627,7 @@ class NightlyRunner:
                 "drift": {}, "queued_confirmations": [], "proposals": [], "dreaming_ref": None,
                 "finished_at": None, "dry_run": dry_run, "started_at": now(), "phases": [],
                 "reconcile_pending": [], "recalibration": [], "findings": [],
+                "drift_cadence": None,
             },
             version=existing["row_version"] if existing is not None else 0,
         )  # fmt: skip
@@ -809,7 +857,7 @@ class NightlyRunner:
             self._phase(night, "preflight", "stopped", reason="kill_switch")
             raise _Stop("kill_switch")
         problems = self.backend.preflight(self.config.cells)
-        fit = self._drift_fit(night)
+        fit = self._drift_fit()
         if fit is not None:
             problems = [*problems, fit]
         if float(self.clock()) >= night.stop_at:
@@ -821,28 +869,99 @@ class NightlyRunner:
                     stop_at=datetime.fromtimestamp(night.stop_at).astimezone().isoformat(),
                     )  # fmt: skip
 
-    def _drift_fit(self, night: _Night) -> dict[str, Any] | None:
-        """eval-11 review: the drift tasks must fit one cell's drift share (the per-cell limit of
-        ``_drift``), else every night would skip drift with PHASE_SHARE; a NIGHT_CONFIG
-        preflight problem, before any trial."""
+    def _drift_fit(self) -> dict[str, Any] | None:
+        """D-129: a measuring night takes len(drift_tasks) trials per cell off the night budget
+        first, so every cell's drift measurement must fit the budget (len(drift_tasks) x
+        len(cells) <= budget_trials); else a NIGHT_CONFIG preflight problem, before any trial."""
         tasks = len(set(self.config.drift_tasks))
         cells = len(self.config.cells)
-        if not tasks or not cells:
+        if not tasks or not cells or tasks * cells <= self.config.budget_trials:
             return None
-        limit = int(night.caps["drift"]) // cells
-        if tasks <= limit:
-            return None
-        return {"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_share",
-                "drift_tasks": tasks, "limit_per_cell": limit, "cells": cells,
-                "budget_trials": night.plan["budget_trials"],
-                "share": night.plan["shares"]["drift"]}  # fmt: skip
+        return {"code": "NIGHT_CONFIG", "reason": "drift_tasks_exceed_budget",
+                "drift_tasks": tasks, "cells": cells, "needs": tasks * cells,
+                "budget_trials": self.config.budget_trials}  # fmt: skip
+
+    def _last_measurement(self, cell_id: str, date: str) -> dict[str, Any] | None:
+        """The newest earlier night (``nightly-run`` records, ``_earlier_nights``: non-dry, an
+        earlier ``date``) that ran a paid drift measurement of ``cell_id`` (its drift entry is
+        ``measured``; before D-129 every entry with ``observed`` was one), or None."""
+        for value in reversed(self._earlier_nights(date)):
+            drift = value.get("drift") or {}
+            if not isinstance(drift, dict):
+                raise _corrupt(value, "drift")
+            entry = drift.get(cell_id)
+            if entry is not None and not isinstance(entry, dict):
+                raise _corrupt(value, f"drift.{cell_id}")
+            if isinstance(entry, dict) and (entry.get("measured") is True or "observed" in entry):
+                if epoch_of(value.get("started_at")) is None:
+                    raise _corrupt(value, "started_at")
+                _night_day(value, "date")
+                return {
+                    "night": str(value.get("date")),
+                    "started_at": value.get("started_at"),
+                    "status": entry.get("status"),
+                    "summary_ref": entry.get("summary_ref"),
+                    "complete": entry.get("complete") is True,
+                }
+        return None
+
+    def drift_due(self, cell_id: str, date: str, calibrated_at: Any = None) -> dict[str, Any]:
+        """D-129: is the night of ``date`` a measuring night for ``cell_id``? A night is one
+        ``nightly-run`` date; the age of a measurement is the number of days between its night's
+        date and ``date``. Not due (``fresh``) only when the cell's last measurement is younger
+        than ``drift_every_nights`` nights, its outcome was ``ok`` (inside the band), its summary is
+        a drift-purpose calibration summary of the cell under the current evaluator version on the
+        current corpus (``NightlyBackend.drift_measurement``), and no operator baseline is newer
+        than it; else due: ``no_measurement``, ``stale``, ``not_ok`` (outside_band, unchecked,
+        uncalibrated ... not yet cleared by a clean measurement), ``not_current`` (also every
+        measurement recorded before D-129), ``incomplete`` (fewer observed runs than drift cases),
+        ``baseline_newer`` or ``baseline_unknown`` (no known baseline time). The age is
+        max(date difference, whole days since that night started). A corrupt night record holds
+        ``NIGHT_STATE``. A cell without a band never measures (``_drift``: ``no_band``)."""
+        last = self._last_measurement(cell_id, date)
+        if last is None:
+            return {"due": True, "reason": "no_measurement", "last": None}
+        # PR #91 review: the age is the larger of the date labels' difference and the days since
+        # that night really started, so a night run under a future --date never stays fresh
+        started = epoch_of(last["started_at"])
+        assert started is not None  # _last_measurement holds NIGHT_STATE otherwise
+        age = max(
+            (
+                datetime.strptime(date, "%Y-%m-%d") - datetime.strptime(last["night"], "%Y-%m-%d")
+            ).days,
+            math.floor((float(self.clock()) - started) / 86400),
+        )
+        info = {"night": last["night"], "status": last["status"], "age_nights": age,
+                "summary_ref": last["summary_ref"]}  # fmt: skip
+        reason = None
+        if age >= self.config.drift_every_nights:
+            reason = "stale"
+        elif last["status"] != "ok":
+            reason = "not_ok"
+        elif last["summary_ref"] is None or not self.backend.drift_measurement(
+            cell_id, last["summary_ref"]
+        ):
+            reason = "not_current"
+        elif not last["complete"]:
+            reason = "incomplete"  # a budget-stopped partial measurement covers fewer cases
+        else:
+            base = epoch_of(calibrated_at)
+            if base is None:
+                reason = "baseline_unknown"  # fail closed, as recalibration_pending does
+            elif base > started:
+                reason = "baseline_newer"
+        return {"due": reason is not None, "reason": reason or "fresh", "last": info}
 
     def _drift(self, night: _Night) -> None:
+        """Every night: the free snapshot check of each cell (``drift_check``; ``changed`` stops
+        search and schedules re-calibration). D-129: the paid measurement (the drift calibration
+        on ``drift_tasks``) runs only for the cells due (``drift_due``), len(drift_tasks) trials
+        each, taken off the night budget before the other phase shares."""
         from ..evaluation.calibration import BUDGET_STOPS
 
-        results: dict[str, Any] = {}
-        drifted: list[str] = []
-        unchecked: list[str] = []
+        tasks = len(set(self.config.drift_tasks))
+        checks: dict[str, dict[str, Any]] = {}
+        measuring: list[str] = []
         pending: set[str] = set()
         for cell in self.config.cells:
             check = self.drift_check(cell)
@@ -855,17 +974,45 @@ class NightlyRunner:
                     since,
                 )
                 pending.add(cell)
-            elif check["status"] != "changed" and self.config.drift_tasks and not night.dry_run:
-                limit_each = self._remaining(night, "drift") // max(
-                    1, len(self.config.cells) - len(results)
-                )
+            elif check["status"] == "uncalibrated" and tasks:
+                # coordinator review of D-129 (P3-1): no band, nothing to compare; no paid trial,
+                # search behaves as before for an uncalibrated cell
+                check["cadence"] = {"due": False, "reason": "no_band", "last": None}
+                check["measured"] = False
+            elif check["status"] != "changed" and tasks:
+                cadence = self.drift_due(cell, night.date, check.get("calibrated_at"))
+                check["cadence"] = cadence
+                check["measured"] = False
+                if cadence["due"]:
+                    measuring.append(cell)
+            checks[cell] = check
+        reserve = 0 if night.dry_run else tasks * len(measuring)
+        night.caps = phase_budget(
+            int(night.plan["budget_trials"]), night.plan["shares"],
+            screening=night.plan["shares"]["screening_design"] > 0, drift=reserve,
+        )  # fmt: skip
+        night.data["drift_cadence"] = {
+            "every_nights": self.config.drift_every_nights, "measuring": list(measuring),
+            "reserved_trials": reserve, "phase_budget": dict(night.caps),
+        }  # fmt: skip
+        results: dict[str, Any] = {}
+        drifted: list[str] = []
+        unchecked: list[str] = []
+        for cell in self.config.cells:
+            check = checks[cell]
+            if cell in measuring and not night.dry_run:
                 batch = self._unit(
                     night, "drift",
                     partial(self.backend.drift_run, cell, list(self.config.drift_tasks)),
-                    f"DRIFT {cell}", cap=limit_each,
+                    f"DRIFT {cell}", cap=tasks,
                 )  # fmt: skip
-                # None: the drift share could not cover it or a hold refused it (a finding)
+                # None: the drift reservation could not cover it or a hold refused it (a finding)
+                check["measured"] = True
                 check["observed"] = None
+                check["summary_ref"] = batch.get("summary_ref") if batch is not None else None
+                # complete: every drift case observed (a budget-stopped partial run is still this
+                # night's measurement, but it does not stay fresh: the next night measures again)
+                check["complete"] = batch is not None and int(batch["runs"]) >= tasks
                 if batch is None and not any(
                     f.startswith(f"DRIFT {cell}:") for f in night.data["findings"]
                 ):
@@ -891,6 +1038,10 @@ class NightlyRunner:
                     night.data["findings"].append(f"DRIFT {cell}: UNCHECKED {why}")
                     unchecked.append(cell)
             results[cell] = check
+            # PR #91 review: each cell's entry is recorded as soon as it is known, so a stop
+            # during a later cell's unit keeps the paid measurements already made
+            night.data["drift"][cell] = check
+            self._save(night, "running")
             if check["status"] in ("changed", "outside_band", "recalibration_pending"):
                 drifted.append(cell)
         night.data["drift"] = results
@@ -921,6 +1072,14 @@ class NightlyRunner:
                 except Hold as exc:
                     night.data["findings"].append(f"REMOVAL_SWEEP {cell}: {exc.code}")
             self._stopped(night, "drift", {"cells": drifted, "unchecked": unchecked})
+        if not night.search_blocked and night.plan["shares"]["search"] > 0:
+            # PR #91 review: the drift reservation a unit did not use goes to search (never when
+            # the operator's shares grant no search)
+            unused = max(0, self._cap(night, "drift") - night.phase_used.get("drift", 0))
+            night.caps["drift"] -= unused
+            night.caps["search"] += unused
+            night.data["drift_cadence"]["returned_to_search"] = unused
+            night.data["drift_cadence"]["phase_budget_after_return"] = dict(night.caps)
         self._phase(night, "drift", "drift" if drifted or unchecked else "done",
                     cells=sorted(results), drifted=drifted, unchecked=unchecked)  # fmt: skip
 
@@ -1166,8 +1325,10 @@ class LocalNightlyBackend:
       preflight (``QUALIFIED_EXECUTOR_REQUIRED`` with the cell), so a launchd night needs no
       extra arguments.
     - drift: a calibration of the champion on the regression corpus (``amplai-regression-v1``,
-      every case, one repeat; ``CalibrationService`` pins every case of its splits) approved by
-      ``issue_standing``; skipped when that is more than the drift share allows. The band and the
+      the night's ``drift_tasks``, one repeat) approved by ``issue_standing``, on a measuring
+      night of the cell only (D-129: len(drift_tasks) trials taken off the night budget first);
+      ``drift_measurement`` tells the runner whether an earlier measurement still counts. The
+      band and the
       calibrated snapshot come from the human operator's newest calibration **on the regression
       set** (``amplai meta calibrate --set regression``), never from a night's drift run.
     - drafts (IC-30 (A), operator decision 2026-10-07): after the proposer ran, each class A
@@ -1405,7 +1566,7 @@ class LocalNightlyBackend:
                            "A drift task has no row in the operator's baseline calibration",
                            details={"missing": missing})  # fmt: skip
         if len(case_ids) > limit:
-            raise Hold("NIGHT_STOPPED", "The drift calibration needs more than the drift share",
+            raise Hold("NIGHT_STOPPED", "The drift calibration needs more than its reservation",
                        details={"reason": "phase_share", "needs": len(case_ids)})  # fmt: skip
         self._qualify(cell_id)
         policy = self.ops.local.evaluation.executor_policy
@@ -1463,6 +1624,43 @@ class LocalNightlyBackend:
             "root": "calibration:" + plan_ref["id"],
             "summary_ref": summary_ref,
         }
+
+    def drift_measurement(self, cell_id: str, summary_ref: Any) -> bool:
+        """D-129: ``summary_ref`` is a calibration summary of a drift-purpose plan
+        (``calibration.is_drift_plan``) that covers ``cell_id``, on the current regression corpus,
+        with ``case_ids`` = the current drift tasks' frozen cases in corpus order and the cell's
+        currently installed composition (``_drift_compositions``), under the evaluator version of
+        the running code (``versions.current_version_ref``)."""
+        from ..evaluation import calibration, versions
+
+        regression = self._regression_corpus()
+        if regression is None or not isinstance(summary_ref, dict):
+            return False
+        try:
+            summary = self.store.get(self.scope, calibration.SUMMARY_KIND, summary_ref)
+            plan = self.store.get(self.scope, calibration.PLAN_KIND, summary["plan_ref"])
+        except (RuntimeFault, KeyError, TypeError):
+            return False
+        current = versions.current_version_ref(self.store, self.scope)
+        # the plan measured exactly the current drift tasks (the frozen cases of the calibrated
+        # splits in drift_tasks, in corpus order, as ``drift_run`` pins them)
+        wanted = set(self.runner.config.drift_tasks)
+        case_ids = [
+            c["case_id"] for c in regression[1]["cases"]
+            if c["split"] in calibration.SPLITS and c["case_id"] in wanted
+        ]  # fmt: skip
+        # PR #91 review: the measurement ran the cell's champion as installed now
+        installed = self._drift_compositions().get(cell_id)
+        return (
+            calibration.is_drift_plan(plan)
+            and plan.get("case_ids") == case_ids
+            and installed is not None
+            and (plan.get("composition_refs") or {}).get(cell_id) == [installed]
+            and cell_id in (summary.get("cells") or {})
+            and plan.get("corpus_ref") == regression[0]
+            and current is not None
+            and summary.get("evaluator_version_ref") == current
+        )
 
     def schedule_recalibration(self, cell_id: str, reason: str) -> dict[str, Any]:
         """Recorded in the night (the operator re-calibrates the regression set)."""
