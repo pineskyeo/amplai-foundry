@@ -115,6 +115,8 @@ push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15,
     들어간다.
   - 대소문자, port, 끝의 `.` 는 보지 않는다. `https://`, `ssh://`, `git@host:` 형태를 읽는다. 로컬 경로 remote 는 host 가 없어
     `GIT_HOST_MISMATCH` 다.
+  - app 설정 `remote` 를 URL(`https://`, `ssh://`, `git@host:path` 등)로 적었으면 `get-url` 없이 그 URL 의 host 를 바로
+    본다.
   - checkout 에 없는 remote 이름, 읽을 수 없거나 시간이 넘은 remote 는 `PUBLISH_REMOTE` 다.
   - 여러 app 의 goal 은 모든 app 의 remote 를 먼저 확인하고, 하나라도 다르면 아무 app 도 push 하지 않는다.
 - `remote_hosts`(선택): remote 가 push 해도 되는 host 목록이다. 없으면 `[host]` 다. SSH 별칭이나 SSH host 가 웹 host 와 다른

@@ -515,7 +515,9 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
   - PR URL: 댓글·상태 읽기 전, 그리고 `gh` 가 찾거나 만든 뒤 돌려준 URL 이 웹 host `host` 에 있어야 한다.
   - 비교: `https://`, `ssh://`, `git://`, `user@host:path` 를 읽고 대소문자·port·끝의 `.` 는 무시한다. 로컬 경로·`file://` 는
     host 가 없어 다르다고 본다. 다르면 `GIT_HOST_MISMATCH`(details `{configured: [hosts], remote}`, 이미 생긴 PR 이면 `pr_url`)다.
-  - checkout 에 없는 remote, 읽기 실패, 시간 초과는 `PUBLISH_REMOTE` 다.
+  - app `remote` 가 URL·로컬 경로면(`is_remote_url`) `get-url` 없이 그 host 를 `remote_hosts` 와 바로 비교한다. 설정 schema 가
+    `remote` 를 자유 문자열로 받고(`local_deployment.py` `AppEntry.remote`), 모듈 이전에도 URL 로 push 할 수 있었기 때문이다.
+  - checkout 에 없는 remote 이름, 읽기 실패, 시간 초과는 `PUBLISH_REMOTE` 다.
   - 여러 app: publisher 가 끝나지 않은 app 전부에 `check_remote` 를 부른 뒤에 push 한다. 한 app 이라도 다르면 아무것도 push 하지
     않는다.
   - PR 상태 읽기: tracker 는 코드가 있는 거절(예: `GIT_HOST_MISMATCH`)을 goal 별로 메모리에 두고 `ops pr-sync` 응답의 `unread` 로

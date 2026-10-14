@@ -136,6 +136,16 @@ def url_host(url: str) -> str | None:
     return (found.rstrip(".") or None) if found else None
 
 
+def is_remote_url(remote: str) -> bool:
+    """An app ``remote`` written as a URL or path rather than a remote name: a scheme
+    (``https://``, ``ssh://``, ``git://``, ``file://``), the scp form ``[user@]host:path`` (a remote
+    name cannot hold ``:``, it is not valid in a ref name) or a local path."""
+    value = remote.strip()
+    return (
+        "://" in value or _SCP.match(value) is not None or value.startswith(("/", "./", "../", "~"))
+    )
+
+
 def check_refs(*names: str) -> None:
     """Remote and branch names never start with ``-`` (they would read as options)."""
     if any(not name or name.startswith("-") for name in names):

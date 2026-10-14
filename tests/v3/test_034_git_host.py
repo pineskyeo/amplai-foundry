@@ -411,6 +411,43 @@ def test_a_mirror_fetch_url_with_a_github_push_url_is_allowed(tmp_path: Path) ->
     GitHubHost().check_remote(repo, "origin")
 
 
+@pytest.mark.parametrize(
+    "remote",
+    ["https://github.com/o/r.git", "git@GitHub.com:o/r.git", "ssh://git@github.com:22/o/r",
+     "git://github.com/o/r"],
+)  # fmt: skip
+def test_an_app_remote_written_as_a_url_on_the_host_is_pushed_as_before(remote: str) -> None:
+    """AppEntry.remote is free text (``local_deployment.py`` ``remote: str = "origin"``): a URL
+    worked before the module (``ls-remote``/``push`` accept one) and is checked directly."""
+    fake = FakeGitHub()
+    GitHubHost(run=fake).push_branch(REPO, remote, "amplai/g", "a" * 40)
+    assert [c[0] for c in fake.calls] == [
+        ["git", "ls-remote", remote, "refs/heads/amplai/g"],
+        ["git", "push", remote, f"{'a' * 40}:refs/heads/amplai/g"],
+    ]  # no get-url for a URL
+
+
+@pytest.mark.parametrize(
+    "remote, found",
+    [("https://gitlab.example/o/r.git", "gitlab.example"), ("git@gitlab.example:o/r.git",
+     "gitlab.example"), ("/srv/git/r.git", None), ("file:///srv/git/r.git", None)],
+)  # fmt: skip
+def test_an_app_remote_url_on_another_host_is_refused_before_anything_runs(
+    remote: str, found: str | None
+) -> None:
+    fake = FakeGitHub()
+    host = GitHubHost(run=fake)
+    for call in (
+        lambda: host.check_remote(REPO, remote),
+        lambda: host.push_branch(REPO, remote, "amplai/g", "a" * 40),
+        lambda: host.open_draft_pr(REPO, remote, "amplai/g", "main", "t", "b"),
+    ):
+        with pytest.raises(Hold) as held:
+            call()
+        assert held.value.code == "GIT_HOST_MISMATCH" and held.value.details["remote"] == found
+    assert fake.calls == []
+
+
 def test_an_unknown_remote_or_a_timed_out_lookup_is_publish_remote(tmp_path: Path) -> None:
     repo = checkout(tmp_path)
     with pytest.raises(Hold) as held:

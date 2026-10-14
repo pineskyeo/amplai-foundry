@@ -35,7 +35,7 @@ from pathlib import Path
 from ..errors import Conflict, Hold
 from ..modules.builtin import BUILTIN_MODULES
 from ..modules.spec import ModuleSpec
-from .interface import PullRequestState, bare_host, check_host, check_refs
+from .interface import PullRequestState, bare_host, check_host, check_refs, is_remote_url
 
 MODULE_ID = "git_host.github"
 DEFAULT_HOST = "github.com"
@@ -95,7 +95,11 @@ class GitHubHost:
     def _check_remote(self, repo: Path, remote: str) -> None:
         """Every URL the remote pushes to is on a remote host. ``--push --all`` lists the push
         URLs as git uses them (``pushurl`` and ``pushInsteadOf`` applied; the fetch URL when there
-        is no push URL)."""
+        is no push URL). An app ``remote`` written as a URL (``git ls-remote``/``git push`` accept
+        one, as before the module) is checked directly; a local path has no host."""
+        if is_remote_url(remote):
+            check_host(self.remote_hosts, remote)
+            return
         args = ["git", "remote", "get-url", "--push", "--all", remote]
         try:
             named = self.run(args, repo, None, REMOTE_TIMEOUT)
