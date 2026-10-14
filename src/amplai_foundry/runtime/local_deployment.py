@@ -273,6 +273,18 @@ class NightlyEntry(BaseModel):
         return self
 
 
+class CalibrationImportEntry(BaseModel):
+    """D-128: how a calibration plan pools trials imported from other plans. The values are
+    written into the plan (``import_policy``), so the operator approves them with it."""
+
+    model_config = ConfigDict(extra="forbid")
+    # the longest time from a source trial's finish to the new plan's freeze
+    window_hours: int = Field(default=72, ge=1, le=8760)
+    # the drift check re-runs this share of the imported tasks per cell, at least the minimum
+    drift_share: float = Field(default=0.1, gt=0, le=1)
+    drift_min_per_cell: int = Field(default=8, ge=1, le=1000)
+
+
 class MetaEntry(BaseModel):
     """Meta-harness settings (§12.2); read by S11-S13, accepted from S4 on."""
 
@@ -283,6 +295,7 @@ class MetaEntry(BaseModel):
     trace_capture: bool = True  # trials only
     stage_template: str = "default_v1"
     nightly: NightlyEntry | None = None
+    calibration_import: CalibrationImportEntry = Field(default_factory=CalibrationImportEntry)
 
 
 DataClass = Literal["public", "internal", "confidential", "restricted"]

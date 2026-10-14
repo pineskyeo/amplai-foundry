@@ -41,7 +41,8 @@ from __future__ import annotations
 
 import contextlib
 import json
-from collections.abc import Iterator
+import math
+from collections.abc import Callable, Iterator
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal
@@ -1345,11 +1346,14 @@ class LocalMetaOps:
 
         ``app_id`` (S7b): only a summary whose calibration plan names that app or names no app
         (a plan without ``app`` covers every case of its splits, so that app's cases too); a
-        plan of another app calibrated only that app's cases on that app's compositions."""
-        from ...evaluation.calibration import is_drift_plan
+        plan of another app calibrated only that app's cases on that app's compositions.
+
+        D-128: only the newest revision of a summary whose run ended ``done`` (never a
+        ``stopped`` or ``owner_lost`` run's partial summary, ``complete_summaries``)."""
+        from ...evaluation.calibration import complete_summaries, is_drift_plan
 
         found = []
-        for ref, value in self.store.list_objects(self.scope, "calibration-summary"):
+        for ref, value in complete_summaries(self.store, self.scope):
             if value.get("evaluator_version_ref") != version_ref or cell_id not in (
                 value.get("cells") or {}
             ):
@@ -1493,6 +1497,10 @@ class LocalMetaOps:
         max_tokens: int,
         max_wall_seconds: int,
         corpus_set: str = MAIN_SET,
+        import_from: list[str] | None = None,
+        announce: Callable[[dict[str, Any]], None] | None = None,
+        expect_imported: int | None = None,
+        dry_run: bool = False,
     ) -> dict[str, Any]:
         """Freeze, approve (the operator, exact digest) and run a calibration of ``cell_ids``
         on every development and validation case of the frozen corpus (§8.2). The installed
@@ -1505,7 +1513,6 @@ class LocalMetaOps:
         calibration (clarification after S12: "the baseline is the operator's newest
         calibration on the regression set")."""
         from ...evaluation import calibration
-        from ...meta_harness.trial_metrics import TrialMetrics
 
         cells = list(cell_ids)
         if not cells or len(set(cells)) != len(cells):
@@ -1587,29 +1594,177 @@ class LocalMetaOps:
             "max_parallel": parallel,
             "frozen_at": now(),
         }
+        service = self._calibration_service(policy)
+        imports = None
+        if import_from:
+            imports = self._plan_imports(
+                service, plan, import_from, expect_imported=expect_imported, dry_run=dry_run
+            )
+        elif expect_imported is not None:
+            raise RuntimeFault("CALIBRATION_PLAN", "--expect-imported goes with --import-from")
+        if dry_run:
+            # D-128 review P2-b: the preview only; nothing is approved, frozen or run
+            return {"dry_run": True, "plan_id": calibration.plan_id(plan), "imports": imports,
+                    "cells": cells, "case_ids": len(plan["case_ids"])}  # fmt: skip
+        if announce is not None:
+            # what the operator approves: the plan id and, with imports, "imported N, new M"
+            announce({"plan_id": calibration.plan_id(plan), "imports": imports})
         plan["approval_ref"] = self.local.approvals.issue(
             self.operator, "experiment.execute", digest(plan)
-        )
-        service = calibration.CalibrationService(
-            self.store,
-            self.dep.contracts,
-            self.dep.artifacts,
-            approval_check=self.local.approvals.check,
-            executor_id=EXECUTOR_ID,
-            executor_policy=policy,
         )
         plan_ref = service.freeze(self.operator, plan)
         summary_ref = service.run(self.operator, plan_ref, self.executor, parallel=parallel)
         run = self.store.head(self.scope, calibration.RUN_KIND, plan_ref["id"])
-        metrics = TrialMetrics(self.dep.service)
-        for ref in run["data"]["trial_refs"]:
-            metrics.record(ref)
+        self._record_metrics(run["data"]["trial_refs"])
         return {
             "plan_ref": plan_ref,
             "summary_ref": summary_ref,
             "state": run["state"],
             "trials": len(run["data"]["trial_refs"]),
             "stop_reason": run["data"]["stop_reason"],
+            "imports": imports,
+            "overruns": len(run["data"].get("overruns") or []),
+        }
+
+    def _calibration_service(self, policy: ExecutorPolicy | None) -> Any:
+        """A ``CalibrationService`` of this deployment (D-128: with the executor's facts for
+        resume and imports, and the price-weighted per-trial ceiling count)."""
+        from ...evaluation import calibration
+        from ...meta_harness.trial_metrics import TrialMetrics
+
+        return calibration.CalibrationService(
+            self.store,
+            self.dep.contracts,
+            self.dep.artifacts,
+            approval_check=self.local.approvals.check,
+            executor_id=EXECUTOR_ID,
+            executor_policy=policy,
+            facts=getattr(self.executor, "facts", None),
+            ceiling_tokens=TrialMetrics(self.dep.service).uncached_equivalent,
+        )
+
+    def _record_metrics(self, trial_refs: list[dict[str, Any]]) -> None:
+        """The ``trial-metrics`` record of each trial a calibration ran; an imported trial keeps
+        its source trial's record (D-128: no second row for one run)."""
+        from ...evaluation import calibration
+        from ...meta_harness.trial_metrics import TrialMetrics
+
+        metrics = TrialMetrics(self.dep.service)
+        for ref in trial_refs:
+            if "imported_from" not in self.store.get(self.scope, calibration.TRIAL_KIND, ref):
+                metrics.record(ref)
+
+    def _calibration_plan_ref(self, plan_id: str) -> dict[str, Any]:
+        from ...evaluation import calibration
+
+        refs = [
+            ref
+            for ref, _ in self.store.list_objects(self.scope, calibration.PLAN_KIND)
+            if ref["id"] == plan_id
+        ]
+        if not refs:
+            raise RuntimeFault("NOT_FOUND", "No calibration plan with this id", details=plan_id)
+        return dict(max(refs, key=lambda r: r["revision"]))
+
+    def _plan_imports(
+        self,
+        service: Any,
+        plan: dict[str, Any],
+        import_from: list[str],
+        *,
+        expect_imported: int | None,
+        dry_run: bool,
+    ) -> dict[str, Any]:
+        """D-128: add ``import_policy`` (``meta.calibration_import``, each cell's drift
+        reference and its basis, and ``expected_imported``) and ``imports`` (the eligible trials
+        of the named plans) to ``plan`` before its approval; returns the preview: "imported N,
+        new M", per cell, and every exclusion with its reason. Hold CALIBRATION_IMPORT when no
+        trial is eligible. Review P2-b: a real run needs ``expect_imported`` (``--expect-imported``,
+        from a ``--dry-run``) equal to N (Hold CALIBRATION_IMPORT_EXPECTED otherwise); it is
+        written into the plan, so the approval binds it."""
+        from ...evaluation import calibration
+        from ..local_deployment import CalibrationImportEntry
+
+        if len(set(import_from)) != len(import_from):
+            raise RuntimeFault("CALIBRATION_PLAN", "Name each source plan once")
+        if not dry_run and expect_imported is None:
+            raise RuntimeFault(
+                "CALIBRATION_PLAN",
+                "--import-from needs --expect-imported N (the count a --dry-run shows)",
+            )
+        sources = [self._calibration_plan_ref(pid) for pid in import_from]
+        meta = getattr(getattr(self.dep, "config", None), "meta", None)
+        settings = meta.calibration_import if meta is not None else CalibrationImportEntry()
+        reference, basis = service.drift_reference(self.scope, plan, sources)
+        plan["import_policy"] = {
+            "window_hours": settings.window_hours,
+            "drift_share": settings.drift_share,
+            "drift_min_per_cell": settings.drift_min_per_cell,
+            "drift_reference": reference,
+            "drift_reference_basis": basis,
+            "expected_imported": 0,
+        }
+        found = service.eligible_imports(self.scope, plan, sources)
+        reasons: dict[str, int] = {}
+        for row in found["excluded"]:
+            reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
+        if not found["imports"]:
+            del plan["import_policy"]
+            raise Hold(
+                "CALIBRATION_IMPORT",
+                "No trial of the named plans can be imported into this plan",
+                details={"excluded_by_reason": reasons, "excluded": found["excluded"][:50]},
+            )
+        if not dry_run and expect_imported != found["imported"]:
+            del plan["import_policy"]
+            raise Hold(
+                "CALIBRATION_IMPORT_EXPECTED",
+                "The eligible imports differ from --expect-imported; run --dry-run again",
+                details={"expected": expect_imported, "found": found["imported"],
+                         "excluded_by_reason": reasons},
+            )  # fmt: skip
+        plan["imports"] = found["imports"]
+        plan["import_policy"]["expected_imported"] = found["imported"]
+        imported_cases = len(found["cases"])
+        sample = min(
+            imported_cases,
+            max(settings.drift_min_per_cell, math.ceil(settings.drift_share * imported_cases)),
+        )
+        cases = len(plan["case_ids"])
+        drawn = found.get("drift_samples") or {}
+        per_cell = {
+            cell: {
+                "imported": imported_cases,
+                # manifest variants are never imported: they run in the imported slots
+                "new_round_one": len(refs) * cases - imported_cases,
+                # failure review P2-2: the sample the run draws (stable tasks, topped up to the
+                # floor; below it the cell is inconclusive and its imports run fresh)
+                "drift_sample": (drawn.get(cell) or {}).get("sample", sample),
+                "drift_sample_floor": (drawn.get(cell) or {}).get("floor"),
+                "drift_sample_topped_up": (drawn.get(cell) or {}).get("topped_up", 0),
+                "drift_status_before_run": (drawn.get(cell) or {}).get("status"),
+                "drift_reruns_at_most": (drawn.get(cell) or {}).get("sample", sample) * len(refs),
+                "drift_reference": reference[cell],
+                "drift_reference_basis": basis[cell],
+            }
+            for cell, refs in plan["composition_refs"].items()
+        }
+        return {
+            "sources": import_from,
+            "imported": found["imported"],
+            "imported_cases": imported_cases,
+            "new_round_one": sum(c["new_round_one"] for c in per_cell.values()),
+            "drift_reruns_at_most": sum(c["drift_reruns_at_most"] for c in per_cell.values()),
+            "per_cell": per_cell,
+            "excluded_by_reason": reasons,
+            "excluded": found["excluded"],
+            "note": (
+                "M counts the slots without an imported trial; a cell whose drift check fails or "
+                "is inconclusive drops its imports, and its imported tasks then run fresh as well "
+                "(up to imported_cases more round-1 trials per composition of the cell)"
+            ),
+            "window_hours": settings.window_hours,
+            "plan_id": calibration.plan_id(plan),
         }
 
     def calibration_show(self, plan_id: str) -> dict[str, Any]:
@@ -1637,24 +1792,103 @@ class LocalMetaOps:
 
     def calibration_recover(self, plan_id: str) -> dict[str, Any]:
         """Close a calibration run whose owner process is gone (``CalibrationService.recover``)."""
+        service = self._calibration_service(self.local.evaluation.executor_policy)
+        return dict(service.recover(self.operator, self._calibration_plan_ref(plan_id)))
+
+    def calibration_resume(
+        self, plan_id: str, *, parallel: int = 1, requalify: bool = False
+    ) -> dict[str, Any]:
+        """D-128: run a ``stopped`` calibration plan again under its own approval
+        (``CalibrationService.resume``). The loaded corpus must still be the plan's frozen one
+        (CORPUS_CHANGED, on the main or the regression set)."""
         from ...evaluation import calibration
 
-        refs = [
-            ref
-            for ref, _ in self.store.list_objects(self.scope, calibration.PLAN_KIND)
-            if ref["id"] == plan_id
-        ]
-        if not refs:
-            raise RuntimeFault("NOT_FOUND", "No calibration plan with this id", details=plan_id)
-        service = calibration.CalibrationService(
-            self.store,
-            self.dep.contracts,
-            self.dep.artifacts,
-            approval_check=self.local.approvals.check,
-            executor_id=EXECUTOR_ID,
-            executor_policy=self.local.evaluation.executor_policy,
+        plan_ref = self._calibration_plan_ref(plan_id)
+        plan = self.store.get(self.scope, calibration.PLAN_KIND, plan_ref)
+        refused: Hold | None = None
+        for set_name in (MAIN_SET, REGRESSION_SET):
+            try:
+                self.check_corpus(
+                    plan["corpus_ref"], plan["case_ids"], corpus=self.set_corpus(set_name)
+                )
+            except Hold as exc:
+                refused = refused or exc
+                continue
+            refused = None
+            break
+        if refused is not None:
+            raise refused
+        if not requalify:
+            # failure review P3: the original run's executor qualification and per-trial ceiling
+            # are pinned again; a different one needs ``--requalify`` (recorded in ``resumes``)
+            self._pin_run_qualification(plan_id)
+        policy = self.local.evaluation.executor_policy
+        if policy is None:
+            raise Hold(
+                "QUALIFIED_EXECUTOR_REQUIRED",
+                "Register a server-side qualified bounded executor first",
+            )
+        service = self._calibration_service(policy)
+        from ..local_deployment import CalibrationImportEntry
+
+        meta = getattr(getattr(self.dep, "config", None), "meta", None)
+        settings = meta.calibration_import if meta is not None else CalibrationImportEntry()
+        budget = getattr(getattr(self.dep, "service", None), "budget", None)
+        summary_ref = service.resume(
+            self.operator, plan_ref, self.executor, parallel=parallel,
+            window_hours=settings.window_hours, requalify=requalify,
+            trial_wall_seconds=int(getattr(budget, "max_wall_seconds",
+                                           calibration.TRIAL_WALL_SECONDS)),
+        )  # fmt: skip
+        run = self.store.head(self.scope, calibration.RUN_KIND, plan_id)
+        # failure review P2-3: every pooled trial without its trial-metrics record gets one (a
+        # trial of a crashed segment never reached ``_record_metrics``)
+        recorded = {ref["id"] for ref, _ in self.store.list_objects(self.scope, "trial-metrics")}
+        self._record_metrics(
+            [r for r in run["data"]["trial_refs"] if "tm-" + r["id"] not in recorded]
         )
-        return service.recover(self.operator, max(refs, key=lambda r: r["revision"]))
+        return {
+            "plan_ref": plan_ref,
+            "summary_ref": summary_ref,
+            "state": run["state"],
+            "trials": len(run["data"]["trial_refs"]),
+            "stop_reason": run["data"]["stop_reason"],
+            "resumes": run["data"].get("resumes"),
+            "overruns": len(run["data"].get("overruns") or []),
+        }
+
+    def _pin_run_qualification(self, plan_id: str) -> None:
+        """Pin the executor qualification the plan's run recorded (its head's
+        ``qualification_ref``, else its newest trial's), when that record carries the IC-29
+        ``per_trial_tokens``; otherwise the current pin stays and ``resume`` compares."""
+        from ...evaluation import calibration
+
+        data = self.store.head(self.scope, calibration.RUN_KIND, plan_id)["data"]
+        ref = data.get("qualification_ref")
+        if ref is None:
+            for trial_ref in reversed(data.get("trial_refs") or []):
+                ref = self.store.get(self.scope, calibration.TRIAL_KIND, trial_ref).get(
+                    "qualification_ref"
+                )
+                if ref is not None:
+                    break
+        if ref is None:
+            return
+        try:
+            _, value = resolve_ref(self.store, self.scope, ref)
+        except (Hold, RuntimeFault):
+            return
+        tokens = value.get("per_trial_tokens")
+        if type(tokens) is int and tokens >= 0:
+            self.local.evaluation.executor_policy = ExecutorPolicy(
+                frozenset({EXPERIMENT_MODE}), tokens, 0, dict(ref)
+            )
+
+    def settle_ended_reservations(self) -> dict[str, Any]:
+        """D-128: ``settle_ended_reservations`` of this deployment as its human operator."""
+        if self.operator.kind != "human":
+            raise Hold("APPROVAL_HUMAN", "Only the human operator settles ended reservations")
+        return settle_ended_reservations(self.dep)
 
     # -- 8. reconcile (IC-18, provisional) ------------------------------------------------------
     def reconcile(
@@ -1874,3 +2108,30 @@ def reconcile(
             "evidence_ref": evidence,
             "unresolved_allocations": _unresolved(store, scope, proposal_id),
         }
+
+
+# -- D-128: ended runs' reservations ------------------------------------------------------------
+def settle_ended_reservations(dep: Any) -> dict[str, Any]:
+    """Settle the root-goal reservations of runs that ended failed, cancelled or lost from their
+    driver journals' usage (``BudgetService.settle_ended``; ``amplai meta settle-reservations``).
+    The journals are the driver ports' own (``<workspace_root>/journal``, written by the host
+    port; a sandbox mounts its run workspace and its native home ``journal/native/<id>``, never
+    the journal file)."""
+    from ...agent_drivers.protocol import SessionJournal
+    from ..budgets.service import BudgetService
+
+    journal = SessionJournal(dep.local(dep.config.workspace_root) / "journal")
+
+    def read(dispatch_id: str) -> dict[str, Any] | None:
+        # an absent journal is never opened (reading takes its lock file, which would create one
+        # for every follow-up id probed)
+        if not (journal.root / (dispatch_id + ".json")).is_file():
+            return None
+        try:
+            return journal.read(dispatch_id)
+        except RuntimeFault as exc:
+            if exc.code in ("SESSION_NOT_FOUND", "SESSION_ID"):
+                return None
+            raise
+
+    return BudgetService(dep.store).settle_ended(dep.scope, read)

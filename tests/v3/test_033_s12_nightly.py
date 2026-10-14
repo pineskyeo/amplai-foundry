@@ -2706,6 +2706,25 @@ def test_eval11_a_drift_summary_is_never_a_cells_calibration(real: RealNight) ->
     assert found == baseline
 
 
+def test_d128_a_stopped_runs_summary_is_never_the_nightly_baseline(real: RealNight) -> None:
+    # D-128 (regression review RD2): a newer calibration whose run ended stopped keeps its
+    # partial summary, but the band still comes from the operator's newest complete one
+    real.outcome(True)
+    baseline = real.calibrate()
+    real.outcome(False)
+    newer = real.calibrate()
+    store, scope = real.w.store, real.w.scope
+    pid = store.get(scope, "calibration-summary", newer)["plan_ref"]["id"]
+    with store.tx() as db:
+        head = store.head(scope, "calibration-run", pid, db=db)
+        store.cas(db, scope, "calibration-run", pid, head["row_version"], "stopped",
+                  {**head["data"], "state": "stopped", "stop_reason": "KILL_SWITCH"})  # fmt: skip
+    found = real.backend._calibration(CELL, real.refs["corpus_ref"])
+    assert found is not None and found[1] == store.get(scope, "calibration-summary", baseline)
+    snap = real.backend.snapshot(CELL, subset_tasks(real))
+    assert snap["band"] == {"passes": len(SUBSET), "runs": len(SUBSET)}
+
+
 def test_eval11_the_dashboard_shows_the_operators_calibration_not_a_drift_subset(
     real: RealNight,
 ) -> None:

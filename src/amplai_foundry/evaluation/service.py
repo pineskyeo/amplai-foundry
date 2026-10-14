@@ -185,7 +185,7 @@ def failed_trial(exc: Exception) -> tuple[TrialObservation, dict[str, Any]]:
 
 
 def unknown_usage_charge(
-    observation: TrialObservation, *, tokens: int, cost: int
+    observation: TrialObservation, *, tokens: int, cost: int, ran: bool = True
 ) -> tuple[dict[str, Any], int, int]:
     """For an unknown-usage trial (``usage_unknown``): the trial-record fields and the tokens and
     cost its allocation settles at.
@@ -198,13 +198,22 @@ def unknown_usage_charge(
     Outcome: missing (``success`` null, ``outcome_missing``), the executor's value kept in
     ``reported_success``; except a trial with an answer-lookup attempt, which stays FAILED
     (``success`` False, decision (C)): the attempt is recorded evidence about the outcome, the
-    unknown usage is a gap in the cost only."""
-    charged_tokens = max(tokens, observation.known_tokens or 0)
-    charged_cost = (
-        max(cost, observation.known_cost_microunits or 0)
-        if observation.cost_microunits is None
-        else observation.cost_microunits
-    )
+    unknown usage is a gap in the cost only.
+
+    ``ran`` False (D-128, operator decision 2026-10-14): the executor's evidence proves that the
+    trial started nothing (``nothing_ran``, the record's ``not_run``), so no model turn spent a
+    token: the charge is 0 tokens and 0 cost instead of the reservation (the parts that reported
+    add up to ``known_tokens``, which is None or 0 then)."""
+    if not ran:
+        charged_tokens = observation.known_tokens or 0
+        charged_cost = observation.known_cost_microunits or 0
+    else:
+        charged_tokens = max(tokens, observation.known_tokens or 0)
+        charged_cost = (
+            max(cost, observation.known_cost_microunits or 0)
+            if observation.cost_microunits is None
+            else observation.cost_microunits
+        )
     fields: dict[str, Any] = {
         "reported_success": observation.success,
         "charged_tokens": charged_tokens,
@@ -887,9 +896,13 @@ class EvaluationService:
             )
             cost = observation.cost_microunits
             if usage_unknown(observation):
-                # decision (B): charge the reservation, keep running, the outcome is missing
+                # decision (B): charge the reservation, keep running, the outcome is missing;
+                # D-128: a trial that provably started nothing is charged 0
                 fields, tokens, cost = unknown_usage_charge(
-                    observation, tokens=trial_tokens, cost=policy.max_trial_cost_microunits
+                    observation,
+                    tokens=trial_tokens,
+                    cost=policy.max_trial_cost_microunits,
+                    ran="not_run" not in failure,
                 )
                 trial.update(fields)
                 if "not_run" in failure:

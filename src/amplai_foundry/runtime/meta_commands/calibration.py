@@ -6,14 +6,23 @@ case of the frozen corpus v2, issues the operator approval for its exact digest 
 (``CalibrationService``); ``--max-trials`` bounds its worst case (cells x cases x max repeats).
 ``--set regression`` calibrates the frozen regression set (``amplai-regression-v1``, §10.6) on the
 installed app its tasks name: the nightly drift baseline is the operator's newest such calibration.
+
+D-128 (operator decision 2026-10-14): ``calibrate --import-from <plan-id>`` (repeatable) imports
+the eligible completed round-1 trials of those plans into the new plan, approved with it; the
+plan id and "imported N, new M" are printed to stderr before anything runs.
+``calibration resume <plan-id>`` runs a stopped plan again under its own approval.
+``settle-reservations`` settles the root-goal reservations of ended runs from their driver
+journals' usage.
 """
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Any
 
 import typer
 
+from ..errors import RuntimeFault
 from . import (
     DEFAULT_CONFIG,
     AppOption,
@@ -49,8 +58,33 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
             str,
             typer.Option("--set", help="main (default) or regression (the nightly drift baseline)"),
         ] = "main",
+        import_from: Annotated[
+            list[str] | None,
+            typer.Option(
+                "--import-from",
+                help="a calibration plan id whose eligible round-1 trials this plan imports "
+                "(repeatable, D-128)",
+            ),
+        ] = None,
+        expect_imported: Annotated[
+            int | None,
+            typer.Option(
+                "--expect-imported",
+                help="the imported trial count a --dry-run showed; a different count is refused",
+            ),
+        ] = None,
+        dry_run: Annotated[
+            bool,
+            typer.Option(
+                "--dry-run",
+                help="print the plan preview (imported N, new M, per cell, exclusions) and exit",
+            ),
+        ] = False,
     ) -> None:
         """Freeze, approve and run a calibration of the cells."""
+
+        def announce(value: dict[str, Any]) -> None:
+            typer.echo(json.dumps({"calibration_plan": value}, sort_keys=True), err=True)
 
         def call() -> Any:
             names = [c.strip() for c in cells.split(",") if c.strip()]
@@ -60,8 +94,19 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
                 return ops.calibrate(
                     names, max_repeats=max_repeats, max_trials=max_trials, parallel=workers,
                     max_tokens=max_tokens, max_wall_seconds=max_wall_seconds,
-                    corpus_set=corpus_set,
+                    corpus_set=corpus_set, import_from=list(import_from or []),
+                    announce=announce, expect_imported=expect_imported, dry_run=dry_run,
                 )  # fmt: skip
+
+        guarded(call)
+
+    @meta.command("settle-reservations")
+    def settle_reservations(config: ConfigOption = DEFAULT_CONFIG) -> None:
+        """Settle the reservations of ended runs from their driver journals' usage (D-128)."""
+
+        def call() -> Any:
+            with opened_v2(config, None) as ops:
+                return ops.settle_ended_reservations()
 
         guarded(call)
 
@@ -95,5 +140,52 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         def call() -> Any:
             with opened_v2(config, corpus, app=app) as ops:
                 return ops.calibration_recover(plan_id)
+
+        guarded(call)
+
+    @group.command("resume")
+    def resume(
+        plan_id: str,
+        parallel: ParallelOption = 1,
+        config: ConfigOption = DEFAULT_CONFIG,
+        corpus: CorpusOption = None,
+        app: AppOption = None,
+        requalify: Annotated[
+            bool,
+            typer.Option(
+                "--requalify",
+                help="qualify the executor anew (with --per-trial-tokens, --basis, --evidence) "
+                "instead of keeping the original run's qualification; recorded in the run",
+            ),
+        ] = False,
+        per_trial_tokens: Annotated[
+            int | None, typer.Option("--per-trial-tokens", help="with --requalify only")
+        ] = None,
+        basis: Annotated[str | None, typer.Option("--basis", help="with --requalify only")] = None,
+        evidence: Annotated[
+            list[str] | None, typer.Option("--evidence", help="with --requalify only")
+        ] = None,
+    ) -> None:
+        """Run a stopped calibration plan again under its approval (D-128): completed graded
+        trials stay, unfinished slots run again; anything behaviour-affecting that changed
+        holds CALIBRATION_RESUME_CHANGED. The original run's executor qualification and
+        per-trial ceiling are kept unless --requalify."""
+
+        def call() -> Any:
+            given = (per_trial_tokens, basis, evidence)
+            if requalify and (per_trial_tokens is None or basis is None or not evidence):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--requalify needs --per-trial-tokens, --basis and --evidence"
+                )
+            if not requalify and any(v for v in given if v is not None):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--per-trial-tokens, --basis and --evidence go with --requalify"
+                )
+            with opened_v2(config, corpus, app=app) as ops:
+                workers = capped_parallel(ops.dep, parallel)
+                if requalify:
+                    assert per_trial_tokens is not None and basis is not None and evidence
+                    qualify(ops, per_trial_tokens, basis, evidence)
+                return ops.calibration_resume(plan_id, parallel=workers, requalify=requalify)
 
         guarded(call)

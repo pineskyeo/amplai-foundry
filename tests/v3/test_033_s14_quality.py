@@ -30,6 +30,7 @@ from amplai_foundry.evaluation import quality, versions
 from amplai_foundry.evaluation.corpus import CorpusService
 from amplai_foundry.evaluation.quality import QualityService, total_variation
 from amplai_foundry.runtime.contracts.identity import canonical, new_id
+from amplai_foundry.runtime.errors import RuntimeFault
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "amplai_foundry"
@@ -998,6 +999,12 @@ def calibration_world(w, *, cells=("cell-a",), tasks=("t1", "t2", "t3", "t4")):
 def add_summary(
     w, ev, plan_ref, summary_cells, *, at="2026-09-30T00:00:00Z", saturated=(), informative=()
 ):
+    # D-128: a summary is measured only when its run ended done
+    try:
+        w.m.d.store.head(w.scope, "calibration-run", plan_ref["id"])
+    except RuntimeFault:
+        put_head(w, "calibration-run", plan_ref["id"], "done",
+                 {"plan_ref": plan_ref, "state": "done", "trial_refs": []})  # fmt: skip
     return put(
         w,
         "calibration-summary",
@@ -1014,14 +1021,17 @@ def add_summary(
 
 
 def add_trials(w, plan_ref, cell, composition, outcomes, *, split="development", effects=()):
-    """`outcomes`: {task: [success, ...]} one trial per element."""
+    """`outcomes`: {task: [success, ...]} one trial per element, pooled by the plan's run (D-128:
+    discrimination counts only the run's `trial_refs`)."""
     for task, results in outcomes.items():
         for index, success in enumerate(results):
-            put(
+            trial_id = new_id("caltrial")
+            ref = put(
                 w,
                 "calibration-trial",
-                new_id("caltrial"),
+                trial_id,
                 {
+                    "trial_id": trial_id,
                     "calibration_plan_ref": plan_ref,
                     "cell_id": cell,
                     "composition_ref": composition,
@@ -1031,6 +1041,21 @@ def add_trials(w, plan_ref, cell, composition, outcomes, *, split="development",
                     "task_id": task,
                 },
             )
+            pool(w, plan_ref, ref)
+
+
+def pool(w, plan_ref, ref):
+    """Add `ref` to the plan's run head (created `done` when missing)."""
+    store = w.m.d.store
+    with store.tx() as db:
+        try:
+            head = store.head(w.scope, "calibration-run", plan_ref["id"], db=db)
+        except RuntimeFault:
+            head = {"row_version": 0, "state": "done",
+                    "data": {"plan_ref": plan_ref, "state": "done", "trial_refs": []}}  # fmt: skip
+        data = {**head["data"], "trial_refs": [*head["data"]["trial_refs"], ref]}
+        store.cas(db, w.scope, "calibration-run", plan_ref["id"], head["row_version"],
+                  head["state"], data)  # fmt: skip
 
 
 def test_discrimination_is_the_champion_minus_negative_control_pass_rate_with_an_interval(w):
@@ -1060,6 +1085,26 @@ def test_discrimination_is_the_champion_minus_negative_control_pass_rate_with_an
     assert row["interval"] == pytest.approx([mean(deltas) - half, mean(deltas) + half])
     assert row["confidence"] == 0.95
     assert row["discriminates"] is True
+
+
+def test_discrimination_counts_only_the_trials_the_run_pools(w):
+    # D-128 failure review P3: a drift-dropped import (or a superseded trial) is stored with the
+    # plan's ref but is not in the run's trial_refs, so it never counts
+    ev, plan_ref, comps, summary_cells = calibration_world(w)
+    add_summary(w, ev, plan_ref, summary_cells)
+    champion, control = comps["cell-a"]
+    add_trials(w, plan_ref, "cell-a", champion, {t: [True] for t in ("t1", "t2", "t3", "t4")})
+    add_trials(w, plan_ref, "cell-a", control, {t: [False] for t in ("t1", "t2", "t3", "t4")})
+    for task in ("t1", "t2", "t3", "t4"):  # dropped: stored, not pooled
+        trial_id = new_id("caltrial")
+        put(w, "calibration-trial", trial_id,
+            {"trial_id": trial_id, "calibration_plan_ref": plan_ref, "cell_id": "cell-a",
+             "composition_ref": champion, "split": "development", "success": False,
+             "unknown_effects": [], "task_id": task,
+             "imported_from": {"trial_id": "x"}})  # fmt: skip
+    got, _ = metric(w, "discrimination", negative_controls={"cell-a": control})
+    (row,) = got["cells"]
+    assert row["champion_pass_rate"] == 1.0 and row["negative_control_pass_rate"] == 0.0
 
 
 def test_a_negative_control_that_passes_as_often_as_the_champion_does_not_discriminate(w):
@@ -1145,6 +1190,17 @@ def test_saturation_is_the_share_of_tasks_saturated_in_every_cell(w):
     assert latest["tasks"] == 4 and latest["saturated_everywhere"] == 2
     assert latest["informative_any"] == 1 and latest["share"] == 0.5
     assert len(record["inputs"]["calibration_summaries"]) == 1
+
+
+def test_a_stopped_runs_partial_summary_is_not_measured(w):
+    # D-128: a summary of a run that did not end done is never a quality input
+    ev, plan_ref, _, summary_cells = calibration_world(w, cells=("cell-a", "cell-b"))
+    put_head(w, "calibration-run", plan_ref["id"], "stopped",
+             {"plan_ref": plan_ref, "state": "stopped", "trial_refs": []})  # fmt: skip
+    add_summary(w, ev, plan_ref, summary_cells, saturated=["t1", "t2"], informative=["t3"])
+    got, record = metric(w, "saturation")
+    assert got["status"] == "no_data"
+    assert record["inputs"]["calibration_summaries"] == []
 
 
 def test_saturation_reports_the_newest_summary_and_honours_since_and_the_version(w):
