@@ -233,6 +233,9 @@ def test_a_stub_client_drives_the_intake_flow_without_a_front_agent(product: Any
                 await mcp.call_tool("pending_events", {**USER, "cursor": "other-incarnation:1"})
             )
             assert expired["expired"] is True and expired["items"] == []
+            # H-16: the snapshot comes from the adapter's snapshot route, with its cursor
+            assert [g["goal_id"] for g in expired["snapshot"]] == [goal]
+            assert expired["cursor"].rsplit(":", 1)[0] == incarnation
 
     run(follow)
     stops = [e for e in dep.store.events(dep.scope, limit=1000)

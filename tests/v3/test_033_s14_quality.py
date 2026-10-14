@@ -1183,6 +1183,19 @@ def test_eval11_a_drift_summary_is_not_measured_for_saturation_or_flakiness(w):
     assert flaky["calibration_flaky_tasks"] == []
 
 
+def test_eval11_a_summary_whose_plan_cannot_be_read_is_left_out(w):
+    ev, plan_ref, _, summary_cells = calibration_world(w)
+    whole = add_summary(w, ev, plan_ref, summary_cells, at="2026-09-20T00:00:00Z",
+                        saturated=["t1"])  # fmt: skip
+    missing = {**plan_ref, "id": new_id("calplan")}  # no such calibration-plan is stored
+    unread = add_summary(w, ev, missing, summary_cells, at="2026-09-25T00:00:00Z",
+                         saturated=["t2"])  # fmt: skip
+    got, record = metric(w, "saturation")
+    assert record["inputs"]["calibration_summaries"] == [whole]
+    assert unread not in record["inputs"]["calibration_summaries"]
+    assert got["latest_summary"]["summary_ref"] == whole
+
+
 def test_grader_flakiness_is_the_share_of_tasks_flagged_by_the_corpus_check(w):
     ev, plan_ref, _, summary_cells = calibration_world(w)
     summary_cells["cell-a"]["tasks"]["t3"] = {"class": "flaky_grading"}

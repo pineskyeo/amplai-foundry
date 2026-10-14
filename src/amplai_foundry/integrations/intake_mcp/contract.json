@@ -2,7 +2,7 @@
   "contract": "amplai-intake-tools",
   "version": "1.0",
   "versioning": "major.minor. v1.0 is the eight tools over the S1a intake routes. Adding a tool is an additive minor (1.x; each tool names the version that added it in since). Renaming or removing a tool, or changing any input or output schema, is a new major. A kit pins the version it was checked against and includes only tools with since <= that version.",
-  "description": "AMPLAI intake tools for a messenger front agent (Work 034 S1c, spec F-4). Front-agent neutral: each tool maps to one /api/v3/intake/{adapter_id} route.",
+  "description": "AMPLAI intake tools for a messenger front agent (Work 034 S1c, spec F-4). Front-agent neutral: each tool maps to one /api/v3/intake/{adapter_id} route, except that pending_events also reads that adapter's /snapshot route when the feed answers with snapshot_ref (no cursor, or CURSOR_EXPIRED) and returns the snapshot inline.",
   "tools": [
     {
       "name": "submit_work",

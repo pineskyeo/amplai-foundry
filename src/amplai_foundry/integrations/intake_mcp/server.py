@@ -3,8 +3,10 @@
 A separate process the front agent launches over stdio. It holds the adapter's token, which only
 ever lives in this process's environment and never in a tool argument or result, so the front
 agent's model never sees it (design/10 §6). Each tool of the versioned contract
-(``contract.json``) is one call to ``/api/v3/intake/<adapter_id>``: this process has no other
-route, no store, no key and no AMPLAI service object. It does not run inside the Control Plane
+(``contract.json``) is one call to ``/api/v3/intake/<adapter_id>``, except that ``pending_events``
+also reads the adapter's ``/snapshot`` route when the feed names it (no cursor, or
+``CURSOR_EXPIRED``; H-16): this process has no other route, no store, no key and no AMPLAI service
+object. It does not run inside the Control Plane
 (M-5): it only speaks HTTP to it, and the server decides every permission (the intake actor,
 identity map, permission ceiling and rate limits of S1a/S1c).
 
@@ -99,17 +101,17 @@ class IntakeCaller:
         except ContractViolation as exc:
             raise ToolFailure("INVALID_ARGUMENTS", str(exc)) from None
         response = self._request(tool, dict(arguments))
-        try:
-            body = response.json()
-        except ValueError:
-            raise ToolFailure(
-                "AMPLAI_RESPONSE", f"AMPLAI answered HTTP {response.status_code}"
-            ) from None
-        if not isinstance(body, dict):
-            raise ToolFailure("AMPLAI_RESPONSE", f"AMPLAI answered HTTP {response.status_code}")
-        if tool.name == "pending_events" and body.get("code") == "CURSOR_EXPIRED":
-            body = {"items": [], "snapshot": body.get("snapshot"), "cursor": body.get("cursor")}
-            body["expired"] = True
+        body = _body(response)
+        if tool.name == "pending_events" and (
+            body.get("code") == "CURSOR_EXPIRED" or "snapshot_ref" in body
+        ):
+            # AMPLAI names its snapshot route (H-16). The tool's output keeps the snapshot inline
+            # (contract 1.0), so this process reads its adapter's snapshot route: never a path
+            # taken from the answer.
+            expired = body.get("code") == "CURSOR_EXPIRED"
+            body = self._snapshot(arguments)
+            if expired:
+                body["expired"] = True
         elif response.status_code >= 400:
             raise _failure(response.status_code, body)
         try:
@@ -119,6 +121,22 @@ class IntakeCaller:
                 "CONTRACT_OUTPUT", "AMPLAI's answer is outside the tool contract"
             ) from None
         return body
+
+    def _snapshot(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """The adapter's snapshot route as ``pending_events`` output: the goals projection inline
+        and the cursor read with it."""
+        who = {k: arguments[k] for k in ("provider", "workspace_id", "user_id") if k in arguments}
+        url = f"/api/v3/intake/{self.settings.adapter_id}/snapshot"
+        try:
+            response = self.http.get(
+                url, params=who, headers={"Authorization": "Bearer " + self.settings.token}
+            )
+        except httpx.HTTPError as exc:
+            raise ToolFailure("AMPLAI_UNREACHABLE", type(exc).__name__) from None
+        body = _body(response)
+        if response.status_code >= 400:
+            raise _failure(response.status_code, body)
+        return {"items": [], "snapshot": body.get("items"), "cursor": body.get("cursor")}
 
     def _request(self, tool: ToolContract, arguments: dict[str, Any]) -> httpx.Response:
         path = tool.path
@@ -134,6 +152,17 @@ class IntakeCaller:
             return self.http.post(url, json=arguments, headers=headers)
         except httpx.HTTPError as exc:
             raise ToolFailure("AMPLAI_UNREACHABLE", type(exc).__name__) from None
+
+
+def _body(response: httpx.Response) -> dict[str, Any]:
+    failure = ToolFailure("AMPLAI_RESPONSE", f"AMPLAI answered HTTP {response.status_code}")
+    try:
+        body = response.json()
+    except ValueError:
+        raise failure from None
+    if not isinstance(body, dict):
+        raise failure
+    return body
 
 
 def _failure(status: int, body: dict[str, Any]) -> ToolFailure:
