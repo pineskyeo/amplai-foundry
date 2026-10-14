@@ -1,4 +1,4 @@
-"""Work 033 OD-15 wave 1 (D-135): SWE-bench Multilingual / SWE-Bench Pro adapter skeleton.
+"""Work 033 OD-15 wave 1 (D-136): SWE-bench Multilingual / SWE-Bench Pro adapter skeleton.
 
 Contract: interfaces "Clarification: SWE-bench Adapter Skeleton (2026-10-15)". Synthetic rows in
 the two published row shapes (Multilingual: test lists are lists; Pro: JSON-encoded strings). No

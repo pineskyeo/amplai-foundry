@@ -1,7 +1,7 @@
-"""SWE-bench Multilingual and SWE-Bench Pro adapter skeleton (Work 033 OD-15 wave 1, D-135).
+"""SWE-bench Multilingual and SWE-Bench Pro adapter skeleton (Work 033 OD-15 wave 1, D-136).
 
 Contract: ``specs/033-harness-taxonomy/interfaces.md`` "Clarification: SWE-bench Adapter Skeleton
-(2026-10-15)". Import order (D-135): Terminal-Bench 2.0, then SWE-bench Multilingual (unsaturated
+(2026-10-15)". Import order (D-136): Terminal-Bench 2.0, then SWE-bench Multilingual (unsaturated
 tasks), then SWE-Bench Pro V2 HARD-51. This module reads dataset rows the operator exported to a
 local JSONL file; it downloads nothing, runs no container and writes nothing into the corpus.
 

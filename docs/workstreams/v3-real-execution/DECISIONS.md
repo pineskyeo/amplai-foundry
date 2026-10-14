@@ -995,7 +995,7 @@
 - Source: PR #97, `src/amplai_foundry/runtime/service_manager/`, `src/amplai_foundry/runtime/upgrade/plan.py`,
   `src/amplai_foundry/runtime/upgrade_cli.py`, `tests/v3/test_034_s3_service_manager.py`, `tests/v3/test_034_s3_upgrade_plan.py`
 
-## D-134 — Short Informative Tasks Are Answered By A Larger Corpus (IC-20)
+## D-135 — Short Informative Tasks Are Answered By A Larger Corpus (IC-20)
 
 - Status: accepted (운영자 승인 2026-10-14)
 - Date: 2026-10-14
@@ -1011,7 +1011,7 @@
   확인 필요다.
 - Source: `specs/033-harness-taxonomy/interfaces.md` IC-20, "Operator Decisions Of 2026-10-14: IC-20 And OD-15 Order"
 
-## D-135 — Public Benchmark Import Order: TB2, SWE-bench Multilingual, SWE-Bench Pro (OD-15)
+## D-136 — Public Benchmark Import Order: TB2, SWE-bench Multilingual, SWE-Bench Pro (OD-15)
 
 - Status: accepted (운영자 승인 2026-10-14)
 - Date: 2026-10-14

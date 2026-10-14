@@ -1,6 +1,6 @@
 # TB2 Oracle Admission Wave 1 Under V3 Egress None (2026-10-15)
 
-Work 033 OD-15 wave 1 (D-134, D-135). Answers the admission-count half of interfaces §14 Q7. No model was called;
+Work 033 OD-15 wave 1 (D-135, D-136). Answers the admission-count half of interfaces §14 Q7. No model was called;
 every run was a local container on the operator Mac. Tool: `scripts/tb2_oracle_wave.py` (screen, admit, report).
 
 ## Result
@@ -115,11 +115,11 @@ built locally from the pinned digest, the working-directory contents copied into
 `/workspace`, the same containment: network none, uid 65534, read-only root, cap-drop ALL), makes a screen without a
 registry digest fail with `no_digest` instead of running the mutable tag, and re-screens records of the earlier
 layout. The 85 screen results in this file come from the earlier layout and were not re-run (확인 필요). The read-only
-root and uid 65534 add failures on top (`apt-get` needs root). The policy (D-135 egress none) was not loosened.
+root and uid 65534 add failures on top (`apt-get` needs root). The policy (D-136 egress none) was not loosened.
 
 Decision proposal for the operator: (A) build-time baking of test dependencies (recommended if TB2 is wanted: it
 is how offline graders are normally built, keeps runtime egress none, but is a grading contract change) or (C) move
-on to SWE-bench Multilingual per D-135 now and treat (A) as a later work item. (B) is not recommended (opens egress).
+on to SWE-bench Multilingual per D-136 now and treat (A) as a later work item. (B) is not recommended (opens egress).
 
 ## Root Cause Check, Round 2 (2026-10-15)
 
@@ -136,7 +136,7 @@ on to SWE-bench Multilingual per D-135 now and treat (A) as a later work item. (
 
 Conclusion: 0 of 89 is a task property (the test entry bootstraps uv/pytest from the network at grading time), not
 a harness bug: 확인 for the 85 run tasks (network controls on 5), 추정 for the 4 large images that were not pulled.
-The policy (D-135 egress none) was not loosened.
+The policy (D-136 egress none) was not loosened.
 
 ## What Would Admit TB2 Tasks (Operator Decision, Not Implemented)
 
@@ -149,9 +149,9 @@ and are the operator's:
   environment (a grading contract change, §10.5 step 6) and puts the test tools inside the agent's image. Whether
   `uvx` runs from a read-only cache as uid 65534 is 확인 필요. Separately 25 `solve.sh` run `apt`, 12 `pip install`,
   7 `git clone`, 7 `curl`/`wget` (static count), so those references would also fail offline.
-- (B) Allow network for the grading container only (the agent stays offline). Changes the egress-none rule of D-135
+- (B) Allow network for the grading container only (the agent stays offline). Changes the egress-none rule of D-136
   for grading.
-- (C) Leave TB2 out and fill IC-20 from SWE-bench Multilingual (next in the D-135 order).
+- (C) Leave TB2 out and fill IC-20 from SWE-bench Multilingual (next in the D-136 order).
 
 ## Per Task
 
