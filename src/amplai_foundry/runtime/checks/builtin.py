@@ -106,10 +106,12 @@ BUILTIN_CHECKS: tuple[CheckSpec, ...] = (
         description="every registered module passes its kind's conformance suite (M-2, M-13)",
     ),
     CheckSpec(
-        "check.module_removal", VERSION, ("kind:git_host", "kind:notifier"), CI,
+        "check.module_removal", VERSION,
+        ("kind:git_host", "kind:notifier", "kind:service_manager"), CI,
         required=True, protected=False,
         description="the core tests pass with each optional module off and unimportable (M-13)",
-        config={"modules": ("git_host.github", "notifier.slack_webhook"),
+        config={"modules": ("git_host.github", "notifier.slack_webhook",
+                            "service_manager.launchd", "service_manager.systemd"),
                 "core_tests": CORE_TESTS},
     ),
     CheckSpec(

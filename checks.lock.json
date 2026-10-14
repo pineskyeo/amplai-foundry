@@ -70,7 +70,9 @@
         ],
         "modules": [
           "git_host.github",
-          "notifier.slack_webhook"
+          "notifier.slack_webhook",
+          "service_manager.launchd",
+          "service_manager.systemd"
         ]
       },
       "loosens_when_added": [],
@@ -78,7 +80,8 @@
       "required": true,
       "targets": [
         "kind:git_host",
-        "kind:notifier"
+        "kind:notifier",
+        "kind:service_manager"
       ],
       "version": "1",
       "when": [

@@ -53,6 +53,10 @@ from . import checks_cli  # noqa: E402  (Work 034 OD-18: `amplai checks`)
 
 checks_cli.register(app, guarded)
 
+from . import upgrade_cli  # noqa: E402  (Work 034 S3: `amplai ops service`, `amplai ops upgrade`)
+
+upgrade_cli.register(ops, guarded)
+
 
 def client() -> AmplaiClient:
     from .keys import private_bytes

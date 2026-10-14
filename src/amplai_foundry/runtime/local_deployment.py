@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -94,6 +95,7 @@ from .git_host import GitHost
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
 from .notifier import NotifierPump, StoreReceipts
+from .service_manager import ServiceManager
 from .storage.store import Scope, Store
 
 SERVICE_PERMISSIONS = frozenset(
@@ -519,6 +521,18 @@ class GitHostEntry(BaseModel):
         return value
 
 
+class ServiceEntry(BaseModel):
+    """The host's service manager (Work 034 S3; C-8, D-118; ``plan.md`` §3.5a.1
+    ``service.manager``). Absent: the OS default (macOS launchd; Linux systemd when PID 1 is
+    systemd). ``null``: no service manager module; ``ops service print`` then holds with
+    ``SERVICE_MANAGER_OFF``. The supervisor (hosts without systemd or sudo) is not built yet."""
+
+    model_config = ConfigDict(extra="forbid")
+    manager: Literal["service_manager.launchd", "service_manager.systemd"] | None = None
+    # systemd only: system unit first, user unit + linger second (C-8)
+    systemd_scope: Literal["system", "user"] = "system"
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -545,6 +559,8 @@ class LocalConfig(BaseModel):
     notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
     # Work 034 OD-15: absent = GitHub (the behaviour before the module); null = no git host
     git_host: GitHostEntry | None = Field(default_factory=GitHostEntry)
+    # Work 034 S3 (C-8): absent = the OS default manager; null = no service manager module
+    service: ServiceEntry | None = Field(default_factory=ServiceEntry)
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -581,6 +597,48 @@ class LocalConfig(BaseModel):
         if set(named) - known:
             raise ValueError(f"unknown cells {sorted(set(named) - known)}")
         return self
+
+
+SYSTEMD_PID1 = Path("/proc/1/comm")
+
+
+def default_service_manager(platform: str = sys.platform, pid1: Path = SYSTEMD_PID1) -> str:
+    """The OS default of ``service.manager`` (plan §3.5a.1): macOS → launchd, Linux with systemd
+    as PID 1 → systemd. Anything else needs the supervisor, which is not built yet."""
+    if platform == "darwin":
+        return "service_manager.launchd"
+    if platform.startswith("linux") and pid1.is_file() and pid1.read_text().strip() == "systemd":
+        return "service_manager.systemd"
+    raise Hold("SERVICE_MANAGER_UNAVAILABLE",
+               "No service manager for this host: the supervisor is not built yet (C-8)",
+               details={"platform": platform})  # fmt: skip
+
+
+def service_manager(
+    entry: ServiceEntry | None, manager: str | None = None, scope: str | None = None
+) -> ServiceManager:
+    """The selected service manager (Work 034 S3, C-8): ``manager`` (a CLI choice, e.g. rendering
+    for another host) over ``entry.manager`` over the OS default; ``scope`` over
+    ``entry.systemd_scope`` for systemd. Imported here, not at module
+    load, so a deployment that never prints units never loads an implementation (removal test,
+    M-13)."""
+    if entry is None and manager is None:
+        raise Hold("SERVICE_MANAGER_OFF", "The configuration turns the service manager off")
+    chosen = manager or (entry.manager if entry else None) or default_service_manager()
+    if chosen == "service_manager.launchd":
+        from .service_manager.launchd import LaunchdManager
+
+        return LaunchdManager()
+    if chosen == "service_manager.systemd":
+        from .service_manager.systemd import SystemdManager
+
+        chosen_scope = scope or (entry.systemd_scope if entry else "system")
+        if chosen_scope not in ("system", "user"):
+            raise Hold("SERVICE_SCOPE", "systemd scope is 'system' or 'user'")
+        return SystemdManager("user" if chosen_scope == "user" else "system")
+    known = ["service_manager.launchd", "service_manager.systemd"]
+    raise Hold("SERVICE_MANAGER_UNKNOWN", "No such service manager module",
+               details={"manager": chosen, "known": known})  # fmt: skip
 
 
 class ApproveBody(BaseModel):
