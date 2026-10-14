@@ -69,6 +69,7 @@ from amplai_foundry.runtime.nightly_control import (
     night_date,
     read_records,
     summary,
+    validate,
 )
 from amplai_foundry.runtime.storage.store import Scope, Store
 
@@ -955,3 +956,173 @@ def test_p3_status_defaults_to_tonights_night(env: Env, tmp_path: Path) -> None:
 
     out = commands.status_readonly(meta_config(env, tmp_path, None))
     assert out["date"] == night_date(time.time(), "01:00")
+
+
+# --- PR #95 regression review --------------------------------------------------------------------
+
+
+def test_p2_1_a_booted_meta_deployment_marks_its_store_meta(env: Env, tmp_path: Path) -> None:
+    """``local_deployment.mark_identity``: a config with meta.nightly is a meta deployment; the
+    night never reads controls from such a store."""
+    from amplai_foundry.runtime.local_deployment import LocalProductDeployment
+
+    value = json.loads(env.dep.path.read_bytes())
+    value["runtime_root"] = str(tmp_path / "meta-root")
+    value["meta"] = {"nightly": {"cells": [CELL], "shares": dict(SHARES)}}
+    path = env.dep.path.parent / "meta-local.json"  # beside it: the relative paths resolve
+    path.write_text(json.dumps(value))
+    meta = LocalProductDeployment(path, start_loop=False)
+    try:
+        assert meta.store.identity() == identity_value(env.scope, "meta")
+    finally:
+        meta.close()
+    with pytest.raises(Hold) as caught:
+        ControlReader(tmp_path / "meta-root", env.scope)(DATE)
+    assert caught.value.details == {"code": "NIGHT_CONTROL_STORE"}
+
+
+def put_raw(rig: Rig, object_id: str, value: dict[str, Any]) -> None:
+    with rig.product.tx() as db:
+        rig.product.put(db, rig.scope, KIND, object_id, 1, value)
+
+
+def clear_value(rig: Rig, actor: Any, target: str, date: str) -> dict[str, Any]:
+    return {
+        "schema": SCHEMA, "scope": rig.scope.wire(), "control_id": "nightctl-c-" + target,
+        "action": "clear", "dates": [date], "limits": {}, "issued_by": actor.wire(),
+        "reason": "quarantine", "at": "2026-10-14T00:00:00Z", "clears": target,
+    }  # fmt: skip
+
+
+def test_m10_a_record_with_unreadable_dates_stops_the_night(rig: Rig) -> None:
+    base = clear_value(rig, rig.operator, "x", DATE)
+    put_raw(rig, "nightctl-baddate", {**base, "action": "stop", "clears": None, "dates": ["bad"]})
+    held = stopped(rig.env, controlled(rig.env, rig.root))
+    assert held.details["reason"] == "control_unreadable"
+    assert rig.env.head()["data"]["controls"]["cause"] == "NIGHT_CONTROL_RECORD"
+
+
+def test_m11_a_far_dated_operator_clear_still_quarantines(rig: Rig) -> None:
+    put_raw(rig, "nightctl-undated", {"action": "stop"})
+    put_raw(rig, "nightctl-q", clear_value(rig, rig.operator, "nightctl-undated", "2026-10-21"))
+    assert ControlReader(rig.root, rig.scope)(DATE).stop is None
+
+
+def test_m07_a_front_agent_clear_written_directly_does_not_quarantine(rig: Rig) -> None:
+    put_raw(rig, "nightctl-undated", {"action": "stop"})
+    put_raw(rig, "nightctl-q", clear_value(rig, rig.agent, "nightctl-undated", DATE))
+    with pytest.raises(Hold) as caught:
+        ControlReader(rig.root, rig.scope)(DATE)
+    assert caught.value.details == {"code": "NIGHT_CONTROL_RECORD"}
+
+
+@pytest.mark.parametrize("case", ["extra_field", "other_scope", "service_without_mark"])
+def test_m57_m58_m59_the_validator_refuses(rig: Rig, case: str) -> None:
+    good = {**clear_value(rig, rig.operator, "x", DATE), "action": "stop", "clears": None}
+    validate(good, rig.scope)
+    bad = {
+        "extra_field": {**good, "extra": 1},
+        "other_scope": {**good, "scope": {"tenant_id": "local", "project_id": "other"}},
+        "service_without_mark": {
+            **good,
+            "issued_by": {"subject_id": "s", "kind": "service", "authn_context_ref": "x"},
+        },
+    }[case]
+    with pytest.raises(RuntimeFault) as caught:
+        validate(bad, rig.scope)
+    assert caught.value.code == "NIGHT_CONTROL_RECORD"
+
+
+def test_m19_a_late_tick_start_ends_by_the_scheduled_start_plus_max_hours(env: Env) -> None:
+    env.clock.t = local_epoch(2026, 10, 1, 3)  # started two hours after its 01:00 schedule
+    cfg = config(env.clock, stop_at="09:00", max_hours=4)
+    env.standing(cfg)
+    runner = NightlyRunner(env.dep, cfg, clock=env.clock, backend=env.fake)
+    runner.trigger = {"by": "schedule", "start_at": "01:00"}
+    env.fake.runner = runner
+    runner.run(DATE)
+    pre = next(p for p in env.head()["data"]["phases"] if p["phase"] == "preflight")
+    assert pre["stop_at"].startswith(DATE + "T05:00")  # 01:00 + 4 h, not 03:00 + 4 h
+
+
+def test_m43_the_night_date_turns_at_noon() -> None:
+    assert night_date(local_epoch(2026, 10, 15, 11, 59), "01:00") == "2026-10-15"
+    assert night_date(local_epoch(2026, 10, 15, 12, 0), "01:00") == "2026-10-16"
+    assert night_date(local_epoch(2026, 10, 15, 11, 59), "22:00") == "2026-10-14"
+    assert night_date(local_epoch(2026, 10, 15, 12, 0), "22:00") == "2026-10-15"
+
+
+def test_m26_a_dateless_stop_finds_the_night_running_past_noon(rig: Rig) -> None:
+    rig.meta.policy = NightPolicy(**{**rig.policy.__dict__, "start_at": "11:00",
+                                     "stop_at": "15:00"})  # fmt: skip
+    running_head(rig.env, DATE, local_epoch(2026, 10, 1, 11))
+    rig.now = local_epoch(2026, 10, 1, 12, 30)  # tonight is the 2nd now
+    assert rig.ask(rig.agent, "stop")["dates"] == [DATE]
+
+
+def test_m35_another_hold_on_open_propagates(
+    env: Env, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from contextlib import contextmanager
+
+    @contextmanager
+    def refusing(_config: Path) -> Any:
+        raise Hold("KEY_SEPARATION", "Execution and verification need distinct keys")
+        yield
+
+    env.standing()
+    monkeypatch.setattr(commands, "opened_meta", refusing)
+    with pytest.raises(Hold) as caught:
+        commands.tick(meta_config(env, tmp_path, None),
+                      clock=lambda: local_epoch(2026, 10, 15, 1, 5))  # fmt: skip
+    assert caught.value.code == "KEY_SEPARATION"
+
+
+def test_m74_a_scheduled_night_starts_on_unreadable_controls_and_stops_honestly(
+    env: Env, tmp_path: Path
+) -> None:
+    env.standing()
+    missing = tmp_path / "missing"
+    path = meta_config(env, tmp_path, missing)
+    starts = Starts()
+    out = commands.tick(path, clock=lambda: local_epoch(2026, 10, 1, 1, 5), start=starts)
+    assert out["tick"] == "started"
+    env.clock.t = local_epoch(2026, 10, 1, 1, 5)
+    runner = controlled(env, missing)
+    runner.trigger = out["trigger"]
+    held = stopped(env, runner)
+    assert held.details["reason"] == "control_unreadable"
+    data = env.head()["data"]
+    assert data["controls"]["unreadable"] == "NIGHT_CONTROL_UNREADABLE"
+    assert data["controls"]["cause"] == "NOT_FOUND" and data["trials"] == 0
+    assert phases(data)["preflight"] == "stopped"
+
+
+@pytest.mark.parametrize("action", ["skip", "stop"])
+def test_m31_a_front_agent_skip_or_stop_holds_its_start(rig: Rig, action: str) -> None:
+    rig.env.standing()
+    rig.ask(rig.agent, action, dates=[TONIGHT])
+    start_refused(rig, "held")
+
+
+def test_m77_a_start_for_another_night_is_refused_by_date(rig: Rig) -> None:
+    rig.env.standing()
+    with pytest.raises(Hold) as caught:
+        rig.ask(rig.agent, "start", dates=["2026-10-16"])
+    assert caught.value.code == "NIGHT_START_REFUSED"
+    assert caught.value.details["condition"] == "date"
+
+
+def test_m53_a_stop_during_a_phase_without_units_is_seen_at_the_boundary(rig: Rig) -> None:
+    env = rig.env
+    rig.now = local_epoch(2026, 10, 1, 0, 30)
+
+    def factors(cell_id: str) -> list[str]:
+        env.fake.calls.append(("screening_factors", cell_id))
+        rig.ask(rig.agent, "stop", dates=[DATE], reason="now")
+        return []  # the screening phase runs no unit, so no trial guard sees the stop
+
+    env.fake.screening_factors = factors  # type: ignore[method-assign]
+    held = stopped(env, controlled(env, rig.root))
+    assert held.details["reason"] == "front_agent_stop"
+    assert "search_run" not in env.fake.names() and "propose" not in env.fake.names()
