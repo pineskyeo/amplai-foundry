@@ -218,6 +218,11 @@ class IntakeGate:
                 "INTAKE_TOKEN_REUSED", "Each intake adapter needs a token of its own (AC-F2)"
             )
 
+    def authenticate(self, authorization: str) -> None:
+        """The credential check alone (no messenger user): the intake-only listener runs it before
+        it reports an invalid request (``intake_listener.py``)."""
+        self._authenticate(authorization)
+
     def identities(self) -> list[IdentityEntry]:
         try:
             parsed = IdentityMap.model_validate(json.loads(self.read(self.identity_map_file)))

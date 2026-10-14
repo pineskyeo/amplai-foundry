@@ -144,7 +144,9 @@ VM 의 `127.0.0.1` 은 VM 자신이라 운영자 API(`127.0.0.1:5083`)에 닿지
 - 두 listener 는 같은 intake 경로를 쓴다. adapter 하나의 토큰·연결표·빈도 제한 창은 하나다. 운영자 API 도 intake 경로를
   계속 연다 (이 동작을 바꿀지는 결정 대기, D-133).
 - `host`·`port` 에는 기본값이 없다. `host` 는 IP 주소 하나다 (이름, `0.0.0.0`, `::` 는 거부). `port` 는 `--port` 와 달라야
-  한다 (`INTAKE_LISTENER_PORT`). 이미 쓰이는 port 는 `INTAKE_LISTENER_BIND` 다.
+  한다 (`INTAKE_LISTENER_PORT`). 이미 쓰이는 port 는 `INTAKE_LISTENER_BIND` 다. 이 검사는 `local-serve` 만 한다.
+- 이 listener 는 `X-Forwarded-*` 를 믿지 않고 `Server` header 를 보내지 않는다. 인증되지 않은 요청은 검증 오류의 field
+  이름 대신 `401` 을 받는다.
 - **지금은 loopback 주소만 연다.** H-12 는 이 listener 에 TLS 또는 출발지 고정 토큰을 요구한다. 둘 중 무엇을 쓸지는 운영자
   결정 대기다 (D-133). 그 전에는 loopback 이 아닌 주소가 `INTAKE_LISTENER_UNPROTECTED` 로 시작을 거부한다. 그래서 VM 에서
   닿는 구성은 아직 없다.

@@ -908,10 +908,22 @@
   2. 경로: 설정된 adapter 의 `/api/v3/intake/<adapter_id>` 아래만 연다. 운영자 API 와 같은 intake router 를 쓰므로 adapter 하나의
      토큰·연결표·빈도 제한 창은 하나다(H-7). 그 밖의 경로(운영자 API, meta, evaluation, `/api/v3/local`, `/healthz`, OpenAPI·docs),
      `.`·`..` path segment, 설정되지 않은 adapter 는 body 를 읽기 전에 `404 INTAKE_LISTENER_ROUTE` 다. adapter root 아래의 없는
-     경로도 같은 코드, method 가 틀리면 `405 METHOD_NOT_ALLOWED` 다. WebSocket 은 accept 전에 닫는다. 운영자 토큰은 intake
-     경로에서 `401 UNAUTHENTICATED` 다(intake gate, `control_plane/api_v3/intake.py`).
-  3. 시작 거부 코드: `INTAKE_LISTENER_NO_INTAKE`(intake adapter 없음), `INTAKE_LISTENER_UNPROTECTED`(loopback 이 아닌 주소,
-     아래 결정 전까지), `INTAKE_LISTENER_PORT`(`--port` 와 같은 port), `INTAKE_LISTENER_BIND`(bind 실패).
+     경로와 끝의 `/`(slash redirect 없음, `Location` 없음)도 같은 코드, method 가 틀리면 `405 METHOD_NOT_ALLOWED` 다.
+     그 밖의 `HTTPException` 은 `HTTP_ERROR`(그 status 그대로)다. 지금 intake 경로는 `HTTPException` 을 내지 않는다(모두
+     `RuntimeFault`). WebSocket 은 accept 전에 닫는다. 운영자 토큰은 intake 경로에서 `401 UNAUTHENTICATED` 다(intake gate,
+     `control_plane/api_v3/intake.py`). body·query 검증에 실패한 요청은 먼저 adapter 토큰을 확인한다. 인증되지 않은 요청은
+     gate 의 `401`(또는 `503 INTAKE_UNAVAILABLE`)만 받고 `422` 의 field 이름을 보지 못한다. 운영자 listener 의 검증 순서는
+     그대로다.
+  2a. 서버: listener 의 uvicorn 은 `proxy_headers=False`(`X-Forwarded-For`·`X-Forwarded-Proto` 를 믿지 않는다. peer 는 TCP
+     peer 다)이고 `Server` header 를 보내지 않는다. 두 서버 모두 종료 때 실행 중 요청을 최대 10초(`GRACEFUL_SECONDS`) 기다린 뒤
+     취소한다. uvicorn 0.54 에는 header·body 읽기 시간 제한이 없다(`Config` 의 시간 설정은 `timeout_keep_alive` — 응답이 끝난
+     뒤에만 걸린다, `uvicorn/protocols/http/h11_impl.py:317-326` — 와 `timeout_graceful_shutdown` 뿐이다). header 를 끝내지 않은
+     연결은 종료 때 바로 닫히고(`h11_impl.py:336-343`), body 를 끝내지 않은 요청은 10초 뒤 취소된다. 실행 중 읽기 시간 제한과
+     연결 수 제한(`limit_concurrency`)은 두지 않았다(결정 대기 D).
+  3. 시작 거부 코드(`ops local-serve` 만 검사한다. deployment 를 여는 다른 명령은 `intake_listener` 를 보지 않는다):
+     `INTAKE_LISTENER_NO_INTAKE`(intake adapter 없음), `INTAKE_LISTENER_UNPROTECTED`(loopback 이 아닌 주소, 아래 결정 전까지),
+     `INTAKE_LISTENER_PORT`(`--port` 와 같은 port), `INTAKE_LISTENER_BIND`(bind 실패). 한 서버가 끝나면 다른 서버도 멈춘다.
+     Ctrl-C·SIGTERM 은 두 서버를 멈춘 뒤 `uvicorn.run` 처럼 다시 올린다.
 - 운영자 결정 대기:
   - (A) H-12 의 보호 방식. spec 은 "TLS(또는 출발지 고정 토큰)" 이라 둘 중 하나를 요구하지만 어느 것인지 정하지 않았다. 그래서
     지금은 loopback 주소만 연다(fail closed). 선택지: (A1) TLS — store 밖 0600 인증서·키 파일, VM 의 MCP 서버가 그 인증서를
@@ -921,6 +933,7 @@
     `host` 로 쓴다. 사용자 모드 NAT(QEMU slirp 계열)는 VM 의 gateway 주소가 호스트 loopback 으로 이어질 수 있어 운영자 API
     (`127.0.0.1:5083`)까지 VM 에서 닿을 수 있다(추정, 확인 필요).
   - (C) listener 를 켰을 때 운영자 API 가 intake 경로를 계속 열지. 지금은 계속 연다(S1a·S1c 동작 그대로).
+  - (D) listener 의 요청 읽기 시간 제한(ASGI 에서 body 읽기에 기한)과 연결 수 제한(`limit_concurrency`)을 둘지, 둔다면 값.
 - Consequence: `runtime/local_deployment.py`(설정·조립)를 바꾸므로 D-128 `trial_code_digest` 가 바뀐다. 이전 trial 은 resume·
   import key 가 맞지 않는다. 새 listener 코드(`control_plane/api_v3/intake_listener.py`)와 `runtime/cli.py` 는 digest 밖이다.
 - Source: `specs/034-hermes-modular-platform/spec.md` OD-8, H-12, `specs/034-hermes-modular-platform/plan.md` §3.2 item 11,

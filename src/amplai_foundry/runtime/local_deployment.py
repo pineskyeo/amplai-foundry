@@ -39,7 +39,7 @@ from ..control_plane.api_v3.intake import (
     RateLimiter,
     intake_router,
 )
-from ..control_plane.api_v3.intake_listener import check_protected, create_intake_app
+from ..control_plane.api_v3.intake_listener import create_intake_app
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -451,7 +451,8 @@ class IntakeListenerEntry(BaseModel):
     (the operator API on 127.0.0.1 serves the intake routes, as before). Both fields are required:
     the address the front agent's VM reaches is never a default. ``host`` is an IP address, not a
     name and not the any-address (``0.0.0.0``, ``::``). Until H-12's TLS or source-pinned token is
-    decided, only a loopback address starts (``INTAKE_LISTENER_UNPROTECTED``)."""
+    decided, only a loopback address starts (``INTAKE_LISTENER_UNPROTECTED``). Only
+    ``ops local-serve`` checks the listener; other commands that open the deployment ignore it."""
 
     model_config = ConfigDict(extra="forbid")
     host: str
@@ -665,13 +666,6 @@ class LocalProductDeployment:
         self._compose(cfg)
         self._planning: set[str] = set()
         self._planning_lock = threading.Lock()
-        if cfg.intake_listener is not None:
-            if cfg.intake is None:
-                raise Hold(
-                    "INTAKE_LISTENER_NO_INTAKE",
-                    "intake_listener serves intake adapters; configure intake.adapters first",
-                )
-            check_protected(cfg.intake_listener.host)
         self.intake_app: Any = None  # the intake-only listener's app (S1g), when configured
         self.app = self._app(start_loop)
 
@@ -1325,11 +1319,13 @@ class LocalProductDeployment:
         if self.config.intake is not None:
             adapters = self.config.intake.adapters
             # one router, token and window each, shared by both listeners (S1g, H-7)
-            intake = [intake_router(self._intake(adapter)) for adapter in adapters]
+            by_id = {adapter.adapter_id: self._intake(adapter) for adapter in adapters}
+            intake = [intake_router(s) for s in by_id.values()]
             for intake_routes in intake:
                 app.include_router(intake_routes)
             if self.config.intake_listener is not None:
-                self.intake_app = create_intake_app(intake, [a.adapter_id for a in adapters])
+                gates = {adapter_id: s.gate for adapter_id, s in by_id.items()}
+                self.intake_app = create_intake_app(intake, gates)
         if start_loop:
             original = app.router.lifespan_context
 

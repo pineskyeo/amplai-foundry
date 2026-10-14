@@ -13,8 +13,18 @@ What it refuses:
   is read and before any route or credential is looked at;
 - a path segment ``.`` or ``..`` (the same code): no proxy in front can turn it into another route;
 - a WebSocket: closed before it is accepted;
+- a trailing slash or any other path under an adapter's root that is not one of its routes: the
+  same ``404 INTAKE_LISTENER_ROUTE`` (no redirect, so no ``Location`` built from ``Host``);
 - the operator token on an intake route: ``401 UNAUTHENTICATED``, as on the operator listener (the
-  intake gate accepts only the adapter's own token, ``intake.py``).
+  intake gate accepts only the adapter's own token, ``intake.py``);
+- an unauthenticated request whose body or query does not validate: the credential is checked
+  first, so it gets the gate's ``401`` and never the field names of a ``422``.
+
+The uvicorn server behind it trusts no ``X-Forwarded-For``/``X-Forwarded-Proto`` (``proxy_headers``
+off: the peer address is the TCP peer) and sends no ``Server`` header. On shutdown both servers wait
+at most ``GRACEFUL_SECONDS`` for running requests. uvicorn 0.54 has no header or body read timeout
+(its ``Config`` has ``timeout_keep_alive``, armed only after a response, and
+``timeout_graceful_shutdown``); a connection that never finishes its headers is closed at shutdown.
 
 H-12 also requires TLS or a source-pinned token on this listener. Which one is an operator decision
 not taken yet, so neither is implemented, and :func:`check_protected` refuses to bind anything but a
@@ -28,19 +38,22 @@ import contextlib
 import ipaddress
 import signal
 import socket
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from amplai_foundry.runtime.errors import Hold, RuntimeFault
 
-from .intake import ROUTE_ROOT
+from .intake import ROUTE_ROOT, IntakeGate
 from .server import BoundedBody, fault_response
 
 LISTENER_ROUTE = "INTAKE_LISTENER_ROUTE"
+GRACEFUL_SECONDS = 10  # running requests at shutdown, both servers
 
 
 def _refusal(code: str, message: str, status: int) -> JSONResponse:
@@ -76,11 +89,30 @@ class IntakeOnly:
         await self.app(scope, receive, send)
 
 
-def create_intake_app(routers: Iterable[APIRouter], adapter_ids: Iterable[str]) -> FastAPI:
-    """An app with the given intake routers only; no OpenAPI, docs or health route."""
+def create_intake_app(routers: Iterable[APIRouter], gates: Mapping[str, IntakeGate]) -> FastAPI:
+    """An app with the given intake routers only (``gates``: adapter id -> its gate); no OpenAPI,
+    docs, health route or slash redirect."""
     app = FastAPI(
-        title="AMPLAI V3 intake", version="3.0.0", docs_url=None, redoc_url=None, openapi_url=None
+        title="AMPLAI V3 intake",
+        version="3.0.0",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        redirect_slashes=False,
     )
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_handler(request: Request, exc: RequestValidationError) -> Any:
+        """Authenticate before saying what is wrong with the request."""
+        adapter_id = request.url.path[len(ROUTE_ROOT) :].split("/", 1)[0]
+        gate = gates.get(adapter_id)
+        if gate is None:  # unreachable behind IntakeOnly
+            return _route_refusal()
+        try:
+            gate.authenticate(request.headers.get("authorization", ""))
+        except RuntimeFault as fault:
+            return fault_response(fault)
+        return await request_validation_exception_handler(request, exc)
 
     @app.exception_handler(RuntimeFault)
     async def fault_handler(request: Request, exc: RuntimeFault) -> Any:
@@ -92,12 +124,13 @@ def create_intake_app(routers: Iterable[APIRouter], adapter_ids: Iterable[str]) 
             return _route_refusal()
         if exc.status_code == 405:
             return _refusal("METHOD_NOT_ALLOWED", "Method not allowed on this route", 405)
+        # no intake route raises another HTTPException today (they raise RuntimeFault)
         return _refusal("HTTP_ERROR", str(exc.detail), exc.status_code)
 
     for router in routers:
         app.include_router(router)
     app.add_middleware(BoundedBody)
-    app.add_middleware(IntakeOnly, adapter_ids=tuple(adapter_ids))  # outermost: before the body
+    app.add_middleware(IntakeOnly, adapter_ids=tuple(gates))  # outermost: before the body
     return app
 
 
@@ -142,10 +175,20 @@ def _quiet_server(config: Any) -> Any:
     return QuietServer(config)
 
 
-def _side_server(app: Any) -> Any:
+def _side_server(app: Any, graceful: int = GRACEFUL_SECONDS) -> Any:
     import uvicorn
 
-    return _quiet_server(uvicorn.Config(app, lifespan="off", workers=1, access_log=False))
+    return _quiet_server(
+        uvicorn.Config(
+            app,
+            lifespan="off",
+            workers=1,
+            access_log=False,
+            proxy_headers=False,  # the peer is the TCP peer, whatever X-Forwarded-For says
+            server_header=False,
+            timeout_graceful_shutdown=graceful,
+        )
+    )
 
 
 async def run_pair(
@@ -165,7 +208,13 @@ async def run_pair(
 
 
 def serve_with_listener(
-    operator_app: Any, operator_port: int, intake_app: Any, host: str, port: int
+    operator_app: Any,
+    operator_port: int,
+    intake_app: Any,
+    host: str,
+    port: int,
+    *,
+    graceful: int = GRACEFUL_SECONDS,
 ) -> None:
     """``ops local-serve`` with an ``intake_listener``: the operator API on 127.0.0.1 as before,
     the intake listener on its own address, one process, one store owner.
@@ -174,6 +223,11 @@ def serve_with_listener(
     does (Ctrl-C ends quietly, SIGTERM ends the process with that signal)."""
     import uvicorn
 
+    if intake_app is None:
+        raise Hold(
+            "INTAKE_LISTENER_NO_INTAKE",
+            "intake_listener serves intake adapters; configure intake.adapters first",
+        )
     if port == operator_port:
         raise Hold(
             "INTAKE_LISTENER_PORT",
@@ -184,10 +238,15 @@ def serve_with_listener(
     sock = bind_socket(host, port)
     operator = _quiet_server(
         uvicorn.Config(
-            operator_app, host="127.0.0.1", port=operator_port, workers=1, access_log=False
+            operator_app,
+            host="127.0.0.1",
+            port=operator_port,
+            workers=1,
+            access_log=False,
+            timeout_graceful_shutdown=graceful,
         )
     )
-    side = _side_server(intake_app)
+    side = _side_server(intake_app, graceful)
     captured: list[int] = []
 
     def stop(sig: int, frame: Any) -> None:

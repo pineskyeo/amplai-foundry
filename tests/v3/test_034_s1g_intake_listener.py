@@ -3,8 +3,8 @@
 The front agent's VM cannot reach the operator API on the host's loopback (OD-8). It enters
 through a second listener (``intake_listener`` in ``local.json``) that serves only
 ``/api/v3/intake/<adapter_id>`` and refuses every other path with ``404 INTAKE_LISTENER_ROUTE``.
-The operator token opens nothing on it. Until H-12's TLS or source-pinned token is decided, the
-listener binds only a loopback address.
+The operator token opens nothing on it. Until H-12's TLS or source-pinned token is decided,
+``ops local-serve`` binds it only on a loopback address.
 
 Real: `amplai ops local-init` output, LocalProductDeployment, both apps, uvicorn on real sockets.
 Stand-in: the planner returns a fixed draft (as in test_034_s1a_intake_route.py).
@@ -13,11 +13,15 @@ Stand-in: the planner returns a fixed draft (as in test_034_s1a_intake_route.py)
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
+import os
 import re
+import signal
 import socket
 import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +30,7 @@ import pytest
 import uvicorn
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from starlette.routing import Mount
 from starlette.websockets import WebSocketDisconnect
 from test_034_s1a_intake_route import (
     HERMES,
@@ -86,6 +91,83 @@ def concrete(path: str) -> str:
     return re.sub(r"\{[^}]+\}", "x", path)
 
 
+def walk(routes: list[Any], prefix: str = "") -> Iterator[tuple[str, list[str]]]:
+    """Every (path, methods) of an app, into included routers (FastAPI 0.143 keeps an
+    ``include_router`` as one ``_IncludedRouter`` entry) and mounts."""
+    for route in routes:
+        included = getattr(route, "original_router", None)
+        if included is not None:
+            yield from walk(included.routes, prefix + route.include_context.prefix)
+        elif isinstance(route, Mount):
+            yield from walk(route.routes, prefix + route.path)
+        else:
+            yield prefix + route.path, sorted(getattr(route, "methods", None) or {"GET"})
+
+
+def free_port() -> int:
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    port: int = probe.getsockname()[1]
+    probe.close()
+    return port
+
+
+def port_free(port: int) -> bool:
+    """Nothing listens on the port any more (a closed connection may still be in TIME_WAIT, so
+    this tries to connect rather than to bind)."""
+    try:
+        socket.create_connection(("127.0.0.1", port), timeout=2).close()
+    except OSError:
+        return True
+    return False
+
+
+def raw(port: int, request: bytes, timeout: float = 10.0) -> tuple[int, dict[str, str], bytes]:
+    """One HTTP/1.1 exchange on a plain socket: the request target is sent exactly as given."""
+    with socket.create_connection(("127.0.0.1", port), timeout=timeout) as conn:
+        conn.sendall(request)
+        data = b""
+        while chunk := conn.recv(65536):
+            data += chunk
+    head, _, body = data.partition(b"\r\n\r\n")
+    lines = head.decode("latin-1").split("\r\n")
+    headers = {k.strip().lower(): v.strip() for k, _, v in (h.partition(":") for h in lines[1:])}
+    return int(lines[0].split()[1]), headers, body
+
+
+def get(target: bytes) -> bytes:
+    return b"GET " + target + b" HTTP/1.1\r\nHost: amplai.test\r\nConnection: close\r\n\r\n"
+
+
+@contextlib.contextmanager
+def serving(dep: Any) -> Iterator[tuple[int, int]]:
+    """Both apps on real loopback sockets (``run_pair`` in a thread); yields the two ports."""
+    op_sock = intake_listener.bind_socket("127.0.0.1", 0)
+    side_sock = intake_listener.bind_socket("127.0.0.1", 0)
+    op_server = uvicorn.Server(uvicorn.Config(dep.app, workers=1, access_log=False))
+    side_server = intake_listener._side_server(dep.intake_app)
+    thread = threading.Thread(
+        target=lambda: asyncio.run(
+            intake_listener.run_pair(op_server, side_server, [side_sock], [op_sock])
+        ),
+        daemon=True,
+    )
+    thread.start()
+    try:
+        deadline = time.time() + 20
+        while not (op_server.started and side_server.started) and time.time() < deadline:
+            time.sleep(0.05)
+        assert op_server.started and side_server.started
+        yield op_sock.getsockname()[1], side_sock.getsockname()[1]
+    finally:
+        op_server.should_exit = True
+        thread.join(timeout=20)
+        op_sock.close()
+        side_sock.close()
+    assert not thread.is_alive()
+    assert side_server.should_exit
+
+
 # -- intake works through the listener ---------------------------------------------------------
 
 
@@ -119,21 +201,24 @@ def test_an_unknown_intake_route_under_the_adapter_root_is_coded(listening: Any)
 
 
 def test_every_operator_route_is_unreachable_through_the_listener(listening: Any) -> None:
-    """Each route of the operator app (core V3, meta, evaluation, local product, health, OpenAPI)
-    with each of its methods and the operator token is 404 ``INTAKE_LISTENER_ROUTE`` on the
-    listener. The routes come from the operator app's own OpenAPI document, which lists the
-    included routers too (FastAPI keeps those out of ``app.routes``)."""
-    _dep, op, client, operator, _home = listening
+    """Each route of the operator app (core V3, meta, evaluation, local product, health, OpenAPI),
+    found by walking its route tree, with each of its methods and the operator token, is 404
+    ``INTAKE_LISTENER_ROUTE`` on the listener."""
+    dep, op, client, operator, _home = listening
     auth = {"Authorization": "Bearer " + operator, "Idempotency-Key": "k-1", "If-Match": "1"}
-    paths = op.get("/openapi.json").json()["paths"]
-    surfaces = {"/openapi.json": ["get"]}
-    surfaces.update({path: sorted(item) for path, item in paths.items()})
+    routes = dict(walk(dep.app.router.routes))
+    # the walk is complete: it has every path of the operator app's own OpenAPI document
+    assert set(op.get("/openapi.json").json()["paths"]) <= set(routes)
     checked: set[str] = set()
-    for path, methods in surfaces.items():
+    for path, methods in routes.items():
         if path == ROOT or path.startswith(ROOT + "/"):
             continue
         for method in methods:
-            refused(client.request(method.upper(), concrete(path), headers=auth, json={}))
+            response = client.request(method, concrete(path), headers=auth, json={})
+            if method == "HEAD":
+                assert response.status_code == 404
+            else:
+                refused(response)
         checked.add(path)
     for surface in ("/healthz", "/openapi.json", "/api/v3/readyz", "/api/v3/snapshot",
                     "/api/v3/events", "/api/v3/meta/proposals", "/api/v3/runtime/kill",
@@ -141,8 +226,7 @@ def test_every_operator_route_is_unreachable_through_the_listener(listening: Any
                     "/api/v3/local/publications/sync"):  # fmt: skip
         assert surface in checked, surface
     assert len(checked) > 50
-    # the intake routes are in the same document and are served by the listener
-    assert any(path.startswith(ROOT + "/") for path in paths)
+    assert any(path.startswith(ROOT + "/") for path in routes)  # intake is in the same tree
 
 
 @pytest.mark.parametrize(
@@ -164,13 +248,17 @@ def test_every_operator_route_is_unreachable_through_the_listener(listening: Any
         "/api/v3/intake/hermesx/goals",  # a prefix of the adapter id is not its root
         "/api/v3/intakehermes/goals",
         "/api/v3/intake/hermes/../../readyz",
+        "/api/v3/intake/hermes/",  # no slash redirect
+        "/api/v3/intake/hermes/goals/",
     ],
 )
 def test_paths_outside_the_intake_roots_are_refused(listening: Any, path: str) -> None:
     _dep, _op, client, operator, _home = listening
     for headers in ({}, HERMES, {"Authorization": "Bearer " + operator}):
-        refused(client.get(path, headers=headers))
-        refused(client.post(path, headers=headers, json={}))
+        got = client.get(path, headers=headers, follow_redirects=False)
+        refused(got)
+        assert "location" not in got.headers
+        refused(client.post(path, headers=headers, json={}, follow_redirects=False))
 
 
 def test_dot_segments_reach_the_guard_unnormalized() -> None:
@@ -198,6 +286,35 @@ def test_the_operator_token_opens_no_intake_route(listening: Any) -> None:
         ROOT, headers={"Authorization": "Bearer " + operator}, json=message("m-op", text="x")
     )
     assert posted.status_code == 401
+
+
+@pytest.mark.parametrize("who", ["none", "wrong", "operator"])
+def test_an_unauthenticated_invalid_request_learns_no_field_names(listening: Any, who: str) -> None:
+    _dep, _op, client, operator, _home = listening
+    token = {"none": None, "wrong": "x" * 40, "operator": operator}[who]
+    headers = {} if token is None else {"Authorization": "Bearer " + token}
+    for response in (
+        client.post(ROOT, headers=headers, json={"bogus": 1}),  # invalid body
+        client.post(f"{ROOT}/goals/g-1/cancel", headers=headers, content=b"not json"),
+        client.get(f"{ROOT}/goals", headers=headers),  # the query lacks provider and user_id
+        client.get(f"{ROOT}/events", headers=headers, params={**SLACK_USER, "limit": "x"}),
+    ):
+        assert response.status_code == 401, response.text
+        assert response.json()["code"] == "UNAUTHENTICATED"
+        assert "loc" not in response.text and "provider" not in response.text
+
+
+def test_the_adapter_token_still_gets_the_validation_details(listening: Any) -> None:
+    _dep, _op, client, _operator, _home = listening
+    response = client.get(f"{ROOT}/goals", headers=HERMES)
+    assert response.status_code == 422
+    assert {e["loc"][-1] for e in response.json()["detail"]} == {"provider", "user_id"}
+
+
+def test_the_operator_listener_validates_as_before(listening: Any) -> None:
+    """The operator app is unchanged: FastAPI's 422 comes before the intake gate there."""
+    _dep, op, _client, _operator, _home = listening
+    assert op.get(f"{ROOT}/goals").status_code == 422
 
 
 def test_both_listeners_share_one_rate_limit_window(tmp_path: Path) -> None:
@@ -254,16 +371,22 @@ def test_the_port_is_in_range(port: int) -> None:
         IntakeListenerEntry.model_validate({"host": "127.0.0.1", "port": port})
 
 
+def serve(home: Path, port: int) -> Any:
+    return CliRunner().invoke(
+        cli.app, ["ops", "local-serve", "--config", str(home / "local.json"), "--port", str(port)]
+    )
+
+
 @pytest.mark.parametrize("host", ["192.168.64.1", "10.0.2.2", "fe80::1"])
 def test_an_address_off_loopback_needs_h12_protection(tmp_path: Path, host: str) -> None:
     home = init_home(tmp_path)
     with_intake(home)
     listen_on(home, {"host": host, "port": 5099})
-    with pytest.raises(Hold) as held:
-        LocalProductDeployment(home / "local.json", start_loop=False)
-    assert held.value.code == "INTAKE_LISTENER_UNPROTECTED"
-    # the store's owner lock was released: the deployment opens again without the listener
-    listen_on(home, None)
+    result = serve(home, free_port())
+    assert result.exit_code == 3, result.output
+    out = json.loads(result.output)
+    assert out["code"] == "INTAKE_LISTENER_UNPROTECTED" and out["details"] == {"host": host}
+    # only local-serve refuses: every other command that opens the deployment still works
     LocalProductDeployment(home / "local.json", start_loop=False).close()
 
 
@@ -281,9 +404,10 @@ def test_ipv6_loopback_is_a_loopback_address(tmp_path: Path) -> None:
 def test_a_listener_needs_intake_adapters(tmp_path: Path) -> None:
     home = init_home(tmp_path)
     listen_on(home, {"host": "127.0.0.1", "port": 5099})
-    with pytest.raises(Hold) as held:
-        LocalProductDeployment(home / "local.json", start_loop=False)
-    assert held.value.code == "INTAKE_LISTENER_NO_INTAKE"
+    LocalProductDeployment(home / "local.json", start_loop=False).close()  # other commands work
+    result = serve(home, free_port())
+    assert result.exit_code == 3, result.output
+    assert json.loads(result.output)["code"] == "INTAKE_LISTENER_NO_INTAKE"
 
 
 def test_local_serve_refuses_the_operator_port(tmp_path: Path) -> None:
@@ -316,24 +440,8 @@ def test_two_sockets_serve_two_surfaces(listening: Any) -> None:
     """uvicorn on two real sockets in one event loop: the operator socket serves the operator
     API, the listener socket only the intake routes. Stopping the operator stops both."""
     dep, _op, _client, operator, _home = listening
-    op_sock = intake_listener.bind_socket("127.0.0.1", 0)
-    side_sock = intake_listener.bind_socket("127.0.0.1", 0)
-    op_url = f"http://127.0.0.1:{op_sock.getsockname()[1]}"
-    side_url = f"http://127.0.0.1:{side_sock.getsockname()[1]}"
-    op_server = uvicorn.Server(uvicorn.Config(dep.app, workers=1, access_log=False))
-    side_server = intake_listener._side_server(dep.intake_app)
-    thread = threading.Thread(
-        target=lambda: asyncio.run(
-            intake_listener.run_pair(op_server, side_server, [side_sock], [op_sock])
-        ),
-        daemon=True,
-    )
-    thread.start()
-    try:
-        deadline = time.time() + 20
-        while not (op_server.started and side_server.started) and time.time() < deadline:
-            time.sleep(0.05)
-        assert op_server.started and side_server.started
+    with serving(dep) as (op_port, side_port):
+        op_url, side_url = f"http://127.0.0.1:{op_port}", f"http://127.0.0.1:{side_port}"
         auth = {"Authorization": "Bearer " + operator}
         assert httpx.get(op_url + "/healthz").status_code == 200
         assert httpx.get(op_url + "/api/v3/local/goals", headers=auth).status_code == 200
@@ -342,10 +450,187 @@ def test_two_sockets_serve_two_surfaces(listening: Any) -> None:
         reached = httpx.get(side_url + f"{ROOT}/goals", headers=HERMES, params=SLACK_USER)
         assert reached.status_code == 200, reached.text
         assert reached.json() == {"items": []}
+        assert "server" not in reached.headers
+
+
+@pytest.mark.parametrize(
+    ("target", "status"),
+    [
+        (b"/api/v3/intake/hermes%2F..%2F..%2Freadyz", 404),  # %2F decodes to a dot segment
+        (b"/api/v3/intake/hermes/%2E%2E/%2E%2E/readyz", 404),
+        (b"/api/v3/intake/hermes/%2e%2e/%2e%2e/healthz", 404),
+        (b"/api/v3/intake/hermes/%252E%252E/readyz", 404),  # stays "%2E%2E": no such route
+        (b"/%68ealthz", 404),
+        (b"/api/v3/intake%2Fother/goals", 404),
+        (b"/api/v3/intake%2Fhermes/goals", 401),  # decodes to the intake route: needs its token
+        (b"http://amplai.test/healthz", 404),  # absolute form
+        (b"http://amplai.test/api/v3/readyz", 404),
+        (b"http://amplai.test/api/v3/intake/hermes/../../readyz", 404),
+    ],
+)
+def test_encoded_and_absolute_targets_on_a_raw_socket(
+    listening: Any, target: bytes, status: int
+) -> None:
+    dep, _op, _client, _operator, _home = listening
+    with serving(dep) as (_op_port, side_port):
+        code, headers, body = raw(side_port, get(target))
+    assert code == status, body
+    expected = "INTAKE_LISTENER_ROUTE" if status == 404 else "UNAUTHENTICATED"
+    assert json.loads(body)["code"] == expected
+    assert "location" not in headers
+
+
+def test_forwarded_headers_do_not_change_the_peer() -> None:
+    """The listener's server trusts no X-Forwarded-* (a source-pinned token would rely on it)."""
+
+    async def probe(scope: Any, receive: Any, send: Any) -> None:
+        body = json.dumps({"client": scope["client"][0], "scheme": scope["scheme"]}).encode()
+        length = str(len(body)).encode()
+        await send(
+            {"type": "http.response.start", "status": 200, "headers": [(b"content-length", length)]}
+        )
+        await send({"type": "http.response.body", "body": body})
+
+    sock = intake_listener.bind_socket("127.0.0.1", 0)
+    server = intake_listener._side_server(probe)
+    thread = threading.Thread(target=lambda: asyncio.run(server.serve(sockets=[sock])), daemon=True)
+    thread.start()
+    try:
+        deadline = time.time() + 20
+        while not server.started and time.time() < deadline:
+            time.sleep(0.05)
+        forwarded = b"X-Forwarded-For: 203.0.113.9\r\nX-Forwarded-Proto: https\r\n"
+        request = get(b"/").replace(b"\r\n\r\n", b"\r\n" + forwarded + b"\r\n")
+        code, headers, body = raw(sock.getsockname()[1], request)
     finally:
-        op_server.should_exit = True
+        server.should_exit = True
         thread.join(timeout=20)
-        op_sock.close()
-        side_sock.close()
-    assert not thread.is_alive()
-    assert side_server.should_exit
+        sock.close()
+    assert code == 200
+    assert json.loads(body) == {"client": "127.0.0.1", "scheme": "http"}
+    assert "server" not in headers
+    assert server.config.proxy_headers is False
+
+
+# -- serve_with_listener: signals, one ending stops the other, bounded shutdown ---------------
+
+
+def _after_start(ports: tuple[int, int], then: Any, seen: dict[str, Any]) -> threading.Thread:
+    """In a helper thread: wait until both ports answer, run ``then``, and always end with a
+    SIGINT to this process (``serve_with_listener`` runs in the main thread)."""
+
+    def run() -> None:
+        try:
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                try:
+                    httpx.get(f"http://127.0.0.1:{ports[0]}/healthz", timeout=1)
+                    httpx.get(f"http://127.0.0.1:{ports[1]}/healthz", timeout=1)
+                    break
+                except httpx.HTTPError:
+                    time.sleep(0.05)
+            then(seen)
+        except BaseException as exc:  # reported by the test, never left running
+            seen["error"] = exc
+        finally:
+            seen["signalled_at"] = time.monotonic()
+            os.kill(os.getpid(), signal.SIGINT)
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    return thread
+
+
+def test_ctrl_c_stops_both_servers(listening: Any) -> None:
+    dep, _op, _client, operator, _home = listening
+    op_port, side_port = free_port(), free_port()
+    before = signal.getsignal(signal.SIGINT)
+
+    def check(seen: dict[str, Any]) -> None:
+        auth = {"Authorization": "Bearer " + operator}
+        seen["op"] = httpx.get(f"http://127.0.0.1:{op_port}/api/v3/local/goals", headers=auth)
+        seen["side"] = httpx.get(f"http://127.0.0.1:{side_port}/healthz")
+
+    seen: dict[str, Any] = {}
+    helper = _after_start((op_port, side_port), check, seen)
+    intake_listener.serve_with_listener(dep.app, op_port, dep.intake_app, "127.0.0.1", side_port)
+    helper.join(timeout=10)
+    assert "error" not in seen, seen
+    assert seen["op"].status_code == 200
+    refused(seen["side"])
+    assert port_free(op_port) and port_free(side_port)
+    assert signal.getsignal(signal.SIGINT) is before  # the original handler is back
+
+
+def test_a_slow_client_does_not_hold_the_shutdown(listening: Any) -> None:
+    """A request whose body never arrives and a connection whose headers never end: shutdown
+    still ends within the graceful timeout (uvicorn has no read timeout of its own)."""
+    dep, _op, _client, _operator, _home = listening
+    op_port, side_port = free_port(), free_port()
+    slow: list[socket.socket] = []
+
+    def stall(seen: dict[str, Any]) -> None:
+        body = socket.create_connection(("127.0.0.1", side_port))
+        body.sendall(
+            b"POST " + ROOT.encode() + b" HTTP/1.1\r\nHost: x\r\nContent-Type: application/json"
+            b'\r\nContent-Length: 1000\r\n\r\n{"text":'
+        )
+        headers = socket.create_connection(("127.0.0.1", side_port))
+        headers.sendall(b"GET " + ROOT.encode() + b"/goals HTTP/1.1\r\nHost: x\r\n")
+        slow.extend((body, headers))
+        time.sleep(0.3)  # the POST is now waiting for its body inside the app
+
+    seen: dict[str, Any] = {}
+    helper = _after_start((op_port, side_port), stall, seen)
+    intake_listener.serve_with_listener(
+        dep.app, op_port, dep.intake_app, "127.0.0.1", side_port, graceful=1
+    )
+    took = time.monotonic() - seen["signalled_at"]
+    helper.join(timeout=10)
+    for conn in slow:
+        conn.close()
+    assert "error" not in seen, seen
+    assert took < 8, took
+    assert port_free(side_port)
+
+
+def test_the_operator_failing_to_start_stops_the_listener(listening: Any) -> None:
+    dep, _op, _client, _operator, _home = listening
+    taken = socket.socket()
+    taken.bind(("127.0.0.1", 0))
+    taken.listen()
+    side_port = free_port()
+    began = time.monotonic()
+    try:
+        with pytest.raises(SystemExit):  # uvicorn exits when it cannot bind
+            intake_listener.serve_with_listener(
+                dep.app, taken.getsockname()[1], dep.intake_app, "127.0.0.1", side_port
+            )
+    finally:
+        taken.close()
+    assert time.monotonic() - began < 15
+    assert port_free(side_port)
+
+
+def test_the_listener_ending_stops_the_operator(
+    listening: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dep, _op, _client, _operator, _home = listening
+
+    class Broken:
+        should_exit = False
+        force_exit = False
+
+        async def serve(self, sockets: Any = None) -> None:
+            await asyncio.sleep(0.5)
+            raise RuntimeError("the listener ended")
+
+    monkeypatch.setattr(intake_listener, "_side_server", lambda app, graceful=10: Broken())
+    op_port, side_port = free_port(), free_port()
+    began = time.monotonic()
+    with pytest.raises(RuntimeError, match="the listener ended"):
+        intake_listener.serve_with_listener(
+            dep.app, op_port, dep.intake_app, "127.0.0.1", side_port
+        )
+    assert time.monotonic() - began < 15
+    assert port_free(op_port) and port_free(side_port)
