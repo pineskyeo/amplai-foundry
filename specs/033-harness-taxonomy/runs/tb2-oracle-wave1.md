@@ -121,6 +121,23 @@ Decision proposal for the operator: (A) build-time baking of test dependencies (
 is how offline graders are normally built, keeps runtime egress none, but is a grading contract change) or (C) move
 on to SWE-bench Multilingual per D-135 now and treat (A) as a later work item. (B) is not recommended (opens egress).
 
+## Root Cause Check, Round 2 (2026-10-15)
+
+1. Re-screen of all 89 tasks in the admission layout (oracle image from the pinned digest, writable `/workspace`
+   copy, network none, uid 65534, read-only root, cap-drop ALL; `screen` schema v2): 85 `test_entry_offline`, 4
+   `not_pulled_size`, 0 `runner_started`. Tails: `uvx: command not found` 58, DNS/resolve failure 19,
+   `pytest: command not found` 3, `No module named pytest` 1, `uv: command not found` 1, `--ctrf` 1, segfault in
+   `uvx` 1. The screen-vs-admission layout difference is ruled out (확인, 85 tasks).
+2. Upstream intent: every one of the 89 `task.toml` files at `2fd12b8` declares `environment.allow_internet = true`
+   (확인). The tasks are authored for a networked grader.
+3. Network control on 4 more tasks (`fix-git`, `log-summary-date-ranges`, `largest-eigenval`, `kv-store-grpc`;
+   task image, root, no solution applied, only `--network` differs): with `bridge` the pytest session starts in 4 of 4
+   (tests fail because no solution was applied, as expected); with `none` it starts in 0 of 4 (확인).
+
+Conclusion: 0 of 89 is a task property (the test entry bootstraps uv/pytest from the network at grading time), not
+a harness bug: 확인 for the 85 run tasks (network controls on 5), 추정 for the 4 large images that were not pulled.
+The policy (D-135 egress none) was not loosened.
+
 ## What Would Admit TB2 Tasks (Operator Decision, Not Implemented)
 
 Under egress none, as decided, TB2 adds no task. The ways forward change the grading environment or the decision
