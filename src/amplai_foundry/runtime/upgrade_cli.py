@@ -14,6 +14,7 @@ they exist on this machine, so units for another host can be rendered with that 
 from __future__ import annotations
 
 import os
+import pwd
 import shlex
 import shutil
 from pathlib import Path
@@ -86,13 +87,46 @@ def _units(config: Path, meta_config: Path | None, amplai: str | None) -> Any:
     )  # fmt: skip
 
 
-def _host(account: str | None, home: Path | None = None, path_env: str | None = None) -> Any:
+def _host(
+    account: str | None, home: Path | None = None, path_env: str | None = None,
+) -> Any:  # fmt: skip
+    """The host the units run on: uid and home of the account they run as, never of whoever runs
+    this command (under ``sudo`` that is root, and ``gui/0`` or ``/root`` would be wrong).
+
+    - ``--account`` known on this machine: its uid and home (``pwd``); a ``--home`` that is not
+      that home is ``Hold SERVICE_HOST``.
+    - ``--account`` not known here (rendering for another host): no uid (launchd commands then
+      hold ``SERVICE_HOST``) and ``--home`` is required (``Hold SERVICE_HOST``).
+    - no ``--account``: the invoking user; when that is root (uid 0) ``Hold SERVICE_ACCOUNT``.
+
+    ``--home`` is taken as given (``~`` expanded); the interface refuses a relative one."""
     from .service_manager import HostContext
 
+    given = str(home.expanduser()) if home is not None else None
+    uid: int | None
+    if account is not None:
+        try:
+            entry = pwd.getpwnam(account)
+        except KeyError:
+            if given is None:
+                raise Hold("SERVICE_HOST", "The account is not on this machine; pass its --home",
+                           details={"account": account}) from None  # fmt: skip
+            uid = None
+        else:
+            uid = int(entry.pw_uid)
+            if given is not None and Path(given) != Path(entry.pw_dir):
+                raise Hold("SERVICE_HOST", "--home is not the account's home",
+                           details={"account": account, "home": given,
+                                    "account_home": entry.pw_dir})  # fmt: skip
+            given = given or str(entry.pw_dir)
+    else:
+        uid = os.getuid()
+        if uid == 0:
+            raise Hold("SERVICE_ACCOUNT", "Running as root: name the AMPLAI account with --account")
     return HostContext(
-        home=str((home or Path.home()).expanduser().absolute()),
+        home=given if given is not None else str(Path.home()),
         path_env=path_env if path_env is not None else os.environ.get("PATH", ""),
-        uid=os.getuid(), account=account,
+        uid=uid, account=account,
     )  # fmt: skip
 
 
@@ -126,19 +160,20 @@ def render_service(
 
 def freeze_commands(
     config: Path, meta_config: Path | None, *, manager: str | None, scope: str | None,
-    amplai: str | None, account: str | None,
+    amplai: str | None, account: str | None, home: Path | None = None,
 ) -> dict[str, Any]:  # fmt: skip
     """The service manager part of the freeze and unfreeze (U-2; plan §3.5a.1 order: clock off,
-    then stop; unfreeze in reverse), printed only. A hold is reported, not raised."""
+    then the daemons stopped; unfreeze in reverse; each unit named once), printed only. A hold is
+    reported, not raised."""
+    from .service_manager import freeze_sequence, unfreeze_sequence
+
     try:
         chosen = _manager(config, manager, scope)
-        units, host = _units(config, meta_config, amplai), _host(account)
+        units, host = _units(config, meta_config, amplai), _host(account, home)
         return {
             "manager": chosen.spec.ref,
-            "freeze": _lines(chosen.commands("timer_off", units, host))
-            + _lines(chosen.commands("stop", units, host)),
-            "unfreeze": _lines(chosen.commands("start", units, host))
-            + _lines(chosen.commands("timer_on", units, host)),
+            "freeze": _lines(freeze_sequence(chosen, units, host)),
+            "unfreeze": _lines(unfreeze_sequence(chosen, units, host)),
             "runs_nothing": True,
         }
     except RuntimeFault as fault:
@@ -200,6 +235,7 @@ def register(ops: typer.Typer, guarded: Any) -> None:
         scope: ScopeOption = None,
         amplai: AmplaiOption = None,
         account: AccountOption = None,
+        home: HomeOption = None,
     ) -> None:
         """Print the ordered upgrade and rollback with today's state; change nothing."""
         from .upgrade.plan import upgrade_plan
@@ -213,6 +249,7 @@ def register(ops: typer.Typer, guarded: Any) -> None:
             meta_path = meta_config if meta is not None else None
             return upgrade_plan(cfg, meta, service=lambda: freeze_commands(
                 config, meta_path, manager=manager, scope=scope, amplai=amplai, account=account,
+                home=home,
             ))  # fmt: skip
 
         guarded(show)

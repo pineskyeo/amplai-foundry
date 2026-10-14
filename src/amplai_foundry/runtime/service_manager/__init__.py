@@ -18,6 +18,8 @@ from .interface import (
     ServiceManager,
     ServiceUnit,
     amplai_units,
+    freeze_sequence,
+    unfreeze_sequence,
 )
 
 __all__ = [
@@ -31,4 +33,6 @@ __all__ = [
     "ServiceManager",
     "ServiceUnit",
     "amplai_units",
+    "freeze_sequence",
+    "unfreeze_sequence",
 ]

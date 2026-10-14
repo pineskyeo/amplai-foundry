@@ -6,7 +6,11 @@ unfreeze) and the rollback order of U-6, each step marked with what exists in th
 It changes nothing:
 
 - stores are opened read-only (``Store(readonly=True)``: no owner lock, no DDL, no migration, no
-  owner epoch increase), so it runs while the server or a night owns them;
+  owner epoch increase), so it runs while the server or a night owns them. The database rows and
+  file are not changed, but SQLite may create the WAL sidecar files (``runtime.sqlite3-wal``,
+  ``-shm``) next to a WAL database when they are absent and the directory is writable;
+- a store or receipt that cannot be read is reported (``readable: false`` with an error code),
+  not raised, so the rest of the report is still printed;
 - no command runs: the service manager's freeze and unfreeze commands are printed only (C-8);
 - package receipts are read as files.
 
@@ -16,9 +20,10 @@ What it reads (``current``):
   kinds' interface versions;
 - per store (product, meta): ``schema_major``, ``owner_epoch``, ``incarnation``, the kill switch
   (``runtime-control/kill``), row counts, and what the next writable open would change today
-  (``at_open``: the ``DDL`` tables and indexes it would create and the inline ``commands``
-  rebuild, ``storage/store.py``). U-3 replaces that with numbered ``migrate`` steps; their format
-  is not decided, so none is listed as one;
+  (``at_open``: the ``DDL`` tables and indexes it would create, the inline ``commands`` rebuild,
+  and the ``meta`` writes: ``owner_epoch`` + 1 on every open and ``schema_major``/``incarnation``
+  when absent, ``storage/store.py:185-217``). U-3 replaces that with numbered ``migrate``
+  steps; their format is not decided, so none is listed as one;
 - the evaluator: the running code digests, the configured ``meta.evaluator_version`` and the
   stored version matching the running code (``evaluation/versions.py`` ``current_version_ref``);
 - each app's kit receipts (``<repo>/.ai-team/install-v3/<pack>.json``).
@@ -32,6 +37,7 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -124,46 +130,64 @@ def _ddl_objects() -> tuple[tuple[str, str], ...]:
     return tuple((kind.lower(), name) for kind, name in _CREATE.findall(DDL))
 
 
+def _unreadable(root: Path, error: BaseException) -> dict[str, Any]:
+    code = error.code if isinstance(error, RuntimeFault) else type(error).__name__
+    return {"runtime_root": str(root), "present": True, "readable": False,
+            "error": {"code": code, "message": str(error)[:400]}}  # fmt: skip
+
+
+def _at_open(meta: dict[str, str], have: set[tuple[str, str]], columns: set[str]) -> dict[str, Any]:
+    """What a writable ``Store`` open does to this store today (``storage/store.py:185-217``)."""
+    create = [f"{kind} {name}" for kind, name in _ddl_objects() if (kind, name) not in have]
+    rebuild = []
+    if ("table", "commands") in have and "operation" not in columns:
+        rebuild.append("commands: add key column operation (store.py _migrate_commands_operation)")
+    epoch = meta.get("owner_epoch")
+    writes = [f"owner_epoch {epoch or 0} -> {int(epoch) + 1 if epoch else 1}"]
+    writes += [f"insert {key}" for key in ("schema_major", "incarnation") if key not in meta]
+    return {"create": create, "rebuild": rebuild, "meta": writes}
+
+
 def store_state(root: Path, scope: Scope) -> dict[str, Any]:
-    """One store, read-only. ``present: false`` when it has no database yet."""
+    """One store, read-only. ``present: false`` without a database; ``readable: false`` with the
+    error code when it cannot be read (not a SQLite store, no ``meta`` table, an unsupported
+    schema or file system): the report goes on with the other stores."""
     database = root / "runtime.sqlite3"
     if not database.is_file():
         return {"runtime_root": str(root), "present": False}
-    with Store(root, readonly=True) as store:
-        conn = store.conn
-        meta = {row[0]: row[1] for row in conn.execute("SELECT key,value FROM meta")}
-        have = {(row[0], row[1]) for row in conn.execute("SELECT type,name FROM sqlite_master")}
-        create = [f"{kind} {name}" for kind, name in _ddl_objects() if (kind, name) not in have]
-        rebuild = []
-        if ("table", "commands") in have:
+    try:
+        with Store(root, readonly=True) as store:
+            conn = store.conn
+            meta = {row[0]: row[1] for row in conn.execute("SELECT key,value FROM meta")}
+            have = {(row[0], row[1]) for row in conn.execute("SELECT type,name FROM sqlite_master")}
             columns = {row[1] for row in conn.execute("PRAGMA table_info(commands)")}
-            if "operation" not in columns:
-                rebuild.append("commands: add key column operation (store.py "
-                               "_migrate_commands_operation)")  # fmt: skip
-        counts = {
-            table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            for table in ("objects", "heads", "events", "artifacts")
-            if ("table", table) in have
-        }
-        try:
-            kill = store.head(scope, "runtime-control", "kill")
-            kill_switch: dict[str, Any] = {"state": kill["state"],
-                                           "row_version": kill["row_version"]}  # fmt: skip
-        except RuntimeFault as exc:
-            if exc.code != "NOT_FOUND":
-                raise
-            kill_switch = {"state": "absent"}
-        return {
-            "runtime_root": str(root),
-            "present": True,
-            "schema_major": meta.get("schema_major"),
-            "owner_epoch": store.epoch,
-            "incarnation": store.incarnation,
-            "scope": scope.wire(),
-            "kill_switch": kill_switch,
-            "rows": counts,
-            "at_open": {"create": create, "rebuild": rebuild},
-        }
+            counts = {
+                table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for table in ("objects", "heads", "events", "artifacts")
+                if ("table", table) in have
+            }
+            kill_switch: dict[str, Any] = {"state": "absent"}
+            if ("table", "heads") in have:
+                try:
+                    kill = store.head(scope, "runtime-control", "kill")
+                    kill_switch = {"state": kill["state"], "row_version": kill["row_version"]}
+                except RuntimeFault as exc:
+                    if exc.code != "NOT_FOUND":
+                        raise
+            return {
+                "runtime_root": str(root),
+                "present": True,
+                "readable": True,
+                "schema_major": meta.get("schema_major"),
+                "owner_epoch": store.epoch,
+                "incarnation": store.incarnation,
+                "scope": scope.wire(),
+                "kill_switch": kill_switch,
+                "rows": counts,
+                "at_open": _at_open(meta, have, columns),
+            }
+    except (sqlite3.Error, RuntimeFault, ValueError) as error:
+        return _unreadable(root, error)
 
 
 def evaluator_state(meta_root: Path | None, scope: Scope | None, configured: str | None
@@ -173,22 +197,37 @@ def evaluator_state(meta_root: Path | None, scope: Scope | None, configured: str
     out: dict[str, Any] = {"code_digests": versions.code_digests(), "configured": configured,
                            "current_version_ref": None}  # fmt: skip
     if meta_root is not None and scope is not None and (meta_root / "runtime.sqlite3").is_file():
-        with Store(meta_root, readonly=True) as store:
-            out["current_version_ref"] = versions.current_version_ref(store, scope)
+        try:
+            with Store(meta_root, readonly=True) as store:
+                out["current_version_ref"] = versions.current_version_ref(store, scope)
+        except (sqlite3.Error, RuntimeFault, ValueError, KeyError, TypeError) as error:
+            code = error.code if isinstance(error, RuntimeFault) else type(error).__name__
+            out["error"] = {"code": code, "message": str(error)[:400]}
     return out
 
 
+RECEIPT_FIELDS = ("pack_id", "version", "bundle_digest", "plan_digest", "installed_at")
+
+
 def kit_receipts(repo: Path) -> list[dict[str, Any]]:
+    """Each kit receipt's identity fields; a receipt that is not a JSON object is listed as
+    ``{"file", "readable": false, "error"}``."""
     meta = repo / ".ai-team" / "install-v3"
     if not meta.is_dir() or meta.is_symlink():
         return []
-    out = []
+    out: list[dict[str, Any]] = []
     for path in sorted(meta.glob("*.json")):
         if path.name in _RECEIPT_SKIP or path.is_symlink():
             continue
-        value = json.loads(path.read_bytes())
-        out.append({key: value.get(key) for key in ("pack_id", "version", "bundle_digest",
-                                                     "plan_digest", "installed_at")})  # fmt: skip
+        try:
+            value = json.loads(path.read_bytes())
+        except (OSError, ValueError) as error:
+            out.append({"file": path.name, "readable": False, "error": type(error).__name__})
+            continue
+        if not isinstance(value, dict):
+            out.append({"file": path.name, "readable": False, "error": "not an object"})
+            continue
+        out.append({key: value.get(key) for key in RECEIPT_FIELDS})
     return out
 
 

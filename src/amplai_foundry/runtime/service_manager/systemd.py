@@ -22,12 +22,16 @@ unit depends on the host's user-namespace support (확인 필요). stdout and st
   divide an hour; another is ``Hold SERVICE_UNIT_FORM``.
 
 Commands: install = daemon-reload + ``enable --now`` (the daemon's service, the periodic unit's
-timer); start/stop act on the daemon's service and on the periodic unit's timer (stop also stops
-a running tick service); timer_on/timer_off = start/stop of the timers; status =
-``systemctl status --no-pager``. ``systemctl stop`` does not trigger ``Restart=`` (plan §3.5a.1).
+timer); start acts on the daemon's service and the periodic unit's timer; stop and timer_off
+stop the periodic unit's timer and its service (a tick in progress ends too); timer_on starts the
+timers; status = ``systemctl status --no-pager``. ``systemctl stop`` does not trigger
+``Restart=`` (plan §3.5a.1).
 
-``ExecStart=`` arguments are quoted for systemd: each argument in double quotes with ``\\`` and
-``"`` escaped, ``%`` as ``%%`` (specifier) and ``$`` as ``$$`` (variable expansion).
+Quoting: every ``ExecStart=`` argument is one double-quoted word with ``\\`` and ``"`` escaped,
+``%`` as ``%%`` (specifiers) and ``$`` as ``$$`` (``ExecStart=`` expands ``$VAR``). The
+``Environment=`` assignment is quoted the same way except ``$``: systemd.exec(5) ``Environment=``
+performs no variable expansion, so ``$`` stays literal (man page text as cited in the PR #97
+review; not re-read on this machine). ``Description=`` writes ``%`` as ``%%``.
 """
 
 from __future__ import annotations
@@ -51,10 +55,18 @@ def spec() -> ModuleSpec:
     return found
 
 
-def quote(value: str) -> str:
-    """One ``ExecStart=``/``Environment=`` word, quoted for systemd."""
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%").replace("$", "$$")
+def quote(value: str, *, expand: bool = True) -> str:
+    """One double-quoted word for systemd. ``expand``: the setting expands ``$VAR``
+    (``ExecStart=``), so ``$`` is written ``$$``; ``Environment=`` does not expand."""
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%")
+    if expand:
+        escaped = escaped.replace("$", "$$")
     return f'"{escaped}"'
+
+
+def _text(value: str) -> str:
+    """A free-text setting (``Description=``): ``%`` is a specifier, so it is written ``%%``."""
+    return value.replace("%", "%%")
 
 
 def _minutes(unit: ServiceUnit) -> int:
@@ -94,13 +106,13 @@ class SystemdManager:
                 _minutes(unit)
 
     def _service(self, unit: ServiceUnit, host: HostContext) -> str:
-        lines = ["[Unit]", f"Description={unit.description}", "", "[Service]"]
+        lines = ["[Unit]", f"Description={_text(unit.description)}", "", "[Service]"]
         if unit.form == "periodic":
             lines.append("Type=oneshot")
         if self.scope == "system":
             lines.append(f"User={host.account}")
         lines += [
-            f"Environment={quote('PATH=' + host.path_env)}",
+            f"Environment={quote('PATH=' + host.path_env, expand=False)}",
             "ExecStart=" + " ".join(quote(a) for a in unit.argv),
         ]
         if unit.form == "daemon":
@@ -113,7 +125,7 @@ class SystemdManager:
 
     def _timer(self, unit: ServiceUnit) -> str:
         return "\n".join([
-            "[Unit]", f"Description={unit.description} (every {_minutes(unit)} min)", "",
+            "[Unit]", f"Description={_text(unit.description)} (every {_minutes(unit)} min)", "",
             "[Timer]", f"OnCalendar=*:0/{_minutes(unit)}", f"Unit={unit.name}.service", "",
             "[Install]", "WantedBy=timers.target",
         ]) + "\n"  # fmt: skip
@@ -154,7 +166,7 @@ class SystemdManager:
         elif action == "timer_on" and timers:
             out.append((*ctl, "start", *timers))
         elif action == "timer_off" and timers:
-            out.append((*ctl, "stop", *timers))
+            out.append((*ctl, "stop", *timers, *ticks))
         elif action == "status" and (daemons or timers):
             out.append((*ctl, "status", "--no-pager", *daemons, *timers))
         return tuple(out)

@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import pwd
 import sqlite3
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -31,6 +33,7 @@ from amplai_foundry.runtime.storage.store import Scope, Store
 from amplai_foundry.runtime.upgrade.plan import ROLLBACK, STEPS, store_state, upgrade_plan
 
 EXE = "/opt/amplai/bin/amplai"
+AGENTS = "/srv/amplai/Library/LaunchAgents"
 STEP_ORDER = ["verify_release", "freeze", "preview", "approve", "backup", "apply", "evaluator",
               "rebaseline", "unfreeze"]  # fmt: skip
 ROLLBACK_ORDER = ["restore_new_dir", "reapply_revocations", "reconcile", "resume_admission",
@@ -66,7 +69,8 @@ def test_the_plan_reads_the_current_state(home: Path) -> None:
     assert product["present"] is True and product["schema_major"] == "3"
     assert product["owner_epoch"] == 1 and product["incarnation"].startswith("incarnation")
     assert product["kill_switch"] == {"state": "absent"}
-    assert product["at_open"] == {"create": [], "rebuild": []}
+    assert product["readable"] is True
+    assert product["at_open"] == {"create": [], "rebuild": [], "meta": ["owner_epoch 1 -> 2"]}
     assert "meta" not in current["stores"]
     assert current["evaluator"] == {"code_digests": versions.code_digests(), "configured": None,
                                     "current_version_ref": None}  # fmt: skip
@@ -137,8 +141,51 @@ def test_what_the_next_open_would_change_is_listed_and_not_done(tmp_path: Path) 
     assert "table heads" not in state["at_open"]["create"]
     assert len(state["at_open"]["rebuild"]) == 1 and "operation" in state["at_open"]["rebuild"][0]
     assert state["rows"] == {"heads": 0} and state["owner_epoch"] == 0
+    assert state["at_open"]["meta"] == ["owner_epoch 0 -> 1", "insert incarnation"]
     assert file_sha(database) == sha
     assert not (root / "owner.lock").exists()
+
+
+@pytest.mark.parametrize("shape", ["not_sqlite", "no_meta_table", "other_schema"])
+def test_an_unreadable_store_is_reported_and_the_report_goes_on(
+    home: Path, tmp_path: Path, shape: str
+) -> None:
+    root = tmp_path / "bad"
+    root.mkdir()
+    database = root / "runtime.sqlite3"
+    if shape == "not_sqlite":
+        database.write_bytes(b"this is not a database" * 100)
+    else:
+        with sqlite3.connect(database) as db:
+            if shape == "no_meta_table":
+                db.execute("CREATE TABLE other (x)")
+            else:
+                db.executescript("CREATE TABLE meta (key TEXT PRIMARY KEY,value TEXT NOT NULL);"
+                                 "INSERT INTO meta VALUES('schema_major','4');")  # fmt: skip
+        db.close()
+    state = store_state(root, Scope("local", "app"))
+    assert state["present"] is True and state["readable"] is False
+    expected = {"not_sqlite": "DatabaseError", "no_meta_table": "OperationalError",
+                "other_schema": "SCHEMA_VERSION"}  # fmt: skip
+    assert state["error"]["code"] == expected[shape]
+    cfg = load(home)
+    meta = cfg.model_copy(update={"runtime_root": str(root), "meta": MetaEntry()})
+    report = upgrade_plan(cfg, meta)  # the product store and the rest are still read
+    assert report["current"]["stores"]["product"]["readable"] is True
+    assert report["current"]["stores"]["meta"]["readable"] is False
+    assert "error" in report["current"]["evaluator"]
+
+
+def test_an_unreadable_kit_receipt_is_listed_not_raised(home: Path) -> None:
+    cfg = load(home)
+    meta = Path(cfg.apps[0].repo) / ".ai-team" / "install-v3"
+    meta.mkdir(parents=True)
+    (meta / "a-list.json").write_text("[1, 2]")
+    (meta / "b-broken.json").write_text("{not json")
+    assert upgrade_plan(cfg, None)["current"]["packs"] == {"app": [
+        {"file": "a-list.json", "readable": False, "error": "not an object"},
+        {"file": "b-broken.json", "readable": False, "error": "JSONDecodeError"},
+    ]}  # fmt: skip
 
 
 def test_the_kill_switch_and_kit_receipts_are_reported(home: Path) -> None:
@@ -180,11 +227,21 @@ def test_a_meta_deployment_adds_its_store_and_evaluator_setting(home: Path, tmp_
 # -- CLI -------------------------------------------------------------------------------------------
 
 
-def test_ops_upgrade_plan_prints_the_plan_with_freeze_commands(home: Path, tmp_path: Path) -> None:
+@pytest.fixture
+def no_local_accounts(monkeypatch: pytest.MonkeyPatch) -> None:
+    def getpwnam(name: str) -> Any:
+        raise KeyError(name)
+
+    monkeypatch.setattr(pwd, "getpwnam", getpwnam)
+
+
+def test_ops_upgrade_plan_prints_the_plan_with_freeze_commands(
+    home: Path, tmp_path: Path, no_local_accounts: None
+) -> None:
     result = CliRunner().invoke(cli.app, [
         "ops", "upgrade", "plan", "--config", str(home / "local.json"),
         "--meta-config", str(tmp_path / "no-meta.json"), "--manager", "systemd",
-        "--account", "amplai", "--amplai", EXE,
+        "--account", "remoteacct", "--home", "/home/remoteacct", "--amplai", EXE,
     ])  # fmt: skip
     assert result.exit_code == 0, result.output
     body: dict[str, Any] = json.loads(result.output)
@@ -193,6 +250,45 @@ def test_ops_upgrade_plan_prints_the_plan_with_freeze_commands(home: Path, tmp_p
     assert service["manager"] == "service_manager.systemd@1" and service["runs_nothing"] is True
     assert service["freeze"] == ["systemctl stop amplai-server.service"]  # no meta: no clock
     assert service["unfreeze"] == ["systemctl start amplai-server.service"]
+
+
+def meta_config(home: Path, tmp_path: Path) -> Path:
+    cfg = load(home)
+    meta = cfg.model_copy(update={"runtime_root": str(tmp_path / "meta-rt"), "meta": MetaEntry()})
+    path = tmp_path / "meta" / "local.json"
+    path.parent.mkdir()
+    path.write_text(meta.model_dump_json())
+    return path
+
+
+@pytest.mark.parametrize(
+    ("manager", "freeze", "unfreeze"),
+    [
+        ("launchd",
+         ["launchctl bootout gui/1500/ai.amplai.meta-nightly",
+          "launchctl bootout gui/1500/ai.amplai.local-serve"],
+         [f"launchctl bootstrap gui/1500 {AGENTS}/ai.amplai.local-serve.plist",
+          f"launchctl bootstrap gui/1500 {AGENTS}/ai.amplai.meta-nightly.plist"]),
+        ("systemd",
+         ["systemctl stop amplai-meta-tick.timer amplai-meta-tick.service",
+          "systemctl stop amplai-server.service"],
+         ["systemctl start amplai-server.service", "systemctl start amplai-meta-tick.timer"]),
+    ],
+)  # fmt: skip
+def test_freeze_and_unfreeze_with_a_meta_deployment_name_each_unit_once(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, manager: str,
+    freeze: list[str], unfreeze: list[str],
+) -> None:  # fmt: skip
+    account = SimpleNamespace(pw_uid=1500, pw_dir="/srv/amplai")
+    monkeypatch.setattr(pwd, "getpwnam", lambda name: account)
+    result = CliRunner().invoke(cli.app, [
+        "ops", "upgrade", "plan", "--config", str(home / "local.json"),
+        "--meta-config", str(meta_config(home, tmp_path)), "--manager", manager,
+        "--account", "amplai", "--amplai", EXE,
+    ])  # fmt: skip
+    assert result.exit_code == 0, result.output
+    service = json.loads(result.output)["service_manager"]
+    assert service["freeze"] == freeze and service["unfreeze"] == unfreeze
 
 
 def test_ops_upgrade_plan_reports_a_service_hold_instead_of_failing(

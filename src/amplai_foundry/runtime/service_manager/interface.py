@@ -24,14 +24,20 @@ Rules every implementation keeps (the suite checks each):
   name is ``Hold SERVICE_UNIT_NAME``.
 - The executable (``argv[0]``) is an absolute path; else ``Hold SERVICE_EXEC_PATH``. A unit runs
   exactly the binary the operator named, never one a ``PATH`` lookup finds at run time.
-- No value (argument, path, ``PATH``) holds a newline, carriage return or NUL: it would end the
-  unit file's line and add a directive. ``Hold SERVICE_UNIT_VALUE``.
+- No value (argument, description, path, ``PATH``, account) holds a C0 control character or DEL:
+  a line break would end the unit file's line and add a directive. ``Hold SERVICE_UNIT_VALUE``.
+- The host's ``home`` is an absolute path (``Hold SERVICE_HOST``). An ``account`` is a POSIX user
+  name (``[a-z_][a-z0-9_-]{0,31}``) and not ``root`` (``Hold SERVICE_ACCOUNT``; D-118, Q-11: the
+  units run as a dedicated AMPLAI account).
 - A ``periodic`` unit has ``interval_seconds`` ≥ 60; a ``daemon`` unit has none.
   ``Hold SERVICE_UNIT_FORM``.
 - Rendering is pure: the same input gives byte-equal files; nothing is written or run.
 - An unknown action is ``RuntimeFault SERVICE_ACTION``.
-- ``stop`` names every given unit; ``timer_off`` names every periodic unit and no daemon unit (the
-  freeze stops the clock first, plan §3.5a.1 "동결 일반화").
+- ``stop`` names every given unit; ``timer_off`` names every periodic unit and no daemon unit and
+  also ends a periodic run in progress (the freeze stops the clock first, plan §3.5a.1 "동결
+  일반화"). :func:`freeze_sequence` (``timer_off`` of all units, then ``stop`` of the daemons)
+  and :func:`unfreeze_sequence` (``start`` of the daemons, then ``timer_on``) name each unit in
+  exactly one command.
 """
 
 from __future__ import annotations
@@ -60,7 +66,9 @@ META_TICK = "amplai-meta-tick"
 TICK_SECONDS = 300  # `amplai meta nightly tick` every five minutes (N-1, S1d)
 
 _NAME = re.compile(r"amplai-[a-z0-9]+(?:-[a-z0-9]+)*")
-_BAD = re.compile(r"[\r\n\x00]")
+# every C0 control and DEL: a line break ends a unit line; none has a place in a unit value
+_BAD = re.compile(r"[\x00-\x1f\x7f]")
+_ACCOUNT = re.compile(r"[a-z_][a-z0-9_-]{0,31}")
 
 
 @dataclass(frozen=True)
@@ -135,11 +143,38 @@ def check_units(units: Sequence[ServiceUnit], host: HostContext) -> None:
                        "a daemon unit has none", details={"unit": unit.name})  # fmt: skip
         values = (*unit.argv, unit.description, unit.log_dir or "")
         if any(_BAD.search(v) for v in values):
-            raise Hold("SERVICE_UNIT_VALUE", "A unit value cannot hold a line break or NUL",
+            raise Hold("SERVICE_UNIT_VALUE", "A unit value cannot hold a control character",
                        details={"unit": unit.name})  # fmt: skip
     values = (host.home, host.path_env, host.account or "")
     if any(_BAD.search(v) for v in values):
-        raise Hold("SERVICE_UNIT_VALUE", "A host value cannot hold a line break or NUL")
+        raise Hold("SERVICE_UNIT_VALUE", "A host value cannot hold a control character")
+    if not Path(host.home).is_absolute():
+        raise Hold("SERVICE_HOST", "The account's home is an absolute path",
+                   details={"home": host.home})  # fmt: skip
+    if host.account is not None and (
+        not _ACCOUNT.fullmatch(host.account) or host.account == "root"
+    ):
+        raise Hold("SERVICE_ACCOUNT", "The AMPLAI account is a user name other than root",
+                   details={"account": host.account})  # fmt: skip
+
+
+def freeze_sequence(
+    manager: ServiceManager, units: Sequence[ServiceUnit], host: HostContext
+) -> tuple[tuple[str, ...], ...]:
+    """The service-manager part of the freeze (U-2; plan §3.5a.1 order): the clock off, then the
+    daemons stopped. Each unit is named in exactly one command."""
+    daemons = [u for u in units if u.form == "daemon"]
+    stop = manager.commands("stop", daemons, host) if daemons else ()
+    return manager.commands("timer_off", units, host) + stop
+
+
+def unfreeze_sequence(
+    manager: ServiceManager, units: Sequence[ServiceUnit], host: HostContext
+) -> tuple[tuple[str, ...], ...]:
+    """The reverse of :func:`freeze_sequence`: the daemons started, then the clock on."""
+    daemons = [u for u in units if u.form == "daemon"]
+    start = manager.commands("start", daemons, host) if daemons else ()
+    return start + manager.commands("timer_on", units, host)
 
 
 def check_action(action: str) -> None:
@@ -199,6 +234,11 @@ def _expect_unit(code: str, unit: ServiceUnit, render: Callable[..., object],
                  commands: Callable[..., object]) -> None:  # fmt: skip
     _expect(code, lambda: render((unit,), HOST))
     _expect(code, lambda: commands("stop", (unit,), HOST))
+
+
+def _expect_host(code: str, host: HostContext, units: Sequence[ServiceUnit],
+                 render: Callable[..., object]) -> None:  # fmt: skip
+    _expect(code, lambda: render(units, host))
 
 
 def _named(command_lines: tuple[tuple[str, ...], ...], name: str) -> bool:
@@ -265,6 +305,16 @@ def _check(module: Module) -> None:
         commands("stop", (server,), HOST), ids[tick.name]
     ):
         raise _fail("stop names only the given units")
+    manager: ServiceManager = module  # type: ignore[assignment]  # the operations are checked above
+    for build in (freeze_sequence, unfreeze_sequence):
+        lines = build(manager, units, HOST)
+        for name, unit_name in ids.items():
+            if sum(1 for argv in lines if any(unit_name in a for a in argv)) != 1:
+                raise _fail(f"{build.__name__} names {name} in exactly one command")
+    _expect("SERVICE_HOST", lambda: render(units, HostContext("relative", "/bin", 1, "a")))
+    for account in ("root", "Amplai", "a b", "-x"):
+        _expect_host("SERVICE_ACCOUNT", HostContext("/h", "/bin", 1, account), units, render)
+    _expect_host("SERVICE_UNIT_VALUE", HostContext("/h", "/bin\t", 1, "a"), units, render)
 
 
 SUITE = ConformanceSuite(

@@ -19,10 +19,12 @@ from __future__ import annotations
 import json
 import os
 import plistlib
+import pwd
 import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -47,6 +49,8 @@ from amplai_foundry.runtime.service_manager import (
     RenderedFile,
     ServiceUnit,
     amplai_units,
+    freeze_sequence,
+    unfreeze_sequence,
 )
 from amplai_foundry.runtime.service_manager.launchd import LaunchdManager
 from amplai_foundry.runtime.service_manager.launchd import spec as launchd_spec
@@ -230,8 +234,8 @@ def test_systemd_user_units_go_to_the_account_and_need_linger() -> None:
 
 def test_systemd_commands_stop_the_clock_and_never_restart() -> None:
     m, all_units = SystemdManager("system"), units()
-    assert m.commands("timer_off", all_units, HOST) == (
-        ("systemctl", "stop", "amplai-meta-tick.timer"),
+    assert m.commands("timer_off", all_units, HOST) == (  # a tick in progress ends too
+        ("systemctl", "stop", "amplai-meta-tick.timer", "amplai-meta-tick.service"),
     )
     assert m.commands("stop", all_units, HOST) == (
         ("systemctl", "stop", "amplai-meta-tick.timer", "amplai-meta-tick.service",
@@ -271,6 +275,88 @@ def test_systemd_quotes_every_word(value: str, quoted: str) -> None:
     assert quote(value) == quoted
 
 
+def test_environment_keeps_dollar_and_description_escapes_percent() -> None:
+    host = HostContext(home="/home/amplai", path_env="/opt/$x/bin:/b%c", uid=1, account="amplai")
+    unit = ServiceUnit("amplai-x", (EXE, "$HOME", "50%"), "periodic", "load 50%", 300)
+    files = files_by_name(SystemdManager("system").render((unit,), host))
+    service = files["amplai-x.service"].content.splitlines()
+    assert 'Environment="PATH=/opt/$x/bin:/b%%c"' in service  # Environment= does not expand $
+    assert 'ExecStart="/opt/amplai/bin/amplai" "$$HOME" "50%%"' in service
+    assert "Description=load 50%%" in service
+    assert "Description=load 50%% (every 5 min)" in files["amplai-x.timer"].content.splitlines()
+    assert quote("$X", expand=False) == '"$X"'
+
+
+# -- freeze and unfreeze: each unit once, clock first ---------------------------------------------
+
+
+def test_launchd_freeze_and_unfreeze_name_each_agent_once() -> None:
+    m, all_units = LaunchdManager(), units()
+    plist = "/home/amplai/Library/LaunchAgents/"
+    assert freeze_sequence(m, all_units, HOST) == (
+        ("launchctl", "bootout", "gui/1001/ai.amplai.meta-nightly"),
+        ("launchctl", "bootout", "gui/1001/ai.amplai.local-serve"),
+    )
+    assert unfreeze_sequence(m, all_units, HOST) == (
+        ("launchctl", "bootstrap", "gui/1001", plist + "ai.amplai.local-serve.plist"),
+        ("launchctl", "bootstrap", "gui/1001", plist + "ai.amplai.meta-nightly.plist"),
+    )
+
+
+@pytest.mark.parametrize(("scope", "ctl"), [("system", ("systemctl",)),
+                                            ("user", ("systemctl", "--user"))])  # fmt: skip
+def test_systemd_freeze_and_unfreeze_name_each_unit_once(scope: Any, ctl: tuple[str, ...]) -> None:
+    m, all_units = SystemdManager(scope), units()
+    assert freeze_sequence(m, all_units, HOST) == (
+        (*ctl, "stop", "amplai-meta-tick.timer", "amplai-meta-tick.service"),
+        (*ctl, "stop", "amplai-server.service"),
+    )
+    assert unfreeze_sequence(m, all_units, HOST) == (
+        (*ctl, "start", "amplai-server.service"),
+        (*ctl, "start", "amplai-meta-tick.timer"),
+    )
+
+
+def test_freeze_without_a_meta_deployment_stops_only_the_server() -> None:
+    assert freeze_sequence(LaunchdManager(), units(meta=False), HOST) == (
+        ("launchctl", "bootout", "gui/1001/ai.amplai.local-serve"),
+    )
+    assert unfreeze_sequence(SystemdManager("system"), units(meta=False), HOST) == (
+        ("systemctl", "start", "amplai-server.service"),
+    )
+
+
+# -- host values ----------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("bad", ["\t", "\x1b[0m", "\x7f", "\x0b", "\r"])
+@pytest.mark.parametrize("manager", MANAGERS[:2], ids=["launchd", "systemd"])
+def test_every_control_character_is_refused(manager: Any, bad: str) -> None:
+    for unit in (ServiceUnit("amplai-x", (EXE, "a" + bad), "daemon", "x"),
+                 ServiceUnit("amplai-x", (EXE,), "daemon", "x" + bad)):  # fmt: skip
+        with pytest.raises(Hold) as held:
+            manager.render((unit,), HOST)
+        assert held.value.code == "SERVICE_UNIT_VALUE"
+    with pytest.raises(Hold) as held:
+        manager.render(units(), HostContext("/home/a", "/bin" + bad, 1, "amplai"))
+    assert held.value.code == "SERVICE_UNIT_VALUE"
+
+
+@pytest.mark.parametrize("account", ["root", "Amplai", "a b", "-x", "a" * 33, "a:b", "1abc"])
+@pytest.mark.parametrize("manager", MANAGERS, ids=["launchd", "systemd-system", "systemd-user"])
+def test_the_account_is_a_posix_user_name_and_not_root(manager: Any, account: str) -> None:
+    with pytest.raises(Hold) as held:
+        manager.render(units(), HostContext("/home/a", "/bin", 1, account))
+    assert held.value.code == "SERVICE_ACCOUNT"
+
+
+@pytest.mark.parametrize("manager", MANAGERS, ids=["launchd", "systemd-system", "systemd-user"])
+def test_a_relative_home_is_refused(manager: Any) -> None:
+    with pytest.raises(Hold) as held:
+        manager.render(units(), HostContext("home/amplai", "/bin", 1, "amplai"))
+    assert held.value.code == "SERVICE_HOST"
+
+
 @pytest.mark.parametrize("seconds", [90, 420, 7200])
 def test_a_systemd_timer_interval_is_whole_minutes_dividing_an_hour(seconds: int) -> None:
     unit = ServiceUnit("amplai-x", (EXE,), "periodic", "x", seconds)
@@ -300,12 +386,14 @@ def run_cli(*args: str) -> Any:
     return CliRunner().invoke(cli.app, list(args))
 
 
-def test_service_print_renders_units_and_commands_and_writes_nothing(tmp_path: Path) -> None:
+def test_service_print_renders_units_and_commands_and_writes_nothing(
+    tmp_path: Path, accounts: dict[str, Any]
+) -> None:
     home = tmp_path / "home"
     home.mkdir()
     result = run_cli(
         "ops", "service", "print", "--manager", "systemd", "--scope", "user",
-        "--account", "amplai", "--amplai", EXE, "--home", str(home), "--path-env", "/usr/bin",
+        "--account", "remoteacct", "--amplai", EXE, "--home", str(home), "--path-env", "/usr/bin",
         "--config", str(tmp_path / "srv/local.json"),
         "--meta-config", str(tmp_path / "meta/local.json"),
     )  # fmt: skip
@@ -317,7 +405,9 @@ def test_service_print_renders_units_and_commands_and_writes_nothing(tmp_path: P
         "amplai-server.service", "amplai-meta-tick.service", "amplai-meta-tick.timer",
     ]  # fmt: skip
     assert set(body["commands"]) == set(ACTIONS)
-    assert body["commands"]["timer_off"] == ["systemctl --user stop amplai-meta-tick.timer"]
+    assert body["commands"]["timer_off"] == [
+        "systemctl --user stop amplai-meta-tick.timer amplai-meta-tick.service"
+    ]
     assert list(home.iterdir()) == [] and sorted(p.name for p in tmp_path.iterdir()) == ["home"]
 
 
@@ -351,6 +441,68 @@ def test_the_tick_never_renders_with_the_server_config(tmp_path: Path) -> None:
     result = run_cli("ops", "service", "print", "--manager", "launchd", "--amplai", EXE,
                      "--config", same, "--meta-config", same)  # fmt: skip
     assert result.exit_code == 3 and json.loads(result.output)["code"] == "NIGHT_DEPLOYMENT"
+
+
+# -- whose uid and home: the account's, not the invoking user's (sudo) ----------------------------
+
+
+@pytest.fixture
+def accounts(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """This machine's accounts as ``pwd`` sees them: only ``amplai`` (uid 1500)."""
+    known = {"amplai": SimpleNamespace(pw_uid=1500, pw_dir="/srv/amplai")}
+
+    def getpwnam(name: str) -> Any:
+        if name not in known:
+            raise KeyError(name)
+        return known[name]
+
+    monkeypatch.setattr(pwd, "getpwnam", getpwnam)
+    return known
+
+
+def launchd_print(tmp_path: Path, *args: str) -> Any:
+    return run_cli("ops", "service", "print", "--manager", "launchd", "--amplai", EXE,
+                   "--config", str(tmp_path / "local.json"),
+                   "--meta-config", str(tmp_path / "meta/local.json"), *args)  # fmt: skip
+
+
+def test_under_sudo_without_an_account_nothing_is_rendered(
+    tmp_path: Path, accounts: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(os, "getuid", lambda: 0)
+    result = launchd_print(tmp_path)
+    assert result.exit_code == 3 and json.loads(result.output)["code"] == "SERVICE_ACCOUNT"
+
+
+def test_the_account_gives_the_uid_and_home_even_under_sudo(
+    tmp_path: Path, accounts: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(os, "getuid", lambda: 0)
+    result = launchd_print(tmp_path, "--account", "amplai")
+    assert result.exit_code == 0, result.output
+    body = json.loads(result.output)
+    assert body["commands"]["stop"][0] == "launchctl bootout gui/1500/ai.amplai.local-serve"
+    assert body["files"][0]["destination"] == (
+        "/srv/amplai/Library/LaunchAgents/ai.amplai.local-serve.plist"
+    )
+
+
+def test_home_must_match_a_known_account_and_is_required_for_an_unknown_one(
+    tmp_path: Path, accounts: dict[str, Any]
+) -> None:
+    other = launchd_print(tmp_path, "--account", "amplai", "--home", "/home/else")
+    assert other.exit_code == 3 and json.loads(other.output)["code"] == "SERVICE_HOST"
+    unknown = launchd_print(tmp_path, "--account", "remoteacct")
+    assert unknown.exit_code == 3 and json.loads(unknown.output)["code"] == "SERVICE_HOST"
+    # an account of another host: files render with its --home, launchd commands need its uid
+    remote = launchd_print(tmp_path, "--account", "remoteacct", "--home", "/home/remoteacct")
+    assert remote.exit_code == 3 and json.loads(remote.output)["code"] == "SERVICE_HOST"
+    systemd = run_cli("ops", "service", "print", "--manager", "systemd", "--amplai", EXE,
+                      "--account", "remoteacct", "--home", "/home/remoteacct", "--no-meta",
+                      "--config", str(tmp_path / "local.json"))  # fmt: skip
+    assert systemd.exit_code == 0, systemd.output
+    relative = launchd_print(tmp_path, "--account", "remoteacct", "--home", "rel/home")
+    assert relative.exit_code == 3 and json.loads(relative.output)["code"] == "SERVICE_HOST"
 
 
 # -- configuration -------------------------------------------------------------------------------
