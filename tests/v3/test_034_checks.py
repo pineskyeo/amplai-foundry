@@ -599,6 +599,11 @@ def test_an_approval_is_single_use(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     git(root, "commit", "-q", "-am", "restored")
     (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))
     assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_APPROVAL_REUSED"]
+    # the same record under a new name is the same approval: still reused
+    old = root / APPROVALS_DIR / "mypy.json"
+    (root / APPROVALS_DIR / "mypy-copy.json").write_bytes(old.read_bytes())
+    old.unlink()
+    assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_APPROVAL_REUSED"]
 
 
 def test_without_a_base_ref_the_result_warns_and_a_base_without_a_lock_is_empty(
@@ -791,3 +796,108 @@ def test_the_removal_run_drops_pytest_variables_and_kills_its_group_on_timeout(
     )
     assert run_group([sys.executable, "-c", child], tmp_path, clean_env(), 1) is None
     assert time.monotonic() - started < 30
+
+
+# -- regression review (PR #94) --------------------------------------------------------------------
+
+
+def test_protected_lowered_and_a_coverage_list_turned_allow_list_are_loosenings() -> None:
+    assert changes(BUILTIN_CHECKS, loosen("check.policy", protected=False)) == {
+        "check.policy": ["protected_lowered"]
+    }
+    turned = loosen("check.module_removal", loosens_when_added=frozenset({"core_tests"}))
+    assert changes(BUILTIN_CHECKS, turned) == {"check.module_removal": ["config_semantics"]}
+
+
+def test_the_bound_digest_includes_ci_external() -> None:
+    from amplai_foundry.runtime.checks.lock import bound_digest
+
+    entry = DECLARED["check.kind_conformance"].entry()
+    assert bound_digest(entry, True) != bound_digest(entry, False)
+    skippable = (*CI_EXTERNAL, "check.kind_conformance")
+    (item,) = loosenings(lock_of(BUILTIN_CHECKS), lock_of(BUILTIN_CHECKS, skippable))
+    assert item["before"] == bound_digest(entry, False)
+    assert item["after"] == bound_digest(entry, True)
+
+
+def test_a_listed_but_unreadable_base_path_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = repo_with_lock(tmp_path / "repo")
+    real = policy_module._git
+
+    def unreadable(where: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if args[0] == "cat-file":
+            return subprocess.CompletedProcess(list(args), 128, b"", b"fatal: bad object")
+        return real(where, *args)
+
+    monkeypatch.setattr(policy_module, "_git", unreadable)
+    with pytest.raises(RuntimeFault) as excinfo:  # ls-tree lists it, cat-file can not read it
+        policy_module.path_absent(root, "HEAD", LOCK_FILE)
+    assert excinfo.value.code == "CHECK_POLICY_BASE"
+    assert policy_module.path_absent(root, "HEAD", "no/such/file") is True
+
+
+def test_the_secret_scan_size_bound_and_symlinks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from amplai_foundry.runtime.checks import secret_exposure
+
+    outside = tmp_path / "outside.pem"
+    outside.write_text(PEM)
+    (tmp_path / "repo").mkdir()
+    root = tracked(tmp_path / "repo", {"ok.txt": "nothing here\n"})
+    (root / "link.pem").symlink_to(outside)
+    git(root, "add", "link.pem")
+    check = build(SecretExposureCheck, "check.secret_exposure")
+    found = check.run(context(root, tmp_path))
+    assert found.status == "pass" and found.details["scanned"] == 1  # the link is not followed
+    monkeypatch.setattr(secret_exposure, "MAX_FILE_BYTES", 4)
+    large = check.run(context(root, tmp_path))
+    assert [(f.code, f.path) for f in large.findings] == [
+        ("SECRET_SCAN_TOO_LARGE", "ok.txt"),
+        ("SECRET_SCAN_EMPTY", None),  # the only regular file was not read
+    ]
+
+
+SLOW_CORE = """
+import time
+
+def test_slow():
+    time.sleep(60)
+"""
+
+
+def test_a_removal_run_that_does_not_finish_is_a_timeout_finding(tmp_path: Path) -> None:
+    write(tmp_path, "tests/test_core.py", SLOW_CORE)
+    check = removal(core_tests=("tests/test_core.py",))
+    check.timeout = 5
+    found = check.run(context(tmp_path, tmp_path))
+    assert [f.code for f in found.findings] == ["MODULE_REMOVAL_TIMEOUT"]
+    assert found.details["runs"]["git_host.github"]["exit_code"] is None
+
+
+def test_the_removal_plugin_refuses_a_module_that_is_already_imported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    from amplai_foundry.runtime.checks import removal_plugin
+
+    monkeypatch.setenv(removal_plugin.ENV_FILES, "json")  # imported long before
+    before = list(sys.meta_path)
+    with pytest.raises(RuntimeError, match="already imported"):
+        removal_plugin._install()
+    assert sys.meta_path == before
+
+
+def test_a_module_without_a_conformance_subject_fails_the_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from amplai_foundry.runtime.checks import kind_conformance
+
+    monkeypatch.setattr(kind_conformance, "_subject", lambda spec, workdir: None)
+    found = build(KindConformanceCheck, "check.kind_conformance").run(
+        context(REPO, tmp_path, targets=("kind:git_host",))
+    )
+    assert [f.code for f in found.findings] == ["CONFORMANCE_NO_SUBJECT"]

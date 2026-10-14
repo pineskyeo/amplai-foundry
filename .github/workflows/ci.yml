@@ -31,8 +31,9 @@ jobs:
       # (checks.lock.json `ci_external`) and the run ends `pass_with_skips`. The check list is
       # compared with the base commit, whose own check policy code decides (M-19): the PR's base
       # SHA, the merge queue's base SHA, or on a push the commit before it. A first push (all-zero
-      # SHA) has no base; a base that can not be fetched (a force push) runs without one, with a
-      # warning and a note in the run record.
+      # SHA) has no base. A base that can not be fetched fails the step for a PR or the merge
+      # queue; on a push (a force push) the run goes on without one, with a warning and a note in
+      # the run record (D-131).
       - name: amplai checks run --when ci
         if: always()
         env:
@@ -51,6 +52,9 @@ jobs:
             base=(--note "no base commit ($GITHUB_EVENT_NAME)")
           elif git fetch --no-tags --depth=1 origin "+$sha:refs/amplai/check-base"; then
             base=(--base-ref refs/amplai/check-base)
+          elif [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "::error::base $sha can not be fetched: a PR or merge queue check needs its base"
+            exit 1
           else
             echo "::warning::base $sha can not be fetched: loosening against main is not checked"
             base=(--note "base $sha can not be fetched ($GITHUB_EVENT_NAME)")

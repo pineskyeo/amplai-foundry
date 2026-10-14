@@ -856,6 +856,11 @@
   8. 주변 변경: `TRIAL_CODE_EXCLUDED` 에 `runtime/checks/**`, `runtime/checks_cli.py`, 두 conformance transport,
      `modules/loader.py` 추가(D-128 closure 시험 통과). `test_033_s14_quality` 의 "quality 를 import 하는 곳" 불변식에
      `runtime/checks/tools.py`(Q-suite 검사, `upgrade` 시점만) 추가.
+- CI base (coordinator 기본값, 운영자가 완화할 수 있다): pull_request 는 `pull_request.base.sha`, merge queue 는
+  `merge_group.base_sha`, push 는 `github.event.before` 를 base 로 fetch 한다. PR·merge queue 에서 base 를 fetch 하지 못하면
+  검사 단계가 실패한다(fail closed). push 에서 fetch 하지 못하면(force push) base 없이 돌고 경고와 `--note` 기록을 남긴다.
+  all-zero SHA(첫 push)는 base 가 없다. 승인 기록은 내용 기준으로 한 번만 쓴다: base ref 에 같은 (check_id, before, after) 의
+  기록이 어떤 경로로든 있으면 `CHECK_APPROVAL_REUSED` 다.
 - 운영자 결정 대기:
   - (A) 승인 기록을 사람이 썼는지, 그리고 검사 호출부·CI 를 바꾸는 변경을 사람이 봤는지 확인하는 방식: CODEOWNERS 와 code
     owner 필수 리뷰를 아래 경로에 걸고 `amplai checks run --when ci` 를 필수 status check 로 두는 저장소 보호, 또는 운영자 키

@@ -137,15 +137,30 @@ def _approved_at_ok(value: str) -> bool:
 
 
 def approvals(root: Path, ref: str | None) -> tuple[list[dict[str, Any]], list[Finding]]:
-    """The approval records this change adds; findings for invalid, reused or duplicate ones."""
+    """The approval records this change adds; findings for invalid, reused or duplicate ones.
+    A record is ``reused`` when the base ref already has a record with the same
+    ``(check_id, before, after)``, under any path (a copy under a new name is not a new approval).
+    A base record that can not be read is ``CHECK_POLICY_BASE`` (fail closed)."""
     found: list[dict[str, Any]] = []
     bad: list[Finding] = []
     in_base: set[str] = set()
+    base_keys: set[tuple[Any, Any, Any]] = set()
     if ref is not None:
         listed = _git(root, "ls-tree", "-r", "--name-only", ref, "--", APPROVALS_DIR)
         if listed.returncode != 0:
             raise _base_fault("the base ref's approval records can not be listed", ref, listed)
         in_base = {line for line in listed.stdout.decode().splitlines() if line}
+        for rel in sorted(in_base):
+            shown = _git(root, "show", f"{ref}:{rel}")
+            if shown.returncode != 0:
+                raise _base_fault(f"the base ref's approval record {rel} can not be read", ref,
+                                  shown)  # fmt: skip
+            try:
+                old = json.loads(shown.stdout)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                continue  # not a record: it can not match a key
+            if isinstance(old, dict):
+                base_keys.add((old.get("check_id"), old.get("before"), old.get("after")))
     folder = root / APPROVALS_DIR
     seen: dict[tuple[str, str, str | None], str] = {}
     for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
@@ -167,10 +182,10 @@ def approvals(root: Path, ref: str | None) -> tuple[list[dict[str, Any]], list[F
             bad.append(Finding("CHECK_APPROVAL_INVALID", "an approval record has another shape "
                                "or approved_at is not a past RFC 3339 UTC time", rel))  # fmt: skip
             continue
-        if rel in in_base:
-            record["reused"] = True  # an earlier change used it
+        key = (record["check_id"], record["before"], record["after"])
+        if rel in in_base or key in base_keys:
+            record["reused"] = True  # an earlier change used it (this file or a copy of it)
         else:
-            key = (record["check_id"], record["before"], record["after"])
             if key in seen:
                 bad.append(Finding("CHECK_APPROVAL_DUPLICATE", "two approval records for one "
                                    "change", rel, {"other": seen[key]}))  # fmt: skip

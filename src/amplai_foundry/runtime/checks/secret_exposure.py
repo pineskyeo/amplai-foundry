@@ -8,9 +8,10 @@ token, an AWS access key id, an encrypted or DSA PEM key). The check's own patte
 to ``cas.py``: that would change what the artifact store quarantines and what trace capture drops.
 
 The files are ``git ls-files`` of the checkout (symlinks not followed). Config ``allow`` lists
-single occurrences that are there on purpose, as ``<path>::<pattern id>::<line hash>`` (the first
-16 hex digits of the SHA-256 of the line that holds the match); another occurrence of the same
-pattern in the same file is a finding. Adding an entry loosens the check (M-19). A finding names
+occurrences that are there on purpose, per line content: ``<path>::<pattern id>::<line hash>``
+(the first 16 hex digits of the SHA-256 of the line that holds the match, without its end of
+line). A match on a line with other content is a finding; the same line content repeated in the
+file shares one entry. Adding an entry loosens the check (M-19). A finding names
 the path, the line number and the pattern id, never the matched text.
 
 What it does not see: an untracked or ignored file of a local work tree (only ``git ls-files``;

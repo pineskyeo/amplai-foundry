@@ -599,8 +599,9 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
     이 검사가 찾은 결합: `tests/rc06_rig.py` 가 GitHub 구현을 module 수준에서 import 했다 → 쓰는 함수 안으로 옮겼다.
   - `check.secret_exposure` (보호): `git ls-files` 의 파일을 `runtime/evidence/cas.py` `SECRET_PATTERNS` 와 이 검사만의
     패턴(Slack webhook URL, `gh[pousr]_`·`github_pat_` token, `AKIA`·`ASIA` key id, ENCRYPTED·DSA PEM)으로 읽는다. 검사만의
-    패턴을 `cas.py` 에 넣지 않은 이유: artifact store 격리와 trace capture 의 drop 동작이 바뀐다. 허용 목록은 출현 하나 단위
-    (`<path>::<pattern id>::<line hash>`, line hash 는 줄 끝 `\r` 를 뺀 그 줄의 SHA-256 앞 16자)다. 지금 15 항목, 모두 가짜
+    패턴을 `cas.py` 에 넣지 않은 이유: artifact store 격리와 trace capture 의 drop 동작이 바뀐다. 허용 목록은 줄 내용 단위
+    (`<path>::<pattern id>::<line hash>`, line hash 는 줄 끝 `\r` 를 뺀 그 줄의 SHA-256 앞 16자)다. 같은 내용의 줄이 반복되면
+    항목 하나를 함께 쓴다. 지금 15 항목, 모두 가짜
     credential 을 drop·격리 코드에 넣는 시험 fixture 다.
     - 보지 못하는 것: 로컬 work tree 의 untracked·ignored 파일(CI checkout 에는 tracked 만 있다), 어떤 패턴에도 맞지 않는
       credential, git history(뒤 commit 에서 지운 credential 도 history 에 남는다). 8 MiB 넘는 tracked 파일은 읽지 않고
@@ -627,8 +628,9 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
       코드(`evaluate`, `lock.py`)가 새 schema 를 읽게 하는 변경(lock 은 그대로), 다음에 lock 을 새 schema 로 쓰는 변경(이제 base
       코드가 그 schema 를 안다).
     - 승인 기록: `check_id`, `before`·`after`(lock entry 와 `ci_external` 소속의 digest), `approver`, `reason`,
-      `approved_at`(RFC 3339 UTC, 미래 금지). 한 번만 쓴다: base ref 에 이미 있는 기록은 다시 맞으면
-      `CHECK_APPROVAL_REUSED`, 같은 (check, before, after) 기록이 둘이면 `CHECK_APPROVAL_DUPLICATE`.
+      `approved_at`(RFC 3339 UTC, 미래 금지). 내용 기준으로 한 번만 쓴다: base ref 에 같은 (check_id, before, after) 의
+      기록이 어떤 경로로든 있으면(다른 이름으로 복사한 파일 포함) `CHECK_APPROVAL_REUSED`, 이 변경에 같은 기록이 둘이면
+      `CHECK_APPROVAL_DUPLICATE`. base 기록을 읽지 못하면 `CHECK_POLICY_BASE` 다.
     - 기록을 사람이 썼는지는 확인하지 않는다(위 저장소 보호나 서명, 운영자 결정 대기).
   - 기존 장치: `check.tool_ruff`, `check.tool_ruff_format`, `check.tool_mypy`, `check.tool_pytest` 는 CI 명령 그대로(`ci`),
     `check.evaluator_qsuite` 는 `evaluation/quality.py` 의 Q-suite(`upgrade`, OD-7). `scripts/site_env_check.sh` 는 main 에 없다
@@ -636,8 +638,9 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 - **CI**: `amplai checks run --when ci` 단계를 기존 단계 뒤에 `if: always()` 로 더했다(앞 단계가 실패해도 돈다). pytest·ruff·
   mypy 는 기존 단계가 돌리므로 `--skip`(`ci_external`)하고 결과는 `pass_with_skips` 다. base commit: pull_request 는
   `github.event.pull_request.base.sha`, merge queue(`merge_group` trigger)는 `merge_group.base_sha`, push 는
-  `github.event.before`. all-zero SHA(첫 push)이거나 fetch 할 수 없는 base(force push)면 base 없이 돌고 경고와 함께
-  `--note` 로 이유를 기록에 남긴다. 기록은 workflow artifact 로 올린다.
+  `github.event.before`. PR·merge queue 에서 base 를 fetch 하지 못하면 단계가 실패한다(fail closed, coordinator 기본값).
+  push 에서 all-zero SHA(첫 push)이거나 fetch 할 수 없는 base(force push)면 base 없이 돌고 경고와 함께 `--note` 로 이유를
+  기록에 남긴다. 기록은 workflow artifact 로 올린다.
 - **제거 시험 subprocess**: `PYTEST_*` 환경 변수(`PYTEST_ADDOPTS` 등, 시험 선택·plugin 을 바꾼다)를 지우고, 자기 process
   group 으로 돌리며, 시간 초과(1800s)면 group 전체를 죽이고 `MODULE_REMOVAL_TIMEOUT` 이다.
 - **기록 실패**: 검사 전에 멈춘 Hold(`CHECK_PROTECTED_MISSING`, `CHECK_PROTECTED`, `CHECK_SKIP_REFUSED`,
