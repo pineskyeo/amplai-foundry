@@ -155,3 +155,27 @@ def test_a_pr_published_before_tracking_is_backfilled_as_opened(
     got = outcomes(rig)
     # the scripted reader answers MERGED for both PRs
     assert got["opened"] == 2 and got["merged"] == 2 and got["undecided"] == 0
+
+
+def test_a_coded_refusal_is_shown_by_pr_sync_and_not_stored(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Work 034 OD-15 (PR #93 review P3-e): a PR on another host than the configured one is not
+    read; the tracker keeps the reason for ``ops pr-sync`` and stores nothing."""
+    rig, _loop, goal, publication = published(deployment, tmp_path)
+    mismatch = {"configured": ["github.com"], "remote": "example.invalid"}
+
+    def refuse(repo: Path, url: str) -> PullRequestState:
+        raise Hold("GIT_HOST_MISMATCH", "elsewhere", details=mismatch)
+
+    tracker = PullRequestTracker(rig.service, reader=refuse)
+    assert tracker.sync() == []
+    held = tracker.unread[goal]
+    assert (held["code"], held["details"]) == ("GIT_HOST_MISMATCH", mismatch)
+    assert rig.service.plan_record(goal).get("publication_outcome") is None
+    states = States()
+    states.value["headRefOid"] = publication["commit"]
+    tracker.reader = states
+    tracker.sync()
+    assert goal not in tracker.unread
+    assert rig.service.plan_record(goal)["publication_outcome"]["state"] == "OPEN"

@@ -11,11 +11,14 @@ host from the repository remote, so ``host`` alone would not choose where a PR g
 (``gh help environment``, gh 2.88.1: ``GH_HOST`` applies "for commands where a hostname has not
 been provided, or cannot be inferred from the context of a local Git repository"). The module
 therefore checks the host itself (interface v1 host check): before a push or a PR create it
-reads the remote's URL (``git remote get-url <remote>``, 30 s, as ``execution/product.py``
-``git_fresh_base``) and before a PR comment or read it parses the PR URL; another host is
-``Hold GIT_HOST_MISMATCH``. A PR URL ``gh`` returns is checked the same way. For a host other
-than ``github.com`` the ``gh`` commands also run with ``GH_HOST=<host>``; for ``github.com`` they
-run with the process environment unchanged. Running against a company instance (GitHub
+reads every push URL of the remote (``git remote get-url --push --all <remote>``, 30 s, as
+``execution/product.py`` ``git_fresh_base``) and requires each to be on ``remote_hosts``
+(default ``[host]``); before a PR comment or read it parses the PR URL against ``host``; another
+host is ``Hold GIT_HOST_MISMATCH``. A PR URL ``gh`` returns is checked against ``host`` too. An
+unknown remote, an unreadable one or a timed-out read is ``Hold PUBLISH_REMOTE``. For a host
+other than ``github.com`` the ``gh`` commands also run with ``GH_HOST=<host>`` (the configured
+value, port included; whether ``gh`` accepts a port there is not verified); for ``github.com``
+they run with the process environment unchanged. Running against a company instance (GitHub
 Enterprise Server or not is unconfirmed) is not verified yet (Q-15, S4c).
 
 The process runner is injected (``run``): tests and the conformance suite never reach a host.
@@ -26,7 +29,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from ..errors import Conflict, Hold
@@ -59,8 +62,20 @@ def spec() -> ModuleSpec:
 
 
 class GitHubHost:
-    def __init__(self, *, host: str = DEFAULT_HOST, run: Run = run_process) -> None:
+    """``host`` is the web host: PR URLs must be on it, and ``gh`` gets it as ``GH_HOST`` when it
+    is not ``github.com`` (verbatim, lowercase, port included if configured). ``remote_hosts`` are
+    the hosts a remote may push to (default: ``host``), for an SSH alias or a server whose SSH
+    host differs from its web host."""
+
+    def __init__(
+        self,
+        *,
+        host: str = DEFAULT_HOST,
+        remote_hosts: Iterable[str] | None = None,
+        run: Run = run_process,
+    ) -> None:
         self.host, self.run = host.strip().lower(), run
+        self.remote_hosts = tuple(h.strip().lower() for h in remote_hosts or (self.host,))
         self._spec = spec()
 
     @property
@@ -78,13 +93,29 @@ class GitHubHost:
         return self.run(["gh", *args], repo, self._gh_env(), timeout)
 
     def _check_remote(self, repo: Path, remote: str) -> None:
-        """The remote's URL is on the configured host. A name git does not know is read as a
-        URL itself (``git push`` accepts both)."""
-        named = self.run(["git", "remote", "get-url", remote], repo, None, REMOTE_TIMEOUT)
-        url = named.stdout.decode().strip() if named.returncode == 0 else remote
-        check_host(self.host, url)
+        """Every URL the remote pushes to is on a remote host. ``--push --all`` lists the push
+        URLs as git uses them (``pushurl`` and ``pushInsteadOf`` applied; the fetch URL when there
+        is no push URL)."""
+        args = ["git", "remote", "get-url", "--push", "--all", remote]
+        try:
+            named = self.run(args, repo, None, REMOTE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            raise Hold("PUBLISH_REMOTE", "Reading the remote URL timed out") from None
+        urls = named.stdout.decode().split() if named.returncode == 0 else []
+        if not urls:
+            raise Hold(
+                "PUBLISH_REMOTE",
+                "The remote is not configured in the checkout",
+                details=named.stderr.decode()[-400:],
+            )
+        for url in urls:
+            check_host(self.remote_hosts, url)
 
     # -- interface v1 --------------------------------------------------------------------------
+    def check_remote(self, repo: Path, remote: str) -> None:
+        check_refs(remote)
+        self._check_remote(repo, remote)
+
     def push_branch(self, repo: Path, remote: str, branch: str, commit: str) -> None:
         check_refs(remote, branch)
         self._check_remote(repo, remote)
@@ -118,7 +149,7 @@ class GitHubHost:
             found = json.loads(existing.stdout or b"[]")
             if found:
                 url: str = found[0]["url"]
-                check_host(self.host, url)
+                check_host((self.host,), url, pr_url=url)
                 return url
         created = self._gh(
             ["pr", "create", "--draft", "--head", head, "--base", base, "--title", title,
@@ -128,19 +159,19 @@ class GitHubHost:
         if created.returncode != 0:
             raise Hold("PR_CREATE", "gh pr create failed", details=created.stderr.decode()[-400:])
         url = created.stdout.decode().strip().splitlines()[-1]
-        check_host(self.host, url)
+        check_host((self.host,), url, pr_url=url)
         return url
 
     def comment_pr(self, repo: Path, url: str, body: str) -> None:
         """Comment on a draft PR (links the other PRs of a multi-app goal)."""
-        check_host(self.host, url)
+        check_host((self.host,), url)
         done = self._gh(["pr", "comment", url, "--body", body], repo, PUBLISH_TIMEOUT)
         if done.returncode != 0:
             raise Hold("PR_COMMENT", "gh pr comment failed", details=done.stderr.decode()[-400:])
 
     def pr_state(self, repo: Path, url: str) -> PullRequestState:
         """Read one PR with the operator's ``gh`` (read-only)."""
-        check_host(self.host, url)
+        check_host((self.host,), url)
         result = self._gh(["pr", "view", url, "--json", STATE_FIELDS], repo, READ_TIMEOUT)
         if result.returncode != 0:
             raise Hold("PR_STATE", "gh pr view failed", details=result.stderr.decode()[-400:])

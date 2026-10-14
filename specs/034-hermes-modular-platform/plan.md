@@ -499,24 +499,35 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
   - `runtime/execution/outcomes.py:34` `gh pr view --json state,headRefOid,mergedAt,closedAt`
   - 옮기지 않은 것: `runtime/execution/product.py:113` 의 `git fetch`(계획 기준 commit 을 remote 에서 가져옴). 코드 저장소 API 가
     아니라 일반 git 이고, git host 가 없어도 계획은 돌아야 한다.
-- **interface v1** (`git_host/interface.py`): `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, remote, head,
+- **interface v1** (`git_host/interface.py`): `check_remote(repo, remote)`, `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, remote, head,
   base, title, body) -> url`(찾거나 만든다), `comment_pr(repo, url, body)`, `pr_state(repo, url) -> PullRequestState`
   (`state`, `head_commit`, `merged_at`, `closed_at`). 거절 코드는 모듈 이전과 같다: `PUBLISH_REMOTE`, `PUBLISH_PUSH`,
   `PUBLISH_BRANCH_EXISTS`(Conflict), `PR_CREATE`, `PR_COMMENT`, `PR_STATE`. 새 코드는 둘이다: `GIT_HOST_MISMATCH`(아래 host
   확인), `PUBLISH_REF`(`-` 로 시작하거나 빈 remote·branch·head·base, `product.py:105-106` 과 같은 이유).
   - 적합성 시험 `conformance.git_host.v1` 은 위 코드 전부를 확인한다. 시험용 transport 는 interface docstring 의 "conformance
-    host" 다(`conformance-down` 은 연결 안 됨, `conformance-readonly` 는 push 거부, `conformance-elsewhere` 는 다른 host, base
+    host" 다(`conformance-down` 은 연결 안 됨, `conformance-readonly` 는 push 거부, `conformance-elsewhere` 는 다른 host,
+    `conformance-pushurl` 은 fetch 는 같은 host·push 는 다른 host, `conformance-missing` 은 없는 remote, base
     `conformance-refused` 는 PR 생성 거부).
-- **host 확인**: push·PR 생성 전에는 `git remote get-url <remote>`(30초, 읽기 전용)로 remote URL 을, PR 댓글·상태 읽기 전에는
-  PR URL 을, PR 생성·조회 뒤에는 `gh` 가 돌려준 URL 을 설정 `host` 와 비교한다. `https://`, `ssh://`, `git://`, `user@host:path`
-  형태를 읽고 대소문자와 port 는 무시한다. 로컬 경로·`file://` 는 host 가 없어 다르다고 본다. 다르면 쓰거나 읽기 전에
-  `GIT_HOST_MISMATCH`(details `{configured, remote}`)다. 이유: `gh` 는 checkout 의 remote 에서 host 를 읽으므로
-  (`gh help environment`) `GH_HOST` 만으로는 PR 이 갈 곳이 정해지지 않는다.
+- **host 확인** (D-130): 이유는 `gh` 가 checkout 의 remote 에서 host 를 읽어서(`gh help environment`) `GH_HOST` 만으로는 PR 이
+  갈 곳이 정해지지 않기 때문이다.
+  - remote: `check_remote`·push·PR 생성 전에 `git remote get-url --push --all <remote>`(30초, 읽기 전용)의 URL 전부가
+    `remote_hosts`(설정, 없으면 `[host]`) 안에 있어야 한다. `pushurl`·`pushInsteadOf` 가 반영된 URL 이다.
+  - PR URL: 댓글·상태 읽기 전, 그리고 `gh` 가 찾거나 만든 뒤 돌려준 URL 이 웹 host `host` 에 있어야 한다.
+  - 비교: `https://`, `ssh://`, `git://`, `user@host:path` 를 읽고 대소문자·port·끝의 `.` 는 무시한다. 로컬 경로·`file://` 는
+    host 가 없어 다르다고 본다. 다르면 `GIT_HOST_MISMATCH`(details `{configured: [hosts], remote}`, 이미 생긴 PR 이면 `pr_url`)다.
+  - checkout 에 없는 remote, 읽기 실패, 시간 초과는 `PUBLISH_REMOTE` 다.
+  - 여러 app: publisher 가 끝나지 않은 app 전부에 `check_remote` 를 부른 뒤에 push 한다. 한 app 이라도 다르면 아무것도 push 하지
+    않는다.
+  - PR 상태 읽기: tracker 는 코드가 있는 거절(예: `GIT_HOST_MISMATCH`)을 goal 별로 메모리에 두고 `ops pr-sync` 응답의 `unread` 로
+    보여 준다. 다음 성공 읽기에서 지운다. `publication_outcome` 에 저장하는 방식은 저장 모양 변경이라 하지 않았다(운영자 결정
+    대상).
 - **GitHub 구현** (`git_host/github.py`, 내장 `git_host.github@1`, in_process): push·PR 명령은 모듈 이전과 같은
-  argv·cwd·timeout(쓰기 300초, 읽기 120초)이다. 더해진 명령은 host 확인의 `git remote get-url` 뿐이다. `host` 가 `github.com`
-  이 아니면 `gh` 명령에만 `GH_HOST=<host>` 를 더한다. 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15, S4c).
+  argv·cwd·timeout(쓰기 300초, 읽기 120초)이다. 더해진 명령은 host 확인의 `git remote get-url --push --all` 뿐이다. `host` 가
+  `github.com` 이 아니면 `gh` 명령에만 `GH_HOST=<host>` 를 더한다(설정값 그대로, port 를 적었으면 port 포함. `gh` 가 port 를
+  받는지는 확인하지 않았다). 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15, S4c).
 - **설정**: `local.json` 의 `git_host` (선택). 없으면 `{"module": "git_host.github", "host": "github.com"}` 이고 push·PR 은
-  모듈 이전과 같다. `host` 는 소문자로 바꿔 저장한다. `null` 이면 git host 모듈이 없다. 기본 설정인데 구현 파일이 없으면
+  모듈 이전과 같다. `host`·`remote_hosts` 는 소문자로 바꿔 저장하고 끝의 `.` 는 거절한다. `remote_hosts`(선택, 1~16개)는 remote
+  가 push 해도 되는 host 이고 없으면 `[host]` 다. `null` 이면 git host 모듈이 없다. 기본 설정인데 구현 파일이 없으면
   deployment 를 만들 때 `ImportError` 로 실패한다(fail-closed: 게시 경로가 조용히 꺼지지 않는다).
 - **제거 시험** (M-13, 대상 한정): `git_host: null` 이면 검증된 goal 은 `verified` 로 남고 게시는 `PUBLISH_NO_GIT_HOST` 로
   hold 된다(commit·push·publication 기록 없음). PR 상태 읽기(`ops pr-sync`)도 같은 코드로 hold 다. 구현 모듈은 설정에서 고를

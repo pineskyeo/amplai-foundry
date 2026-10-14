@@ -170,7 +170,16 @@ class GitPublisher:
             return self._publish(
                 goal_id, plan, decision, node, plan["app"], goal_id, "amplai/" + safe, []
             )
-        # one draft PR per app (D-081), linked both ways
+        # one draft PR per app (D-081), linked both ways. Every app's remote is checked first, so a
+        # remote on another host stops the goal before any app is pushed (git_host check_remote).
+        for app in terminal:
+            current = self._record(f"{goal_id}:{app}")
+            if current is not None and current["state"] == "done":
+                continue
+            remote = (current or {}).get("data", {}).get("remote") or self._consent(decision, app)[
+                "remote"
+            ]
+            self.git_host.check_remote(self.service.apps[app].config.repo, remote)
         published: dict[str, dict[str, Any]] = {}
         for app, node in terminal.items():
             earlier = [v["pr_url"] for v in published.values() if v.get("pr_url")]
@@ -200,6 +209,12 @@ class GitPublisher:
         first = published[apps[0]]
         return {**first, "publications": published}
 
+    @staticmethod
+    def _consent(decision: dict[str, Any], app_id: str) -> dict[str, Any]:
+        """The approval's publication consent for one app (per-app values win)."""
+        publish: dict[str, Any] = decision["publish"]
+        return {**publish, **(publish.get("apps") or {}).get(app_id, {})}
+
     def _publish(
         self,
         goal_id: str,
@@ -220,7 +235,7 @@ class GitPublisher:
             {"goal": goal_id, "patch": digest(patch.decode("latin-1")),
              **({"app": app_id} if multi else {})}
         )  # fmt: skip
-        consent = {**decision["publish"], **(decision["publish"].get("apps") or {}).get(app_id, {})}
+        consent = self._consent(decision, app_id)
         current = self._record(record_id)
         value: dict[str, Any] = dict(current["data"]) if current else {}
         if value and value.get("effect_key") != key:

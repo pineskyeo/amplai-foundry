@@ -6,11 +6,15 @@ opened, and where the PR's outcome is read back (D-071, D-078, D-081). The core 
 interface; which host runs is the deployment's ``git_host`` configuration. Interface v1 holds
 the operations the product used before the module existed::
 
+    check_remote(repo, remote) -> None
     push_branch(repo, remote, branch, commit) -> None
     open_draft_pr(repo, remote, head, base, title, body) -> url
     comment_pr(repo, url, body) -> None
     pr_state(repo, url) -> PullRequestState
 
+- ``check_remote`` is read-only: the remote exists and every URL it pushes to is on an allowed
+  remote host (below). The publisher calls it for every app of a goal before it pushes any.
+  An unknown remote, or one whose URLs cannot be read, is ``Hold PUBLISH_REMOTE``.
 - ``push_branch`` never forces. The branch already at ``commit`` is a reconciled push (no
   second push); the branch at another commit is ``Conflict PUBLISH_BRANCH_EXISTS``. An
   unreachable remote is ``Hold PUBLISH_REMOTE``, a refused push ``Hold PUBLISH_PUSH``.
@@ -19,10 +23,13 @@ the operations the product used before the module existed::
 - ``comment_pr`` adds one comment (the multi-app link, D-081). Failure is ``Hold PR_COMMENT``.
 - ``pr_state`` is read-only. It returns a :class:`PullRequestState`; a PR whose state cannot be
   read is ``Hold PR_STATE`` (the tracker keeps it unknown and reads it again).
-- Host check: before any read or write, the remote's URL (push, open) or the PR URL (comment,
-  read) must be on the module's configured host, else ``Hold GIT_HOST_MISMATCH`` with details
-  ``{"configured": <host>, "remote": <host or null>}``. A PR URL a host returns is checked the
-  same way. Hosts compare case-insensitively without the port (:func:`url_host`).
+- Host check: before any read or write, every push URL of the remote (push, open; push URLs and
+  rewrites included) must be on an allowed *remote host*, and the PR URL (comment, read) on the
+  module's *web host*, else ``Hold GIT_HOST_MISMATCH`` with details
+  ``{"configured": [<hosts>], "remote": <host or null>}``. A PR URL a host returns (found or
+  created) is checked against the web host the same way and the details carry it as ``pr_url``,
+  so the operator can find a PR that was made. Hosts compare case-insensitively without the port
+  or a trailing dot (:func:`url_host`).
 - A remote, branch, head or base starting with ``-`` is ``Hold PUBLISH_REF`` before anything
   runs (it would read as an option, as ``execution/product.py`` ``git_fresh_base`` refuses).
 - ``repo`` is the operator's checkout of the app; a host runs its commands there.
@@ -44,6 +51,8 @@ needs an implementation built with a test transport. That transport is the *conf
 - remote ``origin`` is on the module's configured host and accepts pushes;
 - remote ``conformance-down`` is unreachable; ``conformance-readonly`` refuses pushes;
   ``conformance-elsewhere`` is on another host than the configured one;
+  ``conformance-pushurl`` fetches from the configured host but pushes to another one;
+  ``conformance-missing`` is not a remote of the checkout;
 - a PR create with base ``conformance-refused`` is refused;
 - a PR URL the host does not know (on its own host) cannot be read or commented on.
 
@@ -55,7 +64,7 @@ from __future__ import annotations
 import re
 import shutil
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -88,6 +97,8 @@ class PullRequestState:
 
 
 class GitHost(Module, Protocol):
+    def check_remote(self, repo: Path, remote: str) -> None: ...
+
     def push_branch(self, repo: Path, remote: str, branch: str, commit: str) -> None: ...
 
     def open_draft_pr(
@@ -106,21 +117,23 @@ _SCP = re.compile(r"^(?:[^@/\s]+@)?([^:/\s]+):(?!//)")
 
 
 def bare_host(host: str) -> str:
-    """A host name for comparison: lowercase, without a port."""
-    return host.strip().lower().split(":", 1)[0]
+    """A host name for comparison: lowercase, without a port or a trailing dot."""
+    return host.strip().lower().split(":", 1)[0].rstrip(".")
 
 
 def url_host(url: str) -> str | None:
     """The host of a remote or PR URL (``https://``, ``ssh://``, ``git://``, ``user@host:path``),
-    lowercase and without user or port; ``None`` for a local path or ``file://``."""
+    lowercase, without user, port or trailing dot; ``None`` for a local path or ``file://``."""
     value = url.strip()
     if "://" in value:
         try:
-            return urlsplit(value).hostname or None
+            found = urlsplit(value).hostname
         except ValueError:
             return None
-    found = _SCP.match(value)
-    return found.group(1).lower() if found else None
+    else:
+        match = _SCP.match(value)
+        found = match.group(1).lower() if match else None
+    return (found.rstrip(".") or None) if found else None
 
 
 def check_refs(*names: str) -> None:
@@ -129,14 +142,16 @@ def check_refs(*names: str) -> None:
         raise Hold(BAD_REF, "Remote and branch names cannot be empty or start with '-'")
 
 
-def check_host(configured: str, url: str) -> None:
-    """``GIT_HOST_MISMATCH`` unless ``url`` is on the configured host."""
+def check_host(allowed: Iterable[str], url: str, **extra: str) -> None:
+    """``GIT_HOST_MISMATCH`` unless ``url`` is on one of the ``allowed`` hosts. ``extra`` goes into
+    the details (e.g. the PR url a host returned, so the operator can find it)."""
+    hosts = sorted({bare_host(h) for h in allowed})
     found = url_host(url)
-    if found is None or found != bare_host(configured):
+    if found is None or found not in hosts:
         raise Hold(
             MISMATCH,
             "The remote is not on the configured git host",
-            details={"configured": bare_host(configured), "remote": found},
+            details={"configured": hosts, "remote": found, **extra},
         )
 
 
@@ -163,18 +178,28 @@ def _expect(code: str, call: Callable[[], object]) -> None:
 
 def _check(module: Module) -> None:
     ops: dict[str, Callable[..., object]] = {}
-    for name in ("push_branch", "open_draft_pr", "comment_pr", "pr_state"):
+    for name in ("check_remote", "push_branch", "open_draft_pr", "comment_pr", "pr_state"):
         op = getattr(module, name, None)
         if not callable(op):
             raise _fail(f"a git host has {name}")
         ops[name] = op
-    push, open_pr, comment, read = (
-        ops["push_branch"], ops["open_draft_pr"], ops["comment_pr"], ops["pr_state"]
+    check, push, open_pr, comment, read = (
+        ops["check_remote"], ops["push_branch"], ops["open_draft_pr"], ops["comment_pr"],
+        ops["pr_state"],
     )  # fmt: skip
     repo = Path(tempfile.mkdtemp(prefix="amplai-git-host-conformance-"))
     title = "[AMPLAI] conformance"
     try:
+        # the read-only remote check
+        if check(repo, "origin") is not None:
+            raise _fail("check_remote returns nothing")
+        _expect(BAD_REF, lambda: check(repo, "-o"))
+        _expect(MISMATCH, lambda: check(repo, "conformance-elsewhere"))
+        _expect(MISMATCH, lambda: check(repo, "conformance-pushurl"))
+        _expect("PUBLISH_REMOTE", lambda: check(repo, "conformance-missing"))
         # refusals that must happen before anything runs
+        _expect(MISMATCH, lambda: push(repo, "conformance-pushurl", BRANCH, FIRST))
+        _expect("PUBLISH_REMOTE", lambda: push(repo, "conformance-missing", BRANCH, FIRST))
         _expect(BAD_REF, lambda: push(repo, "-o", BRANCH, FIRST))
         _expect(BAD_REF, lambda: push(repo, "origin", "--force", FIRST))
         _expect(BAD_REF, lambda: push(repo, "", BRANCH, FIRST))

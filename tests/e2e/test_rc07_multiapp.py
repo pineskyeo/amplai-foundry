@@ -17,6 +17,7 @@ from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
 from amplai_foundry.runtime.git_host import PullRequestState
+from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
 from rc06_rig import git, local_github, rig_two_apps
 
 
@@ -181,3 +182,40 @@ def test_the_link_comment_is_recorded_before_it_is_posted(deployment: Any, tmp_p
     assert seen == [True, True] and again["publications"]["app"]["linked"] is True
     box["p"](goal)
     assert posted == ["https://example.invalid/pr/1"]  # never twice
+
+
+def test_a_remote_on_another_host_stops_every_app_before_any_push(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Work 034 OD-15 (D-130, PR #93 review P3-d): the publisher checks every app's remote host
+    first, so the first app is not pushed when the second app's remote is elsewhere."""
+    box: dict[str, GitPublisher] = {}
+    rig, loop, _container, consumer = rig_two_apps(
+        deployment, tmp_path, publisher=lambda g: box["p"](g)
+    )
+    app_remote = remote(rig.repo, tmp_path, "app")
+    consumer_remote = remote(consumer, tmp_path, "consumer")
+
+    def run(
+        args: list[str], cwd: Path, env: dict[str, str] | None, timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        if args[:3] == ["git", "remote", "get-url"]:
+            same = Path(cwd).resolve() == rig.repo.resolve()
+            url = "https://github.com/o/app.git" if same else "git@elsewhere.example:o/c.git"
+            return subprocess.CompletedProcess(args, 0, (url + "\n").encode(), b"")
+        return run_process(args, cwd, env, timeout)
+
+    box["p"] = GitPublisher(
+        rig.service,
+        git_host=GitHubHost(run=run),
+        pr_creator=lambda *_: "https://github.com/o/app/pull/1",
+        pr_linker=lambda *_: None,
+    )
+    goal = two_app_goal(rig)
+    rig.service.plan(goal)
+    rig.service.approve(rig.operator, goal)
+    record = loop.run_goal(goal)
+    assert record["status"] == "verified"
+    assert record["publication"]["error"] == "GIT_HOST_MISMATCH"
+    for bare in (app_remote, consumer_remote):
+        assert git(bare, "for-each-ref", "refs/heads/amplai").strip() == ""  # nothing pushed

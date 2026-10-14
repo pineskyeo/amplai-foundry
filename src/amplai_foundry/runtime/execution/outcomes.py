@@ -51,6 +51,9 @@ class PullRequestTracker:
         self.service, self.reader, self.clock = service, reader, clock
         self.interval = interval_seconds
         self._last: float | None = None
+        # goal id -> the last coded refusal reading its PRs (cleared by a later read); shown by
+        # ``ops pr-sync``, not stored (the stored ``publication_outcome`` shape is unchanged)
+        self.unread: dict[str, dict[str, Any]] = {}
 
     def due(self) -> bool:
         return self._last is None or self.clock() - self._last >= self.interval
@@ -92,13 +95,23 @@ class PullRequestTracker:
             # a multi-app goal has one PR per app (D-081); its outcome is the aggregate
             parts = publication.get("publications") or {plan["app"]: publication}
             states: dict[str, PullRequestState] = {}
+            app = ""
             try:
                 for app, part in parts.items():
                     if part.get("pr_url"):
                         repo = self.service.apps[app].config.repo
                         states[app] = reader(repo, part["pr_url"])
-            except (Hold, RuntimeFault, OSError, ValueError, KeyError):
+            except RuntimeFault as fault:  # Hold included
+                # unknown stays unknown; retried at the next sync. A coded refusal (e.g.
+                # GIT_HOST_MISMATCH) is kept for the operator, in memory only (not stored)
+                self.unread[goal_id] = {
+                    "goal_id": goal_id, "app": app, "code": fault.code,
+                    "details": fault.details, "at": now(),
+                }  # fmt: skip
+                continue
+            except (OSError, ValueError, KeyError):
                 continue  # unknown stays unknown; retried at the next sync
+            self.unread.pop(goal_id, None)
             if not states or any(s.state not in OPEN_OR_FINAL for s in states.values()):
                 continue
             before = plan.get("publication_outcome") or {}

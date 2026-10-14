@@ -64,11 +64,13 @@ class FakeGitHub:
         self.calls: list[tuple[list[str], Path, dict[str, str] | None, float]] = []
         self.branches: dict[str, str] = {}
         self.prs: dict[str, dict[str, Any]] = {}
+        # remote name -> its push URLs (``git remote get-url --push --all``)
         self.remotes = {
-            "origin": f"git@{host}:o/r.git",
-            "conformance-down": f"https://{host}/o/down.git",
-            "conformance-readonly": f"ssh://git@{host.upper()}:22/o/ro.git",
-            "conformance-elsewhere": "https://elsewhere.example/o/r.git",
+            "origin": [f"git@{host}:o/r.git"],
+            "conformance-down": [f"https://{host}/o/down.git"],
+            "conformance-readonly": [f"ssh://git@{host.upper()}:22/o/ro.git"],
+            "conformance-elsewhere": ["https://elsewhere.example/o/r.git"],
+            "conformance-pushurl": [f"https://{host}/o/r.git", "git@elsewhere.example:o/r.git"],
         }
 
     def __call__(
@@ -76,8 +78,10 @@ class FakeGitHub:
     ) -> Proc[bytes]:
         self.calls.append((list(args), cwd, env, timeout))
         match args:
-            case ["git", "remote", "get-url", name] if name in self.remotes:
-                return done((self.remotes[name] + "\n").encode())
+            case ["git", "remote", "get-url", "--push", "--all", name] if name in self.remotes:
+                return done("".join(u + "\n" for u in self.remotes[name]).encode())
+            case ["git", "remote", "get-url", *_]:
+                return done(code=2, stderr=b"error: No such remote")
             case ["git", "ls-remote", "conformance-down", _ref]:
                 return done(code=128, stderr=b"unreachable")
             case ["git", "ls-remote", _remote, ref]:
@@ -227,12 +231,12 @@ def test_the_suite_fails_a_host_that_breaks_a_v1_rule(broken: type[GitHubHost]) 
 
 REPO = Path("/repo")
 URL = "https://github.com/o/r/pull/7"
-GET_URL = (["git", "remote", "get-url", "origin"], REPO, None, 30)
+GET_URL = (["git", "remote", "get-url", "--push", "--all", "origin"], REPO, None, 30)
 
 
 def test_default_host_runs_the_pre_module_commands_after_a_remote_lookup() -> None:
     """The argv, cwd, env and timeout of ``publish.py`` / ``outcomes.py`` at ``a31d66a``; the
-    only added command is the read-only ``git remote get-url`` of the host check."""
+    only added command is the read-only ``git remote get-url --push --all`` of the host check."""
     fake = FakeGitHub()
     host = GitHubHost(run=fake)
     host.push_branch(REPO, "origin", "amplai/g-1", "a" * 40)
@@ -319,7 +323,7 @@ def test_a_remote_on_another_host_is_refused_before_any_write(configured: str, r
         with pytest.raises(Hold) as held:
             call()
         assert held.value.code == "GIT_HOST_MISMATCH"
-        assert held.value.details == {"configured": configured, "remote": url_host(remote)}
+        assert held.value.details == {"configured": [configured], "remote": url_host(remote)}
     assert all(args[:3] == ["git", "remote", "get-url"] for args in calls)
 
 
@@ -334,7 +338,7 @@ def test_a_pr_url_on_another_host_is_neither_read_nor_commented() -> None:
     ):
         with pytest.raises(Hold) as held:
             call()
-        assert held.value.details == {"configured": "github.corp.example", "remote": "github.com"}
+        assert held.value.details == {"configured": ["github.corp.example"], "remote": "github.com"}
     assert calls == []
     assert GitHubHost(
         host="github.corp.example:8443",
@@ -348,6 +352,109 @@ def test_a_pr_url_gh_returns_on_another_host_is_refused() -> None:
     with pytest.raises(Hold) as held:
         GitHubHost(run=fake).open_draft_pr(REPO, "origin", "amplai/g", "main", "t", "b")
     assert held.value.code == "GIT_HOST_MISMATCH"
+    assert held.value.details == {  # the operator can find the PR that exists
+        "configured": ["github.com"], "remote": "elsewhere.example",
+        "pr_url": "https://elsewhere.example/o/r/pull/9",
+    }  # fmt: skip
+
+
+# -- push URLs as git uses them (real git, no network) ------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def isolated_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The operator's own git config (e.g. insteadOf rules) never reaches these checkouts."""
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+
+def checkout(tmp_path: Path, *config: list[str]) -> Path:
+    repo = tmp_path / "checkout"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for args in config:
+        subprocess.run(["git", "-C", str(repo), *args], check=True)
+    return repo
+
+
+@pytest.mark.parametrize(
+    "config, remote",
+    [
+        # fetch from github.com, push elsewhere
+        ([["remote", "add", "origin", "https://github.com/o/r.git"],
+          ["remote", "set-url", "--push", "origin", "git@evil.example:o/r.git"]], "evil.example"),
+        # a second push URL elsewhere
+        ([["remote", "add", "origin", "https://github.com/o/r.git"],
+          ["remote", "set-url", "--add", "--push", "origin", "https://github.com/o/r.git"],
+          ["remote", "set-url", "--add", "--push", "origin", "https://evil.example/o/r.git"]],
+         "evil.example"),
+        # pushInsteadOf rewrites the push URL
+        ([["remote", "add", "origin", "https://github.com/o/r.git"],
+          ["config", "url.git@evil.example:.pushInsteadOf", "https://github.com/"]],
+         "evil.example"),
+    ],
+)  # fmt: skip
+def test_every_push_url_must_be_on_the_host_before_a_push(
+    tmp_path: Path, config: list[list[str]], remote: str
+) -> None:
+    repo = checkout(tmp_path, *config)
+    with pytest.raises(Hold) as held:
+        GitHubHost().push_branch(repo, "origin", "amplai/g", "a" * 40)
+    assert held.value.code == "GIT_HOST_MISMATCH" and held.value.details["remote"] == remote
+
+
+def test_a_mirror_fetch_url_with_a_github_push_url_is_allowed(tmp_path: Path) -> None:
+    repo = checkout(
+        tmp_path,
+        ["remote", "add", "origin", "https://mirror.example/o/r.git"],
+        ["remote", "set-url", "--push", "origin", "git@github.com:o/r.git"],
+    )
+    GitHubHost().check_remote(repo, "origin")
+
+
+def test_an_unknown_remote_or_a_timed_out_lookup_is_publish_remote(tmp_path: Path) -> None:
+    repo = checkout(tmp_path)
+    with pytest.raises(Hold) as held:
+        GitHubHost().check_remote(repo, "origin")
+    assert held.value.code == "PUBLISH_REMOTE"
+
+    def slow(args: list[str], cwd: Path, env: Any, timeout: float) -> Proc[bytes]:
+        raise subprocess.TimeoutExpired(args, timeout)
+
+    with pytest.raises(Hold) as held:
+        GitHubHost(run=slow).push_branch(REPO, "origin", "amplai/g", "a" * 40)
+    assert held.value.code == "PUBLISH_REMOTE"
+
+
+def test_remote_hosts_allow_an_ssh_host_but_pr_urls_stay_on_the_web_host() -> None:
+    def run(args: list[str], cwd: Path, env: Any, timeout: float) -> Proc[bytes]:
+        if args[:3] == ["git", "remote", "get-url"]:
+            return done(b"git@ssh.corp.example:o/r.git\n")
+        return done()
+
+    corp = GitHubHost(host="github.corp.example", remote_hosts=["SSH.Corp.Example"], run=run)
+    corp.check_remote(REPO, "origin")
+    with pytest.raises(Hold) as held:
+        corp.pr_state(REPO, "https://ssh.corp.example/o/r/pull/1")
+    assert held.value.details == {
+        "configured": ["github.corp.example"],
+        "remote": "ssh.corp.example",
+    }
+    web_only = GitHubHost(
+        host="github.corp.example",
+        remote_hosts=["ssh.corp.example"],
+        run=lambda *a: done(b"https://github.corp.example/o/r.git\n"),
+    )
+    with pytest.raises(Hold) as held:  # the web host is not a remote host unless listed
+        web_only.check_remote(REPO, "origin")
+    assert held.value.details["configured"] == ["ssh.corp.example"]
+
+
+@pytest.mark.parametrize(
+    "url, host",
+    [("https://github.com./o/r", "github.com"), ("git@github.com.:o/r.git", "github.com")],
+)
+def test_a_trailing_dot_is_ignored_in_urls(url: str, host: str) -> None:
+    assert url_host(url) == host
 
 
 @pytest.mark.parametrize(
@@ -443,6 +550,13 @@ def test_absent_git_host_is_github_and_null_is_none(tmp_path: Path) -> None:
     assert LocalConfig.model_validate(config(home, git_host=None)).git_host is None
     corp = LocalConfig.model_validate(config(home, git_host={"host": " GitHub.Corp.Example "}))
     assert corp.git_host is not None and corp.git_host.host == "github.corp.example"  # lowercase
+    assert corp.git_host.remote_hosts is None  # absent: the host itself
+    ssh = LocalConfig.model_validate(
+        config(
+            home, git_host={"host": "github.corp.example", "remote_hosts": [" SSH.corp.example"]}
+        )
+    )
+    assert ssh.git_host is not None and ssh.git_host.remote_hosts == ["ssh.corp.example"]
 
 
 @pytest.mark.parametrize(
@@ -453,6 +567,10 @@ def test_absent_git_host_is_github_and_null_is_none(tmp_path: Path) -> None:
         {"host": "github.com/evil"},
         {"host": "-github.com"},
         {"host": "github.com", "token": "x"},
+        {"host": "github.com."},
+        {"remote_hosts": []},
+        {"remote_hosts": ["ssh host"]},
+        {"remote_hosts": ["git@ssh.example"]},
     ],
 )
 def test_a_git_host_entry_is_strict(tmp_path: Path, entry: dict[str, Any]) -> None:
