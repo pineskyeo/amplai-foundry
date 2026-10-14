@@ -376,8 +376,14 @@ def test_a_steer_inside_the_liveness_check_window_is_a_pause_not_a_race(
 
     def racing(scope: Any, kind: str, key: str, *args: Any, **kw: Any) -> Any:
         row = head(scope, kind, key, *args, **kw)
+        # only the read before the transaction (no ``db``): the window is between it and the
+        # version compare. The compare's own read runs inside the worker's transaction, where a
+        # steer from this thread is a nested transaction (NESTED_TRANSACTION), not the race; a
+        # real steer comes from another thread and waits for that transaction. Arming between
+        # the two reads under load used to land the steer there (held, driver_failed).
         if (
             kind == "goal"
+            and kw.get("db") is None
             and armed.is_set()
             and sys._getframe(1).f_code.co_name == "execution_envelope"
         ):
