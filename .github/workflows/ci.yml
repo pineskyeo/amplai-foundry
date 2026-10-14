@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # a merge queue's candidate commit (the checks step compares it with merge_group.base_sha)
+  merge_group:
 
 jobs:
   validate:
@@ -24,22 +26,34 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
-      # Work 034 OD-18 (M-16..M-20): the registered checks of the `ci` moment. pytest, ruff and
-      # mypy run as the steps above; only they may be skipped (checks.lock.json `ci_external`)
-      # and the run ends `pass_with_skips`. The check list is compared with the base: the PR's
-      # base branch, or on a push the commit before it (none on a branch's first push, all-zero
-      # SHA). The base's own check policy code decides (M-19).
+      # Work 034 OD-18 (M-16..M-20): the registered checks of the `ci` moment, also when an earlier
+      # step failed. pytest, ruff and mypy run as the steps above; only they may be skipped
+      # (checks.lock.json `ci_external`) and the run ends `pass_with_skips`. The check list is
+      # compared with the base commit, whose own check policy code decides (M-19): the PR's base
+      # SHA, the merge queue's base SHA, or on a push the commit before it. A first push (all-zero
+      # SHA) has no base; a base that can not be fetched (a force push) runs without one, with a
+      # warning and a note in the run record.
       - name: amplai checks run --when ci
+        if: always()
         env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
           BEFORE: ${{ github.event.before }}
         run: |
+          case "$GITHUB_EVENT_NAME" in
+            pull_request) sha="$PR_BASE" ;;
+            merge_group) sha="$QUEUE_BASE" ;;
+            *) sha="$BEFORE" ;;
+          esac
           base=()
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/amplai/check-base"
+          if [ -z "$sha" ] || [ "$sha" = "0000000000000000000000000000000000000000" ]; then
+            echo "::warning::no base commit: loosening against main is not checked"
+            base=(--note "no base commit ($GITHUB_EVENT_NAME)")
+          elif git fetch --no-tags --depth=1 origin "+$sha:refs/amplai/check-base"; then
             base=(--base-ref refs/amplai/check-base)
-          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            git fetch --no-tags --depth=1 origin "+$BEFORE:refs/amplai/check-base"
-            base=(--base-ref refs/amplai/check-base)
+          else
+            echo "::warning::base $sha can not be fetched: loosening against main is not checked"
+            base=(--note "base $sha can not be fetched ($GITHUB_EVENT_NAME)")
           fi
           amplai checks run --when ci "${base[@]}" --record-dir "$RUNNER_TEMP/check-runs" \
             --skip check.tool_pytest --skip check.tool_ruff --skip check.tool_ruff_format \

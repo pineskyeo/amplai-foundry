@@ -642,7 +642,7 @@ def test_with_a_base_ref_the_base_refs_policy_code_decides(
     decided = policy(tmp_path, root)
     assert decided.status == "pass", [f.wire() for f in decided.findings]
     assert decided.details["marker"] == "base"
-    assert decided.details["policy_code"] == "HEAD (base ref)"
+    assert decided.details["policy_code"] == "HEAD (base ref code)"
     loosened = loosen("check.policy", when=frozenset({"ci"}))
     monkeypatch.setattr(policy_module, "BUILTIN_CHECKS", loosened)
     (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))
@@ -653,3 +653,141 @@ def test_with_a_base_ref_the_base_refs_policy_code_decides(
 
 def test_the_committed_lock_is_the_registry() -> None:
     assert (REPO / LOCK_FILE).read_bytes() == lock_bytes(lock_of(BUILTIN_CHECKS))
+
+
+# -- failure review (PR #94, c9d338f) --------------------------------------------------------------
+
+
+def test_the_base_policy_falls_back_only_when_the_file_is_certainly_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = repo_with_lock(tmp_path / "repo")
+    write(root, policy_module.POLICY_PATH, "# an older policy without the API\n")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "policy without API")
+    with pytest.raises(RuntimeFault) as excinfo:  # present but not usable: fail closed
+        policy_module.base_source(root, "HEAD", tmp_path / "x")
+    assert excinfo.value.code == "CHECK_POLICY_BASE"
+    real = policy_module._git
+
+    def broken(where: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if args[0] in ("cat-file", "ls-tree"):
+            return subprocess.CompletedProcess(list(args), 128, b"", b"fatal: broken object")
+        return real(where, *args)
+
+    monkeypatch.setattr(policy_module, "_git", broken)
+    with pytest.raises(RuntimeFault) as excinfo:  # can not tell: fail closed, no bootstrap
+        policy_module.base_source(root, "HEAD", tmp_path / "y")
+    assert excinfo.value.code == "CHECK_POLICY_BASE"
+
+
+def test_an_unknown_lock_schema_is_one_loosening_that_needs_an_approval(tmp_path: Path) -> None:
+    root = repo_with_lock(tmp_path / "repo")
+    newer = {**lock_of(BUILTIN_CHECKS), "schema": "amplai.checks-lock.v2"}
+    (root / LOCK_FILE).write_bytes(lock_bytes(newer))
+    found = policy_module.evaluate(root, "HEAD", newer)
+    assert [f.code for f in found.findings] == ["CHECK_LOOSENING_UNAPPROVED"]
+    item: Any = found.findings[0].details
+    assert item["check_id"] == LOCK_FILE
+    assert item["changes"] == [{"what": "lock_schema_unknown", "schema": "amplai.checks-lock.v2"}]
+    write(root, f"{APPROVALS_DIR}/schema.json", json.dumps(approval(item)))
+    assert policy_module.evaluate(root, "HEAD", newer).status == "pass"
+
+
+def test_a_check_that_read_nothing_does_not_pass(tmp_path: Path) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    boundary = build(ModuleBoundaryCheck, "check.module_boundary").run(context(empty, tmp_path))
+    assert [f.code for f in boundary.findings] == ["BOUNDARY_NO_SOURCE"]
+    secrets = build(SecretExposureCheck, "check.secret_exposure")
+    assert [f.code for f in secrets.run(context(empty, tmp_path)).findings] == [
+        "SECRET_SCAN_NOT_GIT"
+    ]
+    git(empty, "init", "-q")
+    assert [f.code for f in secrets.run(context(empty, tmp_path)).findings] == ["SECRET_SCAN_EMPTY"]
+
+
+def test_a_crlf_line_has_the_same_allow_key() -> None:
+    from amplai_foundry.runtime.checks.secret_exposure import occurrences
+
+    lf = list(occurrences(("x\n" + PEM).encode()))
+    crlf = list(occurrences(("x\r\n" + PEM.replace("\n", "\r\n")).encode()))
+    assert lf == crlf and lf[0][1] == 2
+
+
+def test_early_holds_are_recorded_and_a_failed_record_keeps_the_hold(tmp_path: Path) -> None:
+    records = tmp_path / "records"
+    with pytest.raises(Hold) as held:  # the protected fixtures declare only `ci`
+        run_checks("upgrade", root=tmp_path, record_dir=records, checks=protected_set())
+    assert held.value.code == "CHECK_NONE_SELECTED"
+    details: Any = held.value.details
+    stored = json.loads(Path(details["record"]).read_text())
+    assert stored["outcome"] == "hold" and stored["hold"]["code"] == "CHECK_NONE_SELECTED"
+    blocked = tmp_path / "not-a-dir"
+    blocked.write_text("x")
+    bad = CheckResult("fail", (Finding("X", "x"),))
+    with pytest.raises(Hold) as held:
+        run_checks("ci", root=tmp_path, record_dir=blocked,
+                   checks=[*protected_set(), fixed("check.lint", bad)])  # fmt: skip
+    details = held.value.details
+    assert held.value.code == "CHECK_FAILED" and "record_error" in details
+    assert details["failed"][0]["check_id"] == "check.lint"
+    with pytest.raises(RuntimeFault) as excinfo:
+        run_checks("ci", root=tmp_path, record_dir=blocked, checks=protected_set())
+    assert excinfo.value.code == "CHECK_RECORD"
+
+
+def test_notes_go_into_the_record_and_the_warnings(tmp_path: Path) -> None:
+    summary = run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=protected_set(),
+                         notes=("base abc can not be fetched (push)",))  # fmt: skip
+    assert summary["warnings"][0] == "base abc can not be fetched (push)"
+    assert json.loads(Path(summary["record"]).read_text())["notes"] == [
+        "base abc can not be fetched (push)"
+    ]
+
+
+def test_the_safe_extract_fallback_refuses_links(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+    import tarfile
+
+    def archive(link: bool) -> tarfile.TarFile:
+        data = io.BytesIO()
+        with tarfile.open(fileobj=data, mode="w") as tar:
+            body = b"x = 1\n"
+            info = tarfile.TarInfo("src/a.py")
+            info.size = len(body)
+            tar.addfile(info, io.BytesIO(body))
+            if link:
+                sym = tarfile.TarInfo("src/evil")
+                sym.type, sym.linkname = tarfile.SYMTYPE, "/etc/passwd"
+                tar.addfile(sym)
+        data.seek(0)
+        return tarfile.open(fileobj=data)
+
+    monkeypatch.delattr(tarfile, "data_filter")
+    policy_module._safe_extract(archive(False), tmp_path / "ok")
+    assert (tmp_path / "ok" / "src" / "a.py").read_text() == "x = 1\n"
+    with pytest.raises(RuntimeFault) as excinfo:
+        policy_module._safe_extract(archive(True), tmp_path / "bad")
+    assert excinfo.value.code == "CHECK_POLICY_BASE"
+
+
+def test_the_removal_run_drops_pytest_variables_and_kills_its_group_on_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sys
+    import time
+
+    from amplai_foundry.runtime.checks.removal import clean_env, run_group
+
+    monkeypatch.setenv("PYTEST_ADDOPTS", "-k nothing")
+    assert not [k for k in clean_env() if k.startswith("PYTEST_")]
+    started = time.monotonic()
+    child = (
+        "import subprocess, sys, time; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); time.sleep(60)"
+    )
+    assert run_group([sys.executable, "-c", child], tmp_path, clean_env(), 1) is None
+    assert time.monotonic() - started < 30

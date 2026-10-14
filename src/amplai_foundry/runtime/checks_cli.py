@@ -50,6 +50,10 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
         record_dir: Annotated[
             Path | None, typer.Option("--record-dir", help="where the run record goes (M-20)")
         ] = None,
+        note: Annotated[
+            list[str] | None,
+            typer.Option("--note", help="a remark kept in the run record (CI: why no base ref)"),
+        ] = None,
         root: RootOption = Path("."),
     ) -> None:
         def call() -> Any:
@@ -63,6 +67,7 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
                 targets=tuple(target or ()),
                 skip=tuple(skip or ()),
                 base_ref=base_ref,
+                notes=tuple(note or ()),
             )
             for warning in summary["warnings"]:
                 typer.echo(f"warning: {warning}", err=True)

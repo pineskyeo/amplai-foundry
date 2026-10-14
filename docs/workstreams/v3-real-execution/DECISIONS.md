@@ -841,7 +841,12 @@
   4. 승인 기록(`amplai.check-approval.v1`, `docs/workstreams/v3-real-execution/check-approvals/*.json`): check_id,
      before·after(lock entry + `ci_external` 소속의 digest), approver, reason, approved_at(RFC 3339 UTC, 미래 금지). 한 번만
      쓴다(base ref 에 이미 있으면 `CHECK_APPROVAL_REUSED`, 같은 변경에 둘이면 `CHECK_APPROVAL_DUPLICATE`). `--base-ref` 가
-     있으면 base ref 의 policy 코드(`git archive` 사본, `POLICY_API = 1`)가 판정한다.
+     있으면 판정(`evaluate`, `lock.loosenings`)은 base ref 의 policy 코드(`git archive` 사본, `POLICY_API = 1`)가 한다.
+     이것은 판정 코드를 바꾸는 변경만 막는다. 호출부(`CheckPolicyCheck`, runner, `checks_cli.py`)나 CI workflow 를 바꾸는
+     변경은 막지 못한다. base ref 에 `runtime/checks/policy.py` 가 확실히 없을 때만(`git cat-file -e` 실패 + 빈 `git
+     ls-tree`) 이 tree 의 코드로 bootstrap 하고, 그 밖의 읽기·풀기·실행 실패는 `CHECK_POLICY_BASE`(fail closed)다. lock 의
+     schema 를 base 코드가 모르면 lock 전체가 완화 하나(`check_id` `checks.lock.json`)이고 승인 기록이 필요하다. 승인 없이
+     바꾸려면 두 단계다: 먼저 판정 코드가 새 schema 를 읽게 하고(lock 은 그대로), 다음 변경에서 lock 을 바꾼다.
   5. 실행 기록(`amplai.check-run.v1`): 로컬 JSON 한 개와 CI artifact. 제품 store 에는 쓰지 않는다.
   6. 모듈 코드 위치: `modules/builtin.py` `BUILTIN_CODE`(구현, 적합성 subject, `local.json` 끄기 키), `KIND_PACKAGES`,
      `KIND_SUITES`, `modules/loader.py`. `runtime/notifier` 패키지는 Slack 구현을 더 이상 export 하지 않는다(composition root 가
@@ -852,9 +857,12 @@
      `modules/loader.py` 추가(D-128 closure 시험 통과). `test_033_s14_quality` 의 "quality 를 import 하는 곳" 불변식에
      `runtime/checks/tools.py`(Q-suite 검사, `upgrade` 시점만) 추가.
 - 운영자 결정 대기:
-  - (A) 승인 기록을 사람이 썼는지 확인하는 방식: CODEOWNERS(`checks.lock.json`, `check-approvals/`) + branch protection 의
-    code owner 리뷰 + `amplai checks run` 필수 status check, 또는 운영자 키 서명, 또는 store 승인. 저장소 설정은 이 PR 이 바꾸지
-    않는다.
+  - (A) 승인 기록을 사람이 썼는지, 그리고 검사 호출부·CI 를 바꾸는 변경을 사람이 봤는지 확인하는 방식: CODEOWNERS 와 code
+    owner 필수 리뷰를 아래 경로에 걸고 `amplai checks run --when ci` 를 필수 status check 로 두는 저장소 보호, 또는 운영자 키
+    서명, 또는 store 승인. 보호가 필요한 경로: `src/amplai_foundry/runtime/checks/**`,
+    `src/amplai_foundry/runtime/checks_cli.py`, `.github/workflows/ci.yml`, `checks.lock.json`,
+    `docs/workstreams/v3-real-execution/check-approvals/`, `src/amplai_foundry/runtime/evidence/cas.py`. 저장소 설정은 이 PR 이
+    바꾸지 않는다.
   - (B) 실행 기록을 제품 store 에 둘지(M-20 표시 화면).
   - (C) pack 이 required 검사를 더할 수 있는지(M-18).
 - Source: `specs/034-hermes-modular-platform/spec.md` OD-18, M-16~M-20, `specs/034-hermes-modular-platform/plan.md` §3.10,

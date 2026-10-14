@@ -86,6 +86,9 @@ class ModuleBoundaryCheck(BuiltinCheck):
         findings: list[Finding] = []
         seen: set[tuple[str, str, str]] = set()
         files = sorted((src / PACKAGE).rglob("*.py"))
+        if not files:  # a wrong root would otherwise pass with nothing read
+            findings.append(Finding("BOUNDARY_NO_SOURCE", f"no source under src/{PACKAGE}",
+                                    details={"root": str(context.root)}))  # fmt: skip
         for path in files:
             name, is_package = module_name(path, src)
             own = table.get(name, frozenset())

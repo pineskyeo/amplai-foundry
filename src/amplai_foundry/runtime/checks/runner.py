@@ -12,10 +12,12 @@ check's id, version, status and findings (M-17). An optional check's failure is 
   step runs: pytest, ruff, mypy); any other skip is Hold ``CHECK_SKIP_REFUSED``. A run with a skip
   ends ``pass_with_skips``, never ``pass``.
 - A run that selects no check is Hold ``CHECK_NONE_SELECTED``.
-- Every run writes one record under the record directory, pass or Hold (M-20):
-  ``check-run-<id>.json`` with the commit, the registry digest (the lock), the modules, and each
-  check's id, version, status, findings and duration. The record stays a local file: where
-  promotion and upgrade screens read it from (the product store) is not decided yet.
+- Every run writes one record under the record directory, pass or Hold, a Hold before any check
+  ran included (M-20): ``check-run-<id>.json`` with the commit, the registry digest (the lock),
+  the modules, and each check's id, version, status, findings and duration. When the record can
+  not be written, a Hold keeps its details and adds ``record_error``; a pass becomes
+  ``CHECK_RECORD``. The record stays a local file: where promotion and upgrade screens read it
+  from (the product store) is not decided yet.
 
 Checks are loaded through the module loader from :data:`..modules.builtin.BUILTIN_CODE`; this file
 imports no check implementation.
@@ -131,9 +133,11 @@ def run_checks(
     skip: Sequence[str] = (),
     base_ref: str | None = None,
     checks: Sequence[Check] | None = None,
+    notes: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Run the checks of ``when``; return the run summary, or Hold ``CHECK_FAILED`` after the
-    record is written when a required check did not pass."""
+    record is written when a required check did not pass. ``notes`` are the caller's remarks
+    (CI: why there is no base ref); they go into the record and the warnings."""
     if when not in WHEN:
         raise RuntimeFault("CHECK_WHEN", "unknown moment", details={"when": when, "known": WHEN})
     bad = [t for t in targets if not target_ok(t)]
@@ -141,30 +145,64 @@ def run_checks(
         raise RuntimeFault("CHECK_TARGET", "targets are core, kind:<kind>, kind:* or pack:<id>",
                            details={"targets": bad})  # fmt: skip
     root = root.resolve()
+    run_id = new_id("checkrun")
+    started_at = now()
     registry = tuple(builtin_checks() if checks is None else checks)
+
+    def record(outcome: str, results: list[dict[str, Any]], **extra: Any) -> dict[str, Any]:
+        return {
+            "schema": RECORD_SCHEMA,
+            "run_id": run_id,
+            "when": when,
+            "targets": list(targets),
+            "skipped": sorted(r["check_id"] for r in results if r["status"] == "skipped"),
+            "requested_skips": sorted(skip),
+            "base_ref": base_ref,
+            "notes": list(notes),
+            "started_at": started_at,
+            "finished_at": now(),
+            "commit": _commit(root),
+            "registry_digest": entry_digest(
+                lock_document((c.check for c in registry), CI_EXTERNAL)
+            ),
+            "modules": [s.ref for s in BUILTIN_MODULES],
+            "outcome": outcome,
+            "results": results,
+            **extra,
+        }
+
+    def stored(document: dict[str, Any]) -> dict[str, str]:
+        """Where the record went, or why it did not; never hides the run's own outcome."""
+        try:
+            return {"record": str(write_record(record_dir, document))}
+        except OSError as exc:
+            return {"record_error": f"{type(exc).__name__}: {exc}"}
+
+    def hold(code: str, message: str, details: dict[str, Any]) -> Hold:
+        where = stored(record("hold", [], hold={"code": code, "details": details}))
+        return Hold(code, message, details={**details, **where})
+
     by_id = {c.check.check_id: c for c in registry}
     missing = sorted(BASE_PROTECTED - set(by_id))
     if missing:
-        raise Hold("CHECK_PROTECTED_MISSING", "a base protection check is not registered",
-                   details={"missing": missing})  # fmt: skip
+        raise hold("CHECK_PROTECTED_MISSING", "a base protection check is not registered",
+                   {"missing": missing})  # fmt: skip
     unknown = sorted(set(skip) - set(by_id))
     if unknown:
         raise RuntimeFault("CHECK_UNKNOWN", "no such check", details={"skip": unknown})
     protected = sorted(s for s in set(skip) if is_protected(by_id[s]))
     if protected:
-        raise Hold("CHECK_PROTECTED", "a protected check can not be skipped",
-                   details={"skip": protected})  # fmt: skip
+        raise hold("CHECK_PROTECTED", "a protected check can not be skipped",
+                   {"skip": protected})  # fmt: skip
     allowed = _allowed_skips(root)
     refused = sorted(set(skip) - allowed)
     if refused:
-        raise Hold("CHECK_SKIP_REFUSED", "only a check in the lock's ci_external can be skipped",
-                   details={"skip": refused, "ci_external": sorted(allowed)})  # fmt: skip
+        raise hold("CHECK_SKIP_REFUSED", "only a check in the lock's ci_external can be skipped",
+                   {"skip": refused, "ci_external": sorted(allowed)})  # fmt: skip
     selected = select(registry, when, targets)
     if not selected:
-        raise Hold("CHECK_NONE_SELECTED", "no registered check runs at this moment and target",
-                   details={"when": when, "targets": list(targets)})  # fmt: skip
-    run_id = new_id("checkrun")
-    started_at = now()
+        raise hold("CHECK_NONE_SELECTED", "no registered check runs at this moment and target",
+                   {"when": when, "targets": list(targets)})  # fmt: skip
     results: list[dict[str, Any]] = []
     for check in selected:
         declaration = check.check
@@ -191,36 +229,20 @@ def run_checks(
             "seconds": seconds,
         })  # fmt: skip
     failed = [r for r in results if r["required"] and r["status"] in ("fail", "error")]
-    warnings = [f"{r['check_id']}: {r['status']}" for r in results
+    warnings = [*notes] + [f"{r['check_id']}: {r['status']}" for r in results
                 if not r["required"] and r["status"] in ("fail", "error")]  # fmt: skip
     for r in results:
         warnings.extend(f"{r['check_id']}: {w}" for w in r["details"].get("warnings", ()))
     skipped = sorted(r["check_id"] for r in results if r["status"] == "skipped")
     outcome_word = "hold" if failed else "pass_with_skips" if skipped else "pass"
-    record = {
-        "schema": RECORD_SCHEMA,
-        "run_id": run_id,
-        "when": when,
-        "targets": list(targets),
-        "skipped": skipped,
-        "base_ref": base_ref,
-        "started_at": started_at,
-        "finished_at": now(),
-        "commit": _commit(root),
-        "registry_digest": entry_digest(lock_document((c.check for c in registry), CI_EXTERNAL)),
-        "modules": [s.ref for s in BUILTIN_MODULES],
-        "outcome": outcome_word,
-        "warnings": warnings,
-        "results": results,
-    }
-    path = write_record(record_dir, record)
+    where = stored(record(outcome_word, results, warnings=warnings))
     if failed:
         raise Hold(
             "CHECK_FAILED",
             "a required check did not pass",
             details={
                 "when": when,
-                "record": str(path),
+                **where,
                 "failed": [
                     {"check_id": r["check_id"], "version": r["version"], "status": r["status"],
                      "findings": r["findings"][:MAX_FINDINGS_IN_HOLD],
@@ -229,11 +251,14 @@ def run_checks(
                 ],
             },
         )  # fmt: skip
+    if "record" not in where:  # a pass without its record is not evidence (M-20)
+        raise RuntimeFault("CHECK_RECORD", "the run passed but its record was not written",
+                           details=where)  # fmt: skip
     return {
         "outcome": outcome_word,
         "run_id": run_id,
         "when": when,
-        "record": str(path),
+        "record": where["record"],
         "skipped": skipped,
         "warnings": warnings,
         "results": [

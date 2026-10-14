@@ -14,8 +14,10 @@ loop through it; a module's own feature tests are not in it (they need the modul
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import os
+import signal
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -50,8 +52,34 @@ def pytest_command(junit: Path, tests: tuple[str, ...], workers: str | None) -> 
     ]  # fmt: skip
 
 
+def clean_env() -> dict[str, str]:
+    """This process's environment without ``PYTEST_*`` (``PYTEST_ADDOPTS``, ``PYTEST_PLUGINS``,
+    ``PYTEST_DISABLE_PLUGIN_AUTOLOAD``, an outer xdist worker's variables): they would change
+    which tests the removal run selects or how it loads."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("PYTEST_")}
+
+
+def run_group(
+    command: list[str], cwd: Path, env: dict[str, str], timeout: float
+) -> subprocess.CompletedProcess[str] | None:
+    """Run ``command`` in its own process group; on timeout kill the whole group (pytest-xdist
+    workers included) and return ``None``."""
+    pipe = subprocess.PIPE
+    process = subprocess.Popen(command, cwd=cwd, env=env, stdout=pipe, stderr=pipe, text=True,
+                               start_new_session=True)  # fmt: skip
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.communicate()
+        return None
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
 class ModuleRemovalCheck(BuiltinCheck):
     workers: str | None = "auto"  # pytest-xdist workers of each run (None: one process)
+    timeout: float = TIMEOUT_SECONDS
 
     def run(self, context: CheckContext) -> CheckResult:
         tests = tuple(self.check.config.get("core_tests", ()))
@@ -78,11 +106,19 @@ class ModuleRemovalCheck(BuiltinCheck):
             if wanted and not any(t == "kind:*" or covers((f"kind:{kind}",), t) for t in wanted):
                 continue
             junit = context.workdir / f"{module_id}.xml"
-            env = {**os.environ, ENV_MODULE: module_id, ENV_FILES: ",".join(code.files()),
+            env = {**clean_env(), ENV_MODULE: module_id, ENV_FILES: ",".join(code.files()),
                    ENV_OFF_KEY: code.config_key}  # fmt: skip
             command = pytest_command(junit, tests, self.workers)
-            done = subprocess.run(command, cwd=context.root, env=env, capture_output=True,
-                                  text=True, timeout=TIMEOUT_SECONDS, check=False)  # fmt: skip
+            done = run_group(command, context.root, env, self.timeout)
+            if done is None:
+                findings.append(Finding(
+                    "MODULE_REMOVAL_TIMEOUT",
+                    f"the core tests without {module_id} did not finish in {self.timeout}s; "
+                    "the run's process group was killed",
+                    details={"module": module_id, "timeout_seconds": self.timeout},
+                ))  # fmt: skip
+                ran[module_id] = {"exit_code": None, "summary": "timeout"}
+                continue
             failed = failed_cases(junit) if junit.is_file() else []
             summary = (done.stdout.strip().splitlines() or [""])[-1]
             ran[module_id] = {

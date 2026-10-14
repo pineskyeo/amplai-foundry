@@ -12,6 +12,12 @@ single occurrences that are there on purpose, as ``<path>::<pattern id>::<line h
 16 hex digits of the SHA-256 of the line that holds the match); another occurrence of the same
 pattern in the same file is a finding. Adding an entry loosens the check (M-19). A finding names
 the path, the line number and the pattern id, never the matched text.
+
+What it does not see: an untracked or ignored file of a local work tree (only ``git ls-files``;
+in CI the checkout has tracked files only), a credential no pattern matches, and the history (a
+credential removed in a later commit is still in git). A tracked file over 8 MiB is not read; it is
+the finding ``SECRET_SCAN_TOO_LARGE``, so it fails rather than passes. A root that is not a git
+work tree is ``SECRET_SCAN_NOT_GIT`` and a scan of no file is ``SECRET_SCAN_EMPTY``.
 """
 
 from __future__ import annotations
@@ -43,21 +49,26 @@ def patterns() -> tuple[tuple[str, re.Pattern[bytes]], ...]:
 
 
 def occurrences(data: bytes) -> Iterator[tuple[str, int, str]]:
-    """``(pattern id, line number, line hash)`` of every match."""
+    """``(pattern id, line number, line hash)`` of every match. The line is hashed without its
+    end of line (``\\n``, and a ``\\r`` before it), so a CRLF checkout keeps the same keys."""
     for pattern_id, pattern in patterns():
         for match in pattern.finditer(data):
             start = data.rfind(b"\n", 0, match.start()) + 1
             end = data.find(b"\n", match.start())
-            line = data[start : len(data) if end < 0 else end]
+            line = data[start : len(data) if end < 0 else end].rstrip(b"\r")
             number = data.count(b"\n", 0, match.start()) + 1
             yield pattern_id, number, hashlib.sha256(line).hexdigest()[:16]
 
 
-def tracked_files(root: Path) -> list[str]:
-    done = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, timeout=120,
-                          check=False)  # fmt: skip
+def tracked_files(root: Path) -> list[str] | None:
+    """``git ls-files`` of ``root``; ``None`` when ``root`` is not a git work tree."""
+    try:
+        done = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True,
+                              timeout=120, check=False)  # fmt: skip
+    except (OSError, subprocess.TimeoutExpired):
+        return None
     if done.returncode != 0:
-        raise RuntimeError("git ls-files failed: the check needs a git checkout")
+        return None
     return [p.decode() for p in done.stdout.split(b"\0") if p]
 
 
@@ -67,7 +78,13 @@ class SecretExposureCheck(BuiltinCheck):
         findings: list[Finding] = []
         used: set[str] = set()
         scanned = 0
-        for rel in tracked_files(context.root):
+        files = tracked_files(context.root)
+        if files is None:
+            findings.append(Finding("SECRET_SCAN_NOT_GIT", "the root is not a git work tree: "
+                                    "there is no tracked file list to scan",
+                                    details={"root": str(context.root)}))  # fmt: skip
+            files = []
+        for rel in files:
             path = context.root / rel
             if path.is_symlink() or not path.is_file():
                 continue
@@ -88,5 +105,7 @@ class SecretExposureCheck(BuiltinCheck):
                                         f"a tracked file matches {pattern_id}", rel,
                                         {"pattern": pattern_id, "line": line,
                                          "allow_key": key}))  # fmt: skip
+        if scanned == 0 and not any(f.code == "SECRET_SCAN_NOT_GIT" for f in findings):
+            findings.append(Finding("SECRET_SCAN_EMPTY", "no tracked regular file was scanned"))
         return result(findings, scanned=scanned, allowed=sorted(used),
                       allow_unused=sorted(allow - used))  # fmt: skip
