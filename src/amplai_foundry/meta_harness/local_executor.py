@@ -139,6 +139,77 @@ def harness_sha() -> str:
         return _HARNESS_SHA
 
 
+_PACKAGE_ROOT = Path(__file__).resolve().parents[1]  # src/amplai_foundry as installed
+# D-128 review P1-1: the files of the package a trial's behaviour does not depend on. Everything
+# else under the package (data files included) is in ``trial_code_digest``. The first group is
+# outside the static import closure of the trial roots (``local_executor``, every
+# ``agent_drivers`` module, ``runtime/execution`` ``loop``, ``worker``, ``product``,
+# ``service``, ``codex``; tests/v3/test_033_d128_trial_code.py walks it); the evaluation files are
+# bound by the evaluator version instead (``evaluator_version_ref`` in the reuse key, with
+# ``trial_compatible_with``). Modules that are reachable or only maybe irrelevant (deciders,
+# meta_ops, pricing, observatory, telemetry, archive, proposer, stages, ...) stay in: a change
+# to them makes earlier trials non-reusable, never the reverse.
+TRIAL_CODE_EXCLUDED = (
+    "meta_harness/dashboard.py",
+    "evaluation/quality.py",
+    "meta_harness/surrogate.py",
+    "meta_harness/quota.py",
+    "runtime/meta_commands/*.py",  # except __init__.py (TRIAL_CODE_KEPT)
+    "runtime/cli.py",
+    "control_plane/**",
+    "integrations/**",
+    "distribution/**",
+    "packs/catalog.py",
+    "evaluation/analysis.py",
+    "evaluation/sequential.py",
+    "evaluation/versions.py",
+    "evaluation/calibration.py",
+    "evaluation/service.py",
+)
+TRIAL_CODE_KEPT = ("runtime/meta_commands/__init__.py",)
+_TRIAL_CODE: dict[Path, str] = {}
+
+
+def trial_code_excluded(relpath: str) -> bool:
+    """``relpath`` (posix, relative to the package) is one of ``TRIAL_CODE_EXCLUDED``."""
+    from fnmatch import fnmatchcase
+
+    if relpath in TRIAL_CODE_KEPT:
+        return False
+    for pattern in TRIAL_CODE_EXCLUDED:
+        if pattern.endswith("/**"):
+            if relpath.startswith(pattern[:-2]):
+                return True
+        elif fnmatchcase(relpath, pattern) and "/" not in relpath[len(pattern.split("*")[0]) :]:
+            return True
+    return False
+
+
+def trial_code_digest(root: Path = _PACKAGE_ROOT) -> str:
+    """D-128 review P1-1: sha256 over the sorted (relative path, bytes) of every file under the
+    installed package except ``TRIAL_CODE_EXCLUDED`` and compiled caches (``__pycache__``,
+    ``*.pyc``), read once per process at boot. Unlike ``harness_sha`` (the whole checkout's git
+    HEAD, kept in the receipt as provenance), a commit that touches only the dashboard, the CLI
+    or the evaluator's own files leaves it unchanged."""
+    import hashlib
+
+    with _HARNESS_LOCK:
+        if root not in _TRIAL_CODE:
+            files = []
+            for path in root.rglob("*"):
+                if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+                    continue
+                rel = path.relative_to(root).as_posix()
+                if not trial_code_excluded(rel):
+                    files.append((rel, path))
+            h = hashlib.sha256()
+            for rel, path in sorted(files):
+                data = path.read_bytes()
+                h.update(rel.encode() + b"\0" + str(len(data)).encode() + b"\0" + data)
+            _TRIAL_CODE[root] = "sha256:" + h.hexdigest()
+        return _TRIAL_CODE[root]
+
+
 def base_scope(tree: Path) -> list[str]:
     """``in_scope`` of a corpus base: its top-level directories as ``<name>/``, sorted, without
     hidden entries and ``__pycache__`` (the demo base gives ``['demo_app/', 'tests/']``)."""
@@ -305,6 +376,7 @@ class LocalTrialExecutor:
         self.store, self.scope = service.store, service.scope
         self.artifacts = service.workspaces.artifacts
         self.harness_sha = harness_sha()  # read at boot (§8.5)
+        self.trial_code_digest = trial_code_digest()  # D-128: the reuse-key code identity
         self.trials: list[dict[str, Any]] = []
         self._lock = threading.Lock()  # self.trials and self._bound (trials run in threads)
         self._bound: set[str] = set()  # dispatching trial ids a running call is tied to
@@ -417,7 +489,8 @@ class LocalTrialExecutor:
 
     def facts(self, composition_ref: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
         """D-128: what a trial of ``composition_ref`` on ``case`` would run on now, without
-        running anything: the receipt's ``harness_sha``, ``model_snapshot`` (of the composition
+        running anything: the receipt's ``harness_sha`` (provenance), ``trial_code_digest``,
+        ``model_snapshot`` (of the composition
         that would execute: the arm's, or its task-environment sibling, IC-12) and
         ``corpus_version``, as ``_observe`` records them. Calibration resume and imports compare
         stored receipts with it. A Hold of ``_spec`` or of the environment lookup propagates."""
@@ -433,6 +506,7 @@ class LocalTrialExecutor:
         snapshot, _effort = self._snapshot(composition)
         return {
             "harness_sha": self.harness_sha,
+            "trial_code_digest": self.trial_code_digest,
             "model_snapshot": snapshot,
             "corpus_version": spec.corpus_version,
         }
@@ -520,6 +594,7 @@ class LocalTrialExecutor:
             "corpus_version": spec.corpus_version,
             "split": spec.split,
             "harness_sha": self.harness_sha,
+            "trial_code_digest": self.trial_code_digest,
             "model_snapshot": snapshot,
         }  # fmt: skip
         proof: dict[str, Any] = {
@@ -662,6 +737,7 @@ class LocalTrialExecutor:
             "corpus_version": spec.corpus_version,
             "split": spec.split,
             "harness_sha": self.harness_sha,
+            "trial_code_digest": self.trial_code_digest,
             "model_snapshot": snapshot,
         }
         proof = {

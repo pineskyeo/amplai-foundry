@@ -1499,6 +1499,8 @@ class LocalMetaOps:
         corpus_set: str = MAIN_SET,
         import_from: list[str] | None = None,
         announce: Callable[[dict[str, Any]], None] | None = None,
+        expect_imported: int | None = None,
+        dry_run: bool = False,
     ) -> dict[str, Any]:
         """Freeze, approve (the operator, exact digest) and run a calibration of ``cell_ids``
         on every development and validation case of the frozen corpus (§8.2). The installed
@@ -1595,7 +1597,15 @@ class LocalMetaOps:
         service = self._calibration_service(policy)
         imports = None
         if import_from:
-            imports = self._plan_imports(service, plan, import_from)
+            imports = self._plan_imports(
+                service, plan, import_from, expect_imported=expect_imported, dry_run=dry_run
+            )
+        elif expect_imported is not None:
+            raise RuntimeFault("CALIBRATION_PLAN", "--expect-imported goes with --import-from")
+        if dry_run:
+            # D-128 review P2-b: the preview only; nothing is approved, frozen or run
+            return {"dry_run": True, "plan_id": calibration.plan_id(plan), "imports": imports,
+                    "cells": cells, "case_ids": len(plan["case_ids"])}  # fmt: skip
         if announce is not None:
             # what the operator approves: the plan id and, with imports, "imported N, new M"
             announce({"plan_id": calibration.plan_id(plan), "imports": imports})
@@ -1657,25 +1667,42 @@ class LocalMetaOps:
         return dict(max(refs, key=lambda r: r["revision"]))
 
     def _plan_imports(
-        self, service: Any, plan: dict[str, Any], import_from: list[str]
+        self,
+        service: Any,
+        plan: dict[str, Any],
+        import_from: list[str],
+        *,
+        expect_imported: int | None,
+        dry_run: bool,
     ) -> dict[str, Any]:
-        """D-128: add ``import_policy`` (``meta.calibration_import`` and each cell's A/A
-        discordance in the source runs) and ``imports`` (the eligible trials of the named plans)
-        to ``plan`` before its approval; returns "imported N, new M" and the exclusions by
-        reason. Hold CALIBRATION_IMPORT when no trial is eligible."""
+        """D-128: add ``import_policy`` (``meta.calibration_import``, each cell's drift
+        reference and its basis, and ``expected_imported``) and ``imports`` (the eligible trials
+        of the named plans) to ``plan`` before its approval; returns the preview: "imported N,
+        new M", per cell, and every exclusion with its reason. Hold CALIBRATION_IMPORT when no
+        trial is eligible. Review P2-b: a real run needs ``expect_imported`` (``--expect-imported``,
+        from a ``--dry-run``) equal to N (Hold CALIBRATION_IMPORT_EXPECTED otherwise); it is
+        written into the plan, so the approval binds it."""
         from ...evaluation import calibration
         from ..local_deployment import CalibrationImportEntry
 
         if len(set(import_from)) != len(import_from):
             raise RuntimeFault("CALIBRATION_PLAN", "Name each source plan once")
+        if not dry_run and expect_imported is None:
+            raise RuntimeFault(
+                "CALIBRATION_PLAN",
+                "--import-from needs --expect-imported N (the count a --dry-run shows)",
+            )
         sources = [self._calibration_plan_ref(pid) for pid in import_from]
         meta = getattr(getattr(self.dep, "config", None), "meta", None)
         settings = meta.calibration_import if meta is not None else CalibrationImportEntry()
+        reference, basis = service.drift_reference(self.scope, plan, sources)
         plan["import_policy"] = {
             "window_hours": settings.window_hours,
             "drift_share": settings.drift_share,
             "drift_min_per_cell": settings.drift_min_per_cell,
-            "drift_reference": service.drift_reference(self.scope, plan, sources),
+            "drift_reference": reference,
+            "drift_reference_basis": basis,
+            "expected_imported": 0,
         }
         found = service.eligible_imports(self.scope, plan, sources)
         reasons: dict[str, int] = {}
@@ -1686,24 +1713,45 @@ class LocalMetaOps:
             raise Hold(
                 "CALIBRATION_IMPORT",
                 "No trial of the named plans can be imported into this plan",
-                details={"excluded_by_reason": reasons, "excluded": found["excluded"][:20]},
+                details={"excluded_by_reason": reasons, "excluded": found["excluded"][:50]},
             )
+        if not dry_run and expect_imported != found["imported"]:
+            del plan["import_policy"]
+            raise Hold(
+                "CALIBRATION_IMPORT_EXPECTED",
+                "The eligible imports differ from --expect-imported; run --dry-run again",
+                details={"expected": expect_imported, "found": found["imported"],
+                         "excluded_by_reason": reasons},
+            )  # fmt: skip
         plan["imports"] = found["imports"]
-        slots = sum(len(refs) for refs in plan["composition_refs"].values())
+        plan["import_policy"]["expected_imported"] = found["imported"]
         imported_cases = len(found["cases"])
         sample = min(
             imported_cases,
             max(settings.drift_min_per_cell, math.ceil(settings.drift_share * imported_cases)),
         )
+        cases = len(plan["case_ids"])
+        per_cell = {
+            cell: {
+                "imported": imported_cases,
+                # manifest variants are never imported: they run in the imported slots
+                "new_round_one": len(refs) * cases - imported_cases,
+                "drift_reruns_at_most": sample * len(refs),
+                "drift_reference": reference[cell],
+                "drift_reference_basis": basis[cell],
+            }
+            for cell, refs in plan["composition_refs"].items()
+        }
         return {
             "sources": import_from,
             "imported": found["imported"],
             "imported_cases": imported_cases,
-            "new_round_one": slots * len(plan["case_ids"]) - found["imported"],
-            "drift_reruns": sample * slots,
+            "new_round_one": sum(c["new_round_one"] for c in per_cell.values()),
+            "drift_reruns_at_most": sum(c["drift_reruns_at_most"] for c in per_cell.values()),
+            "per_cell": per_cell,
             "excluded_by_reason": reasons,
+            "excluded": found["excluded"],
             "window_hours": settings.window_hours,
-            "drift_reference": plan["import_policy"]["drift_reference"],
             "plan_id": calibration.plan_id(plan),
         }
 
@@ -1764,7 +1812,14 @@ class LocalMetaOps:
             )
         before = self.store.head(self.scope, calibration.RUN_KIND, plan_id)["data"]["trial_refs"]
         service = self._calibration_service(policy)
-        summary_ref = service.resume(self.operator, plan_ref, self.executor, parallel=parallel)
+        from ..local_deployment import CalibrationImportEntry
+
+        meta = getattr(getattr(self.dep, "config", None), "meta", None)
+        settings = meta.calibration_import if meta is not None else CalibrationImportEntry()
+        summary_ref = service.resume(
+            self.operator, plan_ref, self.executor, parallel=parallel,
+            window_hours=settings.window_hours,
+        )  # fmt: skip
         run = self.store.head(self.scope, calibration.RUN_KIND, plan_id)
         self._record_metrics([r for r in run["data"]["trial_refs"] if r not in before])
         return {

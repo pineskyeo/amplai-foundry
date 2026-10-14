@@ -28,7 +28,12 @@ class EvolutionBudget:
         proposal_id: str,
         experiment_ref: dict[str, Any],
         limits: dict[str, Any],
+        *,
+        active_time: bool = False,
     ) -> None:
+        """``active_time`` (D-128 review P1-2, calibration roots): the wall budget counts the
+        time the root's runs are active (``start_segment``/``end_segment``), not the time since
+        the freeze."""
         try:
             head = self.store.head(scope, "meta-budget", proposal_id, db=db)
         except RuntimeFault as exc:
@@ -42,6 +47,11 @@ class EvolutionBudget:
                     "allocations": {},
                     "started_epoch": self.store.clock(),
                     "created_at": now(),
+                    **(
+                        {"wall_used_seconds": 0.0, "segment_started_epoch": None}
+                        if active_time
+                        else {}
+                    ),
                 },
             }
         data = head["data"]
@@ -103,7 +113,7 @@ class EvolutionBudget:
         active = [v for v in a.values() if v["status"] == "reserved"]
         if len(active) >= limits["max_parallel_works"]:
             raise Hold("META_CONCURRENCY", "Root experiment concurrency limit reached")
-        if self.store.clock() - data["started_epoch"] >= limits["max_wall_seconds"]:
+        if self.wall_used(data) >= limits["max_wall_seconds"]:
             raise Hold("META_WALL_BUDGET", "The proposal root wall-time budget is exhausted")
         total_tokens = sum(v["tokens"] for v in a.values())
         total_cost = sum(v["cost"] for v in a.values())
@@ -134,6 +144,49 @@ class EvolutionBudget:
             "active",
             {**data, "allocations": {**a, key: allocation}},
         )
+
+    def wall_used(self, data: dict[str, Any]) -> float:
+        """Seconds of the root's wall budget spent. A root in active-time mode (D-128 review P1-2,
+        calibration roots: ``wall_used_seconds`` present) counts the closed segments plus the
+        open one (``segment_started_epoch``); any other root counts from its freeze
+        (``started_epoch``), as before."""
+        if "wall_used_seconds" not in data:
+            return float(self.store.clock() - data["started_epoch"])
+        used = float(data["wall_used_seconds"])
+        started = data.get("segment_started_epoch")
+        return used + (self.store.clock() - started if started is not None else 0.0)
+
+    def start_segment(
+        self, db: sqlite3.Connection, scope: Scope, proposal_id: str, *, closed_at: float
+    ) -> float:
+        """D-128 review P1-2: open a run segment of a calibration root; returns the seconds
+        already used. A root frozen before active-time mode first counts its elapsed time since
+        the freeze up to ``closed_at`` (conservative); an open segment a lost owner left is
+        closed at ``closed_at`` (the caller passes the last recorded activity)."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data = dict(head["data"])
+        if "wall_used_seconds" not in data:
+            data["wall_used_seconds"] = max(0.0, closed_at - data["started_epoch"])
+        elif data.get("segment_started_epoch") is not None:
+            data["wall_used_seconds"] += max(0.0, closed_at - data["segment_started_epoch"])
+        data["segment_started_epoch"] = self.store.clock()
+        self.store.cas(db, scope, "meta-budget", proposal_id, head["row_version"], "active", data)
+        return float(data["wall_used_seconds"])
+
+    def end_segment(
+        self, db: sqlite3.Connection, scope: Scope, proposal_id: str, *, at: float | None = None
+    ) -> None:
+        """Close the open segment of an active-time root at ``at`` (default: now); a root
+        without an open segment is left as it is."""
+        head = self.store.head(scope, "meta-budget", proposal_id, db=db)
+        data = dict(head["data"])
+        started = data.get("segment_started_epoch")
+        if "wall_used_seconds" not in data or started is None:
+            return
+        end = self.store.clock() if at is None else at
+        data["wall_used_seconds"] += max(0.0, end - started)
+        data["segment_started_epoch"] = None
+        self.store.cas(db, scope, "meta-budget", proposal_id, head["row_version"], "active", data)
 
     def record_import(
         self,

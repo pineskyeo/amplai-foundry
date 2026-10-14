@@ -1038,11 +1038,12 @@ class QualityService:
         """The validated, completed target of a change: `{"version", "changes", "corpus_ref",
         "stage_templates"}`. `corpus_ref` and `stage_templates` default to the replaced version's;
         the first version needs a `corpus_ref`."""
-        fields = {"version", "changes", "corpus_ref", "stage_templates"}
+        fields = {"version", "changes", "corpus_ref", "stage_templates", "trial_compatible_with"}
         if not isinstance(to, dict) or not {"version", "changes"} <= set(to) or set(to) - fields:
             raise RuntimeFault(
                 "EVALUATOR_CHANGE_TARGET",
-                "`to` holds version and changes, and optionally corpus_ref and stage_templates",
+                "`to` holds version and changes, and optionally corpus_ref, stage_templates and "
+                "trial_compatible_with",
             )
         version = to["version"]
         versions.version_id(version)  # RuntimeFault EVALUATOR_VERSION for a bad name
@@ -1080,12 +1081,29 @@ class QualityService:
         templates = to.get("stage_templates", current[1]["stage_templates"] if current else {})
         if not isinstance(templates, dict):
             raise RuntimeFault("EVALUATOR_CHANGE_TARGET", "stage_templates is an object")
-        return {
+        # D-128 review P2-a: the stored lower versions whose calibration trials the new version
+        # accepts (an evaluator change that does not change grading or trial behaviour); they are
+        # approved with the change and written into the new evaluator-version record
+        compatible = to.get("trial_compatible_with", [])
+        if (
+            not isinstance(compatible, list)
+            or len(set(map(str, compatible))) != len(compatible)
+            or any(c not in stored for c in compatible)
+            or any(_version_number(c) >= _version_number(version) for c in compatible)
+        ):
+            raise RuntimeFault(
+                "EVALUATOR_CHANGE_TARGET",
+                "trial_compatible_with lists distinct stored versions lower than the target",
+            )
+        target = {
             "version": version,
             "changes": [dict(c) for c in changes],
             "corpus_ref": corpus_ref,
             "stage_templates": templates,
         }
+        if compatible:
+            target["trial_compatible_with"] = list(compatible)
+        return target
 
     def _change_head(self, change_id: str) -> dict[str, Any]:
         head = self.store.head(self.scope, CHANGE_KIND, change_id)  # NOT_FOUND if unknown
@@ -1252,6 +1270,7 @@ class QualityService:
             requalification_ref=data["requalification_ref"],
             stage_templates=target["stage_templates"],
             version=target["version"],
+            trial_compatible_with=target.get("trial_compatible_with"),
         )
         self._move(
             change_id,

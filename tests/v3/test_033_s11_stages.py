@@ -222,6 +222,7 @@ class Fake:
         self.tokens: dict[str, tuple[int, int]] = {}
         self.calls: list[tuple[str, str, int]] = []
         self.harness_sha: str | None = HARNESS_SHA
+        self.trial_code_digest: str | None = "sha256:" + "c" * 64  # D-128 review P1-1
         self.proposal: dict[str, Any] | None = None  # the proposal whose roles are scripted
         self.snapshot: dict[str, Any] | None = dict(SNAPSHOT)
         self.corpus_version = "1.0.0"
@@ -295,6 +296,7 @@ class Fake:
             "corpus_version": self.corpus_version,
             "split": case["split"],
             "harness_sha": self.harness_sha,
+            "trial_code_digest": self.trial_code_digest,
             "model_snapshot": self.snapshot,
             "cache_key": self.cache_key(composition, case, repeat),
         }

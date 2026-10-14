@@ -280,7 +280,7 @@ class CalibrationImportEntry(BaseModel):
     window_hours: int = Field(default=72, ge=1, le=8760)
     # the drift check re-runs this share of the imported tasks per cell, at least the minimum
     drift_share: float = Field(default=0.1, gt=0, le=1)
-    drift_min_per_cell: int = Field(default=4, ge=1, le=1000)
+    drift_min_per_cell: int = Field(default=8, ge=1, le=1000)
 
 
 class MetaEntry(BaseModel):

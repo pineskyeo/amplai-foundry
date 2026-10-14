@@ -174,7 +174,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
             typer.Option(
                 "--to-file",
                 help='JSON {"version": "eval-N", "changes": [{"kind", "detail"}], '
-                '"corpus_ref"?, "stage_templates"?}',
+                '"corpus_ref"?, "stage_templates"?, "trial_compatible_with"?: ["eval-N"]}',
             ),
         ],
         reason: Annotated[str, typer.Option("--reason")],

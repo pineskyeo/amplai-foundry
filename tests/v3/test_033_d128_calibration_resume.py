@@ -3,8 +3,8 @@
 interfaces.md "Clarification: Calibration Resume (D-128)". Real: store, budget ledgers,
 CalibrationService, EvaluationService, BudgetService, pricing. Stand-ins: the scripted executors
 of the S2 tests, whose receipts here also carry the reuse-key facts the trial executor records
-(``harness_sha``, ``model_snapshot``, ``corpus_version``), and a ``facts`` function standing in
-for ``LocalTrialExecutor.facts``.
+(``trial_code_digest``, ``model_snapshot``, ``corpus_version``; ``harness_sha`` as provenance),
+and a ``facts`` function standing in for ``LocalTrialExecutor.facts``.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from test_033_s11_stages import CELL as STAGE_CELL
 from test_033_s11_stages import build_world
 from test_033_unknown_usage_charge import UnknownUsage
 
-from amplai_foundry.evaluation import calibration, pricing
+from amplai_foundry.evaluation import calibration, pricing, versions
 from amplai_foundry.evaluation.calibration import CalibrationService
 from amplai_foundry.evaluation.service import NOT_RUN_EVIDENCE
 from amplai_foundry.meta_harness.budget import EvolutionBudget
@@ -34,6 +34,7 @@ from amplai_foundry.runtime.execution import meta_ops
 
 TRIAL_TOKENS = 10  # the scripted trials report 5 + 5 tokens
 SHA = "0ee15f080276a21d8fa03952348efa67bb4f9aa2"
+CODE = "sha256:" + "a" * 64  # the trial code digest (review P1-1)
 SNAPSHOT = {"provider_model_id": "claude-sonnet-5", "driver_version": "2.1.292",
             "image": "localhost:5000/amplai-worker@sha256:" + "b" * 64}  # fmt: skip
 
@@ -49,7 +50,8 @@ class Facts:
 
     def __init__(self) -> None:
         self.value: dict[str, Any] = {
-            "harness_sha": SHA, "model_snapshot": dict(SNAPSHOT), "corpus_version": "2.1.0",
+            "harness_sha": SHA, "trial_code_digest": CODE, "model_snapshot": dict(SNAPSHOT),
+            "corpus_version": "2.1.0",
         }  # fmt: skip
 
     def __call__(self, composition: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
@@ -305,7 +307,7 @@ def test_resume_keeps_graded_trials_reruns_the_rest_and_writes_a_new_summary_rev
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("harness_sha", "1" * 40),
+    [("trial_code_digest", "sha256:" + "1" * 64),
      ("model_snapshot", {**SNAPSHOT, "driver_version": "2.1.300"}),
      ("model_snapshot", {**SNAPSHOT, "image": "localhost:5000/amplai-worker@sha256:" + "c" * 64}),
      ("corpus_version", "2.2.0")],
@@ -323,14 +325,23 @@ def test_resume_refuses_a_behaviour_affecting_difference_with_the_differences(w,
     assert second.calls == [] and head(w, plan_ref)["state"] == "stopped"
 
 
-def test_resume_refuses_an_unknown_harness_sha_and_another_evaluator_version(w):
+def test_a_new_harness_sha_alone_never_blocks_a_resume(w):
+    # review P1-1: harness_sha (the whole checkout) is provenance; the trial code digest decides
     c, facts = make(w), Facts()
-    facts.value["harness_sha"] = "unknown"  # §8.5: a key without the harness sha is never reused
+    svc, plan_ref = stopped_run(w, c, facts)
+    facts.value["harness_sha"] = "2" * 40
+    svc.resume(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, outcome), facts))
+    assert head(w, plan_ref)["state"] == "done"
+
+
+def test_resume_refuses_an_unknown_trial_code_and_another_evaluator_version(w):
+    c, facts = make(w), Facts()
+    facts.value["trial_code_digest"] = None  # a receipt without the trial code is never reused
     svc, plan_ref = stopped_run(w, c, facts)
     caught = hold("CALIBRATION_RESUME_CHANGED", svc.resume, w.m.reviewer, plan_ref,
                   WithFacts(w, Scripted(w, c.roles, outcome), facts))  # fmt: skip
-    assert {d["field"] for d in caught.details["differences"]} == {"harness_sha"}
-    facts.value["harness_sha"] = SHA
+    assert {d["field"] for d in caught.details["differences"]} == {"trial_code_digest"}
+    facts.value["trial_code_digest"] = CODE
     store = w.m.d.store
     with store.tx() as db:  # a run recorded under another evaluator version
         h = store.head(w.scope, "calibration-run", plan_ref["id"], db=db)
@@ -362,15 +373,56 @@ def test_resume_needs_a_stopped_run_settled_allocations_and_wall_time_left(w, mo
                   Scripted(w, c2.roles))  # fmt: skip
     assert [a["status"] for a in caught.details["allocations"]] == ["unknown"]
 
-    # the approved wall time runs from the freeze; a resume never resets it
+    # review P1-2: the wall budget counts active run time; time between stop and resume does not
     c3 = make(w)
     _, stopped = stopped_run(w, c3, facts)
     store = w.m.d.store
-    started = store.head(w.scope, "meta-budget", "calibration:" + stopped["id"])["data"]
-    monkeypatch.setattr(
-        store, "clock", lambda: started["started_epoch"] + BUDGET["max_wall_seconds"]
-    )
-    hold("META_WALL_BUDGET", svc.resume, w.m.reviewer, stopped, Scripted(w, c3.roles))
+    root = "calibration:" + stopped["id"]
+    budget = store.head(w.scope, "meta-budget", root)["data"]
+    assert budget["segment_started_epoch"] is None and 0 <= budget["wall_used_seconds"] < 60
+    clock = store.clock
+    monkeypatch.setattr(store, "clock", lambda: clock() + BUDGET["max_wall_seconds"] * 10)
+    second = WithFacts(w, Scripted(w, c3.roles, outcome), facts)
+    svc.resume(w.m.reviewer, stopped, second)  # ten wall budgets later: still within it
+    assert head(w, stopped)["state"] == "done"
+    budget = store.head(w.scope, "meta-budget", root)["data"]
+    assert budget["wall_used_seconds"] < BUDGET["max_wall_seconds"]
+
+    # a root whose active time is spent refuses the resume
+    c4 = make(w)
+    _, spent = stopped_run(w, c4, facts)
+    root = "calibration:" + spent["id"]
+    with store.tx() as db:
+        h = store.head(w.scope, "meta-budget", root, db=db)
+        store.cas(
+            db,
+            w.scope,
+            "meta-budget",
+            root,
+            h["row_version"],
+            "active",
+            {**h["data"], "wall_used_seconds": float(BUDGET["max_wall_seconds"])},
+        )
+    hold("META_WALL_BUDGET", svc.resume, w.m.reviewer, spent, Scripted(w, c4.roles))
+
+
+def test_a_resume_long_after_the_stop_is_refused_as_stale(w):
+    # review P1-2: kept trials older than the window would pool with new ones: refused, so the
+    # operator imports them into a new plan (with its window and drift check) instead
+    c, facts = make(w), Facts()
+    svc, plan_ref = stopped_run(w, c, facts)
+    store = w.m.d.store
+    old = (datetime.now(UTC) - timedelta(hours=73)).isoformat().replace("+00:00", "Z")
+    with store.tx() as db:
+        h = store.head(w.scope, "calibration-run", plan_ref["id"], db=db)
+        store.cas(db, w.scope, "calibration-run", plan_ref["id"], h["row_version"], "stopped",
+                  {**h["data"], "stopped_at": old})  # fmt: skip
+    caught = hold("CALIBRATION_RESUME_STALE", svc.resume, w.m.reviewer, plan_ref,
+                  Scripted(w, c.roles))  # fmt: skip
+    assert caught.details["window_hours"] == 72 and caught.details["gap_hours"] >= 73
+    svc.resume(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, outcome), facts),
+               window_hours=80)  # fmt: skip
+    assert head(w, plan_ref)["state"] == "done"
 
 
 def test_resume_without_executor_facts_is_refused(w):
@@ -385,8 +437,10 @@ def test_resume_without_executor_facts_is_refused(w):
 
 
 def import_policy(cells=CELLS, **over):
-    value = {"window_hours": 72, "drift_share": 0.1, "drift_min_per_cell": 4,
-             "drift_reference": {cell: None for cell in cells}}  # fmt: skip
+    value = {"window_hours": 72, "drift_share": 0.1, "drift_min_per_cell": 8,
+             "drift_reference": {cell: None for cell in cells},
+             "drift_reference_basis": {cell: "none" for cell in cells},
+             "expected_imported": 0}  # fmt: skip
     value.update(over)
     return value
 
@@ -407,6 +461,7 @@ def importing_plan(w, c, svc, sources, *, policy_value=None, **over):
     plan["import_policy"] = policy_value or import_policy()
     found = svc.eligible_imports(w.scope, plan, sources)
     plan["imports"] = found["imports"]
+    plan["import_policy"]["expected_imported"] = found["imported"]
     plan["approval_ref"] = w.m.approve("experiment.execute", digest(plan))
     return plan, found
 
@@ -424,11 +479,16 @@ def test_imported_trials_carry_provenance_and_a_zero_charge_and_fill_round_one(w
     svc.run(w.m.reviewer, plan_ref, executor)
     h = head(w, plan_ref)
     assert h["state"] == "done"
-    # round 1 came from the source; only the drift sample (4 tasks per cell) ran at repeat 1
+    # round 1 came from the source; only the drift sample (min 8, here all 6 stable tasks per
+    # cell) ran at repeat 1
     assert not any(rep == 0 for _, _, rep in executor.calls)
     for cell in CELLS:
         assert h["data"]["drift_check"][cell]["status"] == "pass"
-        assert len(h["data"]["drift_check"][cell]["sample"]) == 4
+        assert len(h["data"]["drift_check"][cell]["sample"]) == 6
+        assert h["data"]["drift_check"][cell]["unstable_excluded"] == 0
+    # review P3: the imported repeat 0 against the drift re-run is no A/A pair
+    _, summary = summaries(w, plan_ref)[-1]
+    assert all(summary["cells"][cell]["aa_discordance"] is None for cell in CELLS)
     imported = [t for t in trials(w, plan_ref) if "imported_from" in t]
     assert len(imported) == 12
     source_ids = {t["trial_id"] for t in trials(w, source)}
@@ -441,7 +501,6 @@ def test_imported_trials_carry_provenance_and_a_zero_charge_and_fill_round_one(w
         allocation = ledger[t["trial_id"]]
         assert allocation["tokens"] == 0 and allocation["status"] == "settled"
         assert allocation["imported"] == provenance
-    _, summary = summaries(w, plan_ref)[-1]
     assert summary["imports"] == {"sources": [source], "imported": 12, "pooled": 12, "dropped": []}
     assert summary["partial"] is False
 
@@ -463,6 +522,7 @@ def test_a_key_mismatch_is_excluded_and_a_plan_that_imports_it_is_refused(w):
                                      strict=True) if t["repeat"] == 0]  # fmt: skip
     del plan["approval_ref"]
     plan["imports"] = [{"plan_ref": source, "trial_refs": source_refs}]
+    plan["import_policy"]["expected_imported"] = len(source_refs)
     plan["approval_ref"] = w.m.approve("experiment.execute", digest(plan))
     caught = hold("CALIBRATION_IMPORT", svc.freeze, w.m.reviewer, plan)
     assert {e["reason"] for e in caught.details["excluded"]} == {"key_mismatch"}
@@ -480,13 +540,22 @@ def test_only_cases_complete_in_every_cell_and_composition_are_imported(w):
     assert "val-02" not in found["cases"] and len(found["cases"]) == 5
     reasons = {(e["reason"]) for e in found["excluded"] if e["trial_id"] is not None}
     assert {"partial_case", "not_graded"} <= reasons
-    # a plan with a variant the source never ran imports nothing (no case is complete)
+    # review P2-c: manifest variants are never imported; they run fresh in the imported slots
     v = make(w, variants=True)
     _, source_v = source_run(w, v, facts, svc=svc)
-    other = [v.refs["cell-a"][0], w.composition("new")]
-    variant_plan = plan_for(w, v, composition_refs={**v.refs, "cell-a": other})
-    variant_plan["import_policy"] = import_policy()
-    found = svc.eligible_imports(w.scope, variant_plan, [source_v])
+    plan, found = importing_plan(w, v, svc, [source_v])
+    assert found["imported"] == 12  # the v1 trials of both cells
+    assert "variant_not_imported" in {e["reason"] for e in found["excluded"]}
+    executor = WithFacts(w, Scripted(w, v.roles, steady, tokens=(5, 5)), facts)
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+    svc.run(w.m.reviewer, plan_ref, executor)
+    variant_r0 = {cid for role, cid, rep in executor.calls if role == "cell-a-var" and rep == 0}
+    assert variant_r0 == {x["case_id"] for x in v.cases}
+    # a plan with a v1 the source never ran imports nothing for it (no case is complete)
+    other = {**v.refs, "cell-a": [w.composition("new")]}
+    other_plan = plan_for(w, v, composition_refs=other)
+    other_plan["import_policy"] = import_policy()
+    found = svc.eligible_imports(w.scope, other_plan, [source_v])
     assert found["imported"] == 0
     assert {e["reason"] for e in found["excluded"]} >= {"partial_case", "composition_mismatch"}
 
@@ -523,7 +592,7 @@ def test_a_failed_drift_check_drops_that_cells_imports_and_runs_them_fresh(w):
     svc.run(w.m.reviewer, plan_ref, executor)
     h = head(w, plan_ref)
     drift = h["data"]["drift_check"]
-    assert drift["cell-a"]["status"] == "fail" and drift["cell-a"]["flips"] == 4
+    assert drift["cell-a"]["status"] == "fail" and drift["cell-a"]["flips"] == 6
     assert drift["cell-b"]["status"] == "pass" and drift["cell-b"]["flips"] == 0
     assert len(drift["cell-a"]["dropped"]) == 6
     pooled = trials(w, plan_ref)
@@ -563,6 +632,15 @@ def test_import_plans_are_validated_and_bound_by_the_approval(w):
         {k: v for k, v in plan.items() if k != "import_policy"},
         {**plan, "import_policy": {**plan["import_policy"], "window_hours": 0}},
         {**plan, "import_policy": {**plan["import_policy"], "drift_reference": {}}},
+        # review P2-b: the approved count must be the count of listed trials
+        {**plan, "import_policy": {**plan["import_policy"], "expected_imported": 11}},
+        {
+            **plan,
+            "import_policy": {
+                **plan["import_policy"],
+                "drift_reference_basis": {c_: "guess" for c_ in CELLS},
+            },
+        },
         {**plan, "imports": []},
         {**plan, "purpose": "drift"},
     ):
@@ -580,6 +658,99 @@ def test_import_plans_are_validated_and_bound_by_the_approval(w):
                                adaptive={"max_repeats": 1, "rule": "disagree_or_borderline_v1",
                                          "borderline": [0.2, 0.9]})  # fmt: skip
     fault("CALIBRATION_PLAN", svc.freeze, w.m.reviewer, single)
+
+
+def test_the_drift_sample_skips_tasks_that_flipped_in_their_source_run(w):
+    # review P2-c: val-01 alternates between repeats in the source run (``outcome``), so a flip
+    # in the new run would say nothing about drift; it is never sampled
+    c, facts = make(w), Facts()
+    flipping = WithFacts(w, Scripted(w, c.roles, outcome, tokens=(5, 5)), facts)
+    svc, source = source_run(w, c, facts, executor=flipping)
+    plan, _ = importing_plan(w, c, svc, [source])
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+    svc.run(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, outcome), facts))
+    drift = head(w, plan_ref)["data"]["drift_check"]
+    for cell in CELLS:
+        assert "val-01" not in drift[cell]["sample"]
+        assert drift[cell]["unstable_excluded"] >= 1
+
+
+def test_a_resumed_plan_with_imports_finishes_its_drift_check(w):
+    c, facts = make(w), Facts()
+    svc, source = source_run(w, c, facts)
+    plan, _ = importing_plan(w, c, svc, [source])
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+    # every drift re-run reports no usage: four in a row stop the run inside the drift check
+    inner = UnknownUsage(w, c.roles, steady, tokens=(5, 5), unknown=lambda *a: True)
+    svc.run(w.m.reviewer, plan_ref, WithFacts(w, inner, facts))
+    h = head(w, plan_ref)
+    assert h["data"]["stop_reason"] == "provider_failures"
+    assert {e["status"] for e in h["data"]["drift_check"].values()} == {"pending"}
+    second = WithFacts(w, Scripted(w, c.roles, steady, tokens=(5, 5)), facts)
+    svc.resume(w.m.reviewer, plan_ref, second)
+    h = head(w, plan_ref)
+    assert h["state"] == "done"
+    assert {e["status"] for e in h["data"]["drift_check"].values()} == {"pass"}
+    assert sum("imported_from" in t for t in trials(w, plan_ref)) == 12  # still pooled
+
+
+def evaluator_version(w, version, compatible=None):
+    requal = w.m.d.put(
+        "evaluator-requalification", "requal-" + version,
+        {"schema": "amplai.evaluator-requalification.v1", "scope": w.scope.wire(),
+         "evaluator_version": version, "store": "test", "reports": [], "all_equal": True},
+    )  # fmt: skip
+    return versions.write_version(
+        w.m.d.store, w.m.reviewer, corpus_ref=w.ev_ref and w.m.d.store.get(
+            w.scope, "evaluator-version", w.ev_ref)["corpus_ref"],
+        requalification_ref=requal, version=version, trial_compatible_with=compatible,
+    )  # fmt: skip
+
+
+def test_trial_compatible_with_admits_listed_versions_only_and_is_not_transitive(w):
+    # review P2-a: eval-3 declares eval-2's trials compatible; eval-4 declares nothing
+    c, facts = make(w), Facts()
+    svc, plan_ref = stopped_run(w, c, facts)  # recorded under eval-2
+    was = head(w, plan_ref)["data"]["evaluator_version_ref"]
+    eval3 = evaluator_version(w, "eval-3", ["eval-2"])
+    store = w.m.d.store
+    assert versions.current_version_ref(store, w.scope) == eval3
+    assert calibration.evaluator_compatible(store, w.scope, was, eval3)
+    svc.resume(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, outcome), facts))
+    assert head(w, plan_ref)["state"] == "done"
+    eval4 = evaluator_version(w, "eval-4")
+    assert not calibration.evaluator_compatible(store, w.scope, was, eval4)
+    assert not calibration.evaluator_compatible(store, w.scope, eval3, eval4)
+    assert not calibration.evaluator_compatible(store, w.scope, None, eval4)
+    c2 = make(w)
+    _, other = stopped_run(w, c2, facts)  # recorded under eval-4
+    with store.tx() as db:
+        h = store.head(w.scope, "calibration-run", other["id"], db=db)
+        store.cas(db, w.scope, "calibration-run", other["id"], h["row_version"], "stopped",
+                  {**h["data"], "evaluator_version_ref": was})  # fmt: skip
+    caught = hold("CALIBRATION_RESUME_CHANGED", svc.resume, w.m.reviewer, other,
+                  Scripted(w, c2.roles))  # fmt: skip
+    assert {d["field"] for d in caught.details["differences"]} == {"evaluator_version_ref"}
+    # the record shape: distinct lower eval-N names only
+    with pytest.raises(RuntimeFault):
+        evaluator_version(w, "eval-5", ["eval-6"])
+    with pytest.raises(RuntimeFault):
+        evaluator_version(w, "eval-5", ["eval-2", "eval-2"])
+
+
+def test_a_weigher_failure_of_any_kind_judges_the_raw_tokens(w):
+    c = make(w)
+
+    def broken(trial):
+        raise ZeroDivisionError("price row with a zero input price")
+
+    svc = make_service(w, weigher=broken)
+    plan_ref = svc.freeze(w.m.reviewer, plan_for(w, c))
+    svc.run(w.m.reviewer, plan_ref, Scripted(w, c.roles, outcome, tokens=(5, 5)))
+    judged = trials(w, plan_ref)[0]["ceiling_tokens"]
+    assert judged == {"tokens": 10, "basis": "raw", "price_table_id": None,
+                      "reason": "weigher_error:ZeroDivisionError"}  # fmt: skip
+    assert head(w, plan_ref)["state"] == "done"
 
 
 # --- 4. partial summaries are never selected ---------------------------------------------------
@@ -686,6 +857,7 @@ def stage_world(tmp_path):
         executor = world.executor
         executor.facts = lambda composition, case: {
             "harness_sha": executor.harness_sha,
+            "trial_code_digest": executor.trial_code_digest,
             "model_snapshot": executor.snapshot,
             "corpus_version": executor.corpus_version,
         }
@@ -704,20 +876,33 @@ def test_calibrate_import_from_announces_imported_and_new_before_it_runs(stage_w
     first = ops_calibrate(w.ops)
     assert first["state"] == "done" and first["imports"] is None
     w.executor.calls.clear()
+    source = [first["plan_ref"]["id"]]
+    plans = len(w.objects("calibration-plan"))
+    # review P2-b: a dry run previews and approves nothing
+    preview = ops_calibrate(w.ops, import_from=source, dry_run=True)
+    assert preview["dry_run"] is True and len(w.objects("calibration-plan")) == plans
+    imports = preview["imports"]
+    assert imports["imported"] == 32 and imports["imported_cases"] == 32  # 14 + 18 cases
+    assert imports["new_round_one"] == 0 and imports["drift_reruns_at_most"] == 8
+    assert imports["per_cell"][STAGE_CELL]["imported"] == 32 and imports["window_hours"] == 72
+    # every task saturated after one run: no source A/A, so the world's complete summary's
+    assert imports["per_cell"][STAGE_CELL]["drift_reference"] == 0.2
+    assert imports["per_cell"][STAGE_CELL]["drift_reference_basis"] == "deployment_aa"
+    assert w.executor.calls == []
+    fault("CALIBRATION_PLAN", ops_calibrate, w.ops, import_from=source)  # no expectation
+    caught = hold("CALIBRATION_IMPORT_EXPECTED", ops_calibrate, w.ops, import_from=source,
+                  expect_imported=31)  # fmt: skip
+    assert caught.details["found"] == 32 and len(w.objects("calibration-plan")) == plans
     announced = []
-    second = ops_calibrate(w.ops, import_from=[first["plan_ref"]["id"]], announce=announced.append)
+    second = ops_calibrate(w.ops, import_from=source, expect_imported=32,
+                           announce=announced.append)  # fmt: skip
     (shown,) = announced
     assert shown["plan_id"] == second["plan_ref"]["id"]
-    imports = shown["imports"]
-    assert imports["imported"] == 32 and imports["imported_cases"] == 32  # 14 + 18 cases
-    assert imports["new_round_one"] == 0 and imports["drift_reruns"] == 4
-    assert imports["window_hours"] == 72 and imports["plan_id"] == second["plan_ref"]["id"]
-    assert second["state"] == "done" and second["imports"] == imports
+    assert second["state"] == "done" and second["imports"] == shown["imports"]
     # only the drift sample ran (round 1 came from the first plan)
-    assert len(w.executor.calls) == 4 and {rep for _, _, rep in w.executor.calls} == {1}
+    assert len(w.executor.calls) == 8 and {rep for _, _, rep in w.executor.calls} == {1}
     plan = w.store.get(w.scope, "calibration-plan", second["plan_ref"])
-    # every task saturated after one run: no repeat 1, so no measured A/A discordance
-    assert plan["import_policy"]["drift_reference"] == {STAGE_CELL: None}
+    assert plan["import_policy"]["expected_imported"] == 32
     # a stage plan reads the newest complete summary: the importing plan's
     pid = w.propose("a2")
     assert w.ops.stage_runner(pid, cell_id=STAGE_CELL).summary_ref == second["summary_ref"]
@@ -752,3 +937,18 @@ def test_calibration_resume_finishes_a_stopped_plan_and_the_stage_plan_waits_for
     assert len(w.executor.calls) == 32 - 3
     assert w.ops.stage_runner(pid, cell_id=STAGE_CELL).summary_ref == resumed["summary_ref"]
     assert resumed["summary_ref"]["revision"] == 2
+
+
+def test_an_evaluator_change_may_declare_trial_compatible_versions(w):
+    # review P2-a: stored lower versions only, approved with the change (the target)
+    from amplai_foundry.evaluation.quality import QualityService
+
+    make(w)  # writes eval-2
+    q = QualityService(w.m.d.store, w.scope)
+    current = q._latest_version()
+    to = {"version": "eval-3", "changes": [{"kind": "analysis_code", "detail": "accounting"}]}
+    target = q._target({**to, "trial_compatible_with": ["eval-2"]}, current)
+    assert target["trial_compatible_with"] == ["eval-2"]
+    assert "trial_compatible_with" not in q._target(to, current)
+    for bad in (["eval-9"], ["eval-3"], "eval-2", ["eval-2", "eval-2"]):
+        fault("EVALUATOR_CHANGE_TARGET", q._target, {**to, "trial_compatible_with": bad}, current)

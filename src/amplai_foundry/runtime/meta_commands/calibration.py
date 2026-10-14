@@ -65,6 +65,20 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
                 "(repeatable, D-128)",
             ),
         ] = None,
+        expect_imported: Annotated[
+            int | None,
+            typer.Option(
+                "--expect-imported",
+                help="the imported trial count a --dry-run showed; a different count is refused",
+            ),
+        ] = None,
+        dry_run: Annotated[
+            bool,
+            typer.Option(
+                "--dry-run",
+                help="print the plan preview (imported N, new M, per cell, exclusions) and exit",
+            ),
+        ] = False,
     ) -> None:
         """Freeze, approve and run a calibration of the cells."""
 
@@ -80,7 +94,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
                     names, max_repeats=max_repeats, max_trials=max_trials, parallel=workers,
                     max_tokens=max_tokens, max_wall_seconds=max_wall_seconds,
                     corpus_set=corpus_set, import_from=list(import_from or []),
-                    announce=announce,
+                    announce=announce, expect_imported=expect_imported, dry_run=dry_run,
                 )  # fmt: skip
 
         guarded(call)
