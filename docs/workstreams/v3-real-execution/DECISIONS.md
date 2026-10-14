@@ -938,3 +938,59 @@
   import key 가 맞지 않는다. 새 listener 코드(`control_plane/api_v3/intake_listener.py`)와 `runtime/cli.py` 는 digest 밖이다.
 - Source: `specs/034-hermes-modular-platform/spec.md` OD-8, H-12, `specs/034-hermes-modular-platform/plan.md` §3.2 item 11,
   `src/amplai_foundry/control_plane/api_v3/intake_listener.py`, `tests/v3/test_034_s1g_intake_listener.py`
+
+## D-134 — Service Manager Kind And Upgrade Plan (S3 slice 1)
+
+- Status: proposed (운영자 결정 대기)
+- Date: 2026-10-14
+- Decision (제안): D-110·D-118·D-123 의 S3 첫 조각 계약을 다음으로 정한다. 근거 `specs/034-hermes-modular-platform/spec.md` C-8,
+  U-1~U-9, `plan.md` §3.4, §3.5a.1.
+  1. Kind: `service_manager`(`runtime/modules/spec.py` KINDS), interface v1. 내장 모듈 `service_manager.launchd`,
+     `service_manager.systemd`(in process). conformance suite `conformance.service_manager.v1`. supervisor 는 아직 없다.
+  2. Interface v1 은 출력만 한다: `unit_id(unit)`, `render(units, host) -> RenderedFile[]`, `commands(action, units, host)`
+     (action `install|start|stop|timer_on|timer_off|status`, argv 를 출력만 하고 실행하지 않는다). 동결용 순서
+     `freeze_sequence`(`timer_off` 전체 → daemon `stop`)와 `unfreeze_sequence`(daemon `start` → `timer_on`)는 unit 마다 명령 하나다.
+     `timer_off` 는 진행 중인 주기 실행도 끝낸다. **plan.md:229-230 과 다르다**: plan 의 실행 연산(`status()`, `stop()`, `start()`,
+     `timer_off()`, `timer_on()`, `is_quiescent()`)은 v1 에 없고, 동결을 만드는 조각에서 interface v2(새 suite)로 더한다.
+  3. 규칙(suite 가 검사): unit 이름 `amplai-[a-z0-9-]`, 실행 파일은 절대 경로, 모든 값에 C0 제어 문자·DEL 없음, 주기 ≥ 60초,
+     `home` 은 절대 경로, `account` 는 `[a-z_][a-z0-9_-]{0,31}` 이고 `root` 가 아니다(D-118, Q-11 전용 계정). 같은 입력이면 같은 출력.
+  4. Unit 과 이름: `amplai-server`(`amplai ops local-serve --config <local.json>`, daemon), `amplai-meta-tick`(`amplai meta
+     nightly tick --config <meta local.json>`, 300초). launchd label 은 지금 이름을 유지한다: `ai.amplai.local-serve`,
+     `ai.amplai.meta-nightly`(그 밖은 `ai.amplai.<x>`). stop 은 `launchctl bootout`. systemd 는 `<name>.service`,
+     주기 unit 은 `<name>.service`(`Type=oneshot`) + `<name>.timer`(`OnCalendar=*:0/<분>`, 분은 60 의 약수). system unit 1순위
+     (`/etc/systemd/system`, `User=`), user unit 2순위(`~/.config/systemd/user`, `loginctl enable-linger`). `NoNewPrivileges=yes`,
+     `PrivateTmp=yes`, `UMask=0077`. `ExecStart=` 는 `%`→`%%`, `$`→`$$`, `Environment=` 는 `%`→`%%` 만(systemd.exec(5):
+     `Environment=` 는 변수 확장을 하지 않는다 — 리뷰 인용, 이 기계에서 man page 재확인 안 함), `Description=` 는 `%`→`%%`.
+  5. 설정: `local.json` `service` `{manager: "service_manager.launchd"|"service_manager.systemd"|null, systemd_scope:
+     "system"|"user"}`. `service` 가 없으면 OS 기본값(macOS launchd, Linux 에서 PID 1 이 systemd 면 systemd, 그 밖은
+     `SERVICE_MANAGER_UNAVAILABLE`), `null` 이면 모듈 없음(`SERVICE_MANAGER_OFF`). 선택은 composition root
+     `local_deployment.service_manager`. removal check(M-13)가 두 모듈을 끈 상태로 core test 를 돈다.
+  6. CLI: `amplai ops service print [--manager launchd|systemd] [--scope] [--account] [--home] [--path-env] [--amplai]
+     [--no-meta] [--raw FILE]` 은 파일과 action 별 명령을 JSON(`{manager, scope, installs_nothing, files, commands}`)으로
+     출력하고 아무것도 쓰거나 실행하지 않는다. uid·home 은 `--account` 의 것이다(`pwd`). account 없이 root(sudo)로 부르면
+     `SERVICE_ACCOUNT`, 이 기계에 없는 account 는 `--home` 이 필요하고 launchd 명령은 uid 가 없어 `SERVICE_HOST` 다.
+     `amplai ops upgrade plan [--config] [--meta-config] [service 옵션]` 은 읽기 전용 보고서를 출력한다.
+  7. 보고서 모양: `{report, read_only, current: {package_version, distribution_release: null, distribution_release_note,
+     modules: {builtin, builtin_digest, interface_versions, extensions}, stores: {product, meta?}, evaluator: {code_digests,
+     configured, current_version_ref, error?}, packs: {<app>: [receipt | {file, readable: false, error}]}}, steps[9],
+     rollback[5], rollback_notes, service_manager: {manager, freeze, unfreeze, runs_nothing} | {hold, message} | null,
+     plan_digest}`. store 는 `{runtime_root, present, readable, schema_major, owner_epoch, incarnation, scope, kill_switch,
+     rows, at_open: {create, rebuild, meta}}` 이거나 `{present: false}`, `{present: true, readable: false, error: {code,
+     message}}` 다. 읽기 전용으로 열지만 SQLite 가 WAL sidecar(`-wal`, `-shm`)를 만들 수 있다.
+  8. `plan_digest` 는 `plan_digest` 를 뺀 보고서의 canonical sha256 이다. 이 읽기의 이름일 뿐 AC-U1 미리보기 digest(승인이 묶이는
+     것)가 아니다. 그것은 대상 릴리스(U-1)와 이전 형식(U-3)이 정해진 뒤에 정한다.
+  9. Hold 코드: `SERVICE_UNIT_NAME`, `SERVICE_EXEC_PATH`, `SERVICE_UNIT_VALUE`, `SERVICE_UNIT_FORM`, `SERVICE_HOST`,
+     `SERVICE_ACCOUNT`, `SERVICE_SCOPE`, `SERVICE_MANAGER_OFF`, `SERVICE_MANAGER_UNKNOWN`, `SERVICE_MANAGER_UNAVAILABLE`,
+     `SERVICE_FILE`, `NIGHT_DEPLOYMENT`(tick 에 서버 config), `AMPLAI_PATH`, `CONFIG_MISSING`; RuntimeFault `SERVICE_ACTION`.
+  10. 범위: plan.md:708-709 는 S3 에 인터페이스 + launchd, S4a 에 systemd·supervisor 를 둔다. 이 조각은 systemd render 를
+      S3 로 당겨 왔다(실행 없음). supervisor 는 S4a 그대로다.
+- Not decided here (결정 대기, PR #97 본문): supervisor 가 render 하는 것, 동결 표지 모양과 승인 대기 중 owner lock, store 이전
+  형식(U-3), 백업 위치·보존·manifest(U-4), 업그레이드 승인 권한·기록, admission 재개 뒤 되돌리기, 리허설의 N-1 출처(U-9, Q-20).
+- 확인 필요 (S4a, 사내 systemd 에서): render 한 unit 을 systemd 219(RHEL 7)와 237(Ubuntu 18.04)이 받아들이는지 확인하지 않았다.
+  (1) 큰따옴표로 감싼 `ExecStart=` 첫 단어(실행 파일 경로), (2) 큰따옴표로 감싼 `;` 하나만인 인자(명령 구분자로 읽히지 않는지),
+  (3) 백슬래시로 끝나는 `Description=`(줄 이어짐으로 읽히지 않는지). `systemd-analyze verify` 로 그 버전에서 확인한다.
+- Consequence: `runtime/local_deployment.py`, `runtime/modules/*`, 새 `runtime/service_manager/*`, `runtime/upgrade/*`,
+  `runtime/upgrade_cli.py` 는 D-128 `trial_code_digest` 범위 안이다(`meta_harness/local_executor.py` `TRIAL_CODE_EXCLUDED` 에 없다).
+  merge 하면 digest 가 바뀌고 이전 trial 은 resume·import key 가 맞지 않는다. 제외 목록은 바꾸지 않았다.
+- Source: PR #97, `src/amplai_foundry/runtime/service_manager/`, `src/amplai_foundry/runtime/upgrade/plan.py`,
+  `src/amplai_foundry/runtime/upgrade_cli.py`, `tests/v3/test_034_s3_service_manager.py`, `tests/v3/test_034_s3_upgrade_plan.py`

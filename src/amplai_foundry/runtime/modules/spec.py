@@ -30,6 +30,8 @@ KINDS: tuple[str, ...] = (
     "git_host",
     # Work 034 OD-18 (M-16): a reliability check (lint, test, scan) is a module too
     "check",
+    # Work 034 S3 (C-8, D-118): the host's service manager (launchd, systemd; supervisor later)
+    "service_manager",
 )  # fmt: skip
 # The interface version a module of each kind must implement (M-2). A module declaring another
 # version is refused; raising a row is an interface change and needs a new conformance suite.

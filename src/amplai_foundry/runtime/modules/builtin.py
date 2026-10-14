@@ -5,17 +5,19 @@ list behind a built-in module is a separate behavior-neutral PR (plan.md §3.1, 
 mirror the fixed lists that exist today: the task-class baseline driver order
 (``execution/product.py`` ``ROUTER_ORDER``) and the strategy catalogue (``execution/policies.py``
 ``STRATEGIES``), plus the first ``notifier`` (Work 034 S1c), the first ``git_host``
-(Work 034 OD-15) and the built-in ``check`` modules (Work 034 OD-18, M-16).
+(Work 034 OD-15), the built-in ``check`` modules (Work 034 OD-18, M-16) and the ``service_manager``
+modules (Work 034 S3, C-8: launchd and systemd; the supervisor is not built yet).
 
 ``permissions`` is empty for every entry until each wrapping PR states what its module needs; the
 spec does not list per-module permissions for today's drivers and strategies.
 
 :data:`BUILTIN_CODE` says where a built-in module's code lives, for each module that has its own
-file (the ``notifier``, ``git_host`` and ``check`` modules; drivers and strategies are still the
-fixed lists above). The checks read it: the boundary lint (M-12) derives its module-to-file map
-from it, the conformance check builds each module with its test transport, and the removal test
-(M-13) knows which file to hide and which configuration key turns the module off. Code named here
-is loaded only through :func:`.loader.load` (no entry point is scanned, M-3).
+file (the ``notifier``, ``git_host``, ``check`` and ``service_manager`` modules; drivers and
+strategies are still the fixed lists above). The checks read it: the boundary lint (M-12)
+derives its module-to-file map from it, the conformance check builds each module with its test
+transport, and the removal test (M-13) knows which file to hide and which configuration key turns
+the module off. Code named here is loaded only through :func:`.loader.load` (no entry point is
+scanned, M-3).
 """
 
 from __future__ import annotations
@@ -62,6 +64,9 @@ BUILTIN_MODULES: tuple[ModuleSpec, ...] = (
     # (``runtime/git_host/github.py``). It runs host commands only, so it runs in process.
     _builtin("git_host", "github"),
     *(_builtin("check", name) for name in BUILTIN_CHECK_NAMES),
+    # Work 034 S3 (C-8, D-118): render units and print commands only; nothing is installed or run
+    _builtin("service_manager", "launchd"),
+    _builtin("service_manager", "systemd"),
 )
 
 
@@ -86,10 +91,12 @@ class BuiltinCode:
     def files(self) -> tuple[str, ...]:
         """The Python modules that belong to this module (implementation, conformance subject)."""
         subject = self.conformance_subject
-        return (self.implementation,) + ((subject.split(":", 1)[0],) if subject else ())
+        names = (self.implementation,) + ((subject.split(":", 1)[0],) if subject else ())
+        return tuple(dict.fromkeys(names))  # a module may be its own conformance subject
 
 
 _CHECKS = "amplai_foundry.runtime.checks"
+_SERVICE = "amplai_foundry.runtime.service_manager"
 _CHECK_ENTRIES: dict[str, tuple[str, str]] = {
     "module_boundary": ("boundary", "ModuleBoundaryCheck"),
     "kind_conformance": ("kind_conformance", "KindConformanceCheck"),
@@ -115,6 +122,14 @@ BUILTIN_CODE: dict[str, BuiltinCode] = {
         config_key="git_host",
     ),
     **{
+        f"service_manager.{name}": BuiltinCode(
+            implementation=f"{_SERVICE}.{name}",
+            conformance_subject=f"{_SERVICE}.{name}:subject",
+            config_key="service",
+        )
+        for name in ("launchd", "systemd")
+    },
+    **{
         f"check.{name}": BuiltinCode(
             implementation=f"{_CHECKS}.{file}", entry=f"{_CHECKS}.{file}:{attribute}"
         )
@@ -128,10 +143,12 @@ KIND_PACKAGES: dict[str, str] = {
     "notifier": "amplai_foundry.runtime.notifier",
     "git_host": "amplai_foundry.runtime.git_host",
     "check": _CHECKS,
+    "service_manager": _SERVICE,
 }
 # The conformance suite of each kind that has one (``module:attribute``, M-2)
 KIND_SUITES: dict[str, str] = {
     "notifier": "amplai_foundry.runtime.notifier.interface:SUITE",
     "git_host": "amplai_foundry.runtime.git_host.interface:SUITE",
     "check": f"{_CHECKS}.interface:SUITE",
+    "service_manager": f"{_SERVICE}.interface:SUITE",
 }
