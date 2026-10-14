@@ -28,6 +28,7 @@ from amplai_foundry import __version__
 from amplai_foundry.evaluation import versions
 from amplai_foundry.runtime import cli
 from amplai_foundry.runtime.contracts.identity import digest
+from amplai_foundry.runtime.errors import RuntimeFault
 from amplai_foundry.runtime.local_deployment import LocalConfig, MetaEntry
 from amplai_foundry.runtime.storage.store import Scope, Store
 from amplai_foundry.runtime.upgrade.plan import ROLLBACK, STEPS, store_state, upgrade_plan
@@ -308,3 +309,31 @@ def test_ops_upgrade_plan_needs_the_product_config(tmp_path: Path) -> None:
         "--meta-config", str(tmp_path / "no-meta.json"),
     ])  # fmt: skip
     assert result.exit_code == 3 and json.loads(result.output)["code"] == "CONFIG_MISSING"
+
+
+# -- regression review (PR #97) -------------------------------------------------------------------
+
+
+def test_a_symlinked_kit_receipt_is_skipped(home: Path, tmp_path: Path) -> None:
+    cfg = load(home)
+    meta = Path(cfg.apps[0].repo) / ".ai-team" / "install-v3"
+    meta.mkdir(parents=True)
+    outside = tmp_path / "outside.json"
+    outside.write_text(json.dumps({"pack_id": "planted", "version": "9"}))
+    (meta / "planted.json").symlink_to(outside)
+    (meta / "kit.json").write_text(json.dumps({"pack_id": "kit", "version": "1"}))
+    packs = upgrade_plan(cfg, None)["current"]["packs"]["app"]
+    assert [p.get("pack_id") for p in packs] == ["kit"]
+
+
+def test_a_kill_switch_read_failure_is_reported_unreadable(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(self: Store, scope: Scope, kind: str, object_id: str, **_: Any) -> Any:
+        raise RuntimeFault("DIGEST_MISMATCH", "head data does not match its digest")
+
+    monkeypatch.setattr(Store, "head", broken)
+    cfg = load(home)
+    state = store_state(Path(cfg.runtime_root), Scope.parse(cfg.scope))
+    assert state["present"] is True and state["readable"] is False
+    assert state["error"]["code"] == "DIGEST_MISMATCH"

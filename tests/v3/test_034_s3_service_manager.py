@@ -563,3 +563,44 @@ def test_the_core_and_cli_import_without_the_service_manager_modules() -> None:
     )
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, check=False)
     assert result.returncode == 0, result.stderr.decode()[-2000:]
+
+
+# -- regression review (PR #97) -------------------------------------------------------------------
+
+
+def test_an_unknown_account_without_home_holds_for_systemd_user_units_too(
+    tmp_path: Path, accounts: dict[str, Any]
+) -> None:
+    result = run_cli("ops", "service", "print", "--manager", "systemd", "--scope", "user",
+                     "--account", "remoteacct", "--amplai", EXE, "--no-meta",
+                     "--config", str(tmp_path / "local.json"))  # fmt: skip
+    assert result.exit_code == 3, result.output
+    body = json.loads(result.output)
+    assert body["code"] == "SERVICE_HOST" and body["details"] == {"account": "remoteacct"}
+
+
+@pytest.mark.parametrize("manager", MANAGERS, ids=["launchd", "systemd-system", "systemd-user"])
+def test_sixty_seconds_is_the_shortest_interval(manager: Any) -> None:
+    assert manager.render((ServiceUnit("amplai-x", (EXE,), "periodic", "x", 60),), HOST)
+    with pytest.raises(Hold) as held:
+        manager.render((ServiceUnit("amplai-x", (EXE,), "periodic", "x", 59),), HOST)
+    assert held.value.code == "SERVICE_UNIT_FORM"
+
+
+@pytest.mark.parametrize("manager", MANAGERS, ids=["launchd", "systemd-system", "systemd-user"])
+def test_a_daemon_with_an_interval_is_refused(manager: Any) -> None:
+    with pytest.raises(Hold) as held:
+        manager.render((ServiceUnit("amplai-x", (EXE,), "daemon", "x", 300),), HOST)
+    assert held.value.code == "SERVICE_UNIT_FORM"
+
+
+def test_a_relative_amplai_path_is_rendered_absolute(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = run_cli("ops", "service", "print", "--manager", "systemd", "--account", "amplai",
+                     "--home", "/home/amplai", "--amplai", "./amplai", "--no-meta",
+                     "--config", "/srv/local.json", "--raw", "amplai-server.service")  # fmt: skip
+    assert result.exit_code == 0, result.output
+    exec_line = next(x for x in result.output.splitlines() if x.startswith("ExecStart="))
+    assert exec_line.startswith(f'ExecStart="{Path.cwd() / "amplai"}" "ops" "local-serve"')

@@ -986,6 +986,9 @@
       S3 로 당겨 왔다(실행 없음). supervisor 는 S4a 그대로다.
 - Not decided here (결정 대기, PR #97 본문): supervisor 가 render 하는 것, 동결 표지 모양과 승인 대기 중 owner lock, store 이전
   형식(U-3), 백업 위치·보존·manifest(U-4), 업그레이드 승인 권한·기록, admission 재개 뒤 되돌리기, 리허설의 N-1 출처(U-9, Q-20).
+- 확인 필요 (S4a, 사내 systemd 에서): render 한 unit 을 systemd 219(RHEL 7)와 237(Ubuntu 18.04)이 받아들이는지 확인하지 않았다.
+  (1) 큰따옴표로 감싼 `ExecStart=` 첫 단어(실행 파일 경로), (2) 큰따옴표로 감싼 `;` 하나만인 인자(명령 구분자로 읽히지 않는지),
+  (3) 백슬래시로 끝나는 `Description=`(줄 이어짐으로 읽히지 않는지). `systemd-analyze verify` 로 그 버전에서 확인한다.
 - Consequence: `runtime/local_deployment.py`, `runtime/modules/*`, 새 `runtime/service_manager/*`, `runtime/upgrade/*`,
   `runtime/upgrade_cli.py` 는 D-128 `trial_code_digest` 범위 안이다(`meta_harness/local_executor.py` `TRIAL_CODE_EXCLUDED` 에 없다).
   merge 하면 digest 가 바뀌고 이전 trial 은 resume·import key 가 맞지 않는다. 제외 목록은 바꾸지 않았다.

@@ -281,10 +281,12 @@ def _check(module: Module) -> None:
     relative = ServiceUnit("amplai-x", ("amplai", "ops"), "daemon", "x")
     newline = ServiceUnit("amplai-x", (EXE, "--config", "a\nExecStartPre=/bin/sh"), "daemon", "x")
     no_interval = ServiceUnit("amplai-x", (EXE,), "periodic", "x")
-    short = ServiceUnit("amplai-x", (EXE,), "periodic", "x", 5)
+    short = ServiceUnit("amplai-x", (EXE,), "periodic", "x", 59)
+    timed_daemon = ServiceUnit("amplai-x", (EXE,), "daemon", "x", 300)
     for unit, code in ((bad_name, "SERVICE_UNIT_NAME"), (relative, "SERVICE_EXEC_PATH"),
                        (newline, "SERVICE_UNIT_VALUE"), (no_interval, "SERVICE_UNIT_FORM"),
-                       (short, "SERVICE_UNIT_FORM")):  # fmt: skip
+                       (short, "SERVICE_UNIT_FORM"),
+                       (timed_daemon, "SERVICE_UNIT_FORM")):  # fmt: skip
         _expect_unit(code, unit, render, commands)
     _expect("SERVICE_UNIT_NAME", lambda: render((server, server), HOST))
     _expect("SERVICE_UNIT_VALUE", lambda: render(units, HostContext("/h", "/bin\n", 1, "a")))
