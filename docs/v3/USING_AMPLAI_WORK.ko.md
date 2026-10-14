@@ -103,6 +103,11 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 4. 실패하면 실패 출력과 함께 다시 시도한다. 첫 시도 포함 최대 3번, 승인부터 30분.
 5. 모두 통과하면 `amplai/<goal>` branch 를 push 하고 draft PR 을 만든다. merge 는 사람이 한다.
 
+push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15). `local.json` 에 `git_host` 가 없으면 운영자의
+`gh`·`git` 으로 GitHub 에 게시한다(이전과 같다). 다른 GitHub 주소는 `"git_host": {"host": "github.example.com"}` 로 주고, 그러면
+`gh` 명령에 `GH_HOST` 가 붙는다. `"git_host": null` 이면 게시하지 않고 goal 의 `publication.error` 가
+`PUBLISH_NO_GIT_HOST` 다.
+
 ## 메타하네스: 구현자 prompt 를 시험해 바꾸기 (`amplai meta`)
 
 구현자(IMPLEMENTER) prompt 를 바꾼 후보를 실제 driver 로 시험하고, 나쁘지 않을 때만 새 goal 에 쓰게 한다.

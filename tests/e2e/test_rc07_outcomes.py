@@ -15,6 +15,8 @@ from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
+from amplai_foundry.runtime.git_host import PullRequestState
+from amplai_foundry.runtime.git_host.github import GitHubHost
 from rc06_rig import approved, git, rig_with_codex, submit
 
 
@@ -26,11 +28,11 @@ class States:
         self.fail = False
         self.calls: list[str] = []
 
-    def __call__(self, repo: Path, url: str) -> dict[str, Any]:
+    def __call__(self, repo: Path, url: str) -> PullRequestState:
         self.calls.append(url)
         if self.fail:
             raise Hold("PR_STATE", "simulated gh outage")
-        return dict(self.value)
+        return PullRequestState(self.value["state"], head_commit=self.value["headRefOid"])
 
 
 def published(deployment: Any, tmp_path: Path) -> tuple[Any, Any, str, dict[str, Any]]:
@@ -40,7 +42,9 @@ def published(deployment: Any, tmp_path: Path) -> tuple[Any, Any, str, dict[str,
     subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
     git(rig.repo, "remote", "add", "origin", str(remote))
     git(rig.repo, "push", "-q", "origin", "main")
-    box["p"] = GitPublisher(rig.service, pr_creator=lambda *_: "https://example.invalid/pr/7")
+    box["p"] = GitPublisher(
+        rig.service, git_host=GitHubHost(), pr_creator=lambda *_: "https://example.invalid/pr/7"
+    )
     goal = approved(rig)
     record = loop.run_goal(goal)
     assert record["status"] == "published"

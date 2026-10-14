@@ -14,6 +14,7 @@ import pytest
 
 from amplai_foundry.runtime.errors import Conflict, Hold
 from amplai_foundry.runtime.execution.publish import GitPublisher
+from amplai_foundry.runtime.git_host.github import GitHubHost
 from rc06_rig import approved, checkout, git, rig_with_codex
 
 
@@ -42,7 +43,7 @@ def setup(deployment: Any, tmp_path: Path, prs: Prs) -> tuple[Any, Any, GitPubli
     # the operator is busy on another branch with uncommitted work
     git(rig.repo, "checkout", "-q", "-b", "feature")
     (rig.repo / "app.py").write_text("def value():\n    return 99  # wip\n")
-    publisher = GitPublisher(rig.service, pr_creator=prs)
+    publisher = GitPublisher(rig.service, git_host=GitHubHost(), pr_creator=prs)
     publisher_box["p"] = publisher
     return rig, loop, publisher, remote
 

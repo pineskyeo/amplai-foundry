@@ -9,6 +9,10 @@ write-tree, commit-tree), so the operator's working tree, index and current bran
 touched and ``main`` is never written. The branch ``amplai/<goal>`` is pushed without force; a
 remote branch at another commit is a conflict, not an overwrite.
 
+The push and the draft PR go through the configured ``git_host`` module (Work 034 OD-15,
+``runtime/git_host/``); this file names no code host. Without a module, publication holds with
+``PUBLISH_NO_GIT_HOST``.
+
 The durable ``publication`` record follows the effect rules: ``prepared`` → ``pushed`` →
 ``done``; an interrupted step leaves the record where it was and the next call reconciles
 against the remote (existing branch at the same commit, existing PR for the head) instead of
@@ -25,12 +29,15 @@ import subprocess
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from ..contracts.identity import digest, now
 from ..errors import Conflict, Hold, RuntimeFault
 from . import text_bounds
 from .product import PORT, LocalExecutionService
+
+if TYPE_CHECKING:
+    from ..git_host import GitHost
 
 KIND = "publication"
 
@@ -82,40 +89,31 @@ def _run(
     )
 
 
-def gh_pr_creator(repo: Path, head: str, base: str, title: str, body: str) -> str:
-    """Create (or find) a draft PR with the operator's authenticated ``gh``."""
-    existing = _run(["gh", "pr", "list", "--head", head, "--json", "url", "--limit", "1"], cwd=repo)
-    if existing.returncode == 0:
-        found = json.loads(existing.stdout or b"[]")
-        if found:
-            url: str = found[0]["url"]
-            return url
-    created = _run(
-        ["gh", "pr", "create", "--draft", "--head", head, "--base", base, "--title", title,
-         "--body", body],
-        cwd=repo,
-    )  # fmt: skip
-    if created.returncode != 0:
-        raise Hold("PR_CREATE", "gh pr create failed", details=created.stderr.decode()[-400:])
-    return created.stdout.decode().strip().splitlines()[-1]
+NO_GIT_HOST = "PUBLISH_NO_GIT_HOST"
 
 
-def gh_pr_linker(repo: Path, url: str, body: str) -> None:
-    """Comment on a draft PR (links the other PRs of a multi-app goal)."""
-    done = _run(["gh", "pr", "comment", url, "--body", body], cwd=repo)
-    if done.returncode != 0:
-        raise Hold("PR_COMMENT", "gh pr comment failed", details=done.stderr.decode()[-400:])
+def _no_host(*_: object) -> NoReturn:
+    raise Hold(NO_GIT_HOST, "No git_host module is configured; publication holds")
 
 
 class GitPublisher:
+    """Publishes through the configured ``git_host`` module (Work 034 OD-15): it pushes the
+    branch, opens the draft PR and links the PRs of a multi-app goal. ``git_host=None`` (no
+    module configured) holds every publication with ``PUBLISH_NO_GIT_HOST`` before anything is
+    committed or recorded. ``pr_creator`` / ``pr_linker`` replace the module's PR operations
+    (test stand-ins); the push always goes through the module."""
+
     def __init__(
         self,
         service: LocalExecutionService,
         *,
-        pr_creator: Callable[[Path, str, str, str, str], str] = gh_pr_creator,
-        pr_linker: Callable[[Path, str, str], None] = gh_pr_linker,
+        git_host: GitHost | None,
+        pr_creator: Callable[[Path, str, str, str, str], str] | None = None,
+        pr_linker: Callable[[Path, str, str], None] | None = None,
     ) -> None:
-        self.service, self.pr_creator, self.pr_linker = service, pr_creator, pr_linker
+        self.service, self.git_host = service, git_host
+        self.pr_creator = pr_creator or (git_host.open_draft_pr if git_host else _no_host)
+        self.pr_linker = pr_linker or (git_host.comment_pr if git_host else _no_host)
         self.store, self.scope = service.store, service.scope
 
     # -- checks --------------------------------------------------------------------------------
@@ -161,6 +159,8 @@ class GitPublisher:
     # -- publish -------------------------------------------------------------------------------
     def __call__(self, goal_id: str) -> dict[str, Any]:
         plan, decision = self._authorized(goal_id)
+        if self.git_host is None:
+            _no_host()
         graph = self.store.get(self.scope, "workgraph", plan["graph_ref"])
         # the last node of each app (Work 033 S9): its change holds every part of that app
         terminal = terminal_nodes(graph, plan.get("node_apps"))
@@ -309,22 +309,11 @@ class GitPublisher:
         return values
 
     def _push(self, repo: Path, value: dict[str, Any]) -> None:
-        ref = "refs/heads/" + value["branch"]
-        remote = _run(["git", "ls-remote", value["remote"], ref], cwd=repo)
-        if remote.returncode != 0:
-            raise Hold(
-                "PUBLISH_REMOTE", "Remote is unreachable", details=remote.stderr.decode()[-400:]
-            )
-        existing = remote.stdout.decode().split()
-        if existing and existing[0] == value["commit"]:
-            return  # reconciled: the push already happened
-        if existing:
-            raise Conflict(
-                "PUBLISH_BRANCH_EXISTS", "Remote branch holds another commit; not forcing"
-            )
-        pushed = _run(["git", "push", value["remote"], f"{value['commit']}:{ref}"], cwd=repo)
-        if pushed.returncode != 0:
-            raise Hold("PUBLISH_PUSH", "git push failed", details=pushed.stderr.decode()[-400:])
+        """Never forced: the module reconciles a branch already at the commit and refuses one at
+        another commit (``git_host`` interface v1)."""
+        if self.git_host is None:
+            _no_host()
+        self.git_host.push_branch(repo, value["remote"], value["branch"], value["commit"])
 
     @staticmethod
     def _body(

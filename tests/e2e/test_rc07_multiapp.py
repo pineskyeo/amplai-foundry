@@ -16,6 +16,8 @@ from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
+from amplai_foundry.runtime.git_host import PullRequestState
+from amplai_foundry.runtime.git_host.github import GitHubHost
 from rc06_rig import git, rig_two_apps
 
 
@@ -52,7 +54,10 @@ def test_two_apps_run_in_order_verify_together_and_publish_linked_prs(
         return f"https://example.invalid/pr/{len(created)}"
 
     box["p"] = GitPublisher(
-        rig.service, pr_creator=prs, pr_linker=lambda repo, url, body: comments.append((url, body))
+        rig.service,
+        git_host=GitHubHost(),
+        pr_creator=prs,
+        pr_linker=lambda repo, url, body: comments.append((url, body)),
     )
     goal = two_app_goal(rig)
     plan = rig.service.plan(goal)
@@ -92,8 +97,8 @@ def test_two_apps_run_in_order_verify_together_and_publish_linked_prs(
         "https://example.invalid/pr/2": commits["consumer"],
     }
 
-    def reader(repo: Path, url: str) -> dict[str, Any]:
-        return {"state": answers[url], "headRefOid": heads[url]}
+    def reader(repo: Path, url: str) -> PullRequestState:
+        return PullRequestState(answers[url], head_commit=heads[url])
 
     tracker = PullRequestTracker(rig.service, reader=reader)
     tracker.sync()
@@ -163,7 +168,7 @@ def test_the_link_comment_is_recorded_before_it_is_posted(deployment: Any, tmp_p
             raise RuntimeError("gh is down")  # the first comment fails
         posted.append(url)
 
-    box["p"] = GitPublisher(rig.service, pr_creator=prs, pr_linker=linker)
+    box["p"] = GitPublisher(rig.service, git_host=GitHubHost(), pr_creator=prs, pr_linker=linker)
     goal = two_app_goal(rig)
     rig.service.plan(goal)
     rig.service.approve(rig.operator, goal)

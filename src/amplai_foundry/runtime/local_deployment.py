@@ -85,10 +85,11 @@ from .execution.product import (
     VerifierCommand,
     app_capabilities,
 )
-from .execution.publish import GitPublisher
+from .execution.publish import NO_GIT_HOST, GitPublisher
 from .execution.service import Runtime
 from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
+from .git_host import GitHost
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
 from .notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
@@ -393,6 +394,24 @@ class NotifierEntry(BaseModel):
     interval_seconds: int = Field(default=5, ge=1, le=3600)  # outbox poll interval
 
 
+_HOSTNAME = (
+    r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}"
+    r"[A-Za-z0-9])?)*(?::[0-9]{1,5})?$"
+)
+
+
+class GitHostEntry(BaseModel):
+    """The code-host connection (Work 034 OD-15, D-126): which ``git_host`` module pushes the
+    branch, opens the draft PR and reads its outcome. Absent: GitHub through the operator's
+    ``gh`` and ``git``, the behaviour before the module. ``null``: no git host module; a
+    publication then holds with ``PUBLISH_NO_GIT_HOST`` and PR outcomes are not read."""
+
+    model_config = ConfigDict(extra="forbid")
+    module: Literal["git_host.github"] = "git_host.github"
+    # the GitHub instance; another host than github.com runs ``gh`` with GH_HOST=<host> (Q-15)
+    host: str = Field(default="github.com", pattern=_HOSTNAME, max_length=255)
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -416,6 +435,8 @@ class LocalConfig(BaseModel):
     jev: JevEntry | None = None
     intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
     notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
+    # Work 034 OD-15: absent = GitHub (the behaviour before the module); null = no git host
+    git_host: GitHostEntry | None = Field(default_factory=GitHostEntry)
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -820,12 +841,31 @@ class LocalProductDeployment:
             [ref for app in self.service.apps.values() for ref in app.compositions.values()],
             signer=self._release_signer, key_id="local-authority",
         )  # fmt: skip
-        publisher = GitPublisher(self.service) if cfg.publish_mode != "none" else None
-        self.tracker = PullRequestTracker(self.service) if publisher is not None else None
+        # Work 034 OD-15: push, draft PR and PR outcome go through the configured git_host
+        # module; without one a publication holds (PUBLISH_NO_GIT_HOST) and no PR is read
+        self.git_host = self._git_host(cfg.git_host) if cfg.git_host is not None else None
+        publisher = (
+            GitPublisher(self.service, git_host=self.git_host)
+            if cfg.publish_mode != "none"
+            else None
+        )
+        self.tracker = (
+            PullRequestTracker(self.service, git_host=self.git_host)
+            if publisher is not None and self.git_host is not None
+            else None
+        )
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
         self.notifier_pump = self._notifier(cfg.notifier) if cfg.notifier is not None else None
+
+    @staticmethod
+    def _git_host(entry: GitHostEntry) -> GitHost:
+        """The configured code host (Work 034 OD-15). Imported here, not at module load, so a
+        deployment without a git host never loads an implementation (removal test, M-13)."""
+        from .git_host.github import GitHubHost
+
+        return GitHubHost(host=entry.host)
 
     def _notifier(self, entry: NotifierEntry) -> NotifierPump:
         """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
@@ -1136,6 +1176,8 @@ class LocalProductDeployment:
         def pr_sync(a: Actor = Depends(actor)) -> Any:
             a.require("execution.approve")
             if self.tracker is None:
+                if self.config.publish_mode != "none" and self.git_host is None:
+                    raise Hold(NO_GIT_HOST, "No git_host module is configured; PRs are not read")
                 raise Hold("PUBLISH_DISABLED", "Publication is off in this deployment")
             return {"recorded": self.tracker.sync()}
 

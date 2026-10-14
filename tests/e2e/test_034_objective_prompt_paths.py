@@ -19,6 +19,7 @@ from typing import Any
 
 from amplai_foundry.runtime.execution import text_bounds
 from amplai_foundry.runtime.execution.publish import GitPublisher
+from amplai_foundry.runtime.git_host.github import GitHubHost
 from e2e.test_033_s9_strategies import (
     APPROVE,
     AUX,
@@ -144,7 +145,9 @@ def test_the_pr_body_of_a_node_named_by_reference_has_the_whole_objective(
         bodies.append(body)
         return f"https://example.invalid/pr/{len(bodies)}"
 
-    box["p"] = GitPublisher(rig.service, pr_creator=prs, pr_linker=lambda *a: None)
+    box["p"] = GitPublisher(
+        rig.service, git_host=GitHubHost(), pr_creator=prs, pr_linker=lambda *a: None
+    )
     # the app's item carries the whole goal: its node names the objective by reference
     rig.planner.multi_value["objective"] = OBJECTIVE
     rig.planner.multi_value["work_items"][0]["objective"] = ""
