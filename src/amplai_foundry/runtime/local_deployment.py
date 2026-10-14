@@ -39,7 +39,7 @@ from ..control_plane.api_v3.intake import (
     RateLimiter,
     intake_router,
 )
-from ..control_plane.api_v3.intake_listener import create_intake_app
+from ..control_plane.api_v3.intake_listener import create_intake_app, unmapped
 from ..control_plane.api_v3.server import ApiServices, BearerAuthenticator, create_app
 from ..knowledge_runtime.service import KnowledgeService
 from ..sandbox.container import ContainerProfile, ContainerSandbox
@@ -467,7 +467,7 @@ class IntakeListenerEntry(BaseModel):
             address = ipaddress.ip_address(value)
         except ValueError as exc:
             raise ValueError("intake_listener.host must be an IP address") from exc
-        if address.is_unspecified:
+        if address.is_unspecified or unmapped(value).is_unspecified:
             raise ValueError("intake_listener.host must name one address, not every interface")
         return str(address)
 

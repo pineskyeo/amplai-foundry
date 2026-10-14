@@ -134,10 +134,20 @@ def create_intake_app(routers: Iterable[APIRouter], gates: Mapping[str, IntakeGa
     return app
 
 
+def unmapped(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
+    """``host`` as an address; an IPv4-mapped IPv6 address (``::ffff:a.b.c.d``) as its IPv4."""
+    address = ipaddress.ip_address(host)
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped is not None:
+        return address.ipv4_mapped
+    return address
+
+
 def check_protected(host: str) -> None:
     """H-12: a listener off loopback needs TLS or a source-pinned token. Neither is decided yet
-    (Work 034 S1g open decision), so only a loopback address may be bound."""
-    if not ipaddress.ip_address(host).is_loopback:
+    (Work 034 S1g open decision), so only a loopback address may be bound. An IPv4-mapped IPv6
+    address is judged by its IPv4 address, so the answer does not depend on how the running
+    CPython's ``ipaddress`` treats ``::ffff:127.0.0.1`` (that has changed between releases)."""
+    if not unmapped(host).is_loopback:
         raise Hold(
             "INTAKE_LISTENER_UNPROTECTED",
             "The intake listener binds only a loopback address until H-12's TLS or "

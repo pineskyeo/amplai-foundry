@@ -19,6 +19,8 @@ import os
 import re
 import signal
 import socket
+import subprocess
+import sys
 import threading
 import time
 from collections.abc import Iterator
@@ -371,10 +373,37 @@ def test_the_port_is_in_range(port: int) -> None:
         IntakeListenerEntry.model_validate({"host": "127.0.0.1", "port": port})
 
 
+@contextlib.contextmanager
+def watchdog(seconds: float) -> Iterator[None]:
+    """A bound on a blocking call in the main thread: past ``seconds`` it sends SIGINT (a second
+    one 3 s later), which ``serve_with_listener`` turns into a stop, and the test fails. A
+    regression then fails the test instead of hanging the run."""
+    done, fired = threading.Event(), threading.Event()
+
+    def run() -> None:
+        if done.wait(seconds):
+            return
+        fired.set()
+        os.kill(os.getpid(), signal.SIGINT)
+        if not done.wait(3):
+            os.kill(os.getpid(), signal.SIGINT)
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        done.set()
+        thread.join(timeout=5)
+    assert not fired.is_set(), f"did not end within {seconds} s"
+
+
 def serve(home: Path, port: int) -> Any:
-    return CliRunner().invoke(
-        cli.app, ["ops", "local-serve", "--config", str(home / "local.json"), "--port", str(port)]
-    )
+    with watchdog(30):
+        return CliRunner().invoke(
+            cli.app,
+            ["ops", "local-serve", "--config", str(home / "local.json"), "--port", str(port)],
+        )
 
 
 @pytest.mark.parametrize("host", ["192.168.64.1", "10.0.2.2", "fe80::1"])
@@ -414,9 +443,7 @@ def test_local_serve_refuses_the_operator_port(tmp_path: Path) -> None:
     home = init_home(tmp_path)
     with_intake(home)
     listen_on(home, {"host": "127.0.0.1", "port": 5098})
-    result = CliRunner().invoke(
-        cli.app, ["ops", "local-serve", "--config", str(home / "local.json"), "--port", "5098"]
-    )
+    result = serve(home, 5098)
     assert result.exit_code == 3, result.output
     assert json.loads(result.output)["code"] == "INTAKE_LISTENER_PORT"
 
@@ -553,7 +580,10 @@ def test_ctrl_c_stops_both_servers(listening: Any) -> None:
 
     seen: dict[str, Any] = {}
     helper = _after_start((op_port, side_port), check, seen)
-    intake_listener.serve_with_listener(dep.app, op_port, dep.intake_app, "127.0.0.1", side_port)
+    with watchdog(45):
+        intake_listener.serve_with_listener(
+            dep.app, op_port, dep.intake_app, "127.0.0.1", side_port
+        )
     helper.join(timeout=10)
     assert "error" not in seen, seen
     assert seen["op"].status_code == 200
@@ -582,9 +612,10 @@ def test_a_slow_client_does_not_hold_the_shutdown(listening: Any) -> None:
 
     seen: dict[str, Any] = {}
     helper = _after_start((op_port, side_port), stall, seen)
-    intake_listener.serve_with_listener(
-        dep.app, op_port, dep.intake_app, "127.0.0.1", side_port, graceful=1
-    )
+    with watchdog(45):
+        intake_listener.serve_with_listener(
+            dep.app, op_port, dep.intake_app, "127.0.0.1", side_port, graceful=1
+        )
     took = time.monotonic() - seen["signalled_at"]
     helper.join(timeout=10)
     for conn in slow:
@@ -602,7 +633,7 @@ def test_the_operator_failing_to_start_stops_the_listener(listening: Any) -> Non
     side_port = free_port()
     began = time.monotonic()
     try:
-        with pytest.raises(SystemExit):  # uvicorn exits when it cannot bind
+        with watchdog(15), pytest.raises(SystemExit):  # uvicorn exits when it cannot bind
             intake_listener.serve_with_listener(
                 dep.app, taken.getsockname()[1], dep.intake_app, "127.0.0.1", side_port
             )
@@ -628,9 +659,148 @@ def test_the_listener_ending_stops_the_operator(
     monkeypatch.setattr(intake_listener, "_side_server", lambda app, graceful=10: Broken())
     op_port, side_port = free_port(), free_port()
     began = time.monotonic()
-    with pytest.raises(RuntimeError, match="the listener ended"):
+    with watchdog(15), pytest.raises(RuntimeError, match="the listener ended"):
         intake_listener.serve_with_listener(
             dep.app, op_port, dep.intake_app, "127.0.0.1", side_port
         )
     assert time.monotonic() - began < 15
+    assert port_free(op_port) and port_free(side_port)
+
+
+def test_serve_with_listener_without_an_intake_app_holds() -> None:
+    with watchdog(10), pytest.raises(Hold) as held:
+        intake_listener.serve_with_listener(None, free_port(), None, "127.0.0.1", free_port())
+    assert held.value.code == "INTAKE_LISTENER_NO_INTAKE"
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.0.0.2", "::1", "::ffff:127.0.0.1"])
+def test_loopback_addresses_pass_the_protection_check(host: str) -> None:
+    intake_listener.check_protected(host)
+
+
+@pytest.mark.parametrize("host", ["192.168.64.1", "::ffff:192.168.64.1", "fe80::1", "::2"])
+def test_other_addresses_fail_the_protection_check(host: str) -> None:
+    with pytest.raises(Hold) as held:
+        intake_listener.check_protected(host)
+    assert held.value.code == "INTAKE_LISTENER_UNPROTECTED"
+
+
+def test_a_mapped_any_address_is_every_interface() -> None:
+    with pytest.raises(ValidationError):
+        IntakeListenerEntry.model_validate({"host": "::ffff:0.0.0.0", "port": 5099})
+
+
+def test_both_servers_wait_the_graceful_seconds(
+    listening: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both uvicorn configs carry GRACEFUL_SECONDS; only the listener's turns proxy headers and
+    the Server header off (the operator server is configured as before)."""
+    dep, _op, _client, _operator, _home = listening
+    configs: list[Any] = []
+
+    class Recorded:
+        should_exit = False
+        force_exit = False
+
+        def __init__(self, config: Any) -> None:
+            configs.append(config)
+
+        async def serve(self, sockets: Any = None) -> None:
+            return None
+
+    monkeypatch.setattr(intake_listener, "_quiet_server", Recorded)
+    with watchdog(15):
+        intake_listener.serve_with_listener(
+            dep.app, free_port(), dep.intake_app, "127.0.0.1", free_port()
+        )
+    operator, side = configs
+    assert operator.timeout_graceful_shutdown == intake_listener.GRACEFUL_SECONDS
+    assert side.timeout_graceful_shutdown == intake_listener.GRACEFUL_SECONDS
+    assert intake_listener.GRACEFUL_SECONDS == 10
+    assert (operator.host, operator.app) == ("127.0.0.1", dep.app)
+    assert side.app is dep.intake_app and side.lifespan == "off"
+    assert side.proxy_headers is False and side.server_header is False
+
+
+def test_an_oversized_body_to_a_foreign_path_is_refused_by_route(listening: Any) -> None:
+    """The route guard runs before the body bound: a foreign path is 404, never 413."""
+    _dep, _op, client, _operator, _home = listening
+    big = b"x" * (4 * 1024 * 1024 + 1)
+    refused(client.post("/healthz", content=big))
+    refused(client.post("/api/v3/intents", content=big, headers=HERMES))
+    on_route = client.post(ROOT, content=big, headers=HERMES)  # an intake route: the bound
+    assert on_route.status_code == 413 and on_route.json()["code"] == "BODY_TOO_LARGE"
+
+
+def test_a_second_ctrl_c_does_not_wait_for_a_stalled_request(listening: Any) -> None:
+    """With a request stalled on its body and a 30 s graceful window, a second Ctrl-C stops both
+    servers at once (uvicorn ``force_exit``)."""
+    dep, _op, _client, _operator, _home = listening
+    op_port, side_port = free_port(), free_port()
+    slow: list[socket.socket] = []
+
+    def stall_then_interrupt(seen: dict[str, Any]) -> None:
+        body = socket.create_connection(("127.0.0.1", side_port))
+        body.sendall(
+            b"POST " + ROOT.encode() + b" HTTP/1.1\r\nHost: x\r\nContent-Type: application/json"
+            b'\r\nContent-Length: 1000\r\n\r\n{"text":'
+        )
+        slow.append(body)
+        time.sleep(0.3)  # the POST waits for its body inside the app
+        seen["first_at"] = time.monotonic()
+        os.kill(os.getpid(), signal.SIGINT)  # the second comes from _after_start
+        time.sleep(0.5)
+
+    seen: dict[str, Any] = {}
+    helper = _after_start((op_port, side_port), stall_then_interrupt, seen)
+    with watchdog(45):
+        intake_listener.serve_with_listener(
+            dep.app, op_port, dep.intake_app, "127.0.0.1", side_port, graceful=30
+        )
+    took = time.monotonic() - seen["first_at"]
+    helper.join(timeout=10)
+    for conn in slow:
+        conn.close()
+    assert "error" not in seen, seen
+    assert took < 10, took
+    assert port_free(op_port) and port_free(side_port)
+
+
+def test_sigterm_stops_both_servers_and_ends_the_process_with_it(tmp_path: Path) -> None:
+    """``ops local-serve`` with the listener, as a process: SIGTERM shuts both servers down, then
+    the process ends with SIGTERM, as with ``uvicorn.run``."""
+    home = init_home(tmp_path)
+    with_intake(home)
+    op_port, side_port = free_port(), free_port()
+    listen_on(home, {"host": "127.0.0.1", "port": side_port})
+    command = [
+        sys.executable, "-c", "from amplai_foundry.runtime.cli import app; app()",
+        "ops", "local-serve", "--config", str(home / "local.json"), "--port", str(op_port),
+    ]  # fmt: skip
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    try:
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            try:
+                assert (
+                    httpx.get(f"http://127.0.0.1:{op_port}/healthz", timeout=1).status_code == 200
+                )
+                refused(httpx.get(f"http://127.0.0.1:{side_port}/healthz", timeout=1))
+                break
+            except httpx.HTTPError:
+                assert proc.poll() is None, proc.stdout.read() if proc.stdout else ""
+                time.sleep(0.1)
+        else:
+            raise AssertionError("local-serve did not start")
+        proc.send_signal(signal.SIGTERM)
+        out, _ = proc.communicate(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.communicate()
+    log = out.decode()
+    assert proc.returncode == -signal.SIGTERM, log
+    assert log.count("Shutting down") == 2, log  # both servers shut down
+    assert log.count("Finished server process") == 2, log
+    assert "Application shutdown complete" in log  # the operator's lifespan (loop) ended
     assert port_free(op_port) and port_free(side_port)
