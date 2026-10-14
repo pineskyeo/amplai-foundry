@@ -637,6 +637,8 @@ operator sets it (PB12, §8.7). This record is the canonical shape: `NightlyConf
 `local.json` `meta.nightly` (§12.2) carry the same keys. `nightly-run` head (id `night-<YYYY-MM-DD>`): `{"plan_ref", "phase",
 "trials": int, "stopped": str|null, "drift": {...}, "queued_confirmations": [experiment ref],
 "proposals": [proposal_id], "dreaming_ref": ref|null, "finished_at"}`.
+Amended by D-129 ("Clarification: Drift Subset" → "Drift cadence"): `shares.drift` no longer caps or
+reserves drift trials; the head gains `drift_cadence` and per-cell `drift[cell].cadence`.
 `quota-observation` (id `quota-<driver>-<YYYY-MM-DD>`): §8.6.
 
 ### 2.15 Evaluation Quality
@@ -2168,6 +2170,10 @@ configurations for the search phase; it never decides a verdict or a promotion. 
   (~60 %: proposer drafts, surrogate-ranked configurations, elite mutations; successive halving;
   exploratory stage experiments) → confirmation (~30 %: only experiments the operator approved
   during the day; otherwise the share returns to search) → dreaming → dashboard refresh.
+  Superseded in part by D-129 ("Clarification: Drift Subset" → "Drift cadence"): preflight also
+  checks the drift fit `len(drift_tasks) x len(cells) <= budget_trials`; the snapshot check runs
+  every night, the paid `drift_tasks` measurement only on a cell's measuring night with its trials
+  taken off the budget first (no ~10 % share), and search and confirmation split the rest.
 - A night ends at the budget, at `stop_at`, on a quota signal, when the standing approval is
   revoked or expired, or at the first unknown effect (`NIGHT_STOPPED`, IC-18: the proposal root
   shows "reconcile pending" on `approvals.html`); confirmatory experiments for promising candidates
@@ -4138,15 +4144,33 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
     The last measurement of a cell is the newest earlier night whose `drift[cell]` entry has
     `"measured": true` (entries written before D-129: `"observed"` present).
   - *Due* (`NightlyRunner.drift_due`, recorded as `drift[cell].cadence = {"due", "reason",
-    "last"}`): a cell measures unless its last measurement is younger than `drift_every_nights`
-    nights, its status was `ok` (inside the band), its `summary_ref` is a drift-purpose calibration
-    summary of the cell under the current evaluator version on the current regression corpus
-    (`NightlyBackend.drift_measurement`; `LocalNightlyBackend` checks `is_drift_plan`, the cell,
-    `corpus_ref` and `evaluator_version_ref`), and no operator baseline (`calibrated_at`) is newer
-    than that night's start. Reasons when due: `no_measurement`, `stale`, `not_ok` (an
-    `outside_band`, `unchecked` or `uncalibrated` measurement not yet cleared by a clean one),
-    `not_current`, `baseline_newer`; `fresh` when not due. A dry run never measures and is no
+    "last"}`): a cell with a band measures unless its last measurement is younger than
+    `drift_every_nights` nights, its status was `ok` (inside the band), its `summary_ref` is
+    current (`NightlyBackend.drift_measurement`), it was complete, and the operator baseline time
+    is known and not newer than that night's start. Reasons, checked in this order:
+    - `no_measurement`: no earlier night measured the cell.
+    - `stale`: age >= `drift_every_nights` (age = max(date-label difference, whole days since
+      that night's `started_at`)).
+    - `not_ok`: the last measurement's status was not `ok` (`outside_band` or `unchecked` not yet
+      cleared by a clean measurement).
+    - `not_current`: no `summary_ref` (every entry recorded before D-129), or
+      `LocalNightlyBackend.drift_measurement` is false: the summary's plan is not a drift plan
+      (`is_drift_plan`), the summary's `cells` lacks the cell, the plan's `case_ids` differ from
+      the current `drift_tasks`' frozen cases in corpus order, its `composition_refs[cell]` is not
+      `[the installed drift composition]`, its `corpus_ref` is not the current regression corpus,
+      or its `evaluator_version_ref` is not the current evaluator version (or there is none).
+    - `incomplete`: fewer observed runs than drift cases (`complete` false).
+    - `baseline_newer`: an operator baseline summarized after that night started.
+    - `baseline_unknown`: no known baseline time (`calibrated_at` absent; fail closed).
+
+    Not due: `fresh`, or `no_band` (status `uncalibrated`: no paid measurement, no reservation,
+    search as before; decided in `_drift`, not `drift_due`). A dry run never measures and is no
     measurement.
+  - *Complete* (coordinator review of PR #91): a measuring night records `drift[cell].complete =
+    observed runs >= len(set(drift_tasks))`. A budget-stopped partial measurement with runs is
+    still that night's measurement (status `ok` when inside the range, search runs that night, as
+    before: `test_a_budget_stop_with_runs_is_still_a_measurement`), but the next night measures
+    again (`incomplete`).
   - *Budget*: on a measuring night `len(set(drift_tasks))` trials per measuring cell come off the
     night budget first; `phase_budget(B, shares, screening=, drift=)` splits the rest R by the
     other shares relative to search + confirmation (`search = floor(R x search / (search +
@@ -4202,3 +4226,10 @@ skipped (`DRIFT <cell>: PHASE_SHARE`).
     `test_d129_an_unknown_baseline_time_*`, `test_d129_a_stop_during_a_later_cells_unit_*`,
     `test_d129_a_corrupt_night_record_*`,
     `test_local_backend_d129_another_installed_composition_*`.
+  - *PR #91 regression review*: after a return the night also records
+    `drift_cadence.phase_budget_after_return` (the caps search then runs under; `phase_budget`
+    stays the plan before the return). Tests: `test_d129_the_returned_reservation_raises_*`,
+    `test_d129_drift_tasks_exactly_filling_the_budget_fit`,
+    `test_local_backend_d129_a_new_evaluator_version_*`,
+    `test_local_backend_d129_a_new_regression_corpus_revision_*`,
+    `test_local_backend_d129_a_summary_without_the_cell_*`.

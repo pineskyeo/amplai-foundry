@@ -1340,11 +1340,40 @@ def test_d129_drift_only_shares_grant_no_search_and_no_confirmation(env: Env) ->
     assert drift_of(env, NEXT)["cadence"]["reason"] == "fresh"
 
 
+def test_d129_the_returned_reservation_raises_the_search_units_limit(env: Env) -> None:
+    limits: list[int] = []
+    original = env.fake.search_run
+
+    def record(cell_id: str, cid: str, tasks: int, guard: Any, limit: int) -> dict[str, Any]:
+        limits.append(limit)
+        return original(cell_id, cid, tasks, guard, limit)
+
+    env.fake.search_run = record  # type: ignore[method-assign]
+    env.ready().run(DATE)  # drift 5 of 10 reserved, PB12 12, no confirmation approved
+    caps = phase_budget(200, SHARES, screening=True, drift=10)
+    # search cap = planned search + the 5 unused drift trials + the confirmation share (§8.8);
+    # the budget left (200 - 5 - 12 = 183) is larger, so the cap is the first unit's limit
+    assert limits[0] == caps["search"] + 5 + caps["confirmation"] < 200 - 5 - 12
+
+
+def test_d129_drift_tasks_exactly_filling_the_budget_fit(env: Env) -> None:
+    tasks = tuple(f"t{i}" for i in range(20))
+    cfg = config(env.clock, budget_trials=40, cells=(CELL, OTHER_CELL), drift_tasks=tasks)
+    env.fake.drift_batch = {"trials": 20, "passes": 16, "runs": 20}
+    env.ready(cfg, budget_trials=40).run(DATE)  # 20 x 2 == 40: fits, a budget end is normal
+    data = env.head()["data"]
+    assert phases(data)["preflight"] == "done"
+    assert [a[-1] for a in env.fake.args("drift_run")] == [20, 20]
+    assert data["trials"] == 40 and data["stopped"] == "budget"
+
+
 def test_d129_an_unused_drift_reservation_returns_to_search(env: Env) -> None:
     runner = env.ready()  # the fake drift unit runs 5 of the 10 reserved trials
     runner.run(DATE)
     cadence = env.head(DATE)["data"]["drift_cadence"]
     assert cadence["reserved_trials"] == 10 and cadence["returned_to_search"] == 5
+    planned, after = cadence["phase_budget"], cadence["phase_budget_after_return"]
+    assert after["search"] == planned["search"] + 5 and after["drift"] == planned["drift"] - 5
     # a blocked night returns nothing
     env.fake.drift_batch = {"trials": 0, "passes": 0, "runs": 0}
     stopped(env, runner, NEXT)
@@ -2251,6 +2280,7 @@ class RealNight:
         self.refs = corpus_v2.freeze(
             world.operator, world.store, world.artifacts, regression, holdout_use_limit=1
         )
+        self.regression = regression  # D-129 tests freeze a new revision of it
         self.case_ids = [t.task_id for t in tasks]
         start = time.time()
         self.cfg = NightlyConfig(
@@ -2469,6 +2499,91 @@ def test_local_backend_d129_another_installed_composition_makes_the_measurement_
     assert real.backend.drift_measurement(CELL, summary_ref) is False
     monkeypatch.setattr(real.backend, "_drift_compositions", lambda: {})
     assert real.backend.drift_measurement(CELL, summary_ref) is False
+
+
+def test_local_backend_d129_a_new_evaluator_version_makes_the_measurement_not_current(
+    real: RealNight, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from amplai_foundry.evaluation import versions
+    from amplai_foundry.runtime.contracts.identity import new_id
+
+    real.outcome(True)
+    real.calibrate()
+    ref, reason = real.run(DATE)
+    assert reason is None and ref is not None
+    summary_ref = real.head(DATE)["drift"][CELL]["summary_ref"]
+    assert real.backend.drift_measurement(CELL, summary_ref) is True
+    w = real.w
+    with w.store.tx() as db:
+        requal = w.store.put(db, w.scope, "evaluator-requalification", new_id("requal"), 1, {
+            "schema": "amplai.evaluator-requalification.v1", "scope": w.scope.wire(),
+            "evaluator_version": "eval-3", "store": "test", "reports": [], "all_equal": True,
+        })  # fmt: skip
+    versions.write_version(w.store, w.operator, corpus_ref=w.refs["corpus_ref"],
+                           requalification_ref=requal, version="eval-3")  # fmt: skip
+    assert versions.current_version_ref(w.store, w.scope)["id"] == "evaluator-3"
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
+    ref, reason = real.run(NEXT)
+    assert reason is None and ref is not None
+    assert real.head(NEXT)["drift"][CELL]["cadence"]["reason"] == "not_current"
+    # no qualified evaluator version at all: never current
+    monkeypatch.setattr(versions, "current_version_ref", lambda store, scope: None)
+    new_summary = real.head(NEXT)["drift"][CELL]["summary_ref"]
+    assert real.backend.drift_measurement(CELL, new_summary) is False
+
+
+def test_local_backend_d129_a_new_regression_corpus_revision_makes_it_not_current(
+    real: RealNight,
+) -> None:
+    from dataclasses import replace
+
+    from amplai_foundry.meta_harness import corpus_v2
+
+    real.outcome(True)
+    real.calibrate()
+    ref, reason = real.run(DATE)
+    assert reason is None and ref is not None
+    summary_ref = real.head(DATE)["drift"][CELL]["summary_ref"]
+    # a new revision of the regression set with the same case ids, and the operator's baseline
+    # on it
+    refs = corpus_v2.freeze(real.w.operator, real.w.store, real.w.artifacts,
+                            replace(real.regression, version=real.regression.version + "-r2"),
+                            holdout_use_limit=1)  # fmt: skip
+    assert refs["corpus_ref"] != real.refs["corpus_ref"]
+    real.calibrate(corpus_ref=refs["corpus_ref"])
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
+    ref, reason = real.run(NEXT)
+    assert reason is None and ref is not None
+    check = real.head(NEXT)["drift"][CELL]
+    assert check["cadence"]["reason"] == "not_current" and check["measured"] is True
+
+
+def test_local_backend_d129_a_summary_without_the_cell_is_not_current(real: RealNight) -> None:
+    from amplai_foundry.evaluation import calibration
+
+    real.outcome(True)
+    real.calibrate()
+    ref, reason = real.run(DATE)
+    assert reason is None and ref is not None
+    summary_ref = real.head(DATE)["drift"][CELL]["summary_ref"]
+    store = real.backend.store
+
+    class WithoutCell:
+        """The real store, except the summary's ``cells`` lacks the cell (the plan keeps it)."""
+
+        def get(self, scope: Any, kind: str, ref: Any) -> Any:
+            value = store.get(scope, kind, ref)
+            if kind == calibration.SUMMARY_KIND:
+                return {**value, "cells": {}}
+            return value
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(store, name)
+
+    real.backend.store = WithoutCell()
+    assert real.backend.drift_measurement(CELL, summary_ref) is False
+    real.backend.store = store
+    assert real.backend.drift_measurement(CELL, summary_ref) is True
 
 
 def test_local_backend_a_standing_approval_revoked_mid_calibration_stops_the_night(

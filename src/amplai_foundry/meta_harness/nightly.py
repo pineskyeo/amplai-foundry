@@ -1079,6 +1079,7 @@ class NightlyRunner:
             night.caps["drift"] -= unused
             night.caps["search"] += unused
             night.data["drift_cadence"]["returned_to_search"] = unused
+            night.data["drift_cadence"]["phase_budget_after_return"] = dict(night.caps)
         self._phase(night, "drift", "drift" if drifted or unchecked else "done",
                     cells=sorted(results), drifted=drifted, unchecked=unchecked)  # fmt: skip
 
