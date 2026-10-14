@@ -1,14 +1,17 @@
 """Run the checks of one moment and record the run (Work 034 OD-18; spec M-17, M-19, M-20).
 
 ``amplai checks run --when <moment> [--target T ...]`` runs every registered check that declares
-that moment (and covers a requested target), in registry order, one at a time. A required check
+that moment and covers a requested target, in registry order, one at a time. A required check
 that fails or errors stops the action: Hold ``CHECK_FAILED`` whose details carry each failed
 check's id, version, status and findings (M-17). An optional check's failure is a warning.
 
-- The base protection checks (:data:`.builtin.BASE_PROTECTED`) must be registered (Hold
-  ``CHECK_PROTECTED_MISSING``) and can not be skipped (Hold ``CHECK_PROTECTED``) (M-19).
-- ``--skip`` leaves out a check another step runs (CI runs pytest, ruff and mypy as their own
-  steps); the record lists it as ``skipped``.
+- Protected checks (:data:`.builtin.BASE_PROTECTED` and every check declared ``protected``) must
+  be registered (Hold ``CHECK_PROTECTED_MISSING``), run at each moment they declare whatever the
+  targets, and can not be skipped (Hold ``CHECK_PROTECTED``) (M-19).
+- ``--skip`` leaves out only a check in the committed lock's ``ci_external`` (a check another CI
+  step runs: pytest, ruff, mypy); any other skip is Hold ``CHECK_SKIP_REFUSED``. A run with a skip
+  ends ``pass_with_skips``, never ``pass``.
+- A run that selects no check is Hold ``CHECK_NONE_SELECTED``.
 - Every run writes one record under the record directory, pass or Hold (M-20):
   ``check-run-<id>.json`` with the commit, the registry digest (the lock), the modules, and each
   check's id, version, status, findings and duration. The record stays a local file: where
@@ -33,9 +36,9 @@ from ..contracts.identity import new_id, now
 from ..errors import Hold, RuntimeFault
 from ..modules.builtin import BUILTIN_CODE, BUILTIN_MODULES
 from ..modules.loader import load
-from .builtin import BASE_PROTECTED, BUILTIN_CHECKS
+from .builtin import BASE_PROTECTED, BUILTIN_CHECKS, CI_EXTERNAL
 from .interface import WHEN, Check, CheckContext, CheckResult, Finding, covers, target_ok
-from .lock import entry_digest, lock_document
+from .lock import ci_external, entry_digest, lock_document, read_lock
 
 RECORD_SCHEMA = "amplai.check-run.v1"
 MAX_FINDINGS_IN_HOLD = 20
@@ -65,6 +68,10 @@ def builtin_checks() -> tuple[Check, ...]:
     return tuple(out)
 
 
+def is_protected(check: Check) -> bool:
+    return check.check.protected or check.check.check_id in BASE_PROTECTED
+
+
 def _matches(declared: tuple[str, ...], target: str) -> bool:
     if target == "kind:*":
         return any(t.startswith("kind:") for t in declared)
@@ -72,13 +79,14 @@ def _matches(declared: tuple[str, ...], target: str) -> bool:
 
 
 def select(checks: Iterable[Check], when: str, targets: Sequence[str]) -> list[Check]:
-    """The checks of ``when`` that cover one of ``targets`` (every one when none is given)."""
+    """The checks of ``when`` that cover one of ``targets`` (every one when none is given); a
+    protected check of ``when`` always."""
     return [
         c
         for c in checks
-        if when in c.check.when and (not targets or any(_matches(c.check.targets, t)
-                                                        for t in targets))
-    ]  # fmt: skip
+        if when in c.check.when
+        and (not targets or is_protected(c) or any(_matches(c.check.targets, t) for t in targets))
+    ]
 
 
 def _commit(root: Path) -> str | None:
@@ -105,6 +113,15 @@ def _run_one(check: Check, context: CheckContext) -> tuple[CheckResult, float]:
     return outcome, round(time.monotonic() - started, 3)
 
 
+def _allowed_skips(root: Path) -> frozenset[str]:
+    """``ci_external`` of the committed lock; none without a readable lock."""
+    try:
+        committed = read_lock(root)
+    except RuntimeFault:
+        return frozenset()
+    return frozenset() if committed is None else ci_external(committed)
+
+
 def run_checks(
     when: str,
     *,
@@ -123,6 +140,7 @@ def run_checks(
     if bad:
         raise RuntimeFault("CHECK_TARGET", "targets are core, kind:<kind>, kind:* or pack:<id>",
                            details={"targets": bad})  # fmt: skip
+    root = root.resolve()
     registry = tuple(builtin_checks() if checks is None else checks)
     by_id = {c.check.check_id: c for c in registry}
     missing = sorted(BASE_PROTECTED - set(by_id))
@@ -132,26 +150,34 @@ def run_checks(
     unknown = sorted(set(skip) - set(by_id))
     if unknown:
         raise RuntimeFault("CHECK_UNKNOWN", "no such check", details={"skip": unknown})
-    protected = sorted(s for s in set(skip) if by_id[s].check.protected)
+    protected = sorted(s for s in set(skip) if is_protected(by_id[s]))
     if protected:
         raise Hold("CHECK_PROTECTED", "a protected check can not be skipped",
                    details={"skip": protected})  # fmt: skip
-    root = root.resolve()
+    allowed = _allowed_skips(root)
+    refused = sorted(set(skip) - allowed)
+    if refused:
+        raise Hold("CHECK_SKIP_REFUSED", "only a check in the lock's ci_external can be skipped",
+                   details={"skip": refused, "ci_external": sorted(allowed)})  # fmt: skip
+    selected = select(registry, when, targets)
+    if not selected:
+        raise Hold("CHECK_NONE_SELECTED", "no registered check runs at this moment and target",
+                   details={"when": when, "targets": list(targets)})  # fmt: skip
     run_id = new_id("checkrun")
     started_at = now()
     results: list[dict[str, Any]] = []
-    for check in select(registry, when, targets):
+    for check in selected:
         declaration = check.check
         row: dict[str, Any] = {
             "check_id": declaration.check_id,
             "version": declaration.version,
             "module": check.spec.ref,
             "required": declaration.required,
-            "protected": declaration.protected,
+            "protected": is_protected(check),
             "declaration_digest": entry_digest(declaration.entry()),
         }
         if declaration.check_id in skip:
-            results.append({**row, "status": "skipped", "reason": "skipped_by_caller",
+            results.append({**row, "status": "skipped", "reason": "ci_external",
                             "findings": [], "details": {}, "seconds": 0.0})  # fmt: skip
             continue
         with tempfile.TemporaryDirectory(prefix="amplai-check-") as scratch:
@@ -165,21 +191,26 @@ def run_checks(
             "seconds": seconds,
         })  # fmt: skip
     failed = [r for r in results if r["required"] and r["status"] in ("fail", "error")]
-    warnings = [r["check_id"] for r in results if not r["required"] and r["status"] != "pass"
-                and r["status"] != "skipped"]  # fmt: skip
+    warnings = [f"{r['check_id']}: {r['status']}" for r in results
+                if not r["required"] and r["status"] in ("fail", "error")]  # fmt: skip
+    for r in results:
+        warnings.extend(f"{r['check_id']}: {w}" for w in r["details"].get("warnings", ()))
+    skipped = sorted(r["check_id"] for r in results if r["status"] == "skipped")
+    outcome_word = "hold" if failed else "pass_with_skips" if skipped else "pass"
     record = {
         "schema": RECORD_SCHEMA,
         "run_id": run_id,
         "when": when,
         "targets": list(targets),
-        "skipped": sorted(skip),
+        "skipped": skipped,
         "base_ref": base_ref,
         "started_at": started_at,
         "finished_at": now(),
         "commit": _commit(root),
-        "registry_digest": entry_digest(lock_document(c.check for c in registry)),
+        "registry_digest": entry_digest(lock_document((c.check for c in registry), CI_EXTERNAL)),
         "modules": [s.ref for s in BUILTIN_MODULES],
-        "outcome": "hold" if failed else "pass",
+        "outcome": outcome_word,
+        "warnings": warnings,
         "results": results,
     }
     path = write_record(record_dir, record)
@@ -199,10 +230,11 @@ def run_checks(
             },
         )  # fmt: skip
     return {
-        "outcome": "pass",
+        "outcome": outcome_word,
         "run_id": run_id,
         "when": when,
         "record": str(path),
+        "skipped": skipped,
         "warnings": warnings,
         "results": [
             {"check_id": r["check_id"], "version": r["version"], "status": r["status"],

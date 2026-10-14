@@ -16,6 +16,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -26,7 +27,7 @@ from typer.testing import CliRunner
 from amplai_foundry.runtime import cli
 from amplai_foundry.runtime.checks import policy as policy_module
 from amplai_foundry.runtime.checks.boundary import ModuleBoundaryCheck
-from amplai_foundry.runtime.checks.builtin import BASE_PROTECTED, BUILTIN_CHECKS
+from amplai_foundry.runtime.checks.builtin import BASE_PROTECTED, BUILTIN_CHECKS, CI_EXTERNAL
 from amplai_foundry.runtime.checks.interface import (
     SUITE,
     BuiltinCheck,
@@ -181,12 +182,18 @@ def test_a_required_failure_holds_with_the_check_id_and_result_after_the_record(
     assert record["registry_digest"].startswith("sha256:")
 
 
+def with_lock(root: Path, external: tuple[str, ...] = ()) -> Path:
+    document = {"schema": "amplai.checks-lock.v1", "checks": {}, "ci_external": list(external)}
+    (root / LOCK_FILE).write_bytes(lock_bytes(document))
+    return root
+
+
 def test_an_optional_failure_is_a_warning_and_a_crash_is_an_error(tmp_path: Path) -> None:
     bad = CheckResult("fail", (Finding("SOFT", "soft"),))
     soft = fixed("check.soft", bad, required=False)
     summary = run_checks("ci", root=tmp_path, record_dir=tmp_path,
                          checks=[*protected_set(), soft])  # fmt: skip
-    assert summary["outcome"] == "pass" and summary["warnings"] == ["check.soft"]
+    assert summary["outcome"] == "pass" and summary["warnings"] == ["check.soft: fail"]
 
     class Crashes(Fixed):
         def run(self, context: CheckContext) -> CheckResult:
@@ -200,30 +207,53 @@ def test_an_optional_failure_is_a_warning_and_a_crash_is_an_error(tmp_path: Path
     assert details["failed"][0]["findings"][0]["code"] == "CHECK_CRASHED"
 
 
-def test_moment_and_target_select_checks_and_skips_are_recorded(tmp_path: Path) -> None:
+def test_moment_and_target_select_checks_and_protected_checks_always_run(tmp_path: Path) -> None:
     checks = [
         *protected_set(),
         fixed("check.at_enable", when=frozenset({"enable"}), targets=("kind:git_host",)),
         fixed("check.every_kind", when=frozenset({"enable"}), targets=("kind:*",)),
         fixed("check.core_only", when=frozenset({"enable"})),
-        fixed("check.ci_tool"),
+        fixed("check.own_protected", when=frozenset({"enable"}), protected=True),
     ]
     summary = run_checks("enable", root=tmp_path, record_dir=tmp_path, checks=checks,
                          targets=("kind:git_host",))  # fmt: skip
-    assert [r["check_id"] for r in summary["results"]] == ["check.at_enable", "check.every_kind"]
+    assert [r["check_id"] for r in summary["results"]] == [
+        "check.at_enable", "check.every_kind", "check.own_protected",
+    ]  # fmt: skip
+    ci = run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=checks,
+                    targets=("pack:none",))  # fmt: skip
+    assert [r["check_id"] for r in ci["results"]] == sorted(BASE_PROTECTED)
+    with pytest.raises(Hold) as held:
+        run_checks("upgrade", root=tmp_path, record_dir=tmp_path, checks=checks)
+    assert held.value.code == "CHECK_NONE_SELECTED"
+
+
+def test_only_a_locked_ci_external_check_is_skipped_and_the_run_says_so(tmp_path: Path) -> None:
+    checks = [*protected_set(), fixed("check.ci_tool"), fixed("check.other")]
+    with pytest.raises(Hold) as held:  # no lock: nothing can be skipped
+        run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=checks,
+                   skip=("check.ci_tool",))  # fmt: skip
+    assert held.value.code == "CHECK_SKIP_REFUSED"
+    with_lock(tmp_path, ("check.ci_tool",))
+    with pytest.raises(Hold) as held:
+        run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=checks,
+                   skip=("check.other",))  # fmt: skip
+    assert held.value.code == "CHECK_SKIP_REFUSED"
     summary = run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=checks,
                          skip=("check.ci_tool",))  # fmt: skip
-    rows = {r["check_id"]: r["status"] for r in summary["results"]}
-    assert rows["check.ci_tool"] == "skipped"
+    assert summary["outcome"] == "pass_with_skips" and summary["skipped"] == ["check.ci_tool"]
     record = json.loads(Path(summary["record"]).read_text())
-    assert record["skipped"] == ["check.ci_tool"]
+    assert record["outcome"] == "pass_with_skips" and record["skipped"] == ["check.ci_tool"]
 
 
 def test_protected_checks_can_not_be_skipped_or_missing(tmp_path: Path) -> None:
-    with pytest.raises(Hold) as held:
-        run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=protected_set(),
-                   skip=("check.secret_exposure",))  # fmt: skip
-    assert held.value.code == "CHECK_PROTECTED"
+    flagged = fixed("check.flagged", protected=True)
+    with_lock(tmp_path, ("check.secret_exposure", "check.flagged"))  # even if the lock says so
+    for skipped in ("check.secret_exposure", "check.flagged"):
+        with pytest.raises(Hold) as held:
+            run_checks("ci", root=tmp_path, record_dir=tmp_path,
+                       checks=[*protected_set(), flagged], skip=(skipped,))  # fmt: skip
+        assert held.value.code == "CHECK_PROTECTED"
     with pytest.raises(Hold) as held:
         run_checks("ci", root=tmp_path, record_dir=tmp_path, checks=protected_set()[1:])
     assert held.value.code == "CHECK_PROTECTED_MISSING"
@@ -239,24 +269,19 @@ def test_protected_checks_can_not_be_skipped_or_missing(tmp_path: Path) -> None:
 def test_the_cli_runs_the_registered_checks_and_lists_them(tmp_path: Path) -> None:
     listed = CliRunner().invoke(cli.app, ["checks", "list", "--when", "upgrade"])
     assert listed.exit_code == 0, listed.output
-    assert [c["check_id"] for c in json.loads(listed.output)] == ["check.evaluator_qsuite"]
-    ran = CliRunner().invoke(
-        cli.app,
-        [
-            "checks",
-            "run",
-            "--when",
-            "ci",
-            "--target",
-            "pack:none",
-            "--record-dir",
-            str(tmp_path),
-            "--root",
-            str(REPO),
-        ],
-    )
+    assert [c["check_id"] for c in json.loads(listed.stdout)] == [
+        "check.module_boundary", "check.secret_exposure", "check.policy",
+        "check.evaluator_qsuite",
+    ]  # fmt: skip
+    argv = ["checks", "run", "--when", "ci", "--target", "pack:none",
+            "--record-dir", str(tmp_path), "--root", str(REPO)]  # fmt: skip
+    ran = CliRunner().invoke(cli.app, argv)
     assert ran.exit_code == 0, ran.output
-    assert json.loads(ran.output)["results"] == []
+    summary = json.loads(ran.stdout)
+    assert [r["check_id"] for r in summary["results"]] == [
+        "check.module_boundary", "check.secret_exposure", "check.policy",
+    ]  # fmt: skip
+    assert "warning: check.policy: no --base-ref" in ran.stderr
     assert len(list(tmp_path.glob("check-run-*.json"))) == 1
 
 
@@ -396,30 +421,60 @@ def test_a_module_without_an_off_key_is_not_removable(tmp_path: Path) -> None:
 
 # -- secret exposure (protected) -------------------------------------------------------------------
 
-PEM = "-----BEGIN " + "PRIVATE KEY-----\n"  # built here so this file carries no pattern
+# Built here, so this file carries no pattern itself.
+PEM = "-----BEGIN " + "PRIVATE KEY-----\n"
+CHECK_ONLY = {
+    "slack-webhook": "https://hooks.slack.com/services/" + "T0ABCDEF1/B0ABCDEF1/" + "a1" * 12,
+    "github-token": "ghp" + "_" + "A1b2" * 9,
+    "github-pat": "github" + "_pat_" + "11ABCDEFG" * 6,
+    "aws-access-key-id": "AKIA" + "ABCDEFGH12345678",
+    "pem-encrypted-or-dsa": "-----BEGIN " + "ENCRYPTED PRIVATE KEY-----",
+}
 
 
-def test_a_tracked_secret_pattern_fails_unless_allowed(tmp_path: Path) -> None:
-    git(tmp_path, "init", "-q")
-    write(tmp_path, "keys/id.pem", PEM)
+def tracked(root: Path, files: dict[str, str]) -> Path:
+    git(root, "init", "-q")
+    for rel, text in files.items():
+        write(root, rel, text)
+        git(root, "add", rel)
+    return root
+
+
+def test_a_tracked_secret_pattern_fails_unless_that_occurrence_is_allowed(tmp_path: Path) -> None:
+    tracked(tmp_path, {"keys/id.pem": PEM})
     write(tmp_path, "untracked.pem", PEM)
-    git(tmp_path, "add", "keys/id.pem")
     found = build(SecretExposureCheck, "check.secret_exposure").run(context(tmp_path, tmp_path))
     assert [(f.code, f.path, (f.details or {})["pattern"]) for f in found.findings] == [
         ("SECRET_PATTERN_TRACKED", "keys/id.pem", "secret-pattern-1")
     ]
     assert PEM.strip() not in json.dumps([f.wire() for f in found.findings])
-    allowed = build(SecretExposureCheck, "check.secret_exposure",
-                    config={"allow": ("keys/id.pem::secret-pattern-1",)})  # fmt: skip
+    key = (found.findings[0].details or {})["allow_key"]
+    allowed = build(SecretExposureCheck, "check.secret_exposure", config={"allow": (key,)})
     assert allowed.run(context(tmp_path, tmp_path)).status == "pass"
+    # the allow entry is that one line: a second occurrence in the same file is a finding
+    write(tmp_path, "keys/id.pem", PEM + "x\n" + PEM.replace("\n", " # another\n"))
+    again = allowed.run(context(tmp_path, tmp_path))
+    assert [(f.details or {})["line"] for f in again.findings] == [3]
+
+
+@pytest.mark.parametrize("pattern", sorted(CHECK_ONLY))
+def test_the_check_adds_patterns_beyond_the_artifact_scanner(tmp_path: Path, pattern: str) -> None:
+    tracked(tmp_path, {"config.txt": f"value = {CHECK_ONLY[pattern]}\n"})
+    found = build(SecretExposureCheck, "check.secret_exposure").run(context(tmp_path, tmp_path))
+    assert pattern in [(f.details or {})["pattern"] for f in found.findings]
 
 
 def test_this_repository_tracks_no_secret_pattern_outside_the_allow_list(tmp_path: Path) -> None:
     found = build(SecretExposureCheck, "check.secret_exposure").run(context(REPO, tmp_path))
     assert found.status == "pass", [f.wire() for f in found.findings]
+    assert found.details["allow_unused"] == []
 
 
 # -- check policy (M-19) ---------------------------------------------------------------------------
+
+
+def lock_of(checks: tuple[CheckSpec, ...], external: tuple[str, ...] = CI_EXTERNAL) -> Any:
+    return lock_document(checks, external)
 
 
 def loosen(check_id: str, **override: Any) -> tuple[CheckSpec, ...]:
@@ -427,8 +482,10 @@ def loosen(check_id: str, **override: Any) -> tuple[CheckSpec, ...]:
                  for c in BUILTIN_CHECKS)  # fmt: skip
 
 
-def changes(base: tuple[CheckSpec, ...], now: tuple[CheckSpec, ...]) -> dict[str, list[str]]:
-    found = loosenings(lock_document(base), lock_document(now))
+def changes(
+    base: tuple[CheckSpec, ...], now: tuple[CheckSpec, ...], external: tuple[str, ...] = CI_EXTERNAL
+) -> dict[str, list[str]]:
+    found = loosenings(lock_of(base), lock_of(now, external))
     return {i["check_id"]: [c["what"] for c in i["changes"]] for i in found}
 
 
@@ -445,7 +502,7 @@ def test_loosening_is_told_from_tightening() -> None:
     widened = loosen("check.module_removal", targets=("kind:*",))  # kind:* covers both kinds
     assert changes(base, widened) == {}
     allow = DECLARED["check.secret_exposure"].config["allow"]
-    more = loosen("check.secret_exposure", config={"allow": (*allow, "a.py::secret-pattern-1")})
+    more = loosen("check.secret_exposure", config={"allow": (*allow, "a.py::secret-pattern-1::0")})
     assert changes(base, more) == {"check.secret_exposure": ["config_allowed"]}
     fewer = loosen("check.secret_exposure", config={"allow": allow[1:]})
     assert changes(base, fewer) == {}  # a smaller allow list is stricter
@@ -459,66 +516,140 @@ def test_loosening_is_told_from_tightening() -> None:
     assert changes(base, gone) == {"check.tool_pytest": ["removed"]}
 
 
-def repo_with_lock(tmp_path: Path) -> Path:
-    tmp_path.mkdir()
-    git(tmp_path, "init", "-q")
-    (tmp_path / LOCK_FILE).write_bytes(lock_bytes(lock_document(BUILTIN_CHECKS)))
-    git(tmp_path, "add", LOCK_FILE)
-    git(tmp_path, "commit", "-q", "-m", "base")
-    return tmp_path
+def test_a_lower_version_and_a_new_ci_skip_are_loosenings() -> None:
+    raised = loosen("check.tool_ruff", version="2")
+    assert changes(raised, BUILTIN_CHECKS) == {"check.tool_ruff": ["version_lowered"]}
+    assert changes(BUILTIN_CHECKS, raised) == {}
+    named = loosen("check.tool_ruff", version="1-beta")  # not numbers: counted as lowered
+    assert changes(BUILTIN_CHECKS, named) == {"check.tool_ruff": ["version_lowered"]}
+    skippable = (*CI_EXTERNAL, "check.kind_conformance")
+    assert changes(BUILTIN_CHECKS, BUILTIN_CHECKS, skippable) == {
+        "check.kind_conformance": ["ci_external_added"]
+    }
+
+
+def repo_with_lock(path: Path) -> Path:
+    path.mkdir()
+    git(path, "init", "-q")
+    (path / LOCK_FILE).write_bytes(lock_bytes(lock_of(BUILTIN_CHECKS)))
+    git(path, "add", LOCK_FILE)
+    git(path, "commit", "-q", "-m", "base")
+    return path
 
 
 def policy(tmp_path: Path, root: Path, base_ref: str | None = "HEAD") -> CheckResult:
     check = build(CheckPolicyCheck, "check.policy")
-    return check.run(context(root, tmp_path / "ctx", base_ref=base_ref))
+    work = tmp_path / "ctx" / str(len(list((tmp_path / "ctx").glob("*"))))
+    work.mkdir(parents=True)
+    return check.run(CheckContext(root=root, when="ci", workdir=work, base_ref=base_ref))
+
+
+def approval(item: dict[str, Any], **override: Any) -> dict[str, Any]:
+    return {
+        "schema": "amplai.check-approval.v1", "check_id": item["check_id"],
+        "before": item["before"], "after": item["after"], "approver": "operator",
+        "reason": "test", "approved_at": "2026-10-14T00:00:00Z", **override,
+    }  # fmt: skip
 
 
 def test_a_loosening_needs_an_approval_bound_to_the_exact_change(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = repo_with_lock(tmp_path / "repo")
-    (tmp_path / "ctx").mkdir()
-    assert policy(tmp_path, root).status == "pass"
+    clean = policy(tmp_path, root)
+    assert clean.status == "pass" and clean.details["policy_code"].startswith("this tree")
     loosened = loosen("check.tool_mypy", required=False)
     monkeypatch.setattr(policy_module, "BUILTIN_CHECKS", loosened)
     stale = policy(tmp_path, root)
     assert {f.code for f in stale.findings} == {"CHECK_LOCK_STALE", "CHECK_LOOSENING_UNAPPROVED"}
-    (root / LOCK_FILE).write_bytes(lock_bytes(lock_document(loosened)))  # the PR updates the lock
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))  # the change updates the lock
     found = policy(tmp_path, root)
     assert [f.code for f in found.findings] == ["CHECK_LOOSENING_UNAPPROVED"]
     item: Any = found.findings[0].details
     assert item["check_id"] == "check.tool_mypy" and item["after"] is not None
-    approval = {
-        "schema": "amplai.check-approval.v1", "check_id": "check.tool_mypy",
-        "before": item["before"], "after": "sha256:" + "0" * 64,
-        "approver": "operator", "reason": "test", "approved_at": "2026-10-14T00:00:00Z",
-    }  # fmt: skip
-    write(root, f"{APPROVALS_DIR}/mypy.json", json.dumps(approval))
+    target = f"{APPROVALS_DIR}/mypy.json"
+    write(root, target, json.dumps(approval(item, after="sha256:" + "0" * 64)))
     assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_LOOSENING_UNAPPROVED"]
-    write(root, f"{APPROVALS_DIR}/mypy.json", json.dumps({**approval, "after": item["after"]}))
+    for bad_at in ("2026-10-14", "2999-01-01T00:00:00Z"):  # not RFC 3339 UTC; in the future
+        write(root, target, json.dumps(approval(item, approved_at=bad_at)))
+        assert "CHECK_APPROVAL_INVALID" in [f.code for f in policy(tmp_path, root).findings]
+    write(root, target, json.dumps(approval(item)))
     approved = policy(tmp_path, root)
     assert approved.status == "pass", [f.wire() for f in approved.findings]
-    assert approved.details["approvals_used"] == [f"{APPROVALS_DIR}/mypy.json"]
+    assert approved.details["approvals_used"] == [target]
+    write(root, f"{APPROVALS_DIR}/mypy-again.json", json.dumps(approval(item)))
+    assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_APPROVAL_DUPLICATE"]
+    (root / APPROVALS_DIR / "mypy-again.json").unlink()
     write(root, f"{APPROVALS_DIR}/broken.json", "{}")
     assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_APPROVAL_INVALID"]
 
 
-def test_the_lock_must_exist_and_a_base_without_a_lock_is_empty(tmp_path: Path) -> None:
+def test_an_approval_is_single_use(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = repo_with_lock(tmp_path / "repo")
+    loosened = loosen("check.tool_mypy", required=False)
+    monkeypatch.setattr(policy_module, "BUILTIN_CHECKS", loosened)
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))
+    item: Any = policy(tmp_path, root).findings[0].details
+    write(root, f"{APPROVALS_DIR}/mypy.json", json.dumps(approval(item)))
+    assert policy(tmp_path, root).status == "pass"
+    # merged: then a later change restores the old lock on its base and loosens again the same way
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "loosened with approval")
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(BUILTIN_CHECKS)))
+    git(root, "commit", "-q", "-am", "restored")
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))
+    assert [f.code for f in policy(tmp_path, root).findings] == ["CHECK_APPROVAL_REUSED"]
+
+
+def test_without_a_base_ref_the_result_warns_and_a_base_without_a_lock_is_empty(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "repo"
     root.mkdir()
-    (tmp_path / "ctx").mkdir()
     git(root, "init", "-q")
     write(root, "README", "x")
     git(root, "add", "README")
     git(root, "commit", "-q", "-m", "first")
     missing = policy(tmp_path, root)
     assert [f.code for f in missing.findings] == ["CHECK_LOCK_MISSING"]
-    (root / LOCK_FILE).write_bytes(lock_bytes(lock_document(BUILTIN_CHECKS)))
-    assert policy(tmp_path, root).status == "pass"  # the PR that adds the lock
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(BUILTIN_CHECKS)))
+    assert policy(tmp_path, root).status == "pass"  # the change that adds the lock
+    local = policy(tmp_path, root, base_ref=None)
+    assert local.status == "pass" and local.details["warnings"] == [policy_module.NO_BASE_WARNING]
     with pytest.raises(RuntimeFault) as excinfo:
         policy(tmp_path, root, base_ref="no-such-ref")
     assert excinfo.value.code == "CHECK_BASE_REF"
 
 
+def test_with_a_base_ref_the_base_refs_policy_code_decides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "repo"
+    shutil.copytree(REPO / "src" / "amplai_foundry", root / "src" / "amplai_foundry",
+                    ignore=shutil.ignore_patterns("__pycache__"))  # fmt: skip
+    base_policy = root / "src/amplai_foundry/runtime/checks/policy.py"
+    code = base_policy.read_text()
+    marked = code.replace(
+        '"details": dict(outcome.details)}',
+        '"details": {**dict(outcome.details), "marker": "base"}}',
+    )
+    assert marked != code
+    base_policy.write_text(marked)
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(BUILTIN_CHECKS)))
+    git(root, "init", "-q")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    decided = policy(tmp_path, root)
+    assert decided.status == "pass", [f.wire() for f in decided.findings]
+    assert decided.details["marker"] == "base"
+    assert decided.details["policy_code"] == "HEAD (base ref)"
+    loosened = loosen("check.policy", when=frozenset({"ci"}))
+    monkeypatch.setattr(policy_module, "BUILTIN_CHECKS", loosened)
+    (root / LOCK_FILE).write_bytes(lock_bytes(lock_of(loosened)))
+    held = policy(tmp_path, root)
+    assert [f.code for f in held.findings] == ["CHECK_LOOSENING_UNAPPROVED"]
+    assert held.details["marker"] == "base"
+
+
 def test_the_committed_lock_is_the_registry() -> None:
-    assert (REPO / LOCK_FILE).read_bytes() == lock_bytes(lock_document(BUILTIN_CHECKS))
+    assert (REPO / LOCK_FILE).read_bytes() == lock_bytes(lock_of(BUILTIN_CHECKS))

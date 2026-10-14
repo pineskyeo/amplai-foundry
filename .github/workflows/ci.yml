@@ -25,14 +25,21 @@ jobs:
       - run: ruff format --check .
       - run: mypy src
       # Work 034 OD-18 (M-16..M-20): the registered checks of the `ci` moment. pytest, ruff and
-      # mypy run as the steps above, so they are skipped here (the run record lists them as
-      # skipped). A PR is compared with its base branch's checks.lock.json (M-19).
+      # mypy run as the steps above; only they may be skipped (checks.lock.json `ci_external`)
+      # and the run ends `pass_with_skips`. The check list is compared with the base: the PR's
+      # base branch, or on a push the commit before it (none on a branch's first push, all-zero
+      # SHA). The base's own check policy code decides (M-19).
       - name: amplai checks run --when ci
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
           base=()
-          if [ -n "${GITHUB_BASE_REF:-}" ]; then
-            git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
-            base=(--base-ref FETCH_HEAD)
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/amplai/check-base"
+            base=(--base-ref refs/amplai/check-base)
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            git fetch --no-tags --depth=1 origin "+$BEFORE:refs/amplai/check-base"
+            base=(--base-ref refs/amplai/check-base)
           fi
           amplai checks run --when ci "${base[@]}" --record-dir "$RUNNER_TEMP/check-runs" \
             --skip check.tool_pytest --skip check.tool_ruff --skip check.tool_ruff_format \

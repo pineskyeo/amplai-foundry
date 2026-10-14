@@ -44,7 +44,10 @@
       ],
       "version": "1",
       "when": [
-        "ci"
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
       ]
     },
     "check.module_removal": {
@@ -92,22 +95,30 @@
       ],
       "version": "1",
       "when": [
-        "ci"
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
       ]
     },
     "check.secret_exposure": {
       "config": {
         "allow": [
-          "tests/e2e/test_033_s9_strategies.py::secret-pattern-2",
-          "tests/v3/test_033_answer_lookup.py::secret-pattern-2",
-          "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2",
-          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1",
-          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2",
-          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1",
-          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2",
-          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3",
-          "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2",
-          "tests/v3/test_033_s8_executor.py::secret-pattern-1"
+          "tests/e2e/test_033_s9_strategies.py::secret-pattern-2::e097165ac6a1b510",
+          "tests/v3/test_033_answer_lookup.py::secret-pattern-2::e8fc1396f593878c",
+          "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::1810b50905100c9d",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::b1f37570ec536443",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::00c67f3a5f917fea",
+          "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::48c67971e8b86100",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::c9bfc8f8b9223d1d",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::28c603715568eae0",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::7e00226435e3c5a9",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::8294745a1b39426d",
+          "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3::1a54d5ff2564b145",
+          "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2::e097165ac6a1b510",
+          "tests/v3/test_033_s8_executor.py::secret-pattern-1::aa6b74ac35548bce"
         ]
       },
       "loosens_when_added": [
@@ -121,7 +132,10 @@
       ],
       "version": "1",
       "when": [
-        "ci"
+        "ci",
+        "enable",
+        "pack_install",
+        "upgrade"
       ]
     },
     "check.tool_mypy": {
@@ -181,5 +195,11 @@
       ]
     }
   },
+  "ci_external": [
+    "check.tool_mypy",
+    "check.tool_pytest",
+    "check.tool_ruff",
+    "check.tool_ruff_format"
+  ],
   "schema": "amplai.checks-lock.v1"
 }

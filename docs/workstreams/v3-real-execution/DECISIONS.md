@@ -823,3 +823,39 @@
 - Reason: `gh` 는 checkout 의 remote 에서 host 를 읽는다(`gh help environment`, gh 2.88.1: `GH_HOST` 는 "cannot be inferred from the context of a local Git repository" 일 때만 쓴다). 그래서 설정 `host` 만으로는 PR 이 어디로 가는지 정해지지 않는다. 모듈이 직접 확인해야 설정이 의미를 가진다.
 - Consequence: 기본 설정에서도 push·PR 생성 전에(여러 app 이면 app 마다 먼저 한 번 더) 읽기 전용 `git remote get-url --push --all` 이 돈다. app 설정 `remote` 는 자유 문자열이라(`runtime/local_deployment.py` `AppEntry.remote: str = "origin"`, 형식 검사 없음) URL 도 들어갈 수 있고 모듈 이전에도 `ls-remote`·`push` 가 URL 을 받았다. 그래서 `remote` 가 URL(`https://`, `ssh://`, `git://`, `file://`, `user@host:path`)이나 로컬 경로면 `get-url` 없이 그 host 를 `remote_hosts` 와 바로 비교하고, 이름일 때만 `git remote get-url --push --all` 을 쓴다(없는 이름은 `PUBLISH_REMOTE`). URL 로 적은 remote 에 운영자 git 설정의 `pushInsteadOf` 가 걸리는 경우는 반영하지 않는다(확인 필요). 계획 쪽 `git_fresh_base` 는 URL remote 에 `git remote get-url` 이 실패해 local branch 를 기준으로 쓴다(`runtime/execution/product.py:107-112`, 이전과 같다). GitHub 이 아닌 remote(로컬 경로 포함)로 `branch` 모드 게시를 하던 배포는 이제 `GIT_HOST_MISMATCH` 로 멈춘다(지금 그런 배포가 있는지는 확인하지 않았다).
 - Source: PR #93, `src/amplai_foundry/runtime/git_host/`, `specs/034-hermes-modular-platform/plan.md` §3.9
+
+## D-131 — Reliability Checks Are check Modules (OD-18)
+
+- Status: proposed (운영자 결정 대기: 승인자 확인 방식)
+- Date: 2026-10-14
+- Decision (제안): 신뢰성 장치는 `check` 모듈 kind 다 (OD-18, D-126, M-16~M-20). 이 PR 이 정하는 계약은 다음이다.
+  1. kind `check`: `modules/spec.py` KINDS 에 추가, interface v1(`run(context) -> CheckResult`), 적합성 시험
+     `conformance.check.v1`(정적). 선언 `CheckSpec`: id(= module id `check.<name>`), version, targets(`core`, `kind:<kind>`,
+     `kind:*`, `pack:<id>`), when(`ci`, `enable`, `pack_install`, `upgrade`), required, protected, config(문자열 목록),
+     `loosens_when_added`.
+  2. CLI `amplai checks run|list|lock`. 결과 `pass`, `pass_with_skips`, Hold `CHECK_FAILED`(검사 id·버전·상태·findings),
+     `CHECK_NONE_SELECTED`, `CHECK_PROTECTED`, `CHECK_PROTECTED_MISSING`, `CHECK_SKIP_REFUSED`; 거절 `CHECK_UNKNOWN`,
+     `CHECK_WHEN`, `CHECK_TARGET`. 보호 검사(`BASE_PROTECTED` ∪ `protected`)는 네 시점 모두, `--target` 과 관계없이 돈다.
+  3. `checks.lock.json`(`amplai.checks-lock.v1`): 선언 전체와 `ci_external`(skip 가능한 검사 목록). 완화 정의: 제거,
+     required·protected 낮춤, when·targets 축소, config 완화, version 낮춤, `ci_external` 추가.
+  4. 승인 기록(`amplai.check-approval.v1`, `docs/workstreams/v3-real-execution/check-approvals/*.json`): check_id,
+     before·after(lock entry + `ci_external` 소속의 digest), approver, reason, approved_at(RFC 3339 UTC, 미래 금지). 한 번만
+     쓴다(base ref 에 이미 있으면 `CHECK_APPROVAL_REUSED`, 같은 변경에 둘이면 `CHECK_APPROVAL_DUPLICATE`). `--base-ref` 가
+     있으면 base ref 의 policy 코드(`git archive` 사본, `POLICY_API = 1`)가 판정한다.
+  5. 실행 기록(`amplai.check-run.v1`): 로컬 JSON 한 개와 CI artifact. 제품 store 에는 쓰지 않는다.
+  6. 모듈 코드 위치: `modules/builtin.py` `BUILTIN_CODE`(구현, 적합성 subject, `local.json` 끄기 키), `KIND_PACKAGES`,
+     `KIND_SUITES`, `modules/loader.py`. `runtime/notifier` 패키지는 Slack 구현을 더 이상 export 하지 않는다(composition root 가
+     설정에서 고를 때 import).
+  7. 첫 검사와 그 기준: boundary lint(composition root `local_deployment.py`), kind conformance, 제거 시험(`CORE_TESTS` 14
+     파일), secret 노출(`cas.py` 패턴 + 검사 전용 5 패턴, 출현 단위 허용 15 항목), check policy, 기존 도구 5개 감싸기.
+  8. 주변 변경: `TRIAL_CODE_EXCLUDED` 에 `runtime/checks/**`, `runtime/checks_cli.py`, 두 conformance transport,
+     `modules/loader.py` 추가(D-128 closure 시험 통과). `test_033_s14_quality` 의 "quality 를 import 하는 곳" 불변식에
+     `runtime/checks/tools.py`(Q-suite 검사, `upgrade` 시점만) 추가.
+- 운영자 결정 대기:
+  - (A) 승인 기록을 사람이 썼는지 확인하는 방식: CODEOWNERS(`checks.lock.json`, `check-approvals/`) + branch protection 의
+    code owner 리뷰 + `amplai checks run` 필수 status check, 또는 운영자 키 서명, 또는 store 승인. 저장소 설정은 이 PR 이 바꾸지
+    않는다.
+  - (B) 실행 기록을 제품 store 에 둘지(M-20 표시 화면).
+  - (C) pack 이 required 검사를 더할 수 있는지(M-18).
+- Source: `specs/034-hermes-modular-platform/spec.md` OD-18, M-16~M-20, `specs/034-hermes-modular-platform/plan.md` §3.10,
+  `src/amplai_foundry/runtime/checks/`, PR #94

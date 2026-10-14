@@ -7,9 +7,9 @@ Not here yet: schema, dependency cycle and version conflict checks (they need pa
 data, M-14), ``doc_freshness`` (S2b), performance regression, ``scripts/site_env_check.sh`` (not on
 main), and a permissions check.
 
-``checks.lock.json`` at the repository root is the committed form of this list
-(``amplai checks lock``). The check policy check fails a change that loosens a check against the
-main-branch lock unless an approval record covers it (M-19).
+``checks.lock.json`` at the repository root is the committed form of this list and of
+:data:`CI_EXTERNAL` (``amplai checks lock``). The check policy check fails a change that loosens a
+check against the main-branch lock unless an approval record covers it (M-19).
 """
 
 from __future__ import annotations
@@ -18,9 +18,14 @@ from .interface import CheckSpec
 
 VERSION = "1"  # the built-in module version (``modules/builtin.py`` BUILTIN_VERSION)
 CI = frozenset({"ci"})
+# A base protection check runs at every moment it applies to. No caller runs the enable,
+# pack_install or upgrade moments yet (M-17); at those moments these checks need a source tree
+# under git as their root, like CI.
+EVERY_MOMENT = frozenset({"ci", "enable", "pack_install", "upgrade"})
 
 # Base protection checks (M-19): module isolation, secrets, and the policy that guards the list.
-# The runner refuses to run without them and never skips them. Changing this set is a core change.
+# The runner refuses to run without them, runs them whatever the targets, and never skips them.
+# Changing this set is a core change.
 BASE_PROTECTED: frozenset[str] = frozenset(
     {"check.module_boundary", "check.secret_exposure", "check.policy"}
 )
@@ -50,20 +55,35 @@ CORE_TESTS: tuple[str, ...] = (
     "tests/v3/test_034_s1a_intake_route.py",
 )
 
-# Tracked files that carry a secret pattern on purpose: the tests of the scanners themselves.
-# ``<path>::<pattern id>`` (``runtime/evidence/cas.py`` scan_secrets ids). Adding one loosens.
+# Single occurrences of a credential pattern that test fixtures carry on purpose: fake credentials
+# fed to the code that must drop, quarantine or refuse them (trace sanitizer and ACL, aux capture,
+# executor turn capture, answer lookup, interpretation, strategies). Form
+# ``<path>::<pattern id>::<line hash>`` (``secret_exposure.py``); any other occurrence is a
+# finding. Adding one loosens (M-19).
 SECRET_ALLOW: tuple[str, ...] = (
-    "tests/e2e/test_033_s9_strategies.py::secret-pattern-2",
-    "tests/v3/test_033_answer_lookup.py::secret-pattern-2",
-    "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2",
-    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1",
-    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2",
-    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1",
-    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2",
-    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3",
-    "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2",
-    "tests/v3/test_033_s8_executor.py::secret-pattern-1",
+    "tests/e2e/test_033_s9_strategies.py::secret-pattern-2::e097165ac6a1b510",
+    "tests/v3/test_033_answer_lookup.py::secret-pattern-2::e8fc1396f593878c",
+    "tests/v3/test_033_s13_aux_capture.py::secret-pattern-2::7e00226435e3c5a9",
+    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::b1f37570ec536443",
+    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-1::1810b50905100c9d",
+    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::7e00226435e3c5a9",
+    "tests/v3/test_033_s13_sanitizer.py::secret-pattern-2::00c67f3a5f917fea",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::48c67971e8b86100",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-1::c9bfc8f8b9223d1d",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::7e00226435e3c5a9",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::8294745a1b39426d",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-2::28c603715568eae0",
+    "tests/v3/test_033_s13_traces_acl.py::secret-pattern-3::1a54d5ff2564b145",
+    "tests/v3/test_033_s4b_interpretation.py::secret-pattern-2::e097165ac6a1b510",
+    "tests/v3/test_033_s8_executor.py::secret-pattern-1::aa6b74ac35548bce",
 )
+
+# The checks another CI step runs (``.github/workflows/ci.yml`` runs pytest, ruff and mypy as their
+# own steps). Only these may be skipped (``--skip``); the set is in the lock and adding one loosens
+# (M-19).
+CI_EXTERNAL: tuple[str, ...] = (
+    "check.tool_mypy", "check.tool_pytest", "check.tool_ruff", "check.tool_ruff_format",
+)  # fmt: skip
 
 _EVERYTHING = ("core", "kind:*")
 
@@ -74,7 +94,8 @@ def _tool(name: str, description: str) -> CheckSpec:
 
 BUILTIN_CHECKS: tuple[CheckSpec, ...] = (
     CheckSpec(
-        "check.module_boundary", VERSION, _EVERYTHING, CI, required=True, protected=True,
+        "check.module_boundary", VERSION, _EVERYTHING, EVERY_MOMENT, required=True,
+        protected=True,
         description="modules import each other only through their kind's interface (M-12)",
         config={"composition_roots": ("amplai_foundry.runtime.local_deployment",)},
         loosens_when_added=frozenset({"composition_roots"}),
@@ -92,12 +113,13 @@ BUILTIN_CHECKS: tuple[CheckSpec, ...] = (
                 "core_tests": CORE_TESTS},
     ),
     CheckSpec(
-        "check.secret_exposure", VERSION, _EVERYTHING, CI, required=True, protected=True,
-        description="no tracked file carries a credential pattern (runtime/evidence/cas.py)",
+        "check.secret_exposure", VERSION, _EVERYTHING, EVERY_MOMENT, required=True,
+        protected=True,
+        description="no tracked file carries a credential pattern (evidence/cas.py and more)",
         config={"allow": SECRET_ALLOW}, loosens_when_added=frozenset({"allow"}),
     ),
     CheckSpec(
-        "check.policy", VERSION, ("core",), CI, required=True, protected=True,
+        "check.policy", VERSION, ("core",), EVERY_MOMENT, required=True, protected=True,
         description="checks.lock.json matches the registry; a loosening has an approval (M-19)",
     ),
     _tool("ruff", "ruff check . (the CI lint)"),

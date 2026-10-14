@@ -1,23 +1,56 @@
 """``check.secret_exposure``: no tracked file carries a credential (Work 034 M-16, M-19; protected).
 
-It reuses the scanner the artifact store and pack install already use:
-``runtime/evidence/cas.py`` ``scan_secrets`` (``SECRET_PATTERNS``: a PEM private key header, an
+Patterns: the scanner the artifact store and pack install already use (``runtime/evidence/cas.py``
+``SECRET_PATTERNS``, ids ``secret-pattern-N``: a PEM private key header, an
 ``api_key``/``access_token``/``password`` assignment of 24+ characters, an ``sk-proj-``/
-``sk-ant-api03-`` key). The files are ``git ls-files`` of the checkout (symlinks not followed).
-Config ``allow`` lists ``<path>::<pattern id>`` pairs that carry a pattern on purpose (the
-scanners' own tests); adding one loosens the check (M-19). A finding names the path and the
-pattern id, never the matched text.
+``sk-ant-api03-`` key) plus this check's own (:data:`CHECK_PATTERNS`: a Slack webhook URL, a GitHub
+token, an AWS access key id, an encrypted or DSA PEM key). The check's own patterns are not added
+to ``cas.py``: that would change what the artifact store quarantines and what trace capture drops.
+
+The files are ``git ls-files`` of the checkout (symlinks not followed). Config ``allow`` lists
+single occurrences that are there on purpose, as ``<path>::<pattern id>::<line hash>`` (the first
+16 hex digits of the SHA-256 of the line that holds the match); another occurrence of the same
+pattern in the same file is a finding. Adding an entry loosens the check (M-19). A finding names
+the path, the line number and the pattern id, never the matched text.
 """
 
 from __future__ import annotations
 
+import hashlib
+import re
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 
-from ..evidence.cas import scan_secrets
+from ..evidence.cas import SECRET_PATTERNS
 from .interface import BuiltinCheck, CheckContext, CheckResult, Finding, result
 
 MAX_FILE_BYTES = 8 * 1024 * 1024
+
+CHECK_PATTERNS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
+    ("slack-webhook",
+     re.compile(rb"https://hooks\.slack\.com/services/T[A-Z0-9]{6,}/B[A-Z0-9]{6,}/[A-Za-z0-9]{20,}")),
+    ("github-token", re.compile(rb"(?<![A-Za-z0-9_])gh[pousr]_[A-Za-z0-9]{36}(?![A-Za-z0-9])")),
+    ("github-pat", re.compile(rb"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{40,}")),
+    ("aws-access-key-id", re.compile(rb"(?<![A-Z0-9])(?:AKIA|ASIA)[0-9A-Z]{16}(?![A-Z0-9])")),
+    ("pem-encrypted-or-dsa", re.compile(rb"-----BEGIN (?:ENCRYPTED|DSA) PRIVATE KEY-----")),
+)  # fmt: skip
+
+
+def patterns() -> tuple[tuple[str, re.Pattern[bytes]], ...]:
+    shared = tuple((f"secret-pattern-{i + 1}", p) for i, p in enumerate(SECRET_PATTERNS))
+    return shared + CHECK_PATTERNS
+
+
+def occurrences(data: bytes) -> Iterator[tuple[str, int, str]]:
+    """``(pattern id, line number, line hash)`` of every match."""
+    for pattern_id, pattern in patterns():
+        for match in pattern.finditer(data):
+            start = data.rfind(b"\n", 0, match.start()) + 1
+            end = data.find(b"\n", match.start())
+            line = data[start : len(data) if end < 0 else end]
+            number = data.count(b"\n", 0, match.start()) + 1
+            yield pattern_id, number, hashlib.sha256(line).hexdigest()[:16]
 
 
 def tracked_files(root: Path) -> list[str]:
@@ -33,13 +66,12 @@ class SecretExposureCheck(BuiltinCheck):
         allow = set(self.check.config.get("allow", ()))
         findings: list[Finding] = []
         used: set[str] = set()
-        scanned = skipped_large = 0
+        scanned = 0
         for rel in tracked_files(context.root):
             path = context.root / rel
             if path.is_symlink() or not path.is_file():
                 continue
             if path.stat().st_size > MAX_FILE_BYTES:
-                skipped_large += 1
                 findings.append(
                     Finding(
                         "SECRET_SCAN_TOO_LARGE", "a tracked file is larger than the scan bound", rel
@@ -47,13 +79,14 @@ class SecretExposureCheck(BuiltinCheck):
                 )
                 continue
             scanned += 1
-            for pattern in scan_secrets(path.read_bytes()):
-                key = f"{rel}::{pattern}"
+            for pattern_id, line, line_hash in occurrences(path.read_bytes()):
+                key = f"{rel}::{pattern_id}::{line_hash}"
                 if key in allow:
                     used.add(key)
                     continue
                 findings.append(Finding("SECRET_PATTERN_TRACKED",
-                                        f"a tracked file matches {pattern}", rel,
-                                        {"pattern": pattern}))  # fmt: skip
+                                        f"a tracked file matches {pattern_id}", rel,
+                                        {"pattern": pattern_id, "line": line,
+                                         "allow_key": key}))  # fmt: skip
         return result(findings, scanned=scanned, allowed=sorted(used),
                       allow_unused=sorted(allow - used))  # fmt: skip

@@ -7,7 +7,9 @@
 
 Run from the repository root (``--root`` otherwise). ``run`` exits 0 when every required check
 passed, 3 on Hold ``CHECK_FAILED`` (the failed checks' ids and results are printed), and writes
-its record under ``--record-dir`` (default ``<root>/.check-runs``) either way. ``lock`` writes
+its record under ``--record-dir`` (default ``<root>/.check-runs``) either way. Without
+``--base-ref`` a loosening against main is not checked, and a warning on stderr says so (no
+implicit ``origin/main``: a local one may be stale or absent). ``lock`` writes
 ``checks.lock.json`` from the registry.
 """
 
@@ -54,7 +56,7 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
             from .checks.runner import run_checks
 
             base = root.resolve()
-            return run_checks(
+            summary = run_checks(
                 when,
                 root=base,
                 record_dir=(record_dir or base / ".check-runs").absolute(),
@@ -62,6 +64,9 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
                 skip=tuple(skip or ()),
                 base_ref=base_ref,
             )
+            for warning in summary["warnings"]:
+                typer.echo(f"warning: {warning}", err=True)
+            return summary
 
         guarded(call)
 
@@ -83,10 +88,10 @@ def register(app: typer.Typer, guarded: Callable[[Callable[[], T]], T]) -> None:
     @checks.command("lock")
     def lock(root: RootOption = Path(".")) -> None:
         def call() -> Any:
-            from .checks.builtin import BUILTIN_CHECKS
+            from .checks.builtin import BUILTIN_CHECKS, CI_EXTERNAL
             from .checks.lock import LOCK_FILE, entry_digest, lock_bytes, lock_document
 
-            document = lock_document(BUILTIN_CHECKS)
+            document = lock_document(BUILTIN_CHECKS, CI_EXTERNAL)
             path = root.resolve() / LOCK_FILE
             path.write_bytes(lock_bytes(document))
             return {"lock": str(path), "registry_digest": entry_digest(document),

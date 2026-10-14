@@ -549,7 +549,8 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 
 ### 3.10 검사 모듈 (`check`, OD-18)
 
-첫 slice 구현 (M-16~M-20, D-126). 코드: `runtime/checks/`, CLI `runtime/checks_cli.py`, 시험 `tests/v3/test_034_checks.py`.
+첫 slice 구현 (M-16~M-20, D-126, D-131 proposed). 코드: `runtime/checks/`, CLI `runtime/checks_cli.py`, 시험
+`tests/v3/test_034_checks.py`.
 
 - **kind**: `check` 는 모듈 kind 다 (`modules/spec.py` KINDS, interface v1, 적합성 시험 `conformance.check.v1` 은 정적 검사).
   검사마다 선언(`checks/interface.py` `CheckSpec`): id(= module id `check.<name>`), 버전, 대상(`core`, `kind:<kind>`,
@@ -557,13 +558,20 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
   (문자열 목록; `loosens_when_added` 의 키는 허용 목록이라 추가가 완화, 나머지 키는 제거가 완화).
 - **registry**: 선언은 `checks/builtin.py` `BUILTIN_CHECKS`, 모듈 spec 은 `modules/builtin.py` `BUILTIN_MODULES`, 코드 위치는
   `modules/builtin.py` `BUILTIN_CODE`(구현 파일, 적합성 시험용 subject, `local.json` 끄기 키). 코드는 `modules/loader.py`
-  `load` 로만 불러온다(`amplai_foundry.` 밖 참조 거부, entry point 탐색 없음, M-3).
-- **실행** (`amplai checks run --when <시점> [--target ...] [--skip ...] [--base-ref ...]`, `checks/runner.py`): 그 시점을 선언한
-  검사를 차례로 돌린다. 필수 검사가 fail·error 면 Hold `CHECK_FAILED`(검사 id, 버전, 상태, findings). 기본 보호 검사
-  (`check.module_boundary`, `check.secret_exposure`, `check.policy`)는 없으면 Hold `CHECK_PROTECTED_MISSING`, `--skip` 하면
-  Hold `CHECK_PROTECTED` 다. `enable`·`pack_install`·`upgrade` 시점의 호출부(모듈 켜기, pack 설치, S3)는 아직 없다.
+  `load` 로만 불러온다(`amplai_foundry.` 밖 참조 거부, entry point 탐색 없음, M-3). `checks.lock.json` 은 선언 전체와
+  `ci_external`(다른 CI 단계가 돌리는 검사: pytest, ruff, ruff format, mypy)을 담는다.
+- **실행** (`amplai checks run --when <시점> [--target ...] [--skip ...] [--base-ref ...]`, `checks/runner.py`):
+  - 그 시점을 선언하고 대상을 덮는 검사를 차례로 돌린다. 필수 검사가 fail·error 면 Hold `CHECK_FAILED`(검사 id, 버전, 상태,
+    findings). 고른 검사가 없으면 Hold `CHECK_NONE_SELECTED`.
+  - 보호 검사(`BASE_PROTECTED` = `check.module_boundary`, `check.secret_exposure`, `check.policy`, 그리고 `protected` 로 선언한
+    검사)는 네 시점을 모두 선언하고, `--target` 과 관계없이 돌고, 없으면 Hold `CHECK_PROTECTED_MISSING`, `--skip` 하면 Hold
+    `CHECK_PROTECTED` 다.
+  - `--skip` 은 커밋된 lock 의 `ci_external` 에 있는 검사만 받는다(그 밖은 Hold `CHECK_SKIP_REFUSED`). skip 이 있으면 결과는
+    `pass` 가 아니라 `pass_with_skips` 다.
+  - `--base-ref` 없이 돌리면 main 대비 완화를 보지 않고 경고(stderr, 결과 `warnings`)를 낸다. 로컬 `origin/main` 을 암묵
+    기본값으로 쓰지 않는다: 오래됐거나 없을 수 있다.
 - **기록** (M-20): 실행마다 `<record-dir>/check-run-<id>.json` 한 개(commit, registry digest, 모듈 목록, 검사별 id·버전·선언
-  digest·상태·findings·시간). 로컬 파일이다. 제품 store 에 두는 것은 결정되지 않았다.
+  digest·상태·findings·시간, skipped, warnings, outcome). 로컬 파일이고 CI 는 artifact 로 올린다.
 - **첫 검사**:
   - `check.module_boundary` (보호): `src/amplai_foundry` 전체의 import 를 AST 로 읽는다. 모듈 구현 파일은 그 모듈 자신과
     composition root(`runtime/local_deployment.py`, config)만 import 한다(`MODULE_IMPORT_IMPLEMENTATION`). 모듈 구현은 다른
@@ -574,23 +582,53 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
     (`notifier/slack_conformance.py`, `git_host/github_conformance.py`; 후자는 `test_034_git_host.py` 의 `FakeGitHub` 를 옮긴 것)
     `ConformanceLedger` 로 돌리고 `ModuleRegistry.enable` 까지 확인한다. suite 없는 kind 는 `no_suite` 로 보고한다.
   - `check.module_removal` (M-13): 선택 모듈(`git_host.github`, `notifier.slack_webhook`)마다 코어 시험 묶음을 pytest
-    subprocess 로 돌린다. `removal_plugin.py` 가 그 모듈 파일을 import 불가로 만들고 `local.json` 키 기본값을 `null` 로 바꾼다.
-    코어 시험 묶음(`checks/builtin.py` `CORE_TESTS`)은 M-10 골격(저장소·이벤트, 권한·승인, 스케줄·예산, 검증 판정, 레지스트리)
-    과 composition root·실행 loop 의 시험 14 파일이다. 이 검사가 찾은 결합: `tests/rc06_rig.py` 가 GitHub 구현을 module 수준에서
-    import 했다 → 쓰는 함수 안으로 옮겼다.
-  - `check.secret_exposure` (보호): `git ls-files` 의 파일을 `runtime/evidence/cas.py` `scan_secrets` 로 읽는다. 일부러 패턴을
-    담은 scanner 시험 7 파일은 `<path>::<pattern id>` 허용 목록에 있다(추가는 완화).
+    subprocess 로 돌린다. `removal_plugin.py` 가 그 모듈 파일(구현, 적합성 subject)을 import 불가로 만들고 `local.json` 키
+    기본값을 `null` 로 바꾼다. 실패·오류가 하나라도 있으면 `MODULE_REMOVAL_BROKE_CORE`(실패 시험 id 포함).
+    코어 시험 묶음(`checks/builtin.py` `CORE_TESTS`, 14 파일)은 M-10 이 코어에 남기는 골격의 시험과 composition root·실행
+    loop 의 시험이다. 모듈 자신의 기능 시험은 넣지 않는다(그 모듈이 있어야 돈다).
+    - 저장소·이벤트: `tests/runtime_storage/test_store_migration.py`, `tests/v3/test_rc01_storage_uow.py`,
+      `tests/v3/test_034_s1f_event_cursor.py`
+    - 권한·승인: `tests/v3/test_rc06_operator_authority.py`, `tests/v3/test_034_s1a_approve_digest.py`,
+      `tests/v3/test_034_s1a_intake_authority.py`
+    - 스케줄(lease)·예산: `tests/v3/test_rc02_runtime.py`, `tests/v3/test_rc02_lease.py`
+    - 검증 판정: `tests/v3/test_rc06_patch_verifier.py`
+    - 레지스트리·로더: `tests/v3/test_034_s0_modules.py`
+    - composition root·설정·loop·접수: `tests/v3/test_rc06_local_product.py`, `tests/v3/test_rc07_local_config.py`,
+      `tests/e2e/test_rc06_execution_e2e.py`, `tests/v3/test_034_s1a_intake_route.py`
+    - 묶음에서 파일을 빼는 것은 완화다(config `core_tests` 의 제거).
+    이 검사가 찾은 결합: `tests/rc06_rig.py` 가 GitHub 구현을 module 수준에서 import 했다 → 쓰는 함수 안으로 옮겼다.
+  - `check.secret_exposure` (보호): `git ls-files` 의 파일을 `runtime/evidence/cas.py` `SECRET_PATTERNS` 와 이 검사만의
+    패턴(Slack webhook URL, `gh[pousr]_`·`github_pat_` token, `AKIA`·`ASIA` key id, ENCRYPTED·DSA PEM)으로 읽는다. 검사만의
+    패턴을 `cas.py` 에 넣지 않은 이유: artifact store 격리와 trace capture 의 drop 동작이 바뀐다. 허용 목록은 출현 하나 단위
+    (`<path>::<pattern id>::<line hash>`, line hash 는 그 줄의 SHA-256 앞 16자)다. 지금 15 항목, 모두 가짜 credential 을
+    drop·격리 코드에 넣는 시험 fixture 다.
   - `check.policy` (보호, M-19): `checks.lock.json` 이 registry 와 같아야 한다(`amplai checks lock`). registry 를 base ref
-    (CI 는 PR 의 base branch)의 lock 과 비교해 완화(제거, `required`·`protected` 낮춤, `when`·`targets` 축소, config 완화)마다
-    승인 기록 `docs/workstreams/v3-real-execution/check-approvals/*.json`(`check_id`, `before`·`after` 선언 digest, `approver`,
-    `reason`, `approved_at`)을 요구한다. 추가·강화는 승인 없이 통과한다. 기록을 누가 썼는지는 확인하지 않는다(운영자 결정 대기).
+    (CI: PR 의 base branch, push 는 `github.event.before`, 첫 push 의 all-zero SHA 면 base 없음)의 lock 과 비교해 완화마다
+    승인 기록 `docs/workstreams/v3-real-execution/check-approvals/*.json` 을 요구한다. 완화: 제거, `required`·`protected` 낮춤,
+    `when`·`targets` 축소, config 완화, `version` 낮춤(숫자로 비교 못 하면 낮춤으로 본다), `ci_external` 추가.
+    - `--base-ref` 가 있으면 판정은 base ref 의 policy 코드가 한다: `git archive <ref> src/amplai_foundry` 를 검사 작업 폴더에
+      풀고 그 사본의 `evaluate_json` 을 subprocess 로 부른다(`POLICY_API = 1`). base ref 에 그 API 가 없으면(이 PR 이 첫
+      도입) 이 tree 의 코드가 판정하고 결과의 `policy_code` 가 그렇다고 적는다. `git worktree add` 대신 `git archive` 를
+      고른 이유: 저장소의 worktree 목록을 바꾸지 않고, shallow fetch 한 commit 에서도 된다.
+    - 승인 기록: `check_id`, `before`·`after`(lock entry 와 `ci_external` 소속의 digest), `approver`, `reason`,
+      `approved_at`(RFC 3339 UTC, 미래 금지). 한 번만 쓴다: base ref 에 이미 있는 기록은 다시 맞으면
+      `CHECK_APPROVAL_REUSED`, 같은 (check, before, after) 기록이 둘이면 `CHECK_APPROVAL_DUPLICATE`.
+    - 기록을 사람이 썼는지는 확인하지 않는다. CODEOWNERS·필수 status check(저장소 설정)나 서명은 운영자 결정 대기다.
   - 기존 장치: `check.tool_ruff`, `check.tool_ruff_format`, `check.tool_mypy`, `check.tool_pytest` 는 CI 명령 그대로(`ci`),
     `check.evaluator_qsuite` 는 `evaluation/quality.py` 의 Q-suite(`upgrade`, OD-7). `scripts/site_env_check.sh` 는 main 에 없다
     (`origin/feat/034-site-env-check`)라 아직 등록하지 않았다.
-- **CI**: `amplai checks run --when ci` 단계를 기존 단계 뒤에 더했다. pytest·ruff·mypy 는 기존 단계가 돌리므로 `--skip` 하고
-  기록에는 skipped 로 남는다. 기록은 workflow artifact 로 올린다.
-- **아직 없는 것**: schema·의존 순환·버전 충돌 검사(pack 의존 자료 필요, M-14), `doc_freshness`(S2b), 성능 회귀, 권한 검사,
-  pack 이 가져오는 검사(M-18), 확장 모듈의 경계 lint(구현 파일 위치가 pinned manifest `entry` 에만 있다).
+- **CI**: `amplai checks run --when ci` 단계를 기존 단계 뒤에 더했다. pytest·ruff·mypy 는 기존 단계가 돌리므로 `--skip`
+  (`ci_external`)하고 결과는 `pass_with_skips` 다. 기록은 workflow artifact 로 올린다.
+- **D-128**: `runtime/checks/**`, `runtime/checks_cli.py`, 두 conformance transport, `modules/loader.py` 를
+  `TRIAL_CODE_EXCLUDED` 에 넣었다. trial import closure 밖임을 `tests/v3/test_033_d128_trial_code.py` 가 확인한다.
+- **아직 없는 것 (다음 slice)**:
+  - M-17 호출부: `enable`·`pack_install`·`upgrade` 시점에 runner 를 부르는 곳이 없다. pack 설치 경로는 있다(`amplai ops kit
+    plan`·`apply`, `runtime/cli.py:1081-1138`, `distribution/installer.py:45` `KitInstaller`) 그러나 아직 검사를 돌리지 않는다.
+    모듈 켜기(`ModuleRegistry.enable`)와 S3 업그레이드도 같다.
+  - M-18: pack 이 검사를 싣고 빼는 경로가 없다. 검사 registry 는 내장 정적 목록뿐이다.
+  - M-20: 기록은 로컬 JSON·CI artifact 뿐이다. 제품 store 저장과 메타하네스 승격·업그레이드 승인 화면의 표시가 없다.
+  - schema·의존 순환·버전 충돌 검사(pack 의존 자료 필요, M-14), `doc_freshness`(S2b), 성능 회귀, 권한 검사, 확장 모듈의
+    경계 lint(구현 파일 위치가 pinned manifest `entry` 에만 있다).
 
 ## 4. 위협·통제 (design/29 §1, design/10 §8)
 
