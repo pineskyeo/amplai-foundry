@@ -2724,7 +2724,7 @@ Only true unknowns; each has a verification step. None of them may be implemente
 | Q4 | Codex usage semantics across resumed turns in one session (follow-ups, steering): is the last `turn.completed` usage cumulative for the thread (`agent_drivers/protocol.py:212-214` comment) or per turn | run a two-turn resume in the worker image and compare the usage of each `turn.completed` with the provider totals; S9 sums per turn only after this (today `continue_resumed` records the resumed receipt only, `worker.py:562`) |
 | Q5 | Field names of Claude `rate_limit_event` payloads and the shape of Codex usage-limit errors | keep the raw events of one limited run in a scratch journal (operator machine), list the keys; S4 allowlists only those keys |
 | Q6 | Subscription limit windows and sizes per driver | not observable by API; the pilot (§8.6) measures proxies; no window length is assumed |
-| Q7 | TB2: the test entry command and working directory per task, whether the driver layer runs on each task base image, and how many of 89 tasks pass admission under uid 65534, read-only root, network none and `/workspace` mapping | S7a tooling + an operator admission run on 3 tasks first, then all; record counts in `specs/033-harness-taxonomy/runs/` |
+| Q7 | TB2: the test entry command and working directory per task, whether the driver layer runs on each task base image, and how many of 89 tasks pass admission under uid 65534, read-only root, network none and `/workspace` mapping (test entry answered 2026-10-08; admission count and driver-layer architecture answered 2026-10-15, "Clarification: TB2 Oracle Admission Wave 1") | S7a tooling + an operator admission run on 3 tasks first, then all; record counts in `specs/033-harness-taxonomy/runs/` |
 | Q8 | Cost of per-image driver qualification (`container_qualify.py`) for TB2 images | measure on the first 3 admitted images before qualifying the rest |
 | Q9 | Jev access, API, price and data policy (`plan.md` §10.4) | operator confirms access; then write the mapping and qualify it like any judge |
 | Q10 | Trial concurrency the colima VM sustains (each container 2 GB memory, `deployment/local-container-app-amplai-foundry.json`) | S16 runs 1, 2 and 4 concurrent trials and records wall time, failures and memory pressure |
@@ -4561,3 +4561,23 @@ It lives in `scripts/` because no trial imports it and a new package file would 
   - The saturation threshold and the minimum number of submissions for Multilingual.
   - Running the per-instance images under V3 containment: both datasets publish x86_64 images only (Multilingual:
     arm64 "experimental" in the harness README); the local colima VM is aarch64 and runs them emulated (TB2 wave 1).
+
+## Clarification: TB2 Oracle Admission Wave 1 (2026-10-15)
+
+Run record: `specs/033-harness-taxonomy/runs/tb2-oracle-wave1.md` (tool `scripts/tb2_oracle_wave.py`, tests
+`tests/v3/test_033_tb2_oracle_wave.py`), TB2 `2fd12b88aafdd04a52c298e3940bcb189f9766d6`, D-135 rule (egress none).
+
+- **§14 Q7, admission count: 0 of 89.** 85 pulled task images (`linux/amd64`, pinned by registry digest) were
+  screened by one run of each task's own entry under the trial containment; in none did the pytest session start
+  (77 `uvx: command not found` after the offline `curl` of `uv`, the rest failed `pip`/`uvx` downloads or a missing
+  `pytest-json-ctrf`). A reference run uses the same script, image and containment, so none can pass §10.5 step 4.
+  One control task (`chess-best-move`) went through the full admission and ended `solution_failed` with reference
+  reward 0. 4 images over 3 GB compressed were not pulled (their build history installs neither `uv` nor `pytest`;
+  the outcome for them is (추정)). Nothing was written into the corpus; it stays 2.1.0.
+- **§14 Q7, driver layer**: TB2 images are `linux/amd64`, the local worker images `linux/arm64`; `image_spec`'s
+  driver layer copied from this host's worker image cannot run natively in a TB2 image. An amd64 worker build is
+  needed before TB2 trials (open).
+- **Open**: `tb2.commit_base` refuses an empty working directory (seen for `cancel-async-tasks`,
+  `build-cython-ext`); how TB2 tasks can admit at all under egress none is an operator decision — options (A) bake
+  test dependencies into the image, (B) network for the grading container only, (C) skip TB2 and continue with
+  SWE-bench Multilingual (run record "What Would Admit TB2 Tasks"). IC-20 (D-134) gets no tasks from this wave.
