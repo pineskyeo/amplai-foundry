@@ -1731,12 +1731,19 @@ class LocalMetaOps:
             max(settings.drift_min_per_cell, math.ceil(settings.drift_share * imported_cases)),
         )
         cases = len(plan["case_ids"])
+        drawn = found.get("drift_samples") or {}
         per_cell = {
             cell: {
                 "imported": imported_cases,
                 # manifest variants are never imported: they run in the imported slots
                 "new_round_one": len(refs) * cases - imported_cases,
-                "drift_reruns_at_most": sample * len(refs),
+                # failure review P2-2: the sample the run draws (stable tasks, topped up to the
+                # floor; below it the cell is inconclusive and its imports run fresh)
+                "drift_sample": (drawn.get(cell) or {}).get("sample", sample),
+                "drift_sample_floor": (drawn.get(cell) or {}).get("floor"),
+                "drift_sample_topped_up": (drawn.get(cell) or {}).get("topped_up", 0),
+                "drift_status_before_run": (drawn.get(cell) or {}).get("status"),
+                "drift_reruns_at_most": (drawn.get(cell) or {}).get("sample", sample) * len(refs),
                 "drift_reference": reference[cell],
                 "drift_reference_basis": basis[cell],
             }
@@ -1751,6 +1758,11 @@ class LocalMetaOps:
             "per_cell": per_cell,
             "excluded_by_reason": reasons,
             "excluded": found["excluded"],
+            "note": (
+                "M counts the slots without an imported trial; a cell whose drift check fails or "
+                "is inconclusive drops its imports, and its imported tasks then run fresh as well "
+                "(up to imported_cases more round-1 trials per composition of the cell)"
+            ),
             "window_hours": settings.window_hours,
             "plan_id": calibration.plan_id(plan),
         }
@@ -1783,7 +1795,9 @@ class LocalMetaOps:
         service = self._calibration_service(self.local.evaluation.executor_policy)
         return dict(service.recover(self.operator, self._calibration_plan_ref(plan_id)))
 
-    def calibration_resume(self, plan_id: str, *, parallel: int = 1) -> dict[str, Any]:
+    def calibration_resume(
+        self, plan_id: str, *, parallel: int = 1, requalify: bool = False
+    ) -> dict[str, Any]:
         """D-128: run a ``stopped`` calibration plan again under its own approval
         (``CalibrationService.resume``). The loaded corpus must still be the plan's frozen one
         (CORPUS_CHANGED, on the main or the regression set)."""
@@ -1804,24 +1818,35 @@ class LocalMetaOps:
             break
         if refused is not None:
             raise refused
+        if not requalify:
+            # failure review P3: the original run's executor qualification and per-trial ceiling
+            # are pinned again; a different one needs ``--requalify`` (recorded in ``resumes``)
+            self._pin_run_qualification(plan_id)
         policy = self.local.evaluation.executor_policy
         if policy is None:
             raise Hold(
                 "QUALIFIED_EXECUTOR_REQUIRED",
                 "Register a server-side qualified bounded executor first",
             )
-        before = self.store.head(self.scope, calibration.RUN_KIND, plan_id)["data"]["trial_refs"]
         service = self._calibration_service(policy)
         from ..local_deployment import CalibrationImportEntry
 
         meta = getattr(getattr(self.dep, "config", None), "meta", None)
         settings = meta.calibration_import if meta is not None else CalibrationImportEntry()
+        budget = getattr(getattr(self.dep, "service", None), "budget", None)
         summary_ref = service.resume(
             self.operator, plan_ref, self.executor, parallel=parallel,
-            window_hours=settings.window_hours,
+            window_hours=settings.window_hours, requalify=requalify,
+            trial_wall_seconds=int(getattr(budget, "max_wall_seconds",
+                                           calibration.TRIAL_WALL_SECONDS)),
         )  # fmt: skip
         run = self.store.head(self.scope, calibration.RUN_KIND, plan_id)
-        self._record_metrics([r for r in run["data"]["trial_refs"] if r not in before])
+        # failure review P2-3: every pooled trial without its trial-metrics record gets one (a
+        # trial of a crashed segment never reached ``_record_metrics``)
+        recorded = {ref["id"] for ref, _ in self.store.list_objects(self.scope, "trial-metrics")}
+        self._record_metrics(
+            [r for r in run["data"]["trial_refs"] if "tm-" + r["id"] not in recorded]
+        )
         return {
             "plan_ref": plan_ref,
             "summary_ref": summary_ref,
@@ -1831,6 +1856,33 @@ class LocalMetaOps:
             "resumes": run["data"].get("resumes"),
             "overruns": len(run["data"].get("overruns") or []),
         }
+
+    def _pin_run_qualification(self, plan_id: str) -> None:
+        """Pin the executor qualification the plan's run recorded (its head's
+        ``qualification_ref``, else its newest trial's), when that record carries the IC-29
+        ``per_trial_tokens``; otherwise the current pin stays and ``resume`` compares."""
+        from ...evaluation import calibration
+
+        data = self.store.head(self.scope, calibration.RUN_KIND, plan_id)["data"]
+        ref = data.get("qualification_ref")
+        if ref is None:
+            for trial_ref in reversed(data.get("trial_refs") or []):
+                ref = self.store.get(self.scope, calibration.TRIAL_KIND, trial_ref).get(
+                    "qualification_ref"
+                )
+                if ref is not None:
+                    break
+        if ref is None:
+            return
+        try:
+            _, value = resolve_ref(self.store, self.scope, ref)
+        except (Hold, RuntimeFault):
+            return
+        tokens = value.get("per_trial_tokens")
+        if type(tokens) is int and tokens >= 0:
+            self.local.evaluation.executor_policy = ExecutorPolicy(
+                frozenset({EXPERIMENT_MODE}), tokens, 0, dict(ref)
+            )
 
     def settle_ended_reservations(self) -> dict[str, Any]:
         """D-128: ``settle_ended_reservations`` of this deployment as its human operator."""

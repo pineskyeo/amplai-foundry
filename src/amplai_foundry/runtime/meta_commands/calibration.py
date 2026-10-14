@@ -22,6 +22,7 @@ from typing import Annotated, Any
 
 import typer
 
+from ..errors import RuntimeFault
 from . import (
     DEFAULT_CONFIG,
     AppOption,
@@ -145,22 +146,46 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
     @group.command("resume")
     def resume(
         plan_id: str,
-        per_trial_tokens: PerTrialOption,
-        basis: BasisOption,
-        evidence: EvidenceOption,
         parallel: ParallelOption = 1,
         config: ConfigOption = DEFAULT_CONFIG,
         corpus: CorpusOption = None,
         app: AppOption = None,
+        requalify: Annotated[
+            bool,
+            typer.Option(
+                "--requalify",
+                help="qualify the executor anew (with --per-trial-tokens, --basis, --evidence) "
+                "instead of keeping the original run's qualification; recorded in the run",
+            ),
+        ] = False,
+        per_trial_tokens: Annotated[
+            int | None, typer.Option("--per-trial-tokens", help="with --requalify only")
+        ] = None,
+        basis: Annotated[str | None, typer.Option("--basis", help="with --requalify only")] = None,
+        evidence: Annotated[
+            list[str] | None, typer.Option("--evidence", help="with --requalify only")
+        ] = None,
     ) -> None:
         """Run a stopped calibration plan again under its approval (D-128): completed graded
         trials stay, unfinished slots run again; anything behaviour-affecting that changed
-        holds CALIBRATION_RESUME_CHANGED."""
+        holds CALIBRATION_RESUME_CHANGED. The original run's executor qualification and
+        per-trial ceiling are kept unless --requalify."""
 
         def call() -> Any:
+            given = (per_trial_tokens, basis, evidence)
+            if requalify and (per_trial_tokens is None or basis is None or not evidence):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--requalify needs --per-trial-tokens, --basis and --evidence"
+                )
+            if not requalify and any(v for v in given if v is not None):
+                raise RuntimeFault(
+                    "LOCAL_INPUT", "--per-trial-tokens, --basis and --evidence go with --requalify"
+                )
             with opened_v2(config, corpus, app=app) as ops:
                 workers = capped_parallel(ops.dep, parallel)
-                qualify(ops, per_trial_tokens, basis, evidence)
-                return ops.calibration_resume(plan_id, parallel=workers)
+                if requalify:
+                    assert per_trial_tokens is not None and basis is not None and evidence
+                    qualify(ops, per_trial_tokens, basis, evidence)
+                return ops.calibration_resume(plan_id, parallel=workers, requalify=requalify)
 
         guarded(call)

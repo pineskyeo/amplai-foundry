@@ -511,8 +511,9 @@ class QualityService:
                 if control not in compositions[1:]:
                     continue  # not a variant of this plan's cell
                 champion = compositions[0]
-                good = _task_rates(trials, summary["plan_ref"], cell, champion)
-                bad = _task_rates(trials, summary["plan_ref"], cell, control)
+                members = self._run_members(summary["plan_ref"])
+                good = _task_rates(trials, summary["plan_ref"], cell, champion, members)
+                bad = _task_rates(trials, summary["plan_ref"], cell, control, members)
                 tasks = sorted(set(good) & set(bad))
                 if not tasks:
                     continue
@@ -540,6 +541,18 @@ class QualityService:
             "unit": "task (development split, mean over runs)",
             "cells": rows,
         }
+
+    def _run_members(self, plan_ref: dict[str, Any]) -> set[str]:
+        """D-128 failure review P3: the trial ids the plan's run pools (its head's
+        ``trial_refs``), so a drift-dropped import or a superseded trial of a resumed run is not
+        counted; empty when the run head cannot be read."""
+        from .calibration import RUN_KIND
+
+        try:
+            head = self.store.head(self.scope, RUN_KIND, plan_ref["id"])
+        except (RuntimeFault, KeyError, TypeError):
+            return set()
+        return {str(r.get("id")) for r in head["data"].get("trial_refs") or []}
 
     def _complete_summary(self, summary: dict[str, Any]) -> bool:
         """D-128: the summary's run ended ``done`` and it is not marked partial
@@ -1298,14 +1311,20 @@ class QualityService:
 
 
 def _task_rates(
-    trials: list[dict[str, Any]], plan_ref: dict[str, Any], cell: str, composition: dict[str, Any]
+    trials: list[dict[str, Any]],
+    plan_ref: dict[str, Any],
+    cell: str,
+    composition: dict[str, Any],
+    members: set[str] | None = None,
 ) -> dict[str, float]:
     """Per development task: the pass rate over the runs of `composition` in `cell` of the plan
-    (a run with an unknown result or an unknown effect does not count, as in calibration)."""
+    (a run with an unknown result or an unknown effect does not count, as in calibration).
+    `members` (D-128): only the trials the plan's run pools."""
     runs: dict[str, list[bool]] = {}
     for trial in trials:
         if (
-            trial["calibration_plan_ref"] == plan_ref
+            (members is None or trial.get("trial_id") in members)
+            and trial["calibration_plan_ref"] == plan_ref
             and trial["cell_id"] == cell
             and trial["composition_ref"] == composition
             and trial["split"] == "development"

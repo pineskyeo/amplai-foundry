@@ -1578,6 +1578,8 @@ def render(feed: DashboardFeed, out: Path) -> list[Path]
 | `CALIBRATION_RESUME_CHANGED` / `CALIBRATION_RESUME_STALE` | hold | calibration resume (D-128) | `details.differences` of evaluator version, trial code digest, model snapshot or corpus version / the run stopped longer ago than `window_hours` |
 | `CALIBRATION_FACTS_UNAVAILABLE` | hold | calibration resume, imports (D-128) | no executor facts to compare stored receipts with |
 | `CALIBRATION_IMPORT` / `CALIBRATION_IMPORT_EXPECTED` | hold | calibration freeze/run, `calibrate --import-from` (D-128) | a listed import is not eligible (`details.excluded`) or none is / the eligible count differs from `--expect-imported` |
+| `CALIBRATION_RESUME_QUALIFICATION` | hold | calibration resume (D-128) | the executor qualification or per-trial ceiling differs from the original run's (without `--requalify`) |
+| `TRIAL_CODE_UNREADABLE` | hold | `local_executor.trial_code_digest` (D-128) | a file of the installed package cannot be read for the trial code digest |
 | `CALIBRATION_PARTIAL` | hold | `StageRunner.plan` (D-128) | the calibration summary is of a run that did not end `done`, or not its newest revision |
 | `NO_INFORMATIVE_TASKS` | hold | stages | fewer informative tasks than the stage minimum |
 | `LEAK_GATE` | hold | `MetaHarness.screen`, proposer | leak findings |
@@ -2589,7 +2591,7 @@ and run as the operator identity (`local_deployment.py:412-417`) unless noted.
 | `amplai meta calibrate --cells A,B --max-repeats 5 --max-trials N --parallel P --max-tokens T --max-wall-seconds S` | freeze, approve and run a calibration | S11 |
 | `amplai meta calibration show PLAN` | summary | S11 |
 | `amplai meta calibrate … --import-from PLAN` (repeatable) `--dry-run` / `--expect-imported N` | preview the import (no approval), then import exactly N eligible round-1 trials of PLAN into the new plan (D-128) | D-128 |
-| `amplai meta calibration resume PLAN --per-trial-tokens N --basis B --evidence E [--parallel P]` | run a stopped plan again under its approval (D-128) | D-128 |
+| `amplai meta calibration resume PLAN [--parallel P] [--requalify --per-trial-tokens N --basis B --evidence E]` | run a stopped plan again under its approval and the original run's executor qualification; `--requalify` qualifies anew and is recorded (D-128) | D-128 |
 | `amplai meta settle-reservations` | settle ended runs' goal reservations from their driver journals (D-128) | D-128 |
 | `amplai meta component list [--kind K]` / `show ID` / `add --kind K --name N --file F` | catalogue; `add` registers operator-authored content through the proposer identity (source `operator`) | S11 |
 | `amplai meta propose-components --cell C --set SLOT=ID@VERSION… --hypothesis --benefit --risk… [--prediction-file F]` | submit a component candidate | S11 |
@@ -4340,8 +4342,44 @@ completed trials (https://github.com/harbor-framework/harbor/blob/main/src/harbo
   only. A runaway trial is therefore bounded by 1800 s, not by tokens. Proposal (not implemented): an
   in-flight stop at the node token budget (20M raw, about 4x the largest trial seen, 4.70M), which
   needs mid-run usage events from the drivers (확인 필요).
+- **Failure review (PR #92 at f75128d, coordinator, 2026-10-14)**:
+  - Wall time (P2-1): `recover` closes a lost owner's segment at now while the root still has a
+    `reserved` allocation (that trial may have run until now), else at the root's last allocation
+    activity. `resume` holds `META_WALL_BUDGET` when less than one trial goal's deadline is left
+    (`TRIAL_WALL_SECONDS` 1800, `product.Budget.max_wall_seconds`; `LocalMetaOps` passes the
+    deployment's), not only when none is.
+  - Drift floor (P2-2): `drift_samples` (shared by the run and `eligible_imports`): the floor is
+    `min(n imported, drift_min_per_cell)`; a stable sample below it is topped up from unstable
+    tasks the source run's newest summary does not class `flaky_grading` for the cell
+    (`topped_up`; `summarize_trials` never assigns that class today, so in practice every unstable
+    task qualifies); still below the floor, the cell is `inconclusive` (`reason`
+    `sample_below_floor`) before anything runs and its imports are dropped. `drift_verdict` needs
+    at least `DRIFT_MIN_EVIDENCE` (4) compared pairs: one to three agreeing pairs are inconclusive.
+    The dry-run preview shows each cell's drawn sample, floor and top-up, and notes that a cell
+    whose imports are dropped runs its imported tasks fresh beyond M.
+  - Metrics (P2-3): `LocalMetaOps.calibration_resume` writes `trial-metrics` for every pooled
+    trial without a `tm-<trial id>` record (a trial of a crashed segment), imports excepted.
+  - Admission (P2-4): calibration reservations hold `max(per-trial ceiling, the largest raw tokens
+    a trial of the root has settled at)` (`EvolutionBudget.reserve(..., reserve_observed_max=True)`;
+    imports left out); `token_ceiling` stays the ceiling, so the overrun judgement is unchanged. The
+    root token budget then stops admission once trials run far above the ceiling instead of one
+    wave later (probe: 10M budget, parallel 4, ceiling 1M, 4.7M raw trials: 4 trials, not 5+).
+  - Qualification (P3): the run head records `qualification_ref` and `max_trial_tokens`;
+    `LocalMetaOps.calibration_resume` pins that qualification again (its IC-29 record), and
+    `resume` holds `CALIBRATION_RESUME_QUALIFICATION` (`details.was`, `details.now`) when the
+    qualification or ceiling differs, unless `--requalify` (with `--per-trial-tokens`, `--basis`,
+    `--evidence`), which the `resumes` entry records as `requalified {was, now}`.
+  - Imports are stored in the transaction that starts the run (P3): a crash while storing them
+    leaves the plan `frozen` with no imported trial, never `running` without them.
+  - `QualityService` discrimination (`_task_rates`) counts only the trials of the run's
+    `trial_refs` (a drift-dropped import or a superseded trial is not counted).
+  - `trial_code_digest` ignores `.DS_Store`, `*.swp`, `*~` (besides `__pycache__`, `*.pyc`) and
+    holds `TRIAL_CODE_UNREADABLE` when a file cannot be read.
 - Tests: `tests/v3/test_033_d128_calibration_resume.py` (overrun recorded and the run goes on;
-  price-weighted judgement and raw ledger; any weigher failure judges raw; the 4.70M-token trial
+  price-weighted judgement and raw ledger; any weigher failure judges raw; recover closing at now
+  with a reserved trial; one trial deadline left for a resume; the drift floor, top-up and
+  below-floor inconclusive; 1-3 pairs no evidence; the admission probe; the pinned qualification
+  and `requalify`; imports in the run-start transaction; metrics of a crashed segment; the 4.70M-token trial
   weighs 748,608.5; an experiment root still refuses after an overrun; not-run zero charge in a
   calibration and an experiment; resume keeps graded trials, re-runs the rest and writes revision
   2; resume refused on each behaviour-affecting difference, an unknown trial code, another

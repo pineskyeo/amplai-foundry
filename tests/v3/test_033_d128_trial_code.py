@@ -22,6 +22,7 @@ from amplai_foundry.meta_harness.local_executor import (
     trial_code_digest,
     trial_code_excluded,
 )
+from amplai_foundry.runtime.errors import Hold
 
 PACKAGE = Path(local_executor.__file__).resolve().parents[1]
 PKG = "amplai_foundry"
@@ -165,3 +166,23 @@ def test_editing_a_trial_file_changes_the_digest_and_an_allowlisted_one_does_not
 
 def test_the_installed_digest_is_read_once_per_process() -> None:
     assert trial_code_digest() == trial_code_digest()
+
+
+def test_editor_and_finder_litter_is_ignored_and_an_unreadable_file_holds(
+    package_copy: Path,
+) -> None:
+    # failure review P3
+    before = trial_code_digest(package_copy)
+    for name in (".DS_Store", "agent_drivers/.cli.py.swp", "agent_drivers/cli.py~"):
+        (package_copy / name).write_bytes(b"litter")
+    local_executor._TRIAL_CODE.pop(package_copy, None)
+    assert trial_code_digest(package_copy) == before
+    locked = package_copy / "agent_drivers" / "cli.py"
+    locked.chmod(0)
+    try:
+        local_executor._TRIAL_CODE.pop(package_copy, None)
+        with pytest.raises(Hold) as caught:
+            trial_code_digest(package_copy)
+        assert caught.value.code == "TRIAL_CODE_UNREADABLE"
+    finally:
+        locked.chmod(0o644)

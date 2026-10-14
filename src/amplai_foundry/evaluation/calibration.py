@@ -153,6 +153,11 @@ REFERENCE_BASES = ("source_aa", "deployment_aa", "none")
 IMPORT_WINDOW_HOURS = 72
 DRIFT_SHARE = 0.1
 DRIFT_MIN_PER_CELL = 8
+# failure review P2-1: a resume needs at least one trial goal's deadline of active wall time
+# left (``runtime/execution/product.py`` ``Budget.max_wall_seconds``, 1800)
+TRIAL_WALL_SECONDS = 1800
+# failure review P2-2: fewer compared pairs than this are no evidence either way
+DRIFT_MIN_EVIDENCE = 4
 # the receipt facts a reuse key binds besides the plan's own refs (review P1-1: the trial code
 # digest, not the whole checkout's harness sha, which a receipt keeps as provenance only)
 FACT_FIELDS = ("trial_code_digest", "model_snapshot", "corpus_version")
@@ -676,13 +681,14 @@ def drift_verdict(
     """D-128: the drift check of one cell's imports, from the paired outcomes of its sampled
     tasks (``flips``: the imported round-1 outcome differs from the new run's).
 
-    ``inconclusive`` when fewer than half of the ``sampled`` pairs (at least one) were compared
-    (a re-run without a graded outcome is no comparison). Otherwise ``fail`` when the 95 % Wilson
-    lower bound of flips / compared exceeds ``reference``, the cell's A/A discordance (repeat 0
-    against repeat 1 of the same task, as ``aa_discordance``) in the source runs; without a
-    measured discordance the reference is 0, so any flip fails. Returns (verdict, lower bound)."""
+    ``inconclusive`` when fewer than ``DRIFT_MIN_EVIDENCE`` (4) pairs, or fewer than half of the
+    ``sampled`` pairs, were compared (a re-run without a graded outcome is no comparison):
+    failure review P2-2, one to three agreeing pairs are no evidence (the 95 % Wilson upper bound
+    of 0 flips in 3 is above 0.5). Otherwise ``fail`` when the 95 % Wilson lower bound of
+    flips / compared exceeds ``reference``, the cell's A/A discordance (``drift_reference``);
+    without one the reference is 0, so any flip fails. Returns (verdict, lower bound)."""
     compared = len(flips)
-    if compared == 0 or compared < math.ceil(sampled / 2):
+    if compared < max(DRIFT_MIN_EVIDENCE, math.ceil(sampled / 2)):
         return "inconclusive", None
     lower = wilson(sum(flips), compared, _Z95)[0]
     return ("fail" if lower > (reference or 0.0) else "pass"), lower
@@ -898,6 +904,7 @@ class CalibrationService:
             raise Hold("CALIBRATION_STATE", "A calibration plan runs once")
         # D-128: the imports are checked again against what would run now, before anything runs
         rows = self._import_rows(scope, plan) if "imports" in plan else []
+        drift = self.drift_samples(scope, plan, rows, pid) if rows else {}
         with self.store.tx() as db:
             self.store.cas(
                 db,
@@ -914,14 +921,19 @@ class CalibrationService:
                     # compare it); the run segment a summary covers
                     "evaluator_version_ref": version_ref,
                     "segment": 0,
+                    # failure review P3: the qualification and ceiling a resume must keep
+                    "qualification_ref": policy.qualification_ref,
+                    "max_trial_tokens": policy.max_trial_tokens,
                 },
             )
             # D-128 review P1-2: the wall budget counts this run's active time
             self.budgets.start_segment(
                 db, scope, "calibration:" + pid, closed_at=self.store.clock()
             )
-        if rows:
-            self._materialize(scope, plan_ref, plan, rows)
+            if rows:
+                # failure review P3: in the transaction that starts the run, so a run is never
+                # running without its imports
+                self._materialize(db, scope, plan_ref, plan, rows, drift)
         return self._drive(actor, plan_ref, plan, policy, workers, cases, executor)
 
     # -- D-128: resume --------------------------------------------------------------------------
@@ -933,6 +945,8 @@ class CalibrationService:
         *,
         parallel: int = 1,
         window_hours: int = IMPORT_WINDOW_HOURS,
+        trial_wall_seconds: int | None = None,
+        requalify: bool = False,
     ) -> dict[str, Any]:
         """Run a ``stopped`` calibration plan again under its own approval (D-128, Harbor
         ``jobs resume``): completed graded trials stay, every unfinished slot runs again, the
@@ -943,7 +957,11 @@ class CalibrationService:
         (the approved wall time since the freeze is spent; resume never resets it) and
         ``CALIBRATION_RESUME_CHANGED`` (``details.differences``: the evaluator version, or a kept
         trial's trial code digest, model snapshot or corpus version differs from what would run
-        now), ``CALIBRATION_RESUME_STALE`` (the run stopped more than ``window_hours`` ago)."""
+        now), ``CALIBRATION_RESUME_STALE`` (the run stopped more than ``window_hours`` ago).
+        Failure review: ``META_WALL_BUDGET`` also when less than ``trial_wall_seconds`` (one
+        trial goal's deadline, ``product.Budget.max_wall_seconds`` 1800) is left;
+        ``CALIBRATION_RESUME_QUALIFICATION`` when the executor qualification or per-trial ceiling
+        differs from the original run's, unless ``requalify`` (recorded in ``resumes``)."""
         self._independent(actor, "experiment.run")
         scope = actor.scope
         plan = self.store.get(scope, PLAN_KIND, plan_ref)
@@ -986,12 +1004,13 @@ class CalibrationService:
         last = _last_activity(budget)
         closed_at = last if last is not None else self.store.clock()
         used = _wall_used_at(budget, closed_at)
-        if used >= budget["limits"]["max_wall_seconds"]:
+        wall_floor = TRIAL_WALL_SECONDS if trial_wall_seconds is None else trial_wall_seconds
+        if budget["limits"]["max_wall_seconds"] - used < wall_floor:
             raise Hold(
                 "META_WALL_BUDGET",
-                "The plan's approved active wall time is spent; import its trials into a new "
-                "plan instead",
-                details={"used_seconds": round(used),
+                "Less active wall time is left than one trial may take; import the plan's "
+                "trials into a new plan instead",
+                details={"used_seconds": round(used), "trial_wall_seconds": wall_floor,
                          "max_wall_seconds": budget["limits"]["max_wall_seconds"]},
             )  # fmt: skip
         # a resume long after the stop would pool trials of another time with new ones: refused
@@ -1025,6 +1044,27 @@ class CalibrationService:
                 "What would run now differs from the original run; run a new plan",
                 details={"differences": differences},
             )
+        # failure review P3: the qualification and per-trial ceiling of the original run
+        was = {
+            "qualification_ref": head["data"].get("qualification_ref")
+            or (kept[-1][1].get("qualification_ref") if kept else None),
+            "max_trial_tokens": head["data"].get("max_trial_tokens"),
+        }
+        now_policy = {
+            "qualification_ref": policy.qualification_ref,
+            "max_trial_tokens": policy.max_trial_tokens,
+        }
+        changed = was["qualification_ref"] != now_policy["qualification_ref"] or (
+            was["max_trial_tokens"] is not None
+            and was["max_trial_tokens"] != now_policy["max_trial_tokens"]
+        )
+        if changed and not requalify:
+            raise Hold(
+                "CALIBRATION_RESUME_QUALIFICATION",
+                "The executor qualification or per-trial ceiling differs from the original run's; "
+                "resume with that qualification, or requalify explicitly (--requalify)",
+                details={"was": was, "now": now_policy},
+            )
         with self.store.tx() as db:
             current = self.store.head(scope, RUN_KIND, pid, db=db)
             if current["row_version"] != head["row_version"]:
@@ -1051,8 +1091,10 @@ class CalibrationService:
                         *data.get("resumes", []),
                         {"at": now(), "from_stop_reason": data.get("stop_reason"),
                          "kept": len(kept), "superseded": len(superseded),
-                         "owner_epoch": self.store.epoch},
+                         "owner_epoch": self.store.epoch,
+                         **({"requalified": {"was": was, "now": now_policy}} if changed else {})},
                     ],
+                    **now_policy,
                 },
             )  # fmt: skip
             self.budgets.start_segment(db, scope, root, closed_at=closed_at)
@@ -1276,7 +1318,8 @@ class CalibrationService:
     ) -> dict[str, Any]:
         """For an operator composing a plan before its approval: the ``imports`` value a plan
         like ``plan`` (with ``import_policy``) gets from the runs of ``source_refs``, the number
-        imported, the imported cases, and every excluded trial with its reason."""
+        imported, the imported cases, every excluded trial with its reason, and each cell's
+        drift-check sample as the run would draw it (``drift_samples``: size, floor, status)."""
         kept, excluded = self._import_candidates(scope, plan, [(r, None) for r in source_refs])
         imports = []
         for source in source_refs:
@@ -1284,11 +1327,22 @@ class CalibrationService:
             if refs:
                 imports.append({"plan_ref": source, "trial_refs": refs})
         cases = {row["task_id"] for row in kept}
+        samples = self.drift_samples(scope, plan, kept, plan_id(plan)) if kept else {}
         return {
             "imports": imports,
             "imported": len(kept),
             "cases": [cid for cid in plan["case_ids"] if cid in cases],
             "excluded": excluded,
+            "drift_samples": {
+                cell: {
+                    "sample": len(entry["sample"]),
+                    "floor": entry["floor"],
+                    "topped_up": len(entry["topped_up"]),
+                    "unstable_excluded": entry["unstable_excluded"],
+                    "status": entry["status"],
+                }
+                for cell, entry in samples.items()
+            },
         }
 
     def drift_reference(
@@ -1352,85 +1406,139 @@ class CalibrationService:
             )
         return kept
 
-    def _materialize(
-        self,
-        scope: Scope,
-        plan_ref: dict[str, Any],
-        plan: dict[str, Any],
-        rows: list[dict[str, Any]],
-    ) -> None:
-        """Store each imported trial as a trial of this plan with its provenance
-        (``imported_from``: source plan, trial ref and id, finish time, reuse key digest) and a
-        0-charge allocation naming its source; choose each cell's drift-check sample."""
-        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
+    def drift_samples(
+        self, scope: Scope, plan: dict[str, Any], rows: list[dict[str, Any]], pid: str
+    ) -> dict[str, Any]:
+        """Each cell's drift-check entry for the imported ``rows`` (D-128 review P2-c, failure
+        review P2-2). ``k = min(n, max(drift_min_per_cell, ceil(drift_share x n)))`` of the n
+        imported tasks, in ``digest({plan_id, cell_id, task_id})`` order, first from the tasks
+        whose graded v1 runs in their source run all have one outcome (``_source_stable``). The
+        floor is ``min(n, drift_min_per_cell)``: when the stable tasks give fewer, the sample is
+        topped up from the unstable tasks that the source run's newest summary does not class
+        ``flaky_grading`` for the cell (``topped_up``); when it is still below the floor, the
+        cell is ``inconclusive`` before anything runs (``reason`` ``sample_below_floor``) and its
+        imports are dropped."""
         imported = [cid for cid in plan["case_ids"] if any(r["task_id"] == cid for r in rows)]
         policy = plan["import_policy"]
         n = len(imported)
         k = min(n, max(policy["drift_min_per_cell"], math.ceil(policy["drift_share"] * n)))
+        floor = min(n, policy["drift_min_per_cell"])
         stable = self._source_stable(scope, plan, rows)
+        flaky = self._source_flaky(scope, rows)
         drift: dict[str, Any] = {}
         for cell in plan["cells"]:
-            # review P2-c: only tasks whose graded v1 runs in their source run all agree; a task
-            # that flipped there would flip here without any drift
+
+            def order(ids: list[str], cell: str = cell) -> list[str]:
+                return sorted(
+                    ids, key=lambda task: digest({"plan_id": pid, "cell_id": cell, "task_id": task})
+                )
+
             candidates = [cid for cid in imported if (cell, cid) in stable]
-            order = sorted(
-                candidates,
-                key=lambda cid: digest({"plan_id": pid, "cell_id": cell, "task_id": cid}),
-            )
-            chosen = set(order[:k])
-            drift[cell] = {
+            chosen = order(candidates)[:k]
+            topped: list[str] = []
+            if len(chosen) < floor:
+                spare = [
+                    cid
+                    for cid in imported
+                    if (cell, cid) not in stable and (cell, cid) not in flaky
+                ]
+                topped = order(spare)[: floor - len(chosen)]
+                chosen += topped
+            entry: dict[str, Any] = {
                 "status": "pending",
-                "sample": [cid for cid in imported if cid in chosen],
+                "sample": [cid for cid in imported if cid in set(chosen)],
+                "floor": floor,
                 "unstable_excluded": len(imported) - len(candidates),
+                "topped_up": [cid for cid in imported if cid in set(topped)],
                 "reference": policy["drift_reference"].get(cell),
                 "reference_basis": policy["drift_reference_basis"].get(cell),
             }
+            if len(chosen) < floor:
+                entry.update(status="inconclusive", reason="sample_below_floor")
+            drift[cell] = entry
+        return drift
+
+    def _source_flaky(self, scope: Scope, rows: list[dict[str, Any]]) -> set[tuple[str, str]]:
+        """The imported (cell, task) pairs the newest summary of their source plan classes
+        ``flaky_grading`` (``summarize_trials`` never assigns that class today, §8.2; it comes
+        from ``corpus_check --repeats``)."""
+        out: set[tuple[str, str]] = set()
+        sources = {digest(r["source_plan_ref"]): r["source_plan_ref"] for r in rows}
+        for source in sources.values():
+            found = [
+                (ref, value)
+                for ref, value in self.store.list_objects(scope, SUMMARY_KIND)
+                if ref["id"] == "calsum-" + source["id"]
+            ]
+            if not found:
+                continue
+            _, summary = max(found, key=lambda row: row[0]["revision"])
+            for cell, row in (summary.get("cells") or {}).items():
+                for task, value in ((row or {}).get("tasks") or {}).items():
+                    if isinstance(value, dict) and value.get("class") == "flaky_grading":
+                        out.add((cell, task))
+        return out
+
+    def _materialize(
+        self,
+        db: Any,
+        scope: Scope,
+        plan_ref: dict[str, Any],
+        plan: dict[str, Any],
+        rows: list[dict[str, Any]],
+        drift: dict[str, Any],
+    ) -> None:
+        """Store each imported trial as a trial of this plan with its provenance
+        (``imported_from``: source plan, trial ref and id, finish time, reuse key digest) and a
+        0-charge allocation naming its source; choose each cell's drift-check sample. Runs in
+        the transaction that starts the run (failure review P3), so a run never starts without
+        its imports."""
+        pid, root = plan_ref["id"], "calibration:" + plan_ref["id"]
         refs = []
-        with self.store.tx() as db:
-            for row in rows:
-                source, trial_id = row["trial"], new_id("caltrial")
-                provenance = {
-                    "plan_ref": row["source_plan_ref"],
-                    "trial_ref": row["trial_ref"],
-                    "trial_id": source["trial_id"],
-                    "finished_at": source.get("finished_at"),
-                    "key_digest": row["key_digest"],
-                }
-                trial = {
-                    **source,
-                    "trial_id": trial_id,
-                    "calibration_plan_ref": plan_ref,
-                    "imported_from": provenance,
-                }
-                ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
-                self.store.cas(
-                    db, scope, TRIAL_KIND, trial_id, 0, "observed",
-                    {"calibration_plan_ref": plan_ref, "task_id": source["task_id"],
-                     "cell_id": source["cell_id"], "repeat": source["repeat"],
-                     "owner_epoch": self.store.epoch, "trial_ref": ref,
-                     "imported_from": provenance},
-                )  # fmt: skip
-                self.budgets.record_import(db, scope, root, trial_id, source=provenance)
-                refs.append(ref)
-            head = self.store.head(scope, RUN_KIND, pid, db=db)
+        for row in rows:
+            source, trial_id = row["trial"], new_id("caltrial")
+            provenance = {
+                "plan_ref": row["source_plan_ref"],
+                "trial_ref": row["trial_ref"],
+                "trial_id": source["trial_id"],
+                "finished_at": source.get("finished_at"),
+                "key_digest": row["key_digest"],
+            }
+            trial = {
+                **source,
+                "trial_id": trial_id,
+                "calibration_plan_ref": plan_ref,
+                "imported_from": provenance,
+            }
+            ref = self.store.put(db, scope, TRIAL_KIND, trial_id, 1, trial)
             self.store.cas(
-                db,
-                scope,
-                RUN_KIND,
-                pid,
-                head["row_version"],
-                "running",
-                {
-                    **head["data"],
-                    "trial_refs": [*head["data"]["trial_refs"], *refs],
-                    "imports": {
-                        "sources": [e["plan_ref"] for e in plan["imports"]],
-                        "trial_refs": refs,
-                        "dropped": [],
-                    },
-                    "drift_check": drift,
+                db, scope, TRIAL_KIND, trial_id, 0, "observed",
+                {"calibration_plan_ref": plan_ref, "task_id": source["task_id"],
+                 "cell_id": source["cell_id"], "repeat": source["repeat"],
+                 "owner_epoch": self.store.epoch, "trial_ref": ref,
+                 "imported_from": provenance},
+            )  # fmt: skip
+            self.budgets.record_import(db, scope, root, trial_id, source=provenance)
+            refs.append(ref)
+        head = self.store.head(scope, RUN_KIND, pid, db=db)
+        self.store.cas(
+            db,
+            scope,
+            RUN_KIND,
+            pid,
+            head["row_version"],
+            "running",
+            {
+                **head["data"],
+                "trial_refs": [*head["data"]["trial_refs"], *refs],
+                "imports": {
+                    "sources": [e["plan_ref"] for e in plan["imports"]],
+                    "trial_refs": refs,
+                    "dropped": [],
                 },
-            )
+                "drift_check": drift,
+            },
+        )
 
     def _source_stable(
         self, scope: Scope, plan: dict[str, Any], rows: list[dict[str, Any]]
@@ -1580,6 +1688,8 @@ class CalibrationService:
                         cost_compared=False,  # calibration compares no cost (D-088)
                         # D-128: a recorded per-trial overrun never refuses the next trial
                         prior_overrun_blocks=False,
+                        # failure review P2-4: reserve what trials of this root really took
+                        reserve_observed_max=True,
                     )
                     self.store.cas(
                         db,
@@ -1806,6 +1916,37 @@ class CalibrationService:
 
         # D-128: the drift check of the imports, before they are pooled
         drift = dict(self.store.head(scope, RUN_KIND, pid)["data"].get("drift_check") or {})
+
+        def drop_imports(cells_out: list[str]) -> None:
+            """Drop every imported trial of ``cells_out`` (their tasks run fresh)."""
+            dropped: list[dict[str, Any]] = []
+            for cell in cells_out:
+                drop = [
+                    r for r in refs if "imported_from" in load(r) and load(r)["cell_id"] == cell
+                ]
+                drift[cell] = {**drift[cell], "dropped": [r["id"] for r in drop]}
+                dropped += drop
+            refs[:] = [r for r in refs if r not in dropped]
+            with self.store.tx() as db:
+                current = self.store.head(scope, RUN_KIND, pid, db=db)
+                imports = dict(current["data"].get("imports") or {})
+                imports["dropped"] = [*imports.get("dropped", []), *(r["id"] for r in dropped)]
+                self.store.cas(
+                    db, scope, RUN_KIND, pid, current["row_version"], "running",
+                    {**current["data"], "trial_refs": list(refs), "drift_check": drift,
+                     "imports": imports},
+                )  # fmt: skip
+            rebuild()
+
+        # a cell whose sample was below its floor is inconclusive before anything runs
+        settled_out = [
+            cell
+            for cell in cells
+            if (drift.get(cell) or {}).get("status") in ("fail", "inconclusive")
+            and "dropped" not in drift[cell]
+        ]
+        if settled_out:
+            drop_imports(settled_out)
         pending = [cell for cell in cells if (drift.get(cell) or {}).get("status") == "pending"]
         if pending:
             items: list[Any] = []
@@ -1816,7 +1957,7 @@ class CalibrationService:
                     items += slot(by_id[case_id], cell, next_repeat(cell, case_id))
             run_items(items)
             if state["stop"] is None:
-                dropped: list[dict[str, Any]] = []
+                failed: list[str] = []
                 for cell in pending:
                     entry = dict(drift[cell])
                     flips = []
@@ -1830,26 +1971,10 @@ class CalibrationService:
                     entry.update(
                         status=verdict, compared=len(flips), flips=sum(flips), wilson_lower=lower
                     )
-                    if verdict != "pass":
-                        # the cell's imports are dropped and its imported tasks run fresh
-                        drop = [
-                            r for r in refs
-                            if "imported_from" in load(r) and load(r)["cell_id"] == cell
-                        ]  # fmt: skip
-                        entry["dropped"] = [r["id"] for r in drop]
-                        dropped += drop
                     drift[cell] = entry
-                refs[:] = [r for r in refs if r not in dropped]
-                with self.store.tx() as db:
-                    current = self.store.head(scope, RUN_KIND, pid, db=db)
-                    imports = dict(current["data"].get("imports") or {})
-                    imports["dropped"] = [*imports.get("dropped", []), *(r["id"] for r in dropped)]
-                    self.store.cas(
-                        db, scope, RUN_KIND, pid, current["row_version"], "running",
-                        {**current["data"], "trial_refs": list(refs), "drift_check": drift,
-                         "imports": imports},
-                    )  # fmt: skip
-                rebuild()
+                    if verdict != "pass":
+                        failed.append(cell)
+                drop_imports(failed)
         if state["stop"] is None:
             # round 1: every (case, cell) without a v1 trial once; variants paired with a kept
             # or imported v1 trial in its slot
@@ -1936,7 +2061,11 @@ class CalibrationService:
                     "Recovery needs a running calibration a previous store owner started",
                 )
             root = "calibration:" + pid
-            last = _last_activity(self.store.head(scope, "meta-budget", root, db=db)["data"])
+            ledger = self.store.head(scope, "meta-budget", root, db=db)["data"]
+            # failure review P2-1: a trial still reserved may have run until now, so the lost
+            # owner's segment then ends now (conservative); else at the last recorded activity
+            reserved = any(v["status"] == "reserved" for v in ledger["allocations"].values())
+            last = None if reserved else _last_activity(ledger)
             rows = db.execute(
                 "SELECT id,row_version,data FROM heads WHERE tenant=? AND project=? AND kind=? "
                 "AND state='dispatching' ORDER BY id",
@@ -1967,12 +2096,11 @@ class CalibrationService:
                     "stopped_at": (
                         datetime.fromtimestamp(last, UTC).isoformat().replace("+00:00", "Z")
                         if last is not None
-                        else None
+                        else now()
                     ),
                 },
             )
-            # the lost owner's segment ends at the root's last recorded activity
-            self.budgets.end_segment(db, scope, root, at=last)
+            self.budgets.end_segment(db, scope, root, at=last)  # None: now
         return {
             "plan_id": pid,
             "state": "stopped",

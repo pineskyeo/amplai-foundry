@@ -261,7 +261,9 @@ evaluator 변경은 후보 실험과 따로 먼저 qualification 을 받는다. 
   - trial code digest 는 설치된 package 파일 전체의 hash 다. trial 이 import 할 수 없는 모듈(dashboard, CLI, control plane 등)과 evaluator version 이 묶는 evaluation 파일만 뺀다. checkout 전체의 `harness_sha` 는 출처 기록으로만 남는다.
   - evaluator change 는 `trial_compatible_with` 로 채점을 바꾸지 않는 이전 version 을 지정할 수 있다. eval-12 는 eval-11 을 지정한다.
   - `amplai meta calibrate --import-from <plan-id>` 는 다른 plan 의 round-1 trial 을 새 plan 에 가져온다. reuse key 가 정확히 같고, 모든 cell·composition 이 완료된 과제만, 끝난 지 72시간(`meta.calibration_import`) 안의 것만 가져온다. plan 에 들어가므로 운영자가 함께 승인한다. 먼저 `--dry-run` 으로 "imported N, new M", cell 별 수, 제외 이유를 본다. 실제 실행은 `--expect-imported N` 이 맞아야 한다. v1 trial 만 가져오고 manifest variant 는 새로 돌린다. 가져온 trial 은 출처와 0 charge allocation 을 가진다.
-  - 가져온 trial 을 쓰기 전 cell 마다 표본(10 %, 최소 8)을 다시 돌린다. 표본은 source run 에서 결과가 바뀌지 않은 과제에서만 뽑는다. 결과가 뒤집힌 비율의 Wilson 95 % 하한이 기준(source run 의 A/A discordance, 없으면 배포 전체 summary 의 A/A, 없으면 0)을 넘으면 그 cell 의 가져온 trial 을 버리고 새로 돌린다.
+  - resume 은 원래 run 의 executor qualification 과 per-trial 상한을 그대로 쓴다. 바꾸려면 `--requalify` 를 준다. 남은 active wall time 이 trial 하나의 마감(1800초)보다 적으면 거부한다.
+  - calibration 은 per-trial 상한과 이 run 에서 본 가장 큰 trial token 중 큰 값을 미리 잡는다. 그래서 상한을 크게 넘는 trial 이 이어지면 root token budget 이 한 wave 일찍 멈춘다.
+  - 가져온 trial 을 쓰기 전 cell 마다 표본(10 %, 최소 8)을 다시 돌린다. 안정 과제가 모자라면 불안정 과제로 채우고, 그래도 하한에 못 미치면 그 cell 의 import 를 버린다. 비교한 쌍이 4개 미만이면 판정하지 않는다. 표본은 source run 에서 결과가 바뀌지 않은 과제에서만 뽑는다. 결과가 뒤집힌 비율의 Wilson 95 % 하한이 기준(source run 의 A/A discordance, 없으면 배포 전체 summary 의 A/A, 없으면 0)을 넘으면 그 cell 의 가져온 trial 을 버리고 새로 돌린다.
   - done 으로 끝나지 않은 run 의 summary 는 `partial` 이다. stage plan, nightly baseline, dashboard, quality 는 이것을 고르지 않는다.
   - 이 변경은 eval-12 다. 이 변경 전 receipt 에는 trial code digest 가 없으므로 이전 run 은 resume·import 대상이 아니다.
   - runaway 상한: trial goal 은 wall time 1800초로 실행 중에 끊긴다. token 은 실행 중에 끊지 않는다(실행 전 reserve, 실행 후 settle). 실행 중 token 상한은 구현하지 않았고 제안만 했다(node budget 20M, 후속 작업).

@@ -185,27 +185,48 @@ def trial_code_excluded(relpath: str) -> bool:
     return False
 
 
+def _trial_code_noise(path: Path) -> bool:
+    """Files that are never part of the code: compiled caches and editor or Finder litter
+    (failure review P3: ``.DS_Store``, ``*.swp``, ``*~``)."""
+    return (
+        "__pycache__" in path.parts
+        or path.suffix in (".pyc", ".swp")
+        or path.name == ".DS_Store"
+        or path.name.endswith("~")
+    )
+
+
 def trial_code_digest(root: Path = _PACKAGE_ROOT) -> str:
     """D-128 review P1-1: sha256 over the sorted (relative path, bytes) of every file under the
-    installed package except ``TRIAL_CODE_EXCLUDED`` and compiled caches (``__pycache__``,
-    ``*.pyc``), read once per process at boot. Unlike ``harness_sha`` (the whole checkout's git
-    HEAD, kept in the receipt as provenance), a commit that touches only the dashboard, the CLI
-    or the evaluator's own files leaves it unchanged."""
+    installed package except ``TRIAL_CODE_EXCLUDED`` and ``_trial_code_noise``, read once per
+    process at boot. Unlike ``harness_sha`` (the whole checkout's git HEAD, kept in the receipt as
+    provenance), a commit that touches only the dashboard, the CLI or the evaluator's own files
+    leaves it unchanged. A file that cannot be read holds ``TRIAL_CODE_UNREADABLE``."""
     import hashlib
 
     with _HARNESS_LOCK:
         if root not in _TRIAL_CODE:
             files = []
-            for path in root.rglob("*"):
-                if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
-                    continue
-                rel = path.relative_to(root).as_posix()
-                if not trial_code_excluded(rel):
-                    files.append((rel, path))
-            h = hashlib.sha256()
-            for rel, path in sorted(files):
-                data = path.read_bytes()
-                h.update(rel.encode() + b"\0" + str(len(data)).encode() + b"\0" + data)
+            try:
+                for path in root.rglob("*"):
+                    if not path.is_file() or _trial_code_noise(path):
+                        continue
+                    rel = path.relative_to(root).as_posix()
+                    if not trial_code_excluded(rel):
+                        files.append((rel, path))
+                h = hashlib.sha256()
+                for rel, path in sorted(files):
+                    data = path.read_bytes()
+                    h.update(rel.encode() + b"\0" + str(len(data)).encode() + b"\0" + data)
+            except OSError as exc:
+                raise Hold(
+                    "TRIAL_CODE_UNREADABLE",
+                    "A file of the installed package cannot be read for the trial code digest",
+                    details={
+                        "path": str(getattr(exc, "filename", None)),
+                        "error": type(exc).__name__,
+                    },
+                ) from exc
             _TRIAL_CODE[root] = "sha256:" + h.hexdigest()
         return _TRIAL_CODE[root]
 

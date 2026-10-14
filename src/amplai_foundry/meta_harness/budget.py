@@ -86,13 +86,20 @@ class EvolutionBudget:
         cost: int,
         cost_compared: bool = True,
         prior_overrun_blocks: bool = True,
+        reserve_observed_max: bool = False,
     ) -> None:
         """``cost_compared`` False (D-088) is kept on the allocation, so settlement and a later
         reconciliation both treat a reported cost as ``reported_cost``, never as spending.
 
         ``prior_overrun_blocks`` False (D-128, calibration roots only): a recorded per-trial
         ceiling overrun of this root does not refuse the reservation (META_PRIOR_OVERRUN). The
-        total token, cost and wall budgets, unknown usage and concurrency still refuse it."""
+        total token, cost and wall budgets, unknown usage and concurrency still refuse it.
+
+        ``reserve_observed_max`` (D-128 failure review P2-4, calibration roots): the reservation
+        holds the larger of ``tokens`` and the largest raw tokens a trial of this root has settled
+        at (imports left out), so once trials run above their ceiling the root token budget stops
+        admission a wave earlier instead of overshooting by one more wave. ``token_ceiling`` stays
+        ``tokens``: the per-trial ceiling judgement does not change."""
         if any(type(x) is not int or x < 0 for x in (tokens, cost)):
             raise RuntimeFault("META_RESERVATION", "Executor ceilings must be nonnegative integers")
         head = self.store.head(scope, "meta-budget", proposal_id, db=db)
@@ -115,9 +122,15 @@ class EvolutionBudget:
             raise Hold("META_CONCURRENCY", "Root experiment concurrency limit reached")
         if self.wall_used(data) >= limits["max_wall_seconds"]:
             raise Hold("META_WALL_BUDGET", "The proposal root wall-time budget is exhausted")
+        held = tokens
+        if reserve_observed_max:
+            held = max(
+                [tokens, *(v["tokens"] for v in a.values()
+                           if v["status"] == "settled" and not v.get("imported"))]
+            )  # fmt: skip
         total_tokens = sum(v["tokens"] for v in a.values())
         total_cost = sum(v["cost"] for v in a.values())
-        if total_tokens + tokens > limits["max_tokens"]:
+        if total_tokens + held > limits["max_tokens"]:
             raise Hold("META_TOKEN_BUDGET", "Reservation exceeds the shared root token budget")
         if (
             limits["max_cost_microunits"] is not None
@@ -126,7 +139,7 @@ class EvolutionBudget:
             raise Hold("META_COST_BUDGET", "Reservation exceeds the shared root cost budget")
         allocation = {
             "status": "reserved",
-            "tokens": tokens,
+            "tokens": held,
             "cost": cost,
             "token_ceiling": tokens,
             "cost_ceiling": cost,

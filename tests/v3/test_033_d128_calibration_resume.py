@@ -40,7 +40,10 @@ SNAPSHOT = {"provider_model_id": "claude-sonnet-5", "driver_version": "2.1.292",
 
 
 @pytest.fixture
-def w(tmp_path):
+def w(tmp_path, monkeypatch):
+    # the S2 world's root wall budget is 600 s; a resume needs one trial deadline left (1800 s
+    # in production, product.Budget), here 60 s
+    monkeypatch.setattr(calibration, "TRIAL_WALL_SECONDS", 60)
     with make_world(tmp_path) as world:
         yield world
 
@@ -425,6 +428,114 @@ def test_a_resume_long_after_the_stop_is_refused_as_stale(w):
     assert head(w, plan_ref)["state"] == "done"
 
 
+def test_a_resume_needs_one_trial_deadline_of_wall_time_left(w):
+    # failure review P2-1: 30 s left against a trial deadline of 60 s (1800 s in production)
+    c, facts = make(w), Facts()
+    svc, plan_ref = stopped_run(w, c, facts)
+    store, root = w.m.d.store, "calibration:" + plan_ref["id"]
+    with store.tx() as db:
+        h = store.head(w.scope, "meta-budget", root, db=db)
+        used = BUDGET["max_wall_seconds"] - 30.0
+        store.cas(db, w.scope, "meta-budget", root, h["row_version"], "active",
+                  {**h["data"], "wall_used_seconds": used})  # fmt: skip
+    caught = hold("META_WALL_BUDGET", svc.resume, w.m.reviewer, plan_ref, Scripted(w, c.roles))
+    assert caught.details["trial_wall_seconds"] == 60
+
+
+def lost_owner(w, svc, c, *, reserved):
+    """A run whose owner died 500 s into its segment, its last settled trial 400 s ago; with
+    ``reserved`` one allocation is still reserved."""
+    store = w.m.d.store
+    plan_ref = svc.freeze(w.m.reviewer, plan_for(w, c))
+    root = "calibration:" + plan_ref["id"]
+    old = (datetime.now(UTC) - timedelta(seconds=400)).isoformat().replace("+00:00", "Z")
+    with store.tx() as db:
+        h = store.head(w.scope, "calibration-run", plan_ref["id"], db=db)
+        store.cas(db, w.scope, "calibration-run", plan_ref["id"], h["row_version"], "running",
+                  {**h["data"], "state": "running", "owner_epoch": store.epoch - 1})  # fmt: skip
+        b = store.head(w.scope, "meta-budget", root, db=db)
+        allocations = {"done": {"status": "settled", "tokens": 10, "cost": 0, "overrun": False,
+                                "issued_at": old, "settled_at": old}}  # fmt: skip
+        if reserved:
+            allocations["left"] = {"status": "reserved", "tokens": 10, "cost": 0,
+                                   "issued_at": old}  # fmt: skip
+        store.cas(db, w.scope, "meta-budget", root, b["row_version"], "active",
+                  {**b["data"], "segment_started_epoch": store.clock() - 500,
+                   "allocations": allocations})  # fmt: skip
+    return plan_ref, root
+
+
+@pytest.mark.parametrize(("reserved", "low", "high"), [(False, 90, 110), (True, 490, 520)])
+def test_recover_closes_a_lost_segment_at_now_while_a_trial_is_still_reserved(
+    w, reserved, low, high
+):
+    # failure review P2-1: a reserved trial may have run until now (conservative); otherwise the
+    # segment ends at the root's last recorded activity
+    c = make(w)
+    svc = make_service(w, Facts())
+    plan_ref, root = lost_owner(w, svc, c, reserved=reserved)
+    svc.recover(w.m.reviewer, plan_ref)
+    budget = w.m.d.store.head(w.scope, "meta-budget", root)["data"]
+    assert budget["segment_started_epoch"] is None
+    assert low <= budget["wall_used_seconds"] <= high
+
+
+def test_admission_reserves_the_largest_raw_trial_seen_so_the_budget_stops_a_wave_earlier(w):
+    # failure review P2-4, the probe: max 10M, parallel 4, ceiling 1M, every trial 4.7M raw.
+    # The first wave (4 x 1M reserved) overshoots by itself; after the first 4.7M settles the
+    # next admission reserves 4.7M, so nothing beyond the first wave is admitted
+    c = make(w)
+    svc = make_service(w, Facts(), ceiling=1_000_000)
+    budget = {**BUDGET, "max_tokens": 10_000_000, "max_parallel_works": 4}
+    plan_ref = svc.freeze(w.m.reviewer, plan_for(w, c, budget=budget, max_parallel=4))
+    executor = Scripted(w, c.roles, outcome, tokens=(4_700_000, 0))
+    executor.prime(c.cases, 1)
+    svc.run(w.m.reviewer, plan_ref, executor, parallel=4)
+    h = head(w, plan_ref)
+    assert h["data"]["stop_reason"] == "META_TOKEN_BUDGET" and len(h["data"]["trial_refs"]) == 4
+    ledger = allocations(w, plan_ref).values()
+    assert all(a["token_ceiling"] == 1_000_000 and a["tokens"] == 4_700_000 for a in ledger)
+
+
+def test_resume_keeps_the_original_qualification_unless_requalified(w):
+    # failure review P3: another per-trial ceiling (or qualification) holds; --requalify records it
+    c, facts = make(w), Facts()
+    _, plan_ref = stopped_run(w, c, facts)
+    other = make_service(w, facts, ceiling=TRIAL_TOKENS * 2)
+    second = WithFacts(w, Scripted(w, c.roles, outcome, tokens=(5, 5)), facts)
+    caught = hold("CALIBRATION_RESUME_QUALIFICATION", other.resume, w.m.reviewer, plan_ref, second)
+    assert caught.details["was"]["max_trial_tokens"] == TRIAL_TOKENS
+    assert caught.details["now"]["max_trial_tokens"] == TRIAL_TOKENS * 2
+    other.resume(w.m.reviewer, plan_ref, second, requalify=True)
+    h = head(w, plan_ref)
+    assert h["state"] == "done" and h["data"]["max_trial_tokens"] == TRIAL_TOKENS * 2
+    assert h["data"]["resumes"][-1]["requalified"]["was"]["max_trial_tokens"] == TRIAL_TOKENS
+
+
+def test_imports_are_stored_in_the_transaction_that_starts_the_run(w, monkeypatch):
+    # failure review P3: a crash while storing the imports leaves the plan frozen, never running
+    # without them
+    c, facts = make(w), Facts()
+    svc, source = source_run(w, c, facts)
+    plan, _ = importing_plan(w, c, svc, [source])
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+
+    def crash(*args, **kwargs):
+        raise RuntimeError("process died while importing")
+
+    monkeypatch.setattr(svc.budgets, "record_import", crash)
+    with pytest.raises(RuntimeError):
+        svc.run(w.m.reviewer, plan_ref, Scripted(w, c.roles, steady))
+    h = head(w, plan_ref)
+    assert h["state"] == "frozen" and h["data"]["trial_refs"] == []
+    assert not [r for r, v in w.m.d.store.list_objects(w.scope, "calibration-trial")
+                if v.get("calibration_plan_ref") == plan_ref]  # fmt: skip
+    monkeypatch.undo()
+    monkeypatch.setattr(calibration, "TRIAL_WALL_SECONDS", 60)
+    svc.run(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, steady), facts))
+    assert sum("imported_from" in t for t in trials(w, plan_ref)) == 12
+
+
 def test_resume_without_executor_facts_is_refused(w):
     c, facts = make(w), Facts()
     _, plan_ref = stopped_run(w, c, facts)
@@ -620,8 +731,11 @@ def test_drift_verdict_uses_the_cells_aa_discordance():
     assert calibration.drift_verdict(4, [True, False, False, False], 0.5)[0] == "pass"
     assert calibration.drift_verdict(4, [True] * 4, 0.3)[0] == "fail"
     # fewer than half the sample compared is inconclusive (its imports are dropped too)
-    assert calibration.drift_verdict(4, [False], None) == ("inconclusive", None)
+    assert calibration.drift_verdict(8, [False] * 3, None) == ("inconclusive", None)
     assert calibration.drift_verdict(4, [], 0.2) == ("inconclusive", None)
+    # failure review P2-2: one to three agreeing pairs are no evidence, whatever the sample
+    for pairs in (1, 2, 3):
+        assert calibration.drift_verdict(pairs, [False] * pairs, None) == ("inconclusive", None)
 
 
 def test_import_plans_are_validated_and_bound_by_the_approval(w):
@@ -660,19 +774,72 @@ def test_import_plans_are_validated_and_bound_by_the_approval(w):
     fault("CALIBRATION_PLAN", svc.freeze, w.m.reviewer, single)
 
 
-def test_the_drift_sample_skips_tasks_that_flipped_in_their_source_run(w):
-    # review P2-c: val-01 alternates between repeats in the source run (``outcome``), so a flip
-    # in the new run would say nothing about drift; it is never sampled
-    c, facts = make(w), Facts()
+def flipping_source(w, c, facts):
+    """A source run where val-01 alternates between repeats (``outcome``): unstable there."""
     flipping = WithFacts(w, Scripted(w, c.roles, outcome, tokens=(5, 5)), facts)
-    svc, source = source_run(w, c, facts, executor=flipping)
-    plan, _ = importing_plan(w, c, svc, [source])
+    return source_run(w, c, facts, executor=flipping)
+
+
+def test_the_drift_sample_skips_tasks_that_flipped_in_their_source_run(w):
+    # review P2-c: a flip of val-01 in the new run would say nothing about drift; with a floor of
+    # 4 the five stable tasks fill the sample and val-01 is never drawn
+    c, facts = make(w), Facts()
+    svc, source = flipping_source(w, c, facts)
+    plan, found = importing_plan(w, c, svc, [source],
+                                 policy_value=import_policy(drift_min_per_cell=4))  # fmt: skip
+    assert {s_["sample"] for s_ in found["drift_samples"].values()} == {4}
     plan_ref = svc.freeze(w.m.reviewer, plan)
     svc.run(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, outcome), facts))
     drift = head(w, plan_ref)["data"]["drift_check"]
     for cell in CELLS:
-        assert "val-01" not in drift[cell]["sample"]
-        assert drift[cell]["unstable_excluded"] >= 1
+        assert "val-01" not in drift[cell]["sample"] and len(drift[cell]["sample"]) == 4
+        assert drift[cell]["unstable_excluded"] == 1 and drift[cell]["topped_up"] == []
+
+
+def test_a_sample_below_its_floor_is_topped_up_from_unstable_non_flaky_tasks(w):
+    # failure review P2-2: floor = min(6 imported, 8) = 6, five stable: val-01 tops it up
+    c, facts = make(w), Facts()
+    svc, source = flipping_source(w, c, facts)
+    plan, found = importing_plan(w, c, svc, [source])
+    for cell in CELLS:
+        expected = {"sample": 6, "floor": 6, "topped_up": 1, "unstable_excluded": 1,
+                    "status": "pending"}  # fmt: skip
+        assert found["drift_samples"][cell] == expected
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+    svc.run(w.m.reviewer, plan_ref, WithFacts(w, Scripted(w, c.roles, steady), facts))
+    drift = head(w, plan_ref)["data"]["drift_check"]
+    assert all(drift[cell]["topped_up"] == ["val-01"] for cell in CELLS)
+
+
+def test_a_sample_that_cannot_reach_its_floor_makes_the_cell_inconclusive_before_any_run(w):
+    # failure review P2-2: the source summary classes val-01 flaky_grading for cell-a, so cell-a
+    # cannot top up to its floor: inconclusive, its imports dropped and run fresh
+    c, facts = make(w), Facts()
+    svc, source = flipping_source(w, c, facts)
+    store = w.m.d.store
+    (ref, value), = [
+        (r, v) for r, v in store.list_objects(w.scope, "calibration-summary")
+        if r["id"] == "calsum-" + source["id"]
+    ]  # fmt: skip
+    cells_ = json.loads(json.dumps(value["cells"]))
+    cells_["cell-a"]["tasks"]["val-01"]["class"] = "flaky_grading"
+    with store.tx() as db:
+        store.put(db, w.scope, "calibration-summary", ref["id"], ref["revision"] + 1,
+                  {**value, "cells": cells_})  # fmt: skip
+    plan, found = importing_plan(w, c, svc, [source])
+    assert found["drift_samples"]["cell-a"]["status"] == "inconclusive"
+    assert found["drift_samples"]["cell-b"]["status"] == "pending"
+    plan_ref = svc.freeze(w.m.reviewer, plan)
+    executor = WithFacts(w, Scripted(w, c.roles, steady, tokens=(5, 5)), facts)
+    svc.run(w.m.reviewer, plan_ref, executor)
+    drift = head(w, plan_ref)["data"]["drift_check"]
+    assert drift["cell-a"]["status"] == "inconclusive"
+    assert drift["cell-a"]["reason"] == "sample_below_floor"
+    assert len(drift["cell-a"]["dropped"]) == 6
+    assert {cid for role, cid, rep in executor.calls if role == "cell-a" and rep == 0} == {
+        x["case_id"] for x in c.cases
+    }
+    assert not any("imported_from" in t and t["cell_id"] == "cell-a" for t in trials(w, plan_ref))
 
 
 def test_a_resumed_plan_with_imports_finishes_its_drift_check(w):
@@ -888,6 +1055,11 @@ def test_calibrate_import_from_announces_imported_and_new_before_it_runs(stage_w
     # every task saturated after one run: no source A/A, so the world's complete summary's
     assert imports["per_cell"][STAGE_CELL]["drift_reference"] == 0.2
     assert imports["per_cell"][STAGE_CELL]["drift_reference_basis"] == "deployment_aa"
+    # failure review P2-2: the sample the run will draw, and the note on dropped imports
+    assert imports["per_cell"][STAGE_CELL]["drift_sample"] == 8
+    assert imports["per_cell"][STAGE_CELL]["drift_sample_floor"] == 8
+    assert imports["per_cell"][STAGE_CELL]["drift_status_before_run"] == "pending"
+    assert "run fresh" in imports["note"]
     assert w.executor.calls == []
     fault("CALIBRATION_PLAN", ops_calibrate, w.ops, import_from=source)  # no expectation
     caught = hold("CALIBRATION_IMPORT_EXPECTED", ops_calibrate, w.ops, import_from=source,
@@ -921,7 +1093,11 @@ def test_calibration_resume_finishes_a_stopped_plan_and_the_stage_plan_waits_for
         return True
 
     w.executor.outcome = kill_after_three
+    # failure review P2-3: the first process dies before it writes trial-metrics
+    record_metrics = w.ops._record_metrics
+    w.ops._record_metrics = lambda refs: None
     first = ops_calibrate(w.ops)
+    w.ops._record_metrics = record_metrics
     assert first["state"] == "stopped" and first["stop_reason"] == "KILL_SWITCH"
     pid = w.propose("a2")
     # the partial summary is never a stage plan's calibration (the world's own one stays)
@@ -932,9 +1108,17 @@ def test_calibration_resume_finishes_a_stopped_plan_and_the_stage_plan_waits_for
                   {"enabled": False})  # fmt: skip
     w.executor.outcome = lambda role, case_id, repeat: True
     w.executor.calls.clear()
+    # failure review P3: a newer qualification is not taken silently; the run's own is pinned
+    original = store.head(scope, "calibration-run", first["plan_ref"]["id"])["data"]
+    w.ops.qualify_executor("another basis", ["another evidence"], 123)
     resumed = w.ops.calibration_resume(first["plan_ref"]["id"])
     assert resumed["state"] == "done" and resumed["trials"] == 32
     assert len(w.executor.calls) == 32 - 3
+    after = store.head(scope, "calibration-run", first["plan_ref"]["id"])["data"]
+    assert after["qualification_ref"] == original["qualification_ref"]
+    assert "requalified" not in after["resumes"][-1]
+    recorded = {r["id"] for r, _ in store.list_objects(scope, "trial-metrics")}
+    assert all("tm-" + r["id"] in recorded for r in after["trial_refs"])
     assert w.ops.stage_runner(pid, cell_id=STAGE_CELL).summary_ref == resumed["summary_ref"]
     assert resumed["summary_ref"]["revision"] == 2
 
