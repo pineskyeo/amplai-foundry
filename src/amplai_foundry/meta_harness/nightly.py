@@ -134,6 +134,7 @@ DRIFT_LOW_Q, DRIFT_HIGH_Q = 0.005, 0.995
 # D-129 (operator decision 2026-10-14): the paid drift measurement runs once every N nights
 DEFAULT_DRIFT_EVERY_NIGHTS = 7
 MAX_DRIFT_EVERY_NIGHTS = 31  # PR #91 review: a measurement is never older than a month
+DEFAULT_START_AT = "01:00"  # Work 034 S1d: meta.nightly.start_at (the tick's scheduled start)
 
 Guard = Callable[[int], None]
 
@@ -155,6 +156,9 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
     # D-129: the paid drift measurement (the drift calibration on drift_tasks) runs once every
     # drift_every_nights nights per cell; 1 measures every night (the behaviour before D-129)
     drift_every_nights: int = DEFAULT_DRIFT_EVERY_NIGHTS
+    # Work 034 S1d: the scheduled start; stop times of tick-started nights and of tightens are
+    # resolved against it
+    start_at: str = DEFAULT_START_AT
 
     def __post_init__(self) -> None:
         bad = []
@@ -185,6 +189,8 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             bad.append("max_parallel")
         if _stop_minutes(self.stop_at) is None:
             bad.append("stop_at")
+        if _stop_minutes(self.start_at) is None:
+            bad.append("start_at")
         if type(self.max_hours) not in (int, float) or not 0 < self.max_hours <= 24:
             bad.append("max_hours")
         if (
@@ -219,6 +225,7 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             stop_at=get("stop_at"),
             max_hours=_optional(entry, "max_hours", DEFAULT_MAX_HOURS),
             drift_every_nights=_optional(entry, "drift_every_nights", DEFAULT_DRIFT_EVERY_NIGHTS),
+            start_at=_optional(entry, "start_at", DEFAULT_START_AT),
         )
 
 
@@ -262,6 +269,15 @@ def drift_range(n: int, wilson_95: tuple[float, float] | list[float]) -> tuple[i
     count below the first or above the second is drift."""
     low, high = (min(1.0, max(0.0, float(x))) for x in wilson_95)
     return binomial_quantile(n, low, DRIFT_LOW_Q), binomial_quantile(n, high, DRIFT_HIGH_Q)
+
+
+def scheduled_start(date: str, start_at: str) -> float:
+    """The epoch of the scheduled start of the night ``date``: local ``start_at`` on that date."""
+    minutes = _stop_minutes(start_at)
+    if minutes is None:
+        raise RuntimeFault("NIGHTLY_CONFIG", "start_at is HH:MM")
+    day = datetime.strptime(date, "%Y-%m-%d")
+    return day.replace(hour=minutes // 60, minute=minutes % 60).astimezone().timestamp()
 
 
 def stop_epoch(start: float, stop_at: str) -> float:
@@ -646,7 +662,7 @@ class NightlyRunner:
         night = _Night(
             date=date, dry_run=dry_run, head_id=head_id, standing_ref=standing_ref,
             plan_ref=plan_ref, plan=plan, started=started,
-            stop_at=night_end(started, self.config.stop_at, self.config.max_hours),
+            stop_at=self._end(date, started),
             # the drift reservation of a measuring night is set by ``_drift`` (D-129)
             caps=phase_budget(plan["budget_trials"], plan["shares"], screening=screening),
             data={
@@ -692,6 +708,18 @@ class NightlyRunner:
             )  # fmt: skip
         return ref
 
+    def _end(self, date: str, started: float) -> float:
+        """The night's end: min(``stop_at`` after its start, start + ``max_hours``). A night the
+        tick started (``trigger`` set) also ends by its scheduled night's end, the configured
+        ``stop_at`` resolved against the scheduled start (``meta.nightly.start_at``), so a late
+        start never moves the stop (PR #95 failure review P1). A direct ``run`` (no trigger) is
+        the operator's own and keeps the end from its actual start."""
+        end = night_end(started, self.config.stop_at, self.config.max_hours)
+        if self.trigger is not None:
+            begin = scheduled_start(date, self.config.start_at)
+            end = min(end, night_end(begin, self.config.stop_at, self.config.max_hours))
+        return end
+
     def _phases(self, night: _Night) -> None:
         night.data["phase"] = "preflight"
         self._preflight(night)
@@ -727,22 +755,50 @@ class NightlyRunner:
             found = self.controls(night.date, night.data["started_at"])
         except Exception as exc:
             night.control_stop = "control_unreadable"
+            details = getattr(exc, "details", None)
             night.data["controls"]["unreadable"] = getattr(exc, "code", type(exc).__name__)
+            # the root cause next to it (PR #95 failure review P3), e.g. NIGHT_CONTROL_STORE
+            night.data["controls"]["cause"] = (
+                details.get("code") if isinstance(details, dict) else None
+            )
             return night.control_stop
         record = night.data["controls"]
-        for control_id in found.applied:
-            if control_id not in record["applied"]:
-                record["applied"].append(control_id)
-        if found.budget_trials is not None and found.budget_trials < night.budget:
-            night.budget = found.budget_trials
-            record["budget_trials"] = night.budget
-        for value in found.stop_at:
-            end = stop_epoch(night.started, value)
-            if end < night.stop_at:
-                night.stop_at = end
-                record["stop_at"] = datetime.fromtimestamp(end).astimezone().isoformat()
         if found.stop is not None:
             night.control_stop = found.stop
+            for r in found.records:
+                if r["action"] in ("stop", "skip") and r["control_id"] not in record["applied"]:
+                    record["applied"].append(r["control_id"])
+            return night.control_stop
+        # PR #95 failure review P1: a tightened stop time is resolved against the night's
+        # scheduled start (``nightly_control.scheduled_end``), never its actual start, so a night
+        # that starts late keeps the meaning of an accepted tighten; a tighten counts as applied
+        # only when it moved the budget or the end
+        begin = scheduled_start(night.date, self.config.start_at)
+        tightens = [r for r in found.records if r["action"] == "tighten"]
+        budget = min(
+            [night.budget]
+            + [r["limits"]["budget_trials"] for r in tightens if "budget_trials" in r["limits"]]
+        )
+        ends = {
+            r["control_id"]: stop_epoch(begin, r["limits"]["stop_at"])
+            for r in tightens if "stop_at" in r["limits"]
+        }  # fmt: skip
+        end = min([night.stop_at, *ends.values()])
+        for r in tightens:
+            moved_budget = budget < night.budget and r["limits"].get("budget_trials") == budget
+            moved_end = end < night.stop_at and ends.get(r["control_id"]) == end
+            if (moved_budget or moved_end) and r["control_id"] not in record["applied"]:
+                record["applied"].append(r["control_id"])
+        if budget < night.budget:
+            night.budget = budget
+            record["budget_trials"] = budget
+        if end < night.stop_at:
+            night.stop_at = end
+            record["stop_at"] = datetime.fromtimestamp(end).astimezone().isoformat()
+            if end <= night.started:
+                # the tightened stop passed before this night started: it ends here, honestly
+                night.control_stop = "stop_at"
+                record["stop_passed_before_start"] = True
         return night.control_stop
 
     def _tail(self, night: _Night) -> None:

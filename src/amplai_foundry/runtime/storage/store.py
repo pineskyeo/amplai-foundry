@@ -222,6 +222,26 @@ class Store:
             row = self.conn.execute("SELECT value FROM meta WHERE key='incarnation'").fetchone()
             self.incarnation = str(row[0]) if row else ""
 
+    def set_identity(self, value: dict[str, Any]) -> None:
+        """Record which deployment owns this store now (Work 034 S1d): one value per store, the
+        current one (a scope or role change replaces it). Kept in ``meta`` next to the schema and
+        the incarnation; a restore carries it with the data."""
+        raw = canonical(value)
+        with self.tx() as db:
+            db.execute("INSERT OR REPLACE INTO meta VALUES('deployment_identity',?)", (raw,))
+
+    def identity(self) -> dict[str, Any] | None:
+        """The value of ``set_identity``, or None (a store no deployment marked yet). Readable on
+        a read-only store."""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT value FROM meta WHERE key='deployment_identity'"
+            ).fetchone()
+        if row is None:
+            return None
+        value = json.loads(row[0])
+        return value if isinstance(value, dict) else None
+
     def renew_incarnation(self, db: sqlite3.Connection) -> str:
         """Start a new generation in the caller's transaction (a restore does this)."""
         value = new_id("incarnation")

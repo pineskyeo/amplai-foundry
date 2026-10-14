@@ -128,6 +128,18 @@ def today() -> str:
     return datetime.now().astimezone().date().isoformat()
 
 
+def tonight(cfg: Any) -> str:
+    """The night now belongs to (``nightly_control.night_date`` with ``meta.nightly.start_at``):
+    the default date of ``run`` and ``status`` (PR #95 failure review P3), the date the tick
+    uses. Without ``meta.nightly`` the calendar date."""
+    from ..nightly_control import night_date
+
+    nightly = getattr(getattr(cfg, "meta", None), "nightly", None)
+    if nightly is None:
+        return today()
+    return night_date(time.time(), nightly.start_at)
+
+
 def approve(
     dep: Any, *, nights: int, budget_trials: int, max_tokens: int, max_wall_seconds: int
 ) -> dict[str, Any]:
@@ -259,16 +271,16 @@ class TickBusy(Exception):
     """The meta deployment could not be opened because another process owns its store."""
 
 
-def status_readonly(config: Path, date: str) -> dict[str, Any]:
+def status_readonly(config: Path, date: str | None = None) -> dict[str, Any]:
     """``status`` read-only (N-5, AC-N4): the meta store opened with ``Store(readonly=True)`` and
     no boot, so it answers while a night holds the store (``ACTIVE_OWNER``). With
     ``meta.control_store`` it also shows the controls binding the night (or that they cannot be
     read)."""
     from ..execution.meta_local import LocalMetaApprovals
-    from ..nightly_control import fold
     from ..storage.store import Scope, Store
 
     path, cfg = load_config(config)
+    date = date or tonight(cfg)
     root = _under(path, cfg.runtime_root)
     if not (root / "runtime.sqlite3").is_file():
         raise RuntimeFault("NOT_FOUND", "No runtime store at the configured runtime root")
@@ -278,7 +290,7 @@ def status_readonly(config: Path, date: str) -> dict[str, Any]:
     reader = control_reader(path, cfg)
     if reader is not None:
         try:
-            found = fold(reader.records(), date)
+            found = reader(date)
         except Hold as exc:
             out["controls"] = {"unreadable": exc.code}
         else:
@@ -328,15 +340,17 @@ def tick(
     (``ran``). When the meta deployment cannot be opened because another process owns its store
     (a calibration, a manual command), the tick ends with ``busy`` (``TickBusy``) and the next
     tick tries again: for the schedule, every five minutes until the scheduled night's end
-    (min(``stop_at``, start + ``max_hours``)), after which that night does not run; for a start
+    (``nightly_control.scheduled_end``: min(``stop_at``, start + ``max_hours``, each tightened
+    stop time), all resolved against the scheduled start), after which that night does not run;
+    for a start
     request, while it still meets N-9 (the window above all). Only the open is ``busy``: an
     ``ACTIVE_OWNER`` raised later, while the night runs, is the night's own result and propagates
     (PR #95 review P3). ``start`` (tests) raises ``TickBusy`` to say the open failed."""
-    from ...meta_harness.nightly import night_end
     from ..nightly_control import (
         MetaView,
         NightPolicy,
         night_date,
+        scheduled_end,
         scheduled_start,
         standing_covers,
         start_refusal,
@@ -355,17 +369,24 @@ def tick(
     if date in state.nights:
         return {"tick": "ran", "date": date, "state": state.nights[date].get("state")}
     begin = scheduled_start(date, policy.start_at)
-    trigger: dict[str, Any]
-    if begin <= moment < night_end(begin, policy.stop_at, policy.max_hours):
-        trigger = {"by": "schedule", "start_at": policy.start_at}
-    else:
-        reader = control_reader(path, cfg)
-        if reader is None:
-            return {"tick": "idle", "date": date}
+    reader = control_reader(path, cfg)
+    controls, unreadable = None, None
+    if reader is not None:
         try:
             controls = reader(date)
         except Hold as exc:
-            return {"tick": "idle", "date": date, "reason": exc.code}
+            unreadable = exc.code  # a scheduled night still starts and stops on it, recorded
+    # PR #95 failure review P1: the window ends at the tightened stop too, every stop time
+    # resolved against the scheduled start
+    end = scheduled_end(date, policy, controls.stop_at if controls is not None else ())
+    trigger: dict[str, Any]
+    if begin <= moment < end:
+        trigger = {"by": "schedule", "start_at": policy.start_at}
+    else:
+        if reader is None:
+            return {"tick": "idle", "date": date}
+        if controls is None:
+            return {"tick": "idle", "date": date, "reason": unreadable}
         if not controls.starts:
             return {"tick": "idle", "date": date}
         why = start_refusal(now_epoch=moment, date=date, policy=policy, meta=state,
@@ -481,7 +502,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
                     )
                 qualify = (per_trial_tokens, basis, list(evidence))
             with opened_meta(config) as dep:
-                ref = run_night(dep, date or today(), dry_run=dry_run, qualify=qualify)
+                ref = run_night(dep, date or tonight(dep.config), dry_run=dry_run, qualify=qualify)
                 return {"run_ref": ref}
 
         guarded(call)
@@ -502,7 +523,7 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         while a night runs)."""
 
         def call() -> Any:
-            return status_readonly(config, date or today())
+            return status_readonly(config, date)
 
         guarded(call)
 

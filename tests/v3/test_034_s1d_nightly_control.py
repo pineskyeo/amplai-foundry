@@ -57,8 +57,6 @@ from amplai_foundry.runtime.local_deployment import (
 from amplai_foundry.runtime.meta_commands import nightly as commands
 from amplai_foundry.runtime.nightly_control import (
     EVENT,
-    IDENTITY_ID,
-    IDENTITY_KIND,
     KIND,
     SCHEMA,
     ControlReader,
@@ -87,8 +85,7 @@ EVENING = local_epoch(2026, 10, 14, 23)
 
 
 def mark(store: Store, scope: Any, role: str) -> None:
-    with store.tx() as db:
-        store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, 0, role, identity_value(scope, role))
+    store.set_identity(identity_value(scope, role))
 
 
 class Rig:
@@ -475,29 +472,73 @@ def test_a_tightened_budget_ends_the_night_early_as_a_budget_end(rig: Rig) -> No
 def test_a_tightened_stop_time_ends_the_night_earlier(rig: Rig) -> None:
     env = rig.env
     rig.now = local_epoch(2026, 10, 1, 0, 30)
-    cfg = config(env.clock)
-    later = datetime.fromtimestamp(env.clock.t + 2 * 3600)
-    sooner = later.strftime("%H:%M")
-    # the night's scheduled start is the test clock's time of day, so +2 h is before its end
-    start_at = datetime.fromtimestamp(env.clock.t).strftime("%H:%M")
-    rig.meta.policy = NightPolicy(
-        **{**rig.policy.__dict__, "stop_at": cfg.stop_at, "start_at": start_at}
-    )
-    rig.env.standing()
-    rig.ask(rig.agent, "tighten", dates=[DATE], limits={"stop_at": sooner})
+    env.clock.t = local_epoch(2026, 10, 1, 1, 5)  # the night of DATE, scheduled at 01:00
+    cfg = config(env.clock, stop_at="07:00")
+    env.standing(cfg)
+    done = rig.ask(rig.agent, "tighten", dates=[DATE], limits={"stop_at": "03:00"})
     runner = NightlyRunner(env.dep, cfg, clock=env.clock, backend=env.fake,
                            controls=ControlReader(rig.root, env.scope))  # fmt: skip
     env.fake.runner = runner
 
     def jump(fake: Fake, cid: str, tasks: int) -> None:
         if fake.search_n == 1:
-            env.clock.advance(3 * 3600)  # past the tightened stop, before the configured one
+            env.clock.advance(2 * 3600)  # past the tightened stop, before the configured one
 
     env.fake.after_search = jump
     held = stopped(env, runner)
     assert held.details["reason"] == "stop_at"
     data = env.head()["data"]
-    assert data["controls"]["stop_at"].startswith(later.strftime("%Y-%m-%dT%H:%M"))
+    assert data["controls"]["stop_at"].startswith(DATE + "T03:00")
+    assert data["controls"]["applied"] == [done["control_id"]]
+
+
+def test_p1_a_late_start_keeps_an_accepted_tightened_stop(rig: Rig, tmp_path: Path) -> None:
+    """Failure review P1: the tick was busy until after the tightened stop. The tick does not
+    start the night any more, and a night started anyway (late) ends before preflight, saying
+    why; every stop time is resolved against the scheduled start, not the late actual start."""
+    env = rig.env
+    rig.now = local_epoch(2026, 10, 1, 0, 30)
+    cfg = config(env.clock, stop_at="07:00")
+    env.standing(cfg)
+    done = rig.ask(rig.agent, "tighten", dates=[DATE], limits={"stop_at": "03:00"})
+    path = meta_config(env, tmp_path, rig.root)
+    starts = Starts()
+    for moment in (local_epoch(2026, 10, 1, 3, 0), local_epoch(2026, 10, 1, 4, 0)):
+        assert commands.tick(path, clock=lambda m=moment: m, start=starts)["tick"] == "idle"
+    assert starts.calls == []
+    out = commands.tick(path, clock=lambda: local_epoch(2026, 10, 1, 2, 55), start=starts)
+    assert out["tick"] == "started"
+    # the night started late anyway (04:00, by the tick's trigger)
+    env.clock.t = local_epoch(2026, 10, 1, 4)
+    runner = NightlyRunner(env.dep, cfg, clock=env.clock, backend=env.fake,
+                           controls=ControlReader(rig.root, env.scope))  # fmt: skip
+    runner.trigger = {"by": "schedule", "start_at": "01:00"}
+    env.fake.runner = runner
+    held = stopped(env, runner)
+    assert held.details["reason"] == "stop_at"
+    data = env.head()["data"]
+    assert phases(data)["preflight"] == "stopped" and data["trials"] == 0
+    assert "preflight" not in env.fake.names()
+    assert data["controls"]["applied"] == [done["control_id"]]
+    assert data["controls"]["stop_passed_before_start"] is True
+    assert data["controls"]["stop_at"].startswith(DATE + "T03:00")
+
+
+def test_p1_a_tighten_that_moves_nothing_is_not_applied(rig: Rig) -> None:
+    env = rig.env
+    rig.now = local_epoch(2026, 10, 1, 0, 30)
+    env.clock.t = local_epoch(2026, 10, 1, 1, 5)
+    cfg = config(env.clock, stop_at="07:00")
+    env.standing(cfg)
+    strict = rig.ask(rig.operator, "tighten", dates=[DATE], limits={"budget_trials": 20})
+    rig.ask(rig.operator, "tighten", dates=[DATE], limits={"stop_at": "06:00"})
+    reader = ControlReader(rig.root, env.scope)
+    cfg = config(env.clock, stop_at="05:00")
+    runner = NightlyRunner(env.dep, cfg, clock=env.clock, backend=env.fake, controls=reader)
+    env.fake.runner = runner
+    runner.run(DATE)
+    # the 06:00 tighten is later than this night's configured 05:00 end: it changed nothing
+    assert env.head()["data"]["controls"]["applied"] == [strict["control_id"]]
 
 
 def test_an_applied_tighten_stays_for_the_night_after_a_clear(rig: Rig) -> None:
@@ -723,9 +764,26 @@ def test_the_nightly_entry_defaults_and_window_shape() -> None:
 
 
 def test_p2_1_every_deployment_boot_marks_its_store(env: Env) -> None:
-    head = env.store.head(env.scope, IDENTITY_KIND, IDENTITY_ID)
     # the fixture's config has no meta.nightly: a product deployment
-    assert head["data"] == identity_value(env.scope, "product") and head["state"] == "product"
+    assert env.store.identity() == identity_value(env.scope, "product")
+
+
+def test_the_store_identity_is_one_current_value(tmp_path: Path) -> None:
+    """Failure review P3: one marker per store, its current scope (a scope change replaces it)."""
+    from amplai_foundry.runtime.local_deployment import LocalConfig, mark_identity
+
+    old, new = Scope("local", "old"), Scope("local", "new")
+    cfg = LocalConfig.model_construct(meta=None)
+    with Store(tmp_path / "s") as store:
+        assert store.identity() is None
+        mark_identity(store, old, cfg)
+        mark_identity(store, new, cfg)
+        assert store.identity() == identity_value(new, "product")
+    reader = ControlReader(tmp_path / "s", old)
+    with pytest.raises(Hold) as stale:
+        reader(DATE)
+    assert stale.value.details == {"code": "NIGHT_CONTROL_STORE"}
+    assert ControlReader(tmp_path / "s", new)(DATE).stop is None
 
 
 @pytest.mark.parametrize("case", ["wrong_scope", "meta_role", "unmarked", "meta_root"])
@@ -802,6 +860,7 @@ def test_p3_start_requests_per_night_count_cleared_ones(rig: Rig) -> None:
 
 
 def test_p3_the_started_event_names_the_trigger(env: Env) -> None:
+    env.clock.t = local_epoch(2026, 10, 1, 1, 5)  # a tick-started night ends by its schedule
     runner = env.ready()
     runner.trigger = {"by": "start_request", "control_id": "nightctl-1",
                       "issued_by": "intake:hermes"}  # fmt: skip
@@ -817,3 +876,82 @@ def test_p3_the_tick_is_busy_when_the_meta_store_cannot_be_opened(env: Env, tmp_
     path = meta_config(env, tmp_path, None)
     out = commands.tick(path, clock=lambda: local_epoch(2026, 10, 15, 1, 5))
     assert out == {"tick": "busy", "date": TONIGHT}
+
+
+# --- PR #95 failure review -----------------------------------------------------------------------
+
+
+def utc(epoch: float) -> str:
+    from datetime import UTC
+
+    return datetime.fromtimestamp(epoch, UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def running_head(env: Env, date: str, started: float) -> None:
+    with env.store.tx() as db:
+        env.store.cas(db, env.scope, "nightly-run", f"night-{date}", 0, "running",
+                      {"date": date, "started_at": utc(started)})  # fmt: skip
+
+
+def test_p2_a_dateless_stop_is_not_captured_by_a_crashed_running_night(rig: Rig) -> None:
+    running_head(rig.env, DATE, local_epoch(2026, 10, 1, 1))  # its end was 07:00
+    rig.now = local_epoch(2026, 10, 1, 2)  # still inside its window: it is the running night
+    assert rig.ask(rig.agent, "stop")["dates"] == [DATE]
+    rig.now = local_epoch(2026, 10, 1, 11)  # past its end: a crashed head, not a running night
+    assert rig.ask(rig.agent, "stop")["dates"] == ["2026-10-02"]
+
+
+def test_p3_a_tighten_may_name_a_night_still_running_past_noon(rig: Rig) -> None:
+    rig.env.standing()
+    running_head(rig.env, DATE, local_epoch(2026, 10, 1, 1))
+    rig.now = local_epoch(2026, 10, 1, 13)  # tonight is the 2nd now
+    done = rig.ask(rig.operator, "tighten", dates=[DATE], limits={"budget_trials": 10})
+    assert done["dates"] == [DATE]
+    refused(lambda: rig.ask(rig.operator, "skip", dates=[DATE]), "NIGHT_CONTROL_INPUT")
+
+
+def test_p3_a_clear_after_its_night_started_says_it_had_no_effect(rig: Rig) -> None:
+    rig.now = local_epoch(2026, 10, 1, 0, 30)
+    rig.env.standing()
+    before = rig.ask(rig.operator, "tighten", dates=[DATE], limits={"budget_trials": 50})
+    after = rig.ask(rig.operator, "tighten", dates=[DATE], limits={"budget_trials": 40})
+    assert rig.ask(rig.operator, "clear", clears=before["control_id"])["effective"] is True
+    running_head(rig.env, DATE, local_epoch(2026, 10, 1, 0, 0))  # the night started meanwhile
+    assert rig.ask(rig.operator, "clear", clears=after["control_id"])["effective"] is False
+
+
+def test_p3_the_operator_quarantines_a_malformed_record(rig: Rig) -> None:
+    with rig.product.tx() as db:
+        rig.product.put(db, rig.scope, KIND, "nightctl-bad", 1, {"action": "stop"})
+    with pytest.raises(Hold) as caught:
+        ControlReader(rig.root, rig.scope)(DATE)
+    assert caught.value.details == {"code": "NIGHT_CONTROL_RECORD"}
+    # the service still takes a stop, and the night records the cause next to the code
+    rig.ask(rig.operator, "stop", dates=[TONIGHT])
+    held = stopped(rig.env, controlled(rig.env, rig.root))
+    assert held.details["reason"] == "control_unreadable"
+    controls = rig.env.head()["data"]["controls"]
+    assert controls["unreadable"] == "NIGHT_CONTROL_UNREADABLE"
+    assert controls["cause"] == "NIGHT_CONTROL_RECORD"
+    refused(lambda: rig.ask(rig.agent, "clear", clears="nightctl-bad"), "NOT_FOUND")
+    done = rig.ask(rig.operator, "clear", clears="nightctl-bad", reason="malformed")
+    assert done["quarantined"] is True
+    assert ControlReader(rig.root, rig.scope)(TONIGHT).stop == "operator_stop"
+
+
+def test_p3_the_night_folds_only_records_near_its_date(rig: Rig) -> None:
+    rig.ask(rig.agent, "skip", dates=["2026-10-20"])
+    bad = {**rig.records()[0], "control_id": "nightctl-far", "reason": ""}  # invalid, far away
+    with rig.product.tx() as db:
+        rig.product.put(db, rig.scope, KIND, "nightctl-far", 1, bad)
+    assert read_records(rig.product, rig.scope, around=TONIGHT) == []
+    assert ControlReader(rig.root, rig.scope)(TONIGHT).stop is None
+    with pytest.raises(RuntimeFault):
+        read_records(rig.product, rig.scope, around="2026-10-20")
+
+
+def test_p3_status_defaults_to_tonights_night(env: Env, tmp_path: Path) -> None:
+    import time
+
+    out = commands.status_readonly(meta_config(env, tmp_path, None))
+    assert out["date"] == night_date(time.time(), "01:00")

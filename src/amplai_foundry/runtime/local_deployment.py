@@ -562,25 +562,18 @@ class ApproveBody(BaseModel):
 
 
 def mark_identity(store: Store, scope: Scope, cfg: LocalConfig) -> None:
-    """Work 034 S1d (PR #95 review P2-1): write which deployment owns this store, for this scope
-    (``nightly_control.IDENTITY_KIND``): ``meta`` when the config has ``meta.nightly`` (a separate
-    meta deployment, §8.8), else ``product``. The store's own ``meta`` table names no scope and
-    product and meta deployments are the same class, so nothing else tells a reader which store it
-    opened. Written on every boot; an older store gets it on its next boot."""
-    from .nightly_control import IDENTITY_ID, IDENTITY_KIND, identity_value
+    """Work 034 S1d (PR #95 review P2-1, failure review P3): record which deployment owns this
+    store now, one value per store (``Store.set_identity``): its current scope and ``meta`` when
+    the config has ``meta.nightly`` (a separate meta deployment, §8.8), else ``product``. Before
+    this the store named no scope, and product and meta deployments are the same class, so nothing
+    told a reader which store it opened. Written on every boot (a scope change replaces it); an
+    older store gets it on its next boot."""
+    from .nightly_control import identity_value
 
     role = "meta" if cfg.meta is not None and cfg.meta.nightly is not None else "product"
     value = identity_value(scope, role)
-    with store.tx() as db:
-        try:
-            head = store.head(scope, IDENTITY_KIND, IDENTITY_ID, db=db)
-        except RuntimeFault as exc:
-            if exc.code != "NOT_FOUND":
-                raise
-            store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, 0, role, value)
-            return
-        if head["data"] != value:
-            store.cas(db, scope, IDENTITY_KIND, IDENTITY_ID, head["row_version"], role, value)
+    if store.identity() != value:
+        store.set_identity(value)
 
 
 class LocalProductDeployment:
