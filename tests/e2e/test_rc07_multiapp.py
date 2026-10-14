@@ -17,8 +17,7 @@ from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
 from amplai_foundry.runtime.git_host import PullRequestState
-from amplai_foundry.runtime.git_host.github import GitHubHost
-from rc06_rig import git, rig_two_apps
+from rc06_rig import git, local_github, rig_two_apps
 
 
 def two_app_goal(rig: Any, text: str = "value 2 end to end") -> str:
@@ -55,7 +54,7 @@ def test_two_apps_run_in_order_verify_together_and_publish_linked_prs(
 
     box["p"] = GitPublisher(
         rig.service,
-        git_host=GitHubHost(),
+        git_host=local_github(),
         pr_creator=prs,
         pr_linker=lambda repo, url, body: comments.append((url, body)),
     )
@@ -168,7 +167,7 @@ def test_the_link_comment_is_recorded_before_it_is_posted(deployment: Any, tmp_p
             raise RuntimeError("gh is down")  # the first comment fails
         posted.append(url)
 
-    box["p"] = GitPublisher(rig.service, git_host=GitHubHost(), pr_creator=prs, pr_linker=linker)
+    box["p"] = GitPublisher(rig.service, git_host=local_github(), pr_creator=prs, pr_linker=linker)
     goal = two_app_goal(rig)
     rig.service.plan(goal)
     rig.service.approve(rig.operator, goal)

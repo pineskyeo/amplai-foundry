@@ -103,10 +103,17 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 4. 실패하면 실패 출력과 함께 다시 시도한다. 첫 시도 포함 최대 3번, 승인부터 30분.
 5. 모두 통과하면 `amplai/<goal>` branch 를 push 하고 draft PR 을 만든다. merge 는 사람이 한다.
 
-push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15). `local.json` 에 `git_host` 가 없으면 운영자의
-`gh`·`git` 으로 GitHub 에 게시한다(이전과 같다). 다른 GitHub 주소는 `"git_host": {"host": "github.example.com"}` 로 주고, 그러면
-`gh` 명령에 `GH_HOST` 가 붙는다. `"git_host": null` 이면 게시하지 않고 goal 의 `publication.error` 가
-`PUBLISH_NO_GIT_HOST` 다.
+push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15, D-130). `local.json` 에 `git_host` 가 없으면 운영자의
+`gh`·`git` 으로 `github.com` 에 게시한다. 다른 GitHub 주소는 `"git_host": {"host": "github.example.com"}` 로 준다(소문자로 바꿔
+저장한다).
+
+- 모듈은 쓰거나 읽기 전에 host 를 확인한다. push·PR 생성 전에는 app 설정 `remote` 의 URL(`git remote get-url`)을, PR 댓글·상태
+  읽기 전에는 PR URL 을 본다. host 가 설정과 다르면 `GIT_HOST_MISMATCH` 로 멈춘다(`details` 에 `configured`, `remote`). 대소문자와
+  port 는 보지 않고, `https://`, `ssh://`, `git@host:` 형태를 읽는다. 로컬 경로 remote 도 host 가 없어 `GIT_HOST_MISMATCH` 다.
+- `gh` 는 checkout 의 remote 에서 host 를 읽는다. `github.com` 이 아닌 host 에는 `gh` 명령에 `GH_HOST` 도 붙인다. 그 host 로
+  `gh auth login --hostname <host>` 이 되어 있어야 한다. 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15).
+- `"git_host": null` 이면 게시하지 않고 goal 의 `publication.error` 가 `PUBLISH_NO_GIT_HOST` 다. `amplai ops pr-sync` 도 같은
+  코드로 멈춘다.
 
 ## 메타하네스: 구현자 prompt 를 시험해 바꾸기 (`amplai meta`)
 

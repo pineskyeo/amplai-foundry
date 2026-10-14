@@ -14,10 +14,9 @@ from typing import Any
 from amplai_foundry.runtime.contracts.identity import canonical
 from amplai_foundry.runtime.execution.product import DESIGN_CHECK
 from amplai_foundry.runtime.execution.publish import GitPublisher
-from amplai_foundry.runtime.git_host.github import GitHubHost
 from amplai_foundry.sandbox.git_workspace import CHANGE_MEDIA, PATCH_BINDING
 from amplai_foundry.verification.runtime.design_check import DesignDocumentCheck
-from rc06_rig import DRAFT, git, rig_with_codex
+from rc06_rig import DRAFT, git, local_github, rig_with_codex
 
 DESIGN_DRAFT = {
     **DRAFT,
@@ -107,7 +106,7 @@ def test_a_design_pr_is_labelled_and_carries_documents_only(
         titles.append(title)
         return "https://example.invalid/pr/9"
 
-    box["p"] = GitPublisher(rig.service, git_host=GitHubHost(), pr_creator=prs)
+    box["p"] = GitPublisher(rig.service, git_host=local_github(), pr_creator=prs)
     record = loop.run_goal(design_goal(rig))
     assert record["status"] == "published" and titles[0].startswith("[AMPLAI design] ")
     changed = git(remote, "diff", "--name-only", "main", record["publication"]["branch"]).split()

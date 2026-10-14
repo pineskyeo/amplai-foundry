@@ -19,7 +19,6 @@ from typing import Any
 
 from amplai_foundry.runtime.execution import text_bounds
 from amplai_foundry.runtime.execution.publish import GitPublisher
-from amplai_foundry.runtime.git_host.github import GitHubHost
 from e2e.test_033_s9_strategies import (
     APPROVE,
     AUX,
@@ -35,7 +34,7 @@ from e2e.test_033_s9_strategies import (
     outcomes,
     reviewed,
 )
-from rc06_rig import git, rig_two_apps
+from rc06_rig import git, local_github, rig_two_apps
 
 # the sentence ``node_objective`` puts in a node in place of a long objective
 REFERENCE = "over the workgraph node bound"
@@ -146,7 +145,7 @@ def test_the_pr_body_of_a_node_named_by_reference_has_the_whole_objective(
         return f"https://example.invalid/pr/{len(bodies)}"
 
     box["p"] = GitPublisher(
-        rig.service, git_host=GitHubHost(), pr_creator=prs, pr_linker=lambda *a: None
+        rig.service, git_host=local_github(), pr_creator=prs, pr_linker=lambda *a: None
     )
     # the app's item carries the whole goal: its node names the objective by reference
     rig.planner.multi_value["objective"] = OBJECTIVE

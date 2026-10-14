@@ -491,7 +491,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 
 ### 3.9 코드 저장소 연결 (`git_host`, OD-15)
 
-구현됨 (branch `feat/034-git-host-module`). 코드: `runtime/git_host/`.
+구현됨 (PR #93, D-130). 코드: `runtime/git_host/`.
 
 - **옮긴 호출부** (main `a31d66a` 기준, 코드 저장소에 닿는 호출 전부):
   - `runtime/execution/publish.py:87` `gh pr list`, `:94` `gh pr create --draft`, `:105` `gh pr comment`
@@ -499,20 +499,38 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
   - `runtime/execution/outcomes.py:34` `gh pr view --json state,headRefOid,mergedAt,closedAt`
   - 옮기지 않은 것: `runtime/execution/product.py:113` 의 `git fetch`(계획 기준 commit 을 remote 에서 가져옴). 코드 저장소 API 가
     아니라 일반 git 이고, git host 가 없어도 계획은 돌아야 한다.
-- **interface v1** (`git_host/interface.py`): `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, head, base,
-  title, body) -> url`(찾거나 만든다), `comment_pr(repo, url, body)`, `pr_state(repo, url) -> PullRequestState`
+- **interface v1** (`git_host/interface.py`): `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, remote, head,
+  base, title, body) -> url`(찾거나 만든다), `comment_pr(repo, url, body)`, `pr_state(repo, url) -> PullRequestState`
   (`state`, `head_commit`, `merged_at`, `closed_at`). 거절 코드는 모듈 이전과 같다: `PUBLISH_REMOTE`, `PUBLISH_PUSH`,
-  `PUBLISH_BRANCH_EXISTS`(Conflict), `PR_CREATE`, `PR_COMMENT`, `PR_STATE`. 적합성 시험 `conformance.git_host.v1`.
-- **GitHub 구현** (`git_host/github.py`, 내장 `git_host.github@1`, in_process): 모듈 이전과 같은 argv·cwd·timeout(쓰기 300초,
-  읽기 120초)이다. `host` 가 `github.com` 이 아니면 `gh` 명령에만 `GH_HOST=<host>` 를 더한다. 사내 GitHub 에서의 동작은 아직
-  확인하지 않았다 (Q-15, S4c).
-- **설정**: `local.json` 의 `git_host` (선택). 없으면 `{"module": "git_host.github", "host": "github.com"}` 이고 모듈 이전과
-  같다. `null` 이면 git host 모듈이 없다.
-- **제거 시험** (M-13): `git_host: null` 이면 검증된 goal 은 `verified` 로 남고 게시는 `PUBLISH_NO_GIT_HOST` 로 hold 된다
-  (commit·push·publication 기록 없음). PR 상태 읽기(`ops pr-sync`)도 같은 코드로 hold 다. 구현 모듈은 설정에서 고를 때만
-  import 한다 (`tests/v3/test_034_git_host.py`).
-- **지식 승인 증거 (D-115, S2a)**: v1 에 없다. S2a 에서 interface version 을 올리고 새 적합성 시험과 함께 더한다. 제안 모양
-  (운영자 확인 대기): `review_evidence(repo, change_url) -> {approvers: [{login, commit}], merged_commit, protected_branch,
+  `PUBLISH_BRANCH_EXISTS`(Conflict), `PR_CREATE`, `PR_COMMENT`, `PR_STATE`. 새 코드는 둘이다: `GIT_HOST_MISMATCH`(아래 host
+  확인), `PUBLISH_REF`(`-` 로 시작하거나 빈 remote·branch·head·base, `product.py:105-106` 과 같은 이유).
+  - 적합성 시험 `conformance.git_host.v1` 은 위 코드 전부를 확인한다. 시험용 transport 는 interface docstring 의 "conformance
+    host" 다(`conformance-down` 은 연결 안 됨, `conformance-readonly` 는 push 거부, `conformance-elsewhere` 는 다른 host, base
+    `conformance-refused` 는 PR 생성 거부).
+- **host 확인**: push·PR 생성 전에는 `git remote get-url <remote>`(30초, 읽기 전용)로 remote URL 을, PR 댓글·상태 읽기 전에는
+  PR URL 을, PR 생성·조회 뒤에는 `gh` 가 돌려준 URL 을 설정 `host` 와 비교한다. `https://`, `ssh://`, `git://`, `user@host:path`
+  형태를 읽고 대소문자와 port 는 무시한다. 로컬 경로·`file://` 는 host 가 없어 다르다고 본다. 다르면 쓰거나 읽기 전에
+  `GIT_HOST_MISMATCH`(details `{configured, remote}`)다. 이유: `gh` 는 checkout 의 remote 에서 host 를 읽으므로
+  (`gh help environment`) `GH_HOST` 만으로는 PR 이 갈 곳이 정해지지 않는다.
+- **GitHub 구현** (`git_host/github.py`, 내장 `git_host.github@1`, in_process): push·PR 명령은 모듈 이전과 같은
+  argv·cwd·timeout(쓰기 300초, 읽기 120초)이다. 더해진 명령은 host 확인의 `git remote get-url` 뿐이다. `host` 가 `github.com`
+  이 아니면 `gh` 명령에만 `GH_HOST=<host>` 를 더한다. 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15, S4c).
+- **설정**: `local.json` 의 `git_host` (선택). 없으면 `{"module": "git_host.github", "host": "github.com"}` 이고 push·PR 은
+  모듈 이전과 같다. `host` 는 소문자로 바꿔 저장한다. `null` 이면 git host 모듈이 없다. 기본 설정인데 구현 파일이 없으면
+  deployment 를 만들 때 `ImportError` 로 실패한다(fail-closed: 게시 경로가 조용히 꺼지지 않는다).
+- **제거 시험** (M-13, 대상 한정): `git_host: null` 이면 검증된 goal 은 `verified` 로 남고 게시는 `PUBLISH_NO_GIT_HOST` 로
+  hold 된다(commit·push·publication 기록 없음). PR 상태 읽기(`ops pr-sync`)도 같은 코드로 hold 다. 구현 모듈은 설정에서 고를
+  때만 import 한다 (`tests/v3/test_034_git_host.py`). M-13 의 "선택 모듈을 뺀 구성으로 코어 시험 전체" CI 단계는 아직 없다
+  (`check` kind, M-16 과 함께 둔다).
+- **아직 강제하지 않는 것**: runtime 은 deployment 를 만들 때 적합성 결과나 registry 를 보지 않는다(`MODULE_UNQUALIFIED` 연결은
+  남은 작업이고 notifier 도 같다). module spec 의 `permissions` 는 비어 있다. 권한 어휘가 아직 없어서다. pack 의 "필요 권한"
+  (M-14)을 정할 때 함께 정한다.
+- **PR 상태 읽기의 작은 차이**: `gh pr view` 가 객체가 아닌 JSON 을 주면 이전에는 tracker 의 `.get` 이 `AttributeError` 로
+  sync 전체를 끊었다. 지금은 `Hold PR_STATE` 라 그 PR 은 unknown 으로 남고 다른 PR 은 계속 읽는다. `headRefOid` 가 `""` 이면
+  `head_commit` 은 `None` 이다. 이전에도 빈 문자열은 falsy 라 revised 로 보지 않았으므로 판정은 같고, `publication_outcome.head`
+  에 `""` 대신 `null` 이 남는 것만 다르다.
+- **지식 승인 증거 (D-115, S2a)**: v1 에 없다. S2a 에서 interface v2 와 새 적합성 시험으로 더하며 그때 운영자 결정이 필요하다.
+  제안 모양 (운영자 확인 대기): `review_evidence(repo, change_url) -> {approvers: [{login, commit}], merged_commit, protected_branch,
   codeowners_required, stale_dismissed, admin_bypass}`. 판정(D-115 조건을 만족하는가)은 지식 모듈이 하고, git host 는 사실만
   읽는다.
 

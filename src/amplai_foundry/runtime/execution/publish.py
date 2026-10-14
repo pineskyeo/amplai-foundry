@@ -112,7 +112,7 @@ class GitPublisher:
         pr_linker: Callable[[Path, str, str], None] | None = None,
     ) -> None:
         self.service, self.git_host = service, git_host
-        self.pr_creator = pr_creator or (git_host.open_draft_pr if git_host else _no_host)
+        self.pr_creator = pr_creator
         self.pr_linker = pr_linker or (git_host.comment_pr if git_host else _no_host)
         self.store, self.scope = service.store, service.scope
 
@@ -254,10 +254,16 @@ class GitPublisher:
             )  # fmt: skip
             prefix = "[AMPLAI design] " if plan.get("mode") == "design" else "[AMPLAI] "
             suffix = f" ({app_id})" if multi else ""
-            value["pr_url"] = self.pr_creator(
-                app.repo, branch, value["base_branch"],
-                prefix + draft["summary"][:200] + suffix, body,
-            )  # fmt: skip
+            title = prefix + draft["summary"][:200] + suffix
+            if self.pr_creator is not None:  # a test stand-in
+                url = self.pr_creator(app.repo, branch, value["base_branch"], title, body)
+            elif self.git_host is not None:
+                url = self.git_host.open_draft_pr(
+                    app.repo, value["remote"], branch, value["base_branch"], title, body
+                )
+            else:
+                _no_host()
+            value["pr_url"] = url
         value["done_at"] = now()
         self._save(record_id, "done", value)
         return value

@@ -28,7 +28,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
 from ..control_plane.api_v3.intake import (
@@ -422,7 +422,13 @@ class GitHostEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
     module: Literal["git_host.github"] = "git_host.github"
     # the GitHub instance; another host than github.com runs ``gh`` with GH_HOST=<host> (Q-15)
+    # The module checks that every remote and PR URL it touches is on this host (port ignored)
     host: str = Field(default="github.com", pattern=_HOSTNAME, max_length=255)
+
+    @field_validator("host", mode="before")
+    @classmethod
+    def _lower(cls, value: object) -> object:
+        return value.strip().lower() if isinstance(value, str) else value
 
 
 class LocalConfig(BaseModel):

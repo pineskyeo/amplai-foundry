@@ -38,6 +38,7 @@ from amplai_foundry.runtime.execution.product import (
     app_capabilities,
 )
 from amplai_foundry.runtime.execution.worker import WorkCoordinator
+from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
 from amplai_foundry.runtime.reference import PERMISSIONS
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 from amplai_foundry.verification.runtime.patch_commands import (
@@ -494,3 +495,20 @@ def rig_two_apps(
     )
     rig.planner.multi_value = json.loads(json.dumps(MULTI_DRAFT))
     return rig, loop, container, consumer
+
+
+GITHUB_REMOTE = "https://github.com/o/r.git"
+
+
+def local_github() -> GitHubHost:
+    """The GitHub git host over a local bare remote: the remote URL lookup answers a github.com
+    URL (the host check, D-130); every other command runs for real."""
+
+    def run(
+        args: list[str], cwd: Path, env: dict[str, str] | None, timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        if args[:3] == ["git", "remote", "get-url"]:
+            return subprocess.CompletedProcess(args, 0, (GITHUB_REMOTE + "\n").encode(), b"")
+        return run_process(args, cwd, env, timeout)
+
+    return GitHubHost(run=run)

@@ -814,3 +814,12 @@
 - Reason: 무료 version 점검이 흔한 원인(말없이 바뀐 model·CLI·image)을 매일 밤 비용 없이 잡는다. 유료 측정은 version 변화 없는 행동 drift 를 잡는다. 20개 task 전부로 주 1회 재는 편이 매일 밤 7개로 재는 것보다 검정력이 높고, 비용은 한 주 예산의 약 4% 다.
 - Rejected: 매일 밤 7개 task(검정력이 낮다). drift share 27%(search 를 깎는다).
 - Source: `src/amplai_foundry/meta_harness/nightly.py`(`drift_due`, `_drift`, `_drift_fit`, `phase_budget`, `LocalNightlyBackend.drift_measurement`), `specs/033-harness-taxonomy/interfaces.md` "Clarification: Drift Subset" 의 "Drift cadence (D-129)", `docs/v3/DEV03_OBSERVATORY_META.ko.md` 야간 절
+
+## D-130 — Code Host Is The git_host Module (OD-15)
+
+- Status: accepted (운영자 확정 OD-15 2026-10-12, D-126)
+- Date: 2026-10-14
+- Decision: 코드 저장소 연결은 `git_host` 모듈 kind 다. interface v1 의 연산은 `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, remote, head, base, title, body) -> url`(찾거나 만든다), `comment_pr(repo, url, body)`, `pr_state(repo, url) -> PullRequestState(state, head_commit, merged_at, closed_at)` 이고 적합성 시험은 `conformance.git_host.v1` 이다. 거절 코드는 모듈 이전과 같다(`PUBLISH_REMOTE`, `PUBLISH_PUSH`, `PUBLISH_BRANCH_EXISTS`, `PR_CREATE`, `PR_COMMENT`, `PR_STATE`). 첫 구현은 내장 `git_host.github@1`(운영자의 `gh`·`git`)이다. 설정 `local.json` `git_host` 가 없으면 GitHub `github.com` 이고 push·PR 명령은 이전과 같다. `null` 이면 git host 모듈이 없다. 그러면 게시는 commit·기록 전에 `PUBLISH_NO_GIT_HOST` 로 hold 되고, `ops pr-sync` 도 같은 코드로 hold 된다. host 확인: 모듈은 쓰거나 읽기 전에 remote URL(push·PR 생성, `git remote get-url`)과 PR URL(댓글·상태 읽기, `gh` 가 돌려준 URL 포함)이 설정 `host` 에 있는지 확인한다. 대소문자와 port 는 무시한다. 다르면 `GIT_HOST_MISMATCH` 이고 details 는 `{configured, remote}` 다. `-` 로 시작하는 remote·branch 이름은 `PUBLISH_REF` 다. `github.com` 이 아닌 host 에는 `gh` 명령에 `GH_HOST` 를 붙인다. 지식 공간 승인 증거(D-115)를 읽는 hook 은 v1 에 없다. S2a 에서 interface v2 와 새 적합성 시험으로 더하며, 그 모양은 그때 운영자가 결정한다(제안: `specs/034-hermes-modular-platform/plan.md` §3.9).
+- Reason: `gh` 는 checkout 의 remote 에서 host 를 읽는다(`gh help environment`, gh 2.88.1: `GH_HOST` 는 "cannot be inferred from the context of a local Git repository" 일 때만 쓴다). 그래서 설정 `host` 만으로는 PR 이 어디로 가는지 정해지지 않는다. 모듈이 직접 확인해야 설정이 의미를 가진다.
+- Consequence: 기본 설정에서도 push·PR 생성 전에 읽기 전용 `git remote get-url` 이 한 번씩 더 돈다. GitHub 이 아닌 remote(로컬 경로 포함)로 `branch` 모드 게시를 하던 배포는 이제 `GIT_HOST_MISMATCH` 로 멈춘다(지금 그런 배포가 있는지는 확인하지 않았다).
+- Source: PR #93, `src/amplai_foundry/runtime/git_host/`, `specs/034-hermes-modular-platform/plan.md` §3.9

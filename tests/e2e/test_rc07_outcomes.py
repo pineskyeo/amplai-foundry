@@ -16,8 +16,7 @@ from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
 from amplai_foundry.runtime.git_host import PullRequestState
-from amplai_foundry.runtime.git_host.github import GitHubHost
-from rc06_rig import approved, git, rig_with_codex, submit
+from rc06_rig import approved, git, local_github, rig_with_codex, submit
 
 
 class States:
@@ -43,7 +42,7 @@ def published(deployment: Any, tmp_path: Path) -> tuple[Any, Any, str, dict[str,
     git(rig.repo, "remote", "add", "origin", str(remote))
     git(rig.repo, "push", "-q", "origin", "main")
     box["p"] = GitPublisher(
-        rig.service, git_host=GitHubHost(), pr_creator=lambda *_: "https://example.invalid/pr/7"
+        rig.service, git_host=local_github(), pr_creator=lambda *_: "https://example.invalid/pr/7"
     )
     goal = approved(rig)
     record = loop.run_goal(goal)
