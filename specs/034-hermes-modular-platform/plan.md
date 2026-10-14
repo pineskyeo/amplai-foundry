@@ -390,7 +390,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 - git 최소 버전: 저장소 코드가 쓰는 git 기능(`git apply --binary`, `fetch --no-tags`, `-C`, `push <commit>:<ref>`;
   `sandbox/git_workspace.py:266`, `runtime/execution/product.py:114`, `runtime/execution/publish.py:321`)의 최소 버전은 정리돼 있지 않다.
   확인 필요. container qualify 에 host git 버전 시험을 더한다.
-- PR 게시: 지금 `publish` 는 GitHub CLI `gh` 를 부른다 (`runtime/execution/publish.py:86-104`). 사내 git 서버 종류에 맞는 게시 경로가
+- PR 게시: `publish` 는 `git_host` 모듈을 부르고 첫 구현은 GitHub CLI `gh` 다 (§3.9). 사내 git 서버 종류에 맞는 게시 경로가
   필요하다 (Q-15, K-9 와 같은 git 서버).
 - 표의 각 행은 `deployment/support-evidence.json` 근거로 남긴다. 근거 없는 행은 `disabled` 다 (`deployment/README.md:5-13`).
 
@@ -489,6 +489,64 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 - **평가기 digest**: `nightly.py` 는 평가기 digest 범위 밖이다(`evaluation/versions.py:33-34`). 새 권한 `nightly.control` 은
   권한 코드 변경이라 class C 다.
 
+### 3.9 코드 저장소 연결 (`git_host`, OD-15)
+
+구현됨 (PR #93, D-130). 코드: `runtime/git_host/`.
+
+- **옮긴 호출부** (main `a31d66a` 기준, 코드 저장소에 닿는 호출 전부):
+  - `runtime/execution/publish.py:87` `gh pr list`, `:94` `gh pr create --draft`, `:105` `gh pr comment`
+  - `runtime/execution/publish.py:313` `git ls-remote`, `:325` `git push` (branch push, force 없음)
+  - `runtime/execution/outcomes.py:34` `gh pr view --json state,headRefOid,mergedAt,closedAt`
+  - 옮기지 않은 것: `runtime/execution/product.py:113` 의 `git fetch`(계획 기준 commit 을 remote 에서 가져옴). 코드 저장소 API 가
+    아니라 일반 git 이고, git host 가 없어도 계획은 돌아야 한다.
+- **interface v1** (`git_host/interface.py`): `check_remote(repo, remote)`, `push_branch(repo, remote, branch, commit)`, `open_draft_pr(repo, remote, head,
+  base, title, body) -> url`(찾거나 만든다), `comment_pr(repo, url, body)`, `pr_state(repo, url) -> PullRequestState`
+  (`state`, `head_commit`, `merged_at`, `closed_at`). 거절 코드는 모듈 이전과 같다: `PUBLISH_REMOTE`, `PUBLISH_PUSH`,
+  `PUBLISH_BRANCH_EXISTS`(Conflict), `PR_CREATE`, `PR_COMMENT`, `PR_STATE`. 새 코드는 둘이다: `GIT_HOST_MISMATCH`(아래 host
+  확인), `PUBLISH_REF`(`-` 로 시작하거나 빈 remote·branch·head·base, `product.py:105-106` 과 같은 이유).
+  - 적합성 시험 `conformance.git_host.v1` 은 위 코드 전부를 확인한다. 시험용 transport 는 interface docstring 의 "conformance
+    host" 다(`conformance-down` 은 연결 안 됨, `conformance-readonly` 는 push 거부, `conformance-elsewhere` 는 다른 host,
+    `conformance-pushurl` 은 fetch 는 같은 host·push 는 다른 host, `conformance-missing` 은 없는 remote, base
+    `conformance-refused` 는 PR 생성 거부).
+- **host 확인** (D-130): 이유는 `gh` 가 checkout 의 remote 에서 host 를 읽어서(`gh help environment`) `GH_HOST` 만으로는 PR 이
+  갈 곳이 정해지지 않기 때문이다.
+  - remote: `check_remote`·push·PR 생성 전에 `git remote get-url --push --all <remote>`(30초, 읽기 전용)의 URL 전부가
+    `remote_hosts`(설정, 없으면 `[host]`) 안에 있어야 한다. `pushurl`·`pushInsteadOf` 가 반영된 URL 이다.
+  - PR URL: 댓글·상태 읽기 전, 그리고 `gh` 가 찾거나 만든 뒤 돌려준 URL 이 웹 host `host` 에 있어야 한다.
+  - 비교: `https://`, `ssh://`, `git://`, `user@host:path` 를 읽고 대소문자·port·끝의 `.` 는 무시한다. 로컬 경로·`file://` 는
+    host 가 없어 다르다고 본다. 다르면 `GIT_HOST_MISMATCH`(details `{configured: [hosts], remote}`, 이미 생긴 PR 이면 `pr_url`)다.
+  - app `remote` 가 URL·로컬 경로면(`is_remote_url`) `get-url` 없이 그 host 를 `remote_hosts` 와 바로 비교한다. 설정 schema 가
+    `remote` 를 자유 문자열로 받고(`local_deployment.py` `AppEntry.remote`), 모듈 이전에도 URL 로 push 할 수 있었기 때문이다.
+  - checkout 에 없는 remote 이름, 읽기 실패, 시간 초과는 `PUBLISH_REMOTE` 다.
+  - 여러 app: publisher 가 끝나지 않은 app 전부에 `check_remote` 를 부른 뒤에 push 한다. 한 app 이라도 다르면 아무것도 push 하지
+    않는다.
+  - PR 상태 읽기: tracker 는 코드가 있는 거절(예: `GIT_HOST_MISMATCH`)을 goal 별로 메모리에 두고 `ops pr-sync` 응답의 `unread` 로
+    보여 준다. 다음 성공 읽기에서 지운다. `publication_outcome` 에 저장하는 방식은 저장 모양 변경이라 하지 않았다(운영자 결정
+    대상).
+- **GitHub 구현** (`git_host/github.py`, 내장 `git_host.github@1`, in_process): push·PR 명령은 모듈 이전과 같은
+  argv·cwd·timeout(쓰기 300초, 읽기 120초)이다. 더해진 명령은 host 확인의 `git remote get-url --push --all` 뿐이다. `host` 가
+  `github.com` 이 아니면 `gh` 명령에만 `GH_HOST=<host>` 를 더한다(설정값 그대로, port 를 적었으면 port 포함. `gh` 가 port 를
+  받는지는 확인하지 않았다). 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15, S4c).
+- **설정**: `local.json` 의 `git_host` (선택). 없으면 `{"module": "git_host.github", "host": "github.com"}` 이고 push·PR 은
+  모듈 이전과 같다. `host`·`remote_hosts` 는 소문자로 바꿔 저장하고 끝의 `.` 는 거절한다. `remote_hosts`(선택, 1~16개)는 remote
+  가 push 해도 되는 host 이고 없으면 `[host]` 다. `null` 이면 git host 모듈이 없다. 기본 설정인데 구현 파일이 없으면
+  deployment 를 만들 때 `ImportError` 로 실패한다(fail-closed: 게시 경로가 조용히 꺼지지 않는다).
+- **제거 시험** (M-13, 대상 한정): `git_host: null` 이면 검증된 goal 은 `verified` 로 남고 게시는 `PUBLISH_NO_GIT_HOST` 로
+  hold 된다(commit·push·publication 기록 없음). PR 상태 읽기(`ops pr-sync`)도 같은 코드로 hold 다. 구현 모듈은 설정에서 고를
+  때만 import 한다 (`tests/v3/test_034_git_host.py`). M-13 의 "선택 모듈을 뺀 구성으로 코어 시험 전체" CI 단계는 아직 없다
+  (`check` kind, M-16 과 함께 둔다).
+- **아직 강제하지 않는 것**: runtime 은 deployment 를 만들 때 적합성 결과나 registry 를 보지 않는다(`MODULE_UNQUALIFIED` 연결은
+  남은 작업이고 notifier 도 같다). module spec 의 `permissions` 는 비어 있다. 권한 어휘가 아직 없어서다. pack 의 "필요 권한"
+  (M-14)을 정할 때 함께 정한다.
+- **PR 상태 읽기의 작은 차이**: `gh pr view` 가 객체가 아닌 JSON 을 주면 이전에는 tracker 의 `.get` 이 `AttributeError` 로
+  sync 전체를 끊었다. 지금은 `Hold PR_STATE` 라 그 PR 은 unknown 으로 남고 다른 PR 은 계속 읽는다. `headRefOid` 가 `""` 이면
+  `head_commit` 은 `None` 이다. 이전에도 빈 문자열은 falsy 라 revised 로 보지 않았으므로 판정은 같고, `publication_outcome.head`
+  에 `""` 대신 `null` 이 남는 것만 다르다.
+- **지식 승인 증거 (D-115, S2a)**: v1 에 없다. S2a 에서 interface v2 와 새 적합성 시험으로 더하며 그때 운영자 결정이 필요하다.
+  제안 모양 (운영자 확인 대기): `review_evidence(repo, change_url) -> {approvers: [{login, commit}], merged_commit, protected_branch,
+  codeowners_required, stale_dismissed, admin_bypass}`. 판정(D-115 조건을 만족하는가)은 지식 모듈이 하고, git host 는 사실만
+  읽는다.
+
 ## 4. 위협·통제 (design/29 §1, design/10 §8)
 
 | 위협 | 경로 | 통제 | test |
@@ -581,7 +639,7 @@ WSL 을 상시 서버로 쓸지 개발 기기로만 쓸지는 운영자 결정�
 | Q-12 | RHEL 7 지원 여부. 사실: 엔진 없음, glibc 2.17, git 1.8.3.1, `/home` 여유 1.8G, RHEL 7 유지보수 지원 종료(2024-06). 권장: 실행 호스트 미지원 | S4b 묶음 platform, 지원 표 |
 | Q-13 | RHEL 8 사이트 점검 (`site_env_check.sh`): Python 3.11 유무, podman 버전·rootless·cgroup 버전, SELinux 모드 | S4a 엔진·권한 |
 | Q-14 | 사내 공용 컨테이너 registry 는 없다. 서버만 있다 (운영자 답 2026-10-12) → 이미지는 tar 로 반입해 `docker load` 하고, registry 없이 이미지 ID(config digest)로 고정하는 방식으로 바꾼다 (지금 `sandbox/container.py:34` 는 `@sha256` registry digest 만 받는다, D-121 수정 대상). 반입 매체·승인자 절차는 확인 필요 | S4b |
-| Q-15 | 사내 GitHub 가 있다 (운영자 답 2026-10-12; GitHub Enterprise Server 인지는 확인 필요) → 코드 저장소 연결도 모듈로 둔다 (OD-15, `git_host` kind: 첫 구현 GitHub·GitHub Enterprise, 다른 서버는 나중에). PR 게시 `runtime/execution/publish.py:86-104` 의 `gh` 고정을 이 모듈 뒤로 옮긴다 | S4c, S2a |
+| Q-15 | 사내 GitHub 가 있다 (운영자 답 2026-10-12; GitHub Enterprise Server 인지는 확인 필요) → 코드 저장소 연결도 모듈로 둔다 (OD-15, `git_host` kind: 첫 구현 GitHub·GitHub Enterprise, 다른 서버는 나중에). PR 게시 `runtime/execution/publish.py:86-104` 의 `gh` 고정을 이 모듈 뒤로 옮긴다. 모듈과 GitHub 구현은 됐다(§3.9). 사내 GitHub 종류·동작 확인은 남았다 | S4c, S2a |
 | Q-16 | WSL2 는 Windows 절전·재부팅 뒤에도 유지된다 (운영자 답 2026-10-12). systemd 는 `/etc/wsl.conf` 로 켤 수 있고 켜졌다(PID 1 systemd), docker.io 29.1.3 설치됨 | S4a |
 | Q-17 | 데이터·백업 디스크의 파일 시스템 종류(NFS 여부)와 용량 | S4a 경로, AC-C9 |
 | Q-18 | bind 쓰기 시험 결과 (Ubuntu 18.04 는 이미지 하나로 `sh site_env_check.sh <image>`, WSL 은 엔진 도달부터) | S4a uid·ACL |

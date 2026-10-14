@@ -15,7 +15,8 @@ from amplai_foundry.evaluation.observatory import Observatory
 from amplai_foundry.runtime.errors import Hold
 from amplai_foundry.runtime.execution.outcomes import PullRequestTracker
 from amplai_foundry.runtime.execution.publish import GitPublisher
-from rc06_rig import approved, git, rig_with_codex, submit
+from amplai_foundry.runtime.git_host import PullRequestState
+from rc06_rig import approved, git, local_github, rig_with_codex, submit
 
 
 class States:
@@ -26,11 +27,11 @@ class States:
         self.fail = False
         self.calls: list[str] = []
 
-    def __call__(self, repo: Path, url: str) -> dict[str, Any]:
+    def __call__(self, repo: Path, url: str) -> PullRequestState:
         self.calls.append(url)
         if self.fail:
             raise Hold("PR_STATE", "simulated gh outage")
-        return dict(self.value)
+        return PullRequestState(self.value["state"], head_commit=self.value["headRefOid"])
 
 
 def published(deployment: Any, tmp_path: Path) -> tuple[Any, Any, str, dict[str, Any]]:
@@ -40,7 +41,9 @@ def published(deployment: Any, tmp_path: Path) -> tuple[Any, Any, str, dict[str,
     subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
     git(rig.repo, "remote", "add", "origin", str(remote))
     git(rig.repo, "push", "-q", "origin", "main")
-    box["p"] = GitPublisher(rig.service, pr_creator=lambda *_: "https://example.invalid/pr/7")
+    box["p"] = GitPublisher(
+        rig.service, git_host=local_github(), pr_creator=lambda *_: "https://example.invalid/pr/7"
+    )
     goal = approved(rig)
     record = loop.run_goal(goal)
     assert record["status"] == "published"
@@ -152,3 +155,27 @@ def test_a_pr_published_before_tracking_is_backfilled_as_opened(
     got = outcomes(rig)
     # the scripted reader answers MERGED for both PRs
     assert got["opened"] == 2 and got["merged"] == 2 and got["undecided"] == 0
+
+
+def test_a_coded_refusal_is_shown_by_pr_sync_and_not_stored(
+    deployment: Any, tmp_path: Path
+) -> None:
+    """Work 034 OD-15 (PR #93 review P3-e): a PR on another host than the configured one is not
+    read; the tracker keeps the reason for ``ops pr-sync`` and stores nothing."""
+    rig, _loop, goal, publication = published(deployment, tmp_path)
+    mismatch = {"configured": ["github.com"], "remote": "example.invalid"}
+
+    def refuse(repo: Path, url: str) -> PullRequestState:
+        raise Hold("GIT_HOST_MISMATCH", "elsewhere", details=mismatch)
+
+    tracker = PullRequestTracker(rig.service, reader=refuse)
+    assert tracker.sync() == []
+    held = tracker.unread[goal]
+    assert (held["code"], held["details"]) == ("GIT_HOST_MISMATCH", mismatch)
+    assert rig.service.plan_record(goal).get("publication_outcome") is None
+    states = States()
+    states.value["headRefOid"] = publication["commit"]
+    tracker.reader = states
+    tracker.sync()
+    assert goal not in tracker.unread
+    assert rig.service.plan_record(goal)["publication_outcome"]["state"] == "OPEN"

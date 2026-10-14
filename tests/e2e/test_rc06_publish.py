@@ -14,7 +14,8 @@ import pytest
 
 from amplai_foundry.runtime.errors import Conflict, Hold
 from amplai_foundry.runtime.execution.publish import GitPublisher
-from rc06_rig import approved, checkout, git, rig_with_codex
+from amplai_foundry.runtime.git_host.github import GitHubHost
+from rc06_rig import RecordingGitHub, approved, checkout, git, local_github, rig_with_codex
 
 
 class Prs:
@@ -42,7 +43,7 @@ def setup(deployment: Any, tmp_path: Path, prs: Prs) -> tuple[Any, Any, GitPubli
     # the operator is busy on another branch with uncommitted work
     git(rig.repo, "checkout", "-q", "-b", "feature")
     (rig.repo / "app.py").write_text("def value():\n    return 99  # wip\n")
-    publisher = GitPublisher(rig.service, pr_creator=prs)
+    publisher = GitPublisher(rig.service, git_host=local_github(), pr_creator=prs)
     publisher_box["p"] = publisher
     return rig, loop, publisher, remote
 
@@ -116,3 +117,34 @@ def test_a_remote_branch_at_another_commit_is_never_overwritten(
         publisher(goal)
     assert exc.value.code == "PUBLISH_BRANCH_EXISTS" and prs.calls == []
     assert git(remote, "rev-parse", f"refs/heads/amplai/{goal}").strip() == other
+
+
+def test_the_production_pr_path_runs_through_the_git_host(deployment: Any, tmp_path: Path) -> None:
+    """Work 034 OD-15 (PR #93 regression review P2-a): no PR stand-in injected. The publisher
+    resolves the app remote, pushes and opens the draft PR through the module."""
+    box: dict[str, GitPublisher] = {}
+    rig, loop, _ = rig_with_codex(deployment, tmp_path, "right", publisher=lambda g: box["p"](g))
+    remote = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    git(rig.repo, "remote", "add", "origin", str(remote))
+    git(rig.repo, "push", "-q", "origin", "main")
+    host = RecordingGitHub()
+    box["p"] = GitPublisher(rig.service, git_host=GitHubHost(run=host))
+    goal = approved(rig)
+    record = loop.run_goal(goal)
+    assert record["status"] == "published", record.get("publication")
+    pub = record["publication"]
+    assert pub["branch"] == "amplai/" + goal and pub["pr_url"] == "https://github.com/o/r/pull/1"
+    assert (
+        host.of("git", "remote", "get-url")
+        == [["git", "remote", "get-url", "--push", "--all", "origin"]] * 2
+    )  # before the push and before the PR
+    (create,) = host.of("gh", "pr", "create")
+    assert create[:9] == [
+        "gh", "pr", "create", "--draft", "--head", pub["branch"], "--base", "main", "--title",
+    ]  # fmt: skip
+    assert host.of("gh", "pr", "list") == [
+        ["gh", "pr", "list", "--head", pub["branch"], "--json", "url", "--limit", "1"]
+    ]
+    assert host.of("gh", "pr", "comment") == []  # one app: nothing to link
+    assert git(remote, "rev-parse", "refs/heads/" + pub["branch"]).strip() == pub["commit"]

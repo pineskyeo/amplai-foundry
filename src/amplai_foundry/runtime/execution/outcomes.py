@@ -1,7 +1,8 @@
 """What happened to each published draft PR (Work 019 R1, D-078).
 
-The operator's authenticated ``gh`` reads the PR; nothing here writes to GitHub. Each transition
-is recorded once, in the same transaction as the plan record, on the goal's audit trail:
+The configured ``git_host`` module reads the PR (Work 034 OD-15, ``runtime/git_host/``; its v1
+``pr_state`` is read-only); nothing here writes to the code host. Each transition is recorded
+once, in the same transaction as the plan record, on the goal's audit trail:
 
 - ``publication.merged`` — the PR was merged (final)
 - ``publication.closed`` — closed without merging (final)
@@ -15,43 +16,44 @@ counted as open, merged or closed on a guess.
 from __future__ import annotations
 
 import json
-import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..contracts.identity import now
 from ..errors import Hold, RuntimeFault
 from .product import PLAN_KIND, LocalExecutionService
+from .publish import NO_GIT_HOST
+
+if TYPE_CHECKING:
+    from ..git_host import GitHost, PullRequestState
 
 FINAL = frozenset({"MERGED", "CLOSED"})
-
-
-def gh_pr_state(repo: Path, url: str) -> dict[str, Any]:
-    """Read one PR with the operator's ``gh`` (read-only)."""
-    result = subprocess.run(
-        ["gh", "pr", "view", url, "--json", "state,headRefOid,mergedAt,closedAt"],
-        cwd=repo, capture_output=True, timeout=120, check=False,
-    )  # fmt: skip
-    if result.returncode != 0:
-        raise Hold("PR_STATE", "gh pr view failed", details=result.stderr.decode()[-400:])
-    value: dict[str, Any] = json.loads(result.stdout)
-    return value
+OPEN_OR_FINAL = frozenset({"OPEN", "MERGED", "CLOSED"})
 
 
 class PullRequestTracker:
+    """Reads PRs through ``git_host.pr_state``; ``reader`` replaces it (test stand-ins). With
+    neither, a sync holds with ``PUBLISH_NO_GIT_HOST``."""
+
     def __init__(
         self,
         service: LocalExecutionService,
         *,
-        reader: Callable[[Path, str], dict[str, Any]] = gh_pr_state,
+        git_host: GitHost | None = None,
+        reader: Callable[[Path, str], PullRequestState] | None = None,
         clock: Callable[[], float] = time.time,
         interval_seconds: float = 600.0,
     ) -> None:
+        if reader is None and git_host is not None:
+            reader = git_host.pr_state
         self.service, self.reader, self.clock = service, reader, clock
         self.interval = interval_seconds
         self._last: float | None = None
+        # goal id -> the last coded refusal reading its PRs (cleared by a later read); shown by
+        # ``ops pr-sync``, not stored (the stored ``publication_outcome`` shape is unchanged)
+        self.unread: dict[str, dict[str, Any]] = {}
 
     def due(self) -> bool:
         return self._last is None or self.clock() - self._last >= self.interval
@@ -83,30 +85,41 @@ class PullRequestTracker:
 
     def sync(self) -> list[dict[str, Any]]:
         """Read every undecided PR once; return the transitions recorded."""
+        reader = self.reader
+        if reader is None:
+            raise Hold(NO_GIT_HOST, "No git_host module is configured; PRs cannot be read")
         self._last = self.clock()
         recorded = []
         for plan in self._pending():
             goal_id, publication = plan["goal_id"], plan["publication"]
             # a multi-app goal has one PR per app (D-081); its outcome is the aggregate
             parts = publication.get("publications") or {plan["app"]: publication}
-            states: dict[str, dict[str, Any]] = {}
+            states: dict[str, PullRequestState] = {}
+            app = ""
             try:
                 for app, part in parts.items():
                     if part.get("pr_url"):
                         repo = self.service.apps[app].config.repo
-                        states[app] = self.reader(repo, part["pr_url"])
-            except (Hold, RuntimeFault, OSError, ValueError, KeyError):
+                        states[app] = reader(repo, part["pr_url"])
+            except RuntimeFault as fault:  # Hold included
+                # unknown stays unknown; retried at the next sync. A coded refusal (e.g.
+                # GIT_HOST_MISMATCH) is kept for the operator, in memory only (not stored)
+                self.unread[goal_id] = {
+                    "goal_id": goal_id, "app": app, "code": fault.code,
+                    "details": fault.details, "at": now(),
+                }  # fmt: skip
+                continue
+            except (OSError, ValueError, KeyError):
                 continue  # unknown stays unknown; retried at the next sync
-            if not states or any(
-                s.get("state") not in {"OPEN", "MERGED", "CLOSED"} for s in states.values()
-            ):
+            self.unread.pop(goal_id, None)
+            if not states or any(s.state not in OPEN_OR_FINAL for s in states.values()):
                 continue
             before = plan.get("publication_outcome") or {}
-            kinds = {s["state"] for s in states.values()}
+            kinds = {s.state for s in states.values()}
             revised_apps = [
                 app
                 for app, s in states.items()
-                if s.get("headRefOid") and s["headRefOid"] != parts[app].get("commit")
+                if s.head_commit and s.head_commit != parts[app].get("commit")
             ]
             aggregate = (
                 "MERGED" if kinds == {"MERGED"} else "CLOSED" if "CLOSED" in kinds else "OPEN"
@@ -114,10 +127,10 @@ class PullRequestTracker:
             outcome: dict[str, Any] = {
                 "state": aggregate,
                 "revised": bool(revised_apps) or bool(before.get("revised")),
-                "head": next(iter(states.values())).get("headRefOid"),
+                "head": next(iter(states.values())).head_commit,
                 "checked_at": now(),
                 **(
-                    {"parts": {a: {"state": s["state"], "revised": a in revised_apps}
+                    {"parts": {a: {"state": s.state, "revised": a in revised_apps}
                                for a, s in states.items()}}
                     if len(parts) > 1
                     else {}

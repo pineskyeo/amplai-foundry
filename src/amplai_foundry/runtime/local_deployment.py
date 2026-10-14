@@ -26,9 +26,9 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ..agent_drivers.ports import DriverRegistry
 from ..control_plane.api_v3.intake import (
@@ -85,10 +85,11 @@ from .execution.product import (
     VerifierCommand,
     app_capabilities,
 )
-from .execution.publish import GitPublisher
+from .execution.publish import NO_GIT_HOST, GitPublisher
 from .execution.service import Runtime
 from .execution.strategy_runner import StrategyRunner
 from .execution.worker import WorkCoordinator
+from .git_host import GitHost
 from .goals.service import GoalService
 from .keys import private_bytes, read_key
 from .notifier import NotifierPump, SlackWebhookNotifier, StoreReceipts
@@ -406,6 +407,42 @@ class NotifierEntry(BaseModel):
     interval_seconds: int = Field(default=5, ge=1, le=3600)  # outbox poll interval
 
 
+_HOSTNAME = (
+    r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}"
+    r"[A-Za-z0-9])?)*(?::[0-9]{1,5})?$"
+)
+
+
+class GitHostEntry(BaseModel):
+    """The code-host connection (Work 034 OD-15, D-126): which ``git_host`` module pushes the
+    branch, opens the draft PR and reads its outcome. Absent: GitHub through the operator's
+    ``gh`` and ``git``, the behaviour before the module. ``null``: no git host module; a
+    publication then holds with ``PUBLISH_NO_GIT_HOST`` and PR outcomes are not read."""
+
+    model_config = ConfigDict(extra="forbid")
+    module: Literal["git_host.github"] = "git_host.github"
+    # The web host: PR URLs must be on it; another host than github.com runs ``gh`` with
+    # GH_HOST=<host> (Q-15). Lowercased; port ignored in comparisons; no trailing dot.
+    host: str = Field(default="github.com", pattern=_HOSTNAME, max_length=255)
+    # Hosts a remote may push to (an SSH alias, a server whose SSH host is not its web host).
+    # Absent: [host]. Every push URL of the app's remote must be on one of them.
+    remote_hosts: list[Annotated[str, Field(pattern=_HOSTNAME, max_length=255)]] | None = Field(
+        default=None, min_length=1, max_length=16
+    )
+
+    @field_validator("host", mode="before")
+    @classmethod
+    def _lower(cls, value: object) -> object:
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @field_validator("remote_hosts", mode="before")
+    @classmethod
+    def _lower_all(cls, value: object) -> object:
+        if isinstance(value, list):
+            return [v.strip().lower() if isinstance(v, str) else v for v in value]
+        return value
+
+
 class LocalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: str = "local-1"
@@ -429,6 +466,8 @@ class LocalConfig(BaseModel):
     jev: JevEntry | None = None
     intake: IntakeEntry | None = None  # Work 034 S1a; absent = no front agent
     notifier: NotifierEntry | None = None  # Work 034 S1c; absent = no direct operator alert
+    # Work 034 OD-15: absent = GitHub (the behaviour before the module); null = no git host
+    git_host: GitHostEntry | None = Field(default_factory=GitHostEntry)
 
     def legacy_cells(self) -> dict[str, str]:
         """The legacy cells (IC-07): configured driver id -> its model."""
@@ -833,12 +872,31 @@ class LocalProductDeployment:
             [ref for app in self.service.apps.values() for ref in app.compositions.values()],
             signer=self._release_signer, key_id="local-authority",
         )  # fmt: skip
-        publisher = GitPublisher(self.service) if cfg.publish_mode != "none" else None
-        self.tracker = PullRequestTracker(self.service) if publisher is not None else None
+        # Work 034 OD-15: push, draft PR and PR outcome go through the configured git_host
+        # module; without one a publication holds (PUBLISH_NO_GIT_HOST) and no PR is read
+        self.git_host = self._git_host(cfg.git_host) if cfg.git_host is not None else None
+        publisher = (
+            GitPublisher(self.service, git_host=self.git_host)
+            if cfg.publish_mode != "none"
+            else None
+        )
+        self.tracker = (
+            PullRequestTracker(self.service, git_host=self.git_host)
+            if publisher is not None and self.git_host is not None
+            else None
+        )
         self.loop = ExecutionLoop(
             self.service, self.coordinator, publisher=publisher, tracker=self.tracker
         )
         self.notifier_pump = self._notifier(cfg.notifier) if cfg.notifier is not None else None
+
+    @staticmethod
+    def _git_host(entry: GitHostEntry) -> GitHost:
+        """The configured code host (Work 034 OD-15). Imported here, not at module load, so a
+        deployment without a git host never loads an implementation (removal test, M-13)."""
+        from .git_host.github import GitHubHost
+
+        return GitHubHost(host=entry.host, remote_hosts=entry.remote_hosts)
 
     def _notifier(self, entry: NotifierEntry) -> NotifierPump:
         """The operator's direct alert over the store outbox (Work 034 S1c, F-5)."""
@@ -1149,8 +1207,14 @@ class LocalProductDeployment:
         def pr_sync(a: Actor = Depends(actor)) -> Any:
             a.require("execution.approve")
             if self.tracker is None:
+                if self.config.publish_mode != "none" and self.git_host is None:
+                    raise Hold(NO_GIT_HOST, "No git_host module is configured; PRs are not read")
                 raise Hold("PUBLISH_DISABLED", "Publication is off in this deployment")
-            return {"recorded": self.tracker.sync()}
+            recorded = self.tracker.sync()
+            # PRs that could not be read with a coded reason (e.g. GIT_HOST_MISMATCH); only
+            # present when there are any, so the response is unchanged otherwise
+            unread = list(self.tracker.unread.values())
+            return {"recorded": recorded, **({"unread": unread} if unread else {})}
 
         app.include_router(router)
         if self.config.intake is not None:

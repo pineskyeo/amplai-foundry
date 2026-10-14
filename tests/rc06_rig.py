@@ -38,6 +38,7 @@ from amplai_foundry.runtime.execution.product import (
     app_capabilities,
 )
 from amplai_foundry.runtime.execution.worker import WorkCoordinator
+from amplai_foundry.runtime.git_host.github import GitHubHost, run_process
 from amplai_foundry.runtime.reference import PERMISSIONS
 from amplai_foundry.sandbox.git_workspace import GitWorkspaceManager
 from amplai_foundry.verification.runtime.patch_commands import (
@@ -494,3 +495,52 @@ def rig_two_apps(
     )
     rig.planner.multi_value = json.loads(json.dumps(MULTI_DRAFT))
     return rig, loop, container, consumer
+
+
+GITHUB_REMOTE = "https://github.com/o/r.git"
+
+
+def local_github() -> GitHubHost:
+    """The GitHub git host over a local bare remote: the remote URL lookup answers a github.com
+    URL (the host check, D-130); every other command runs for real."""
+
+    def run(
+        args: list[str], cwd: Path, env: dict[str, str] | None, timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        if args[:3] == ["git", "remote", "get-url"]:
+            return subprocess.CompletedProcess(args, 0, (GITHUB_REMOTE + "\n").encode(), b"")
+        return run_process(args, cwd, env, timeout)
+
+    return GitHubHost(run=run)
+
+
+class RecordingGitHub:
+    """The production PR path with no stand-in for the PR operations (Work 034 OD-15): git runs
+    for real against a local bare remote; ``git remote get-url`` answers a github.com URL and the
+    ``gh`` commands are recorded and answered like a host (no open PR, created PR urls numbered
+    from 1)."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+        self.created: list[str] = []
+
+    def __call__(
+        self, args: list[str], cwd: Path, env: dict[str, str] | None, timeout: float
+    ) -> subprocess.CompletedProcess[bytes]:
+        self.calls.append(list(args))
+        if args[:3] == ["git", "remote", "get-url"]:
+            return subprocess.CompletedProcess(args, 0, (GITHUB_REMOTE + "\n").encode(), b"")
+        if args[:3] == ["gh", "pr", "list"]:
+            return subprocess.CompletedProcess(args, 0, b"[]", b"")
+        if args[:3] == ["gh", "pr", "create"]:
+            url = f"https://github.com/o/r/pull/{len(self.created) + 1}"
+            self.created.append(url)
+            return subprocess.CompletedProcess(args, 0, (url + "\n").encode(), b"")
+        if args[:3] == ["gh", "pr", "comment"]:
+            return subprocess.CompletedProcess(args, 0, b"", b"")
+        if args[0] == "gh":
+            raise AssertionError(f"unexpected gh call {args}")
+        return run_process(args, cwd, env, timeout)
+
+    def of(self, *prefix: str) -> list[list[str]]:
+        return [c for c in self.calls if c[: len(prefix)] == list(prefix)]

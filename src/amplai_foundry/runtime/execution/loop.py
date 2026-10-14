@@ -421,7 +421,7 @@ class ExecutionLoop:
     def idle_tick(self) -> None:
         """Work done only when no goal is waiting: read draft PR outcomes when due."""
         if self.tracker is not None and self.tracker.due():
-            with contextlib.suppress(Exception):  # an outage of gh never stops the loop
+            with contextlib.suppress(Exception):  # a code-host outage never stops the loop
                 self.tracker.sync()
 
     def next_goal(self) -> str | None:

@@ -103,6 +103,33 @@ amplai work "로그인 실패 메시지를 한국어로 바꿔줘" --app <app>
 4. 실패하면 실패 출력과 함께 다시 시도한다. 첫 시도 포함 최대 3번, 승인부터 30분.
 5. 모두 통과하면 `amplai/<goal>` branch 를 push 하고 draft PR 을 만든다. merge 는 사람이 한다.
 
+push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15, D-130). `local.json` 에 `git_host` 가 없으면 운영자의
+`gh`·`git` 으로 `github.com` 에 게시한다. 다른 GitHub 주소는 `"git_host": {"host": "github.example.com"}` 로 준다(소문자로 바꿔
+저장한다).
+
+- 모듈은 쓰거나 읽기 전에 host 를 확인한다.
+  - push·PR 생성 전에는 app 설정 `remote` 가 push 하는 URL 전부(`git remote get-url --push --all`, `pushurl`·`pushInsteadOf`
+    반영)를 본다. 모두 `remote_hosts` 안에 있어야 한다.
+  - PR 댓글·상태 읽기 전에는 PR URL 을, PR 을 찾거나 만든 뒤에는 `gh` 가 돌려준 PR URL 을 `host` 와 비교한다.
+  - 다르면 `GIT_HOST_MISMATCH` 로 멈춘다(`details` 에 `configured`, `remote`). PR 이 이미 생긴 경우 그 URL 이 `pr_url` 로
+    들어간다.
+  - 대소문자, port, 끝의 `.` 는 보지 않는다. `https://`, `ssh://`, `git@host:` 형태를 읽는다. 로컬 경로 remote 는 host 가 없어
+    `GIT_HOST_MISMATCH` 다.
+  - app 설정 `remote` 를 URL(`https://`, `ssh://`, `git@host:path` 등)로 적었으면 `get-url` 없이 그 URL 의 host 를 바로
+    본다.
+  - checkout 에 없는 remote 이름, 읽을 수 없거나 시간이 넘은 remote 는 `PUBLISH_REMOTE` 다.
+  - 여러 app 의 goal 은 모든 app 의 remote 를 먼저 확인하고, 하나라도 다르면 아무 app 도 push 하지 않는다.
+- `remote_hosts`(선택): remote 가 push 해도 되는 host 목록이다. 없으면 `[host]` 다. SSH 별칭이나 SSH host 가 웹 host 와 다른
+  서버에 쓴다. 예: `"git_host": {"host": "github.example.com", "remote_hosts": ["ssh.github.example.com"]}`. 이때 PR URL 은 계속
+  `host` 로 확인한다.
+- `gh` 는 checkout 의 remote 에서 host 를 읽는다. `github.com` 이 아닌 host 에는 `gh` 명령에 `GH_HOST=<host>` 도 붙인다. 값은 설정
+  그대로(소문자, port 를 적었으면 port 포함)다. `gh` 가 port 를 받는지는 확인하지 않았다. 그 host 로 `gh auth login --hostname
+  <host>` 이 되어 있어야 한다. 사내 GitHub 에서의 동작은 아직 확인하지 않았다 (Q-15). 설정 host 끝에 `.` 를 붙이면 거절한다.
+- `amplai ops pr-sync` 는 코드가 있는 이유로 읽지 못한 PR(예: `GIT_HOST_MISMATCH`)을 응답의 `unread` 에 보여 준다. store 에는
+  남기지 않는다.
+- `"git_host": null` 이면 게시하지 않고 goal 의 `publication.error` 가 `PUBLISH_NO_GIT_HOST` 다. `amplai ops pr-sync` 도 같은
+  코드로 멈춘다.
+
 ## 메타하네스: 구현자 prompt 를 시험해 바꾸기 (`amplai meta`)
 
 구현자(IMPLEMENTER) prompt 를 바꾼 후보를 실제 driver 로 시험하고, 나쁘지 않을 때만 새 goal 에 쓰게 한다.
