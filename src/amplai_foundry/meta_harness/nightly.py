@@ -45,6 +45,15 @@ standing approval (``amplai meta nightly approve``, action ``nightly.explore``, 
   and the first unknown effect
   (IC-18: the root is listed in ``reconcile_pending``). Every stop but the budget ends ``run`` with
   ``Hold NIGHT_STOPPED`` (details: ``reason``, ``run_ref``) after the records are written.
+- **Controls** (Work 034 S1d, D-117, plan.md §3.8). With ``controls`` (``meta.control_store``) the
+  runner reads the product store's ``nightly-control`` records read-only at preflight, at every
+  phase boundary and in ``_night_reason`` (every trial guard and every check between units): a
+  stop (``operator_stop``, ``front_agent_stop``), a skipped date (``skipped``) or records it cannot
+  read (``control_unreadable``) stop the night; a tightened budget or stop time lowers ``budget``
+  and ``stop_at``. What it applied stays applied for the night and is recorded in
+  ``data.controls``. A real night also writes meta store events (N-6): ``nightly.started``,
+  ``nightly.ended`` (state, reason, trials), ``nightly.drift`` (cells), ``nightly.approval_pending``
+  (queued confirmations).
 - **Records.** ``nightly-plan`` (``nightplan-<date>``), the ``nightly-run`` head (``night-<date>``)
   and, at the end, a ``nightly-run`` record of the same id (the ref ``run`` returns), and
   ``quota-observation`` (``QuotaObserver.record``). A dry run writes ``nightplan-<date>-dry`` and
@@ -86,6 +95,7 @@ from .surrogate import AdditiveSurrogate, fold_over, plackett_burman_12, success
 
 if TYPE_CHECKING:
     from ..runtime.local_deployment import LocalProductDeployment
+    from ..runtime.nightly_control import NightControls
 
 PLAN_KIND = "nightly-plan"
 RUN_KIND = "nightly-run"
@@ -95,16 +105,23 @@ PHASES = (
     "preflight", "drift", "screening_design", "search", "confirmation", "dreaming", "dashboard",
 )  # fmt: skip
 SHARE_KEYS = ("drift", "screening_design", "search", "confirmation")
+# Work 034 S1d (N-4, plan.md §3.8): a stop by a nightly-control record (``runtime/nightly_control``)
+CONTROL_REASONS = frozenset(
+    {"front_agent_stop", "operator_stop", "skipped", "control_unreadable"}
+)  # fmt: skip
 # stop reasons that end ``run`` with Hold NIGHT_STOPPED; "budget" is a normal end
 HOLD_REASONS = frozenset(
     {"no_standing_approval", "standing_approval", "stop_at", "quota_signal", "kill_switch",
-     "preflight", "drift", "unknown_effect", "error"}
+     "preflight", "drift", "unknown_effect", "error", *CONTROL_REASONS}
 )  # fmt: skip
 # after these the night runs no further model turn (dreaming is skipped)
 NO_DREAM = frozenset(
     {"standing_approval", "stop_at", "quota_signal", "kill_switch", "preflight", "unknown_effect",
-     "error"}
+     "error", *CONTROL_REASONS}
 )  # fmt: skip
+# Work 034 S1d (N-6): the meta store events of a night (the front agent's feed reads them)
+EVENT_STARTED, EVENT_ENDED = "nightly.started", "nightly.ended"
+EVENT_DRIFT, EVENT_APPROVAL = "nightly.drift", "nightly.approval_pending"
 APPROVAL_CODES = frozenset({"STANDING_APPROVAL", "META_APPROVAL"})
 SNAPSHOT_FIELDS = ("provider_model_id", "driver_version", "image")
 ARMS = 2  # a search trial unit pairs the candidate with the champion
@@ -117,6 +134,7 @@ DRIFT_LOW_Q, DRIFT_HIGH_Q = 0.005, 0.995
 # D-129 (operator decision 2026-10-14): the paid drift measurement runs once every N nights
 DEFAULT_DRIFT_EVERY_NIGHTS = 7
 MAX_DRIFT_EVERY_NIGHTS = 31  # PR #91 review: a measurement is never older than a month
+DEFAULT_START_AT = "01:00"  # Work 034 S1d: meta.nightly.start_at (the tick's scheduled start)
 
 Guard = Callable[[int], None]
 
@@ -138,6 +156,9 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
     # D-129: the paid drift measurement (the drift calibration on drift_tasks) runs once every
     # drift_every_nights nights per cell; 1 measures every night (the behaviour before D-129)
     drift_every_nights: int = DEFAULT_DRIFT_EVERY_NIGHTS
+    # Work 034 S1d: the scheduled start; stop times of tick-started nights and of tightens are
+    # resolved against it
+    start_at: str = DEFAULT_START_AT
 
     def __post_init__(self) -> None:
         bad = []
@@ -168,6 +189,8 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             bad.append("max_parallel")
         if _stop_minutes(self.stop_at) is None:
             bad.append("stop_at")
+        if _stop_minutes(self.start_at) is None:
+            bad.append("start_at")
         if type(self.max_hours) not in (int, float) or not 0 < self.max_hours <= 24:
             bad.append("max_hours")
         if (
@@ -202,6 +225,7 @@ class NightlyConfig:  # keys = local.json meta.nightly (§12.2), shape §2.14
             stop_at=get("stop_at"),
             max_hours=_optional(entry, "max_hours", DEFAULT_MAX_HOURS),
             drift_every_nights=_optional(entry, "drift_every_nights", DEFAULT_DRIFT_EVERY_NIGHTS),
+            start_at=_optional(entry, "start_at", DEFAULT_START_AT),
         )
 
 
@@ -245,6 +269,15 @@ def drift_range(n: int, wilson_95: tuple[float, float] | list[float]) -> tuple[i
     count below the first or above the second is drift."""
     low, high = (min(1.0, max(0.0, float(x))) for x in wilson_95)
     return binomial_quantile(n, low, DRIFT_LOW_Q), binomial_quantile(n, high, DRIFT_HIGH_Q)
+
+
+def scheduled_start(date: str, start_at: str) -> float:
+    """The epoch of the scheduled start of the night ``date``: local ``start_at`` on that date."""
+    minutes = _stop_minutes(start_at)
+    if minutes is None:
+        raise RuntimeFault("NIGHTLY_CONFIG", "start_at is HH:MM")
+    day = datetime.strptime(date, "%Y-%m-%d")
+    return day.replace(hour=minutes // 60, minute=minutes % 60).astimezone().timestamp()
 
 
 def stop_epoch(start: float, stop_at: str) -> float:
@@ -401,6 +434,10 @@ class _Night:
     version: int = 0
     phase_used: dict[str, int] = field(default_factory=dict)
     search_blocked: bool = False
+    # Work 034 S1d: the night's budget after the controls (never above the plan's), and the stop a
+    # control set; both only ever tighten during the night (a later clear does not loosen them)
+    budget: int = 0
+    control_stop: str | None = None
 
 
 def _screened(value: Any) -> dict[str, list[Any]]:
@@ -443,8 +480,12 @@ class NightlyRunner:
         *,
         clock: Callable[[], float] = time.time,
         backend: NightlyBackend | None = None,
+        controls: Callable[[str, str | None], NightControls] | None = None,
     ) -> None:
-        """``backend`` defaults to ``LocalNightlyBackend.open(dep, self)`` on first use."""
+        """``backend`` defaults to ``LocalNightlyBackend.open(dep, self)`` on first use.
+        ``controls`` (Work 034 S1d) reads the product store's control records of a night
+        read-only (``nightly_control.ControlReader``); None when ``meta.control_store`` is not
+        configured, and then no control applies."""
         if not isinstance(config, NightlyConfig):
             raise RuntimeFault("NIGHTLY_CONFIG", "config is a NightlyConfig")
         self.dep, self.config, self.clock = dep, config, clock
@@ -454,6 +495,9 @@ class NightlyRunner:
         self._backend = backend
         self._standing_ref: dict[str, Any] | None = None
         self.quota = QuotaObserver(self.store, self.scope)
+        self.controls = controls
+        # what started the night (the tick sets it: the schedule or a start request), recorded
+        self.trigger: dict[str, Any] | None = None
 
     @property
     def backend(self) -> NightlyBackend:
@@ -618,7 +662,7 @@ class NightlyRunner:
         night = _Night(
             date=date, dry_run=dry_run, head_id=head_id, standing_ref=standing_ref,
             plan_ref=plan_ref, plan=plan, started=started,
-            stop_at=night_end(started, self.config.stop_at, self.config.max_hours),
+            stop_at=self._end(date, started),
             # the drift reservation of a measuring night is set by ``_drift`` (D-129)
             caps=phase_budget(plan["budget_trials"], plan["shares"], screening=screening),
             data={
@@ -628,8 +672,11 @@ class NightlyRunner:
                 "finished_at": None, "dry_run": dry_run, "started_at": now(), "phases": [],
                 "reconcile_pending": [], "recalibration": [], "findings": [],
                 "drift_cadence": None,
+                "controls": {"applied": [], "budget_trials": None, "stop_at": None,
+                             "trigger": self.trigger},
             },
             version=existing["row_version"] if existing is not None else 0,
+            budget=int(plan["budget_trials"]),
         )  # fmt: skip
         self._save(night, "running")
         error: BaseException | None = None
@@ -661,18 +708,98 @@ class NightlyRunner:
             )  # fmt: skip
         return ref
 
+    def _end(self, date: str, started: float) -> float:
+        """The night's end: min(``stop_at`` after its start, start + ``max_hours``). A night the
+        tick started (``trigger`` set) also ends by its scheduled night's end, the configured
+        ``stop_at`` resolved against the scheduled start (``meta.nightly.start_at``), so a late
+        start never moves the stop (PR #95 failure review P1). A direct ``run`` (no trigger) is
+        the operator's own and keeps the end from its actual start."""
+        end = night_end(started, self.config.stop_at, self.config.max_hours)
+        if self.trigger is not None:
+            begin = scheduled_start(date, self.config.start_at)
+            end = min(end, night_end(begin, self.config.stop_at, self.config.max_hours))
+        return end
+
     def _phases(self, night: _Night) -> None:
         night.data["phase"] = "preflight"
         self._preflight(night)
         night.data["phase"] = "drift"
         self._drift(night)
+        self._between(night)
         night.data["phase"] = "screening_design"
         self._screening(night)
+        self._between(night)
         confirmations = self._confirmations_due(night)
         night.data["phase"] = "search"
         self._search(night, extra=0 if confirmations else night.caps["confirmation"])
+        self._between(night)
         night.data["phase"] = "confirmation"
         self._confirm(night, confirmations)
+
+    def _between(self, night: _Night) -> None:
+        """Work 034 S1d (N-4): the controls are read again at every phase boundary too, so a
+        phase that runs no trial unit still sees a stop before the next phase starts."""
+        reason = self._apply_controls(night)
+        if reason is not None:
+            raise _Stop(reason)
+
+    def _apply_controls(self, night: _Night) -> str | None:
+        """Read the night's controls (read-only) and apply the strictest: a stop or skip stops the
+        night; a lower budget and an earlier stop time tighten it. Applied controls stay applied
+        for the rest of the night. Returns the control stop reason, or None. A read that fails
+        is ``control_unreadable`` (fail closed, AC-N5)."""
+        if night.control_stop is not None or self.controls is None:
+            return night.control_stop
+        try:
+            # the night's start: a front agent's clear written after it does not count
+            found = self.controls(night.date, night.data["started_at"])
+        except Exception as exc:
+            night.control_stop = "control_unreadable"
+            details = getattr(exc, "details", None)
+            night.data["controls"]["unreadable"] = getattr(exc, "code", type(exc).__name__)
+            # the root cause next to it (PR #95 failure review P3), e.g. NIGHT_CONTROL_STORE
+            night.data["controls"]["cause"] = (
+                details.get("code") if isinstance(details, dict) else None
+            )
+            return night.control_stop
+        record = night.data["controls"]
+        if found.stop is not None:
+            night.control_stop = found.stop
+            for r in found.records:
+                if r["action"] in ("stop", "skip") and r["control_id"] not in record["applied"]:
+                    record["applied"].append(r["control_id"])
+            return night.control_stop
+        # PR #95 failure review P1: a tightened stop time is resolved against the night's
+        # scheduled start (``nightly_control.scheduled_end``), never its actual start, so a night
+        # that starts late keeps the meaning of an accepted tighten; a tighten counts as applied
+        # only when it moved the budget or the end
+        begin = scheduled_start(night.date, self.config.start_at)
+        tightens = [r for r in found.records if r["action"] == "tighten"]
+        budget = min(
+            [night.budget]
+            + [r["limits"]["budget_trials"] for r in tightens if "budget_trials" in r["limits"]]
+        )
+        ends = {
+            r["control_id"]: stop_epoch(begin, r["limits"]["stop_at"])
+            for r in tightens if "stop_at" in r["limits"]
+        }  # fmt: skip
+        end = min([night.stop_at, *ends.values()])
+        for r in tightens:
+            moved_budget = budget < night.budget and r["limits"].get("budget_trials") == budget
+            moved_end = end < night.stop_at and ends.get(r["control_id"]) == end
+            if (moved_budget or moved_end) and r["control_id"] not in record["applied"]:
+                record["applied"].append(r["control_id"])
+        if budget < night.budget:
+            night.budget = budget
+            record["budget_trials"] = budget
+        if end < night.stop_at:
+            night.stop_at = end
+            record["stop_at"] = datetime.fromtimestamp(end).astimezone().isoformat()
+            if end <= night.started:
+                # the tightened stop passed before this night started: it ends here, honestly
+                night.control_stop = "stop_at"
+                record["stop_passed_before_start"] = True
+        return night.control_stop
 
     def _tail(self, night: _Night) -> None:
         """Dreaming and the dashboard refresh run after any stop (dreaming not after one that
@@ -692,11 +819,25 @@ class NightlyRunner:
                 raise
             return None
 
-    def _save(self, night: _Night, state: str) -> None:
+    def _save(
+        self, night: _Night, state: str, events: tuple[tuple[str, dict[str, Any]], ...] = ()
+    ) -> None:
+        """Write the night head; a real night's first write and ``events`` also write meta store
+        events in the same transaction (N-6)."""
+        started = night.version == 0
         with self.store.tx() as db:
             night.version = self.store.cas(
                 db, self.scope, RUN_KIND, night.head_id, night.version, state, night.data
             )
+            if night.dry_run:
+                return
+            if started:
+                # what started it (PR #95 review P3): the tick's trigger, None for a direct run
+                events = ((EVENT_STARTED, {"trigger": self.trigger}), *events)
+            for event_type, extra in events:
+                # N-6: fixed-schema payloads (dates, closed values, counts), never free text
+                self.store.event(db, self.scope, RUN_KIND, night.head_id, event_type,
+                                 {"date": night.date, **extra})  # fmt: skip
 
     def _phase(self, night: _Night, name: str, state: str, **details: Any) -> None:
         night.data["phase"] = name
@@ -720,7 +861,18 @@ class NightlyRunner:
         night.data["finished_at"] = now()
         reason = night.data["stopped"]
         state = "stopped" if reason in HOLD_REASONS else "finished"
-        self._save(night, state)
+        drifted = sorted(
+            cell for cell, value in (night.data.get("drift") or {}).items()
+            if isinstance(value, dict) and value.get("status") in ("changed", "outside_band")
+        )  # fmt: skip
+        events: list[tuple[str, dict[str, Any]]] = [
+            (EVENT_ENDED, {"state": state, "reason": reason, "trials": night.data["trials"]})
+        ]
+        if drifted:
+            events.append((EVENT_DRIFT, {"cells": drifted}))
+        if night.data["queued_confirmations"]:
+            events.append((EVENT_APPROVAL, {"queued": len(night.data["queued_confirmations"])}))
+        self._save(night, state, tuple(events))
         revision = 1 + max(
             (r["revision"] for r, _v in self.store.list_objects(self.scope, RUN_KIND)
              if r["id"] == night.head_id),
@@ -738,7 +890,7 @@ class NightlyRunner:
             if type(trials) is not int or trials < 0:
                 raise RuntimeFault("NIGHT_GUARD", "guard takes a trial count")
             reason = self._night_reason(night)
-            if reason is None and night.data["trials"] + trials > night.plan["budget_trials"]:
+            if reason is None and night.data["trials"] + trials > night.budget:
                 reason = "budget"
             if reason is None and night.phase_used.get(phase, 0) + trials > self._cap(night, phase):
                 reason = "phase_share"
@@ -752,6 +904,9 @@ class NightlyRunner:
             self.approvals.standing(night.standing_ref)
         except Hold:
             return "standing_approval"
+        control = self._apply_controls(night)  # S1d: may also bring stop_at earlier
+        if control is not None:
+            return control
         if float(self.clock()) >= night.stop_at:
             return "stop_at"
         if self.backend.kill_switch():
@@ -768,7 +923,7 @@ class NightlyRunner:
             0,
             min(
                 self._cap(night, phase) - night.phase_used.get(phase, 0),
-                int(night.plan["budget_trials"]) - int(night.data["trials"]),
+                night.budget - int(night.data["trials"]),
             ),
         )
 
@@ -777,7 +932,7 @@ class NightlyRunner:
         reason = self._night_reason(night)
         if reason is not None:
             raise _Stop(reason)
-        if night.data["trials"] >= night.plan["budget_trials"] and night.plan["budget_trials"]:
+        if night.data["trials"] >= night.budget and night.plan["budget_trials"]:
             raise _Stop("budget")
 
     def _unit(
@@ -853,10 +1008,18 @@ class NightlyRunner:
     # -- phases -----------------------------------------------------------------------------------
     def _preflight(self, night: _Night) -> None:
         night.data["phase"] = "preflight"
+        # Work 034 S1d (N-4, AC-N3, AC-N5): a stop, a skipped date or unreadable controls stop the
+        # night before anything else; a tightened budget or stop time applies from here on
+        control = self._apply_controls(night)
+        if control is not None:
+            self._phase(night, "preflight", "stopped", reason=control)
+            raise _Stop(control)
         if self.backend.kill_switch():
             self._phase(night, "preflight", "stopped", reason="kill_switch")
             raise _Stop("kill_switch")
         problems = self.backend.preflight(self.config.cells)
+        # the configured budget (a tightened one may be smaller: a measuring night then spends it
+        # all on drift, which D-129 already counts as an incomplete measurement)
         fit = self._drift_fit()
         if fit is not None:
             problems = [*problems, fit]
@@ -988,7 +1151,7 @@ class NightlyRunner:
             checks[cell] = check
         reserve = 0 if night.dry_run else tasks * len(measuring)
         night.caps = phase_budget(
-            int(night.plan["budget_trials"]), night.plan["shares"],
+            night.budget, night.plan["shares"],
             screening=night.plan["shares"]["screening_design"] > 0, drift=reserve,
         )  # fmt: skip
         night.data["drift_cadence"] = {

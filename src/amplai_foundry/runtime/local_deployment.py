@@ -111,7 +111,15 @@ SERVICE_PERMISSIONS = frozenset(
     }
 )
 OPERATOR_PERMISSIONS = frozenset(
-    {"goal.submit", "runtime.read", "execution.approve", "goal.steer", "goal.cancel"}
+    {
+        "goal.submit",
+        "runtime.read",
+        "execution.approve",
+        "goal.steer",
+        "goal.cancel",
+        # Work 034 S1d (N-2, N-3): the operator controls the nightly loop on the same path
+        "nightly.control",
+    }
 )
 
 
@@ -236,6 +244,38 @@ class RolesEntry(BaseModel):
     proposer: list[str] | None = Field(default=None, min_length=1, max_length=64)
 
 
+class StartWindowEntry(BaseModel):
+    """A daily local window [start, end); it may wrap past midnight (22:00-06:00)."""
+
+    model_config = ConfigDict(extra="forbid")
+    start: str = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    end: str = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+
+    @model_validator(mode="after")
+    def _span(self) -> StartWindowEntry:
+        if self.start == self.end:
+            raise ValueError("agent_start_window start and end differ")
+        return self
+
+
+class ControlStoreEntry(BaseModel):
+    """Work 034 S1d (N-4, plan.md §3.8 ``meta.control_store``): where the night reads the
+    ``nightly-control`` records, read-only: the product deployment's runtime root and its scope.
+    Absent: no control records are read (the night runs as before S1d)."""
+
+    model_config = ConfigDict(extra="forbid")
+    runtime_root: str
+    scope: dict[str, str]
+
+    @model_validator(mode="after")
+    def _scope(self) -> ControlStoreEntry:
+        try:
+            Scope.parse(self.scope)
+        except RuntimeFault as exc:
+            raise ValueError(f"control_store.scope: {exc.message}") from exc
+        return self
+
+
 class NightlyEntry(BaseModel):
     """= ``NightlyConfig`` (§3.13); the canonical shape is the ``nightly-plan`` record (§2.14)."""
 
@@ -257,6 +297,14 @@ class NightlyEntry(BaseModel):
     max_hours: float = Field(default=8.0, gt=0, le=24)
     # D-129: the paid drift measurement runs once every drift_every_nights nights (1: every night)
     drift_every_nights: int = Field(default=7, ge=1, le=31)
+    # Work 034 S1d (N-1): the scheduled start the tick (``amplai meta nightly tick``) starts a
+    # night at; 01:00 is the time the launchd agent ran ``run`` at before the tick
+    start_at: str = Field(default="01:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    # N-9: the daily window in which a front agent's start request has effect; only the human
+    # operator sets it. Absent: a front agent cannot start a night.
+    agent_start_window: StartWindowEntry | None = None
+    # N-9 frequency: front-agent start requests per night, cleared ones included
+    agent_start_limit: int = Field(default=1, ge=1, le=10)
 
     @model_validator(mode="after")
     def _shares(self) -> NightlyEntry:
@@ -296,6 +344,7 @@ class MetaEntry(BaseModel):
     stage_template: str = "default_v1"
     nightly: NightlyEntry | None = None
     calibration_import: CalibrationImportEntry = Field(default_factory=CalibrationImportEntry)
+    control_store: ControlStoreEntry | None = None  # Work 034 S1d: the product's control records
 
 
 DataClass = Literal["public", "internal", "confidential", "restricted"]
@@ -512,6 +561,21 @@ class ApproveBody(BaseModel):
     expected_contract_ref: dict[str, Any]
 
 
+def mark_identity(store: Store, scope: Scope, cfg: LocalConfig) -> None:
+    """Work 034 S1d (PR #95 review P2-1, failure review P3): record which deployment owns this
+    store now, one value per store (``Store.set_identity``): its current scope and ``meta`` when
+    the config has ``meta.nightly`` (a separate meta deployment, §8.8), else ``product``. Before
+    this the store named no scope, and product and meta deployments are the same class, so nothing
+    told a reader which store it opened. Written on every boot (a scope change replaces it); an
+    older store gets it on its next boot."""
+    from .nightly_control import identity_value
+
+    role = "meta" if cfg.meta is not None and cfg.meta.nightly is not None else "product"
+    value = identity_value(scope, role)
+    if store.identity() != value:
+        store.set_identity(value)
+
+
 class LocalProductDeployment:
     def __init__(self, config_path: Path, *, start_loop: bool = True) -> None:
         self.path = Path(config_path).expanduser().absolute()
@@ -531,6 +595,7 @@ class LocalProductDeployment:
             raise
 
     def _build(self, cfg: LocalConfig, start_loop: bool) -> None:
+        mark_identity(self.store, self.scope, cfg)
         self.artifacts = ArtifactStore(self.store)
         signer = read_key(self.local(cfg.signing_key_file))
         verifier_signer = read_key(self.local(cfg.verifier_key_file))

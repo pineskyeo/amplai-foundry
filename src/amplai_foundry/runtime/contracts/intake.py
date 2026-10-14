@@ -58,6 +58,12 @@ INTAKE_PERMISSIONS = frozenset(
         "goal.cancel",
     }
 )
+# Work 034 S1d (N-2, D-117): the narrow nightly-loop control (stop, skip, tighten, the N-9 start,
+# clearing its own). Inside the ceiling an adapter may be configured with, never granted by
+# default: the operator names it in ``intake.adapters[].permissions`` (a pre-S1c single
+# ``intake`` entry keeps INTAKE_PERMISSIONS, so no existing front agent gains it).
+NIGHTLY_CONTROL = "nightly.control"
+INTAKE_CEILING = INTAKE_PERMISSIONS | {NIGHTLY_CONTROL}
 
 # steering-event.schema.json ``kind``
 STEERING_KINDS = frozenset(
@@ -88,10 +94,10 @@ INTAKE_QUESTION_KINDS = frozenset(
 
 
 def check_adapter(adapter_id: str, permissions: frozenset[str]) -> None:
-    """An adapter id is well formed and its permission ceiling stays inside H-2 (F-2)."""
+    """An adapter id is well formed and its permission ceiling stays inside H-2 and N-2 (F-2)."""
     if not isinstance(adapter_id, str) or not ADAPTER_ID.fullmatch(adapter_id):
         raise RuntimeFault("INTAKE_ADAPTER", "An adapter id is [a-z][a-z0-9_-]{0,31}")
-    beyond = set(permissions) - INTAKE_PERMISSIONS
+    beyond = set(permissions) - INTAKE_CEILING
     if beyond:
         raise RuntimeFault(
             "INTAKE_PERMISSIONS",

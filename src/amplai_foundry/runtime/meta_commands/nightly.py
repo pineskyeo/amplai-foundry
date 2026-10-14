@@ -1,5 +1,6 @@
-"""``amplai meta nightly approve | revoke | run | status | print-agent`` and ``amplai meta quota``
-(Work 033 S12, interfaces.md §8.6, §8.8, §8.9, §12.1; IC-17 and IC-18 provisional).
+"""``amplai meta nightly approve | revoke | run | tick | status | print-agent`` and ``amplai meta
+quota`` (Work 033 S12, interfaces.md §8.6, §8.8, §8.9, §12.1; IC-17 and IC-18 provisional; Work 034
+S1d for ``tick``, the read-only ``status`` and the controls).
 
 - ``approve`` / ``revoke``: the human operator (``local_deployment.meta_operator``, permission
   ``nightly.approve``) issues or revokes the standing approval ``nightly.explore`` bound to the
@@ -14,9 +15,16 @@
   agent needs no extra argument; a cell without one stops the night at preflight
   (``QUALIFIED_EXECUTOR_REQUIRED``). ``--per-trial-tokens``, ``--basis`` and ``--evidence`` here
   still qualify the first cell as the operator.
-- ``status``: the night's head and the current standing approval.
+  With ``meta.control_store`` the night reads the product's ``nightly-control`` records read-only
+  (``runtime/nightly_control.py``) and stops when it cannot (Work 034 S1d, D-117).
+- ``tick`` (Work 034 S1d, N-1): what the service manager runs every five minutes; it starts
+  tonight's night at its scheduled start or on a front agent's start request that meets N-9, and
+  otherwise ends at once.
+- ``status``: the night's head, the current standing approval and the controls, read from the meta
+  store opened read-only (no boot, no owner lock), so it works while a night runs (N-5, AC-N4).
 - ``print-agent``: prints the launchd agent filled from
-  ``deployment/launchd/ai.amplai.meta-nightly.plist.template``; it installs nothing.
+  ``deployment/launchd/ai.amplai.meta-nightly.plist.template`` (the tick every 300 seconds); it
+  installs nothing.
 - ``amplai meta quota``: the quota windows observed now and the pilot headroom of the nights
   recorded since ``--since`` (§8.6).
 """
@@ -25,8 +33,9 @@ from __future__ import annotations
 
 import os
 import shutil
-from collections.abc import Iterator
-from contextlib import contextmanager
+import time
+from collections.abc import Callable, Iterator
+from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -119,6 +128,18 @@ def today() -> str:
     return datetime.now().astimezone().date().isoformat()
 
 
+def tonight(cfg: Any) -> str:
+    """The night now belongs to (``nightly_control.night_date`` with ``meta.nightly.start_at``):
+    the default date of ``run`` and ``status`` (PR #95 failure review P3), the date the tick
+    uses. Without ``meta.nightly`` the calendar date."""
+    from ..nightly_control import night_date
+
+    nightly = getattr(getattr(cfg, "meta", None), "nightly", None)
+    if nightly is None:
+        return today()
+    return night_date(time.time(), nightly.start_at)
+
+
 def approve(
     dep: Any, *, nights: int, budget_trials: int, max_tokens: int, max_wall_seconds: int
 ) -> dict[str, Any]:
@@ -171,10 +192,13 @@ def revoke(dep: Any, approval_id: str | None) -> dict[str, Any]:
 
 
 def status(dep: Any, date: str) -> dict[str, Any]:
+    return _status(dep.store, dep.scope, dep.meta_local.approvals, date)
+
+
+def _status(store: Any, scope: Any, approvals: Any, date: str) -> dict[str, Any]:
     from ...meta_harness.nightly import RUN_KIND
 
     out: dict[str, Any] = {"date": date, "standing_ref": None, "night": None}
-    approvals = dep.meta_local.approvals
     ref = approvals.current_standing()
     if ref is not None:
         policy = approvals.standing(ref)["policy"]
@@ -182,7 +206,7 @@ def status(dep: Any, date: str) -> dict[str, Any]:
         out["standing"] = {k: policy[k] for k in ("cells", "budget_trials", "valid_until")}
     for head_id in (f"night-{date}", f"night-{date}-dry"):
         try:
-            head = dep.store.head(dep.scope, RUN_KIND, head_id)
+            head = store.head(scope, RUN_KIND, head_id)
         except RuntimeFault as exc:
             if exc.code != "NOT_FOUND":
                 raise
@@ -203,6 +227,197 @@ def status(dep: Any, date: str) -> dict[str, Any]:
             },
         }
     return out
+
+
+# -- Work 034 S1d: read-only status, the controls and the tick ------------------------------------
+def load_config(config: Path) -> tuple[Path, Any]:
+    """(``--config`` absolute, its ``LocalConfig``) without booting the deployment (no owner lock,
+    nothing installed); the server's config is refused (``meta_config``)."""
+    from ..local_deployment import LocalConfig
+
+    path = meta_config(config)
+    try:
+        cfg = LocalConfig.model_validate_json(path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise RuntimeFault("LOCAL_INPUT", f"--config is not a readable config: {exc}") from exc
+    if cfg.schema_version != "local-1":
+        raise Hold("CONFIG_VERSION", "Unknown local product configuration")
+    return path, cfg
+
+
+def _under(path: Path, value: str) -> Path:
+    root = Path(value).expanduser()
+    return (root if root.is_absolute() else path.parent / root).absolute()
+
+
+def control_reader(path: Path, cfg: Any) -> Any:
+    """The night's read-only reader of the product's control records (``meta.control_store``), or
+    None when the config names none (then no control applies, as before S1d). A control store
+    that is the meta deployment's own runtime root reads as unreadable (PR #95 review P2-1)."""
+    from ..nightly_control import ControlReader
+    from ..storage.store import Scope
+
+    entry = getattr(getattr(cfg, "meta", None), "control_store", None)
+    if entry is None:
+        return None
+    return ControlReader(
+        _under(path, entry.runtime_root),
+        Scope.parse(entry.scope),
+        meta_root=_under(path, cfg.runtime_root),
+    )
+
+
+class TickBusy(Exception):
+    """The meta deployment could not be opened because another process owns its store."""
+
+
+def status_readonly(config: Path, date: str | None = None) -> dict[str, Any]:
+    """``status`` read-only (N-5, AC-N4): the meta store opened with ``Store(readonly=True)`` and
+    no boot, so it answers while a night holds the store (``ACTIVE_OWNER``). With
+    ``meta.control_store`` it also shows the controls binding the night (or that they cannot be
+    read)."""
+    from ..execution.meta_local import LocalMetaApprovals
+    from ..storage.store import Scope, Store
+
+    path, cfg = load_config(config)
+    date = date or tonight(cfg)
+    root = _under(path, cfg.runtime_root)
+    if not (root / "runtime.sqlite3").is_file():
+        raise RuntimeFault("NOT_FOUND", "No runtime store at the configured runtime root")
+    scope = Scope.parse(cfg.scope)
+    with Store(root, readonly=True) as store:
+        out = _status(store, scope, LocalMetaApprovals(store, scope), date)
+    reader = control_reader(path, cfg)
+    if reader is not None:
+        try:
+            found = reader(date)
+        except Hold as exc:
+            out["controls"] = {"unreadable": exc.code}
+        else:
+            out["controls"] = {
+                "stop": found.stop,
+                "budget_trials": found.budget_trials,
+                "stop_at": list(found.stop_at),
+                "start_requests": [r["control_id"] for r in found.starts],
+                "applied": list(found.applied),
+            }
+    return out
+
+
+def run_night(
+    dep: Any, date: str, *, dry_run: bool = False, trigger: dict[str, Any] | None = None,
+    qualify: tuple[int, str, list[str]] | None = None,
+) -> dict[str, Any]:  # fmt: skip
+    """One night on the opened meta deployment, with the controls of ``meta.control_store``."""
+    from ...meta_harness.nightly import LocalNightlyBackend, NightlyRunner
+
+    runner = NightlyRunner(
+        dep, nightly_config(dep), controls=control_reader(Path(dep.path), dep.config)
+    )
+    runner.trigger = trigger
+    backend = LocalNightlyBackend.open(dep, runner)
+    backend.proposer_run, backend.dream_turn = _proposer_hooks(backend.ops)
+    runner._backend = backend
+    if qualify is not None:
+        per_trial_tokens, basis, evidence = qualify
+        backend.ops.qualify_executor(basis, list(evidence), per_trial_tokens)
+    ref: dict[str, Any] = runner.run(date, dry_run=dry_run)
+    return ref
+
+
+def tick(
+    config: Path,
+    *,
+    clock: Callable[[], float] = time.time,
+    start: Callable[[str, dict[str, Any]], Any] | None = None,
+) -> dict[str, Any]:
+    """The service manager's five-minute tick (N-1, D-117, D-118): start tonight's night when its
+    scheduled start (``meta.nightly.start_at``) has come and its stop has not, or when a front
+    agent's start request still meets N-9 (``nightly_control.start_refusal``, checked again here
+    right before the start); otherwise end at once. One date runs once (``NIGHT_STATE``).
+
+    Everything before the start is read-only. A night already recorded for the date ends the tick
+    (``ran``). When the meta deployment cannot be opened because another process owns its store
+    (a calibration, a manual command), the tick ends with ``busy`` (``TickBusy``) and the next
+    tick tries again: for the schedule, every five minutes until the scheduled night's end
+    (``nightly_control.scheduled_end``: min(``stop_at``, start + ``max_hours``, each tightened
+    stop time), all resolved against the scheduled start), after which that night does not run;
+    for a start
+    request, while it still meets N-9 (the window above all). Only the open is ``busy``: an
+    ``ACTIVE_OWNER`` raised later, while the night runs, is the night's own result and propagates
+    (PR #95 review P3). ``start`` (tests) raises ``TickBusy`` to say the open failed."""
+    from ..nightly_control import (
+        MetaView,
+        NightPolicy,
+        night_date,
+        scheduled_end,
+        scheduled_start,
+        standing_covers,
+        start_refusal,
+    )
+    from ..storage.store import Scope
+
+    path, cfg = load_config(config)
+    nightly = cfg.meta.nightly if cfg.meta is not None else None
+    if nightly is None:
+        raise Hold("NIGHT_CONFIG", "The config has no meta.nightly: not a meta deployment")
+    policy = NightPolicy.from_entry(nightly)
+    moment = float(clock())
+    date = night_date(moment, policy.start_at)
+    meta = MetaView(_under(path, cfg.runtime_root), Scope.parse(cfg.scope), policy)
+    state = meta.read([date])
+    if date in state.nights:
+        return {"tick": "ran", "date": date, "state": state.nights[date].get("state")}
+    begin = scheduled_start(date, policy.start_at)
+    reader = control_reader(path, cfg)
+    controls, unreadable = None, None
+    if reader is not None:
+        try:
+            controls = reader(date)
+        except Hold as exc:
+            unreadable = exc.code  # a scheduled night still starts and stops on it, recorded
+    # PR #95 failure review P1: the window ends at the tightened stop too, every stop time
+    # resolved against the scheduled start
+    end = scheduled_end(date, policy, controls.stop_at if controls is not None else ())
+    trigger: dict[str, Any]
+    if begin <= moment < end:
+        trigger = {"by": "schedule", "start_at": policy.start_at}
+    else:
+        if reader is None:
+            return {"tick": "idle", "date": date}
+        if controls is None:
+            return {"tick": "idle", "date": date, "reason": unreadable}
+        if not controls.starts:
+            return {"tick": "idle", "date": date}
+        why = start_refusal(now_epoch=moment, date=date, policy=policy, meta=state,
+                            controls=controls)  # fmt: skip
+        if why is not None:
+            return {"tick": "idle", "date": date, "start_refused": why}
+        first = controls.starts[0]
+        trigger = {
+            "by": "start_request", "control_id": first["control_id"],
+            "issued_by": first["issued_by"].get("authn_context_ref"),
+        }  # fmt: skip
+    why = standing_covers(state.standing, policy)
+    if why is not None:  # the run would hold before writing anything: say so once per tick
+        return {"tick": "idle", "date": date, "reason": why}
+    if start is None:
+
+        def start(night: str, why: dict[str, Any]) -> Any:
+            with ExitStack() as stack:
+                try:
+                    dep = stack.enter_context(opened_meta(config))
+                except Hold as exc:
+                    if exc.code == "ACTIVE_OWNER":
+                        raise TickBusy from exc
+                    raise
+                return run_night(dep, night, trigger=why)
+
+    try:
+        ref = start(date, trigger)
+    except TickBusy:
+        return {"tick": "busy", "date": date}
+    return {"tick": "started", "date": date, "trigger": trigger, "run_ref": ref}
 
 
 def print_agent(*, amplai: str | None, config: Path, path_env: str | None = None) -> str:
@@ -277,32 +492,38 @@ def register(meta: typer.Typer, guarded: Guarded) -> None:
         config: MetaConfigOption = DEFAULT_META_CONFIG,
     ) -> None:
         """Run one night as amplai-meta-nightly (Hold NIGHT_STOPPED without a standing approval)."""
-        from ...meta_harness.nightly import LocalNightlyBackend, NightlyRunner
 
         def call() -> Any:
+            qualify = None
+            if per_trial_tokens is not None:
+                if basis is None or not evidence:
+                    raise RuntimeFault(
+                        "LOCAL_INPUT", "--per-trial-tokens needs --basis and --evidence"
+                    )
+                qualify = (per_trial_tokens, basis, list(evidence))
             with opened_meta(config) as dep:
-                runner = NightlyRunner(dep, nightly_config(dep))
-                backend = LocalNightlyBackend.open(dep, runner)
-                backend.proposer_run, backend.dream_turn = _proposer_hooks(backend.ops)
-                runner._backend = backend
-                if per_trial_tokens is not None:
-                    if basis is None or not evidence:
-                        raise RuntimeFault(
-                            "LOCAL_INPUT", "--per-trial-tokens needs --basis and --evidence"
-                        )
-                    backend.ops.qualify_executor(basis, list(evidence), per_trial_tokens)
-                ref = runner.run(date or today(), dry_run=dry_run)
+                ref = run_night(dep, date or tonight(dep.config), dry_run=dry_run, qualify=qualify)
                 return {"run_ref": ref}
+
+        guarded(call)
+
+    @group.command("tick")
+    def tick_cmd(config: MetaConfigOption = DEFAULT_META_CONFIG) -> None:
+        """The service manager's 5-minute tick: start tonight's night when it is due (schedule or
+        a front agent's start request inside the standing approval, N-9), else end at once."""
+
+        def call() -> Any:
+            return tick(config)
 
         guarded(call)
 
     @group.command("status")
     def status_cmd(date: DateOption = None, config: MetaConfigOption = DEFAULT_META_CONFIG) -> None:
-        """The night's head and the current standing approval."""
+        """The night's head, the current standing approval and the controls, read-only (works
+        while a night runs)."""
 
         def call() -> Any:
-            with opened_meta(config) as dep:
-                return status(dep, date or today())
+            return status_readonly(config, date)
 
         guarded(call)
 

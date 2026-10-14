@@ -202,8 +202,8 @@ push·draft PR·PR 상태 읽기는 `git_host` 모듈이 한다 (Work 034 OD-15,
 | 10 | `$A meta approve-stage ID --stage holdout --config $M` | holdout 을 돌린다. 한 번 쓴다 |
 | 11 | `$A meta approve-canary ID --tasks a,b --max-trial-tokens N --config $M` → `run-canary ID --config $M` → `promote ID --config $M` | corpus v2 proposal 의 canary 과제는 development 나 validation 과제만이다. 플래그 없는 `run-canary` 는 저장된 executor 자격을 쓴다(IC-29, provisional). 실패하면 canary 가 멈추고 release 는 그대로이며 `reject` 가 정상 결과다. 되돌리기는 `rollback ID` |
 | 12 | `$A meta nightly approve --nights N --budget-trials B --max-tokens N --max-wall-seconds N --config $M` | 야간 standing approval 을 발급한다(최대 7밤) |
-| 13 | `$A meta nightly print-agent --config $M` 의 출력을 `~/Library/LaunchAgents/` 에 복사하고 `launchctl bootstrap gui/$(id -u) <파일>` | launchd 로 매일 밤 돌린다. 자동 설치는 없다. 수동 실행은 `$A meta nightly run --config $M` (`--dry-run` 이면 trial 을 돌리지 않는다) |
-| 14 | `$A meta nightly status --config $M` / `$A meta nightly revoke --config $M` | 그 밤의 상태와 standing approval 을 본다 / 철회한다(도는 밤은 다음 trial guard 에서 멈춘다) |
+| 13 | `$A meta nightly print-agent --config $M` 의 출력을 `~/Library/LaunchAgents/` 에 복사하고 `launchctl bootstrap gui/$(id -u) <파일>` | launchd 가 5분마다 `$A meta nightly tick --config $M` 을 돌린다. tick 은 `meta.nightly.start_at`(기본 01:00)이 됐거나 앞단 에이전트의 유효한 시작 요청(N-9)이 있을 때만 그날 밤을 시작하고, 아니면 바로 끝난다. 자동 설치는 없다. 수동 실행은 `$A meta nightly run --config $M` (`--dry-run` 이면 trial 을 돌리지 않는다). `--date` 를 빼면 지금의 밤 날짜로 돈다. 정오 뒤에는 그것이 **다음** 밤이고, 날짜당 한 번이라 그 예정된 밤을 써 버린다. 낮의 임시 실행은 `--date YYYY-MM-DD` 를 준다 |
+| 14 | `$A meta nightly status --config $M` / `$A meta nightly revoke --config $M` | 그 밤의 상태, standing approval, 제어 기록(`meta.control_store` 가 있을 때)을 읽기 전용으로 본다(밤이 도는 중에도 된다) / 철회한다(밤이 store 를 잡고 있는 동안은 `ACTIVE_OWNER` 로 막힌다) |
 | 15 | `$A meta dashboard --out ~/.amplai/meta/dashboard --config $M` | 저장된 record 로 정적 HTML 을 쓴다(읽기 전용). approvals 페이지에 대기 중인 승인이 있다 |
 | 16 | `$A meta quota --since YYYY-MM-DD --config $M` | pilot 밤의 quota 관측, 여유, 제안 B 를 본다 |
 | | `$A meta reconcile ID --stage S` 또는 `--allocation A --tokens N --cost N --receipt F --config $M` | 끊긴 stage 실험이나 unknown 할당을 정리한다 |
