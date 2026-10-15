@@ -56,7 +56,7 @@ the operator confirms it before the slice that implements it starts (the slice i
 | IC-17 | **Nightly authority (class C).** The standing approval is a human-issued `meta-approval` with action `nightly.explore`, issued with a new permission `nightly.approve` that only the human operator holds (`META_OPERATOR_PERMISSIONS`). Within it a service identity `amplai-meta-nightly` (Actor kind `service`; permissions `experiment.approve`, `experiment.run`, `corpus.read`, `execution.approve` — never `corpus.holdout.evaluate`, `canary.*`, `release.*`, `harness.review`, `harness.propose`, `experiment.reconcile`) issues derived approvals through `LocalMetaApprovals.issue_standing` (§8.8), which checks the plan against the standing policy and computes the subject digest from the plan itself; each derived approval records `standing_ref`. `LocalMetaApprovals.check` accepts a non-human issuer only for that subject id and only while the standing approval is unrevoked and inside its dates. Trial goals of those experiments are approved by the same service identity; `approve` and `LocalTrialExecutor` accept it only for trial goals. | `issue` accepts only a human actor and `check` compares only scope, action, digest, `approved_by.kind` and revocation (`runtime/execution/meta_local.py:60-68,100-122`), so approvals written by an unattended process under a human actor are indistinguishable from the operator's. `approve` requires `execution.approve` and a human (`runtime/execution/product.py:1158-1161`); `LocalTrialExecutor` refuses a non-human operator (`meta_harness/local_executor.py:108-109`). `_guard` re-runs `approval_check` before every trial (`evaluation/service.py:103-110,255`), so a revocation stops the night at the next trial. Holdout `select` requires `corpus.holdout.evaluate` (`evaluation/corpus.py:134-135`), which the service identity lacks. | S12 |
 | IC-18 | **Measured safety and unknown-effect counters.** (a) With `evaluator_version_ref`, only candidate-arm safety failures give `regression`; baseline-arm safety failures give `inconclusive` with reason `baseline_safety_failure` (legacy plans unchanged, G3). The run still stops dispatch on any safety failure or unknown effect (`evaluation/service.py:404-405`). (b) The nightly runner stops the night at the first unknown effect (`NIGHT_STOPPED`, reason `unknown_effect`) and lists the proposal root as "reconcile pending" on `approvals.html`. (c) `hack_guards` drops `test_file_edits`; the per-trial metric stays (§9.10). **Open for the operator (class C):** the local deployment has no reconcile path today — `EvolutionBudget.reconcile` needs `experiment.reconcile` (`meta_harness/budget.py:200`), held by neither `OPERATOR_PERMISSIONS` (`runtime/local_deployment.py:89`) nor `META_OPERATOR_PERMISSIONS` (`meta_local.py:36-50`); adding it and an `amplai meta reconcile` command is an authority change. Until then an unknown effect ends that proposal root. | `analyze_pairs` sums safety over both arms and fails on any (`evaluation/analysis.py:158,203-205`); an unknown effect settles the allocation as uncertain (`evaluation/service.py:366-377`) and every later `reserve` of that root holds `META_USAGE_UNKNOWN` (`meta_harness/budget.py:88-92`); a trial that edits a test is already a safety failure (§8.3); the counters are constant 0 today (`meta_harness/local_executor.py:148-149,177-178`). | S1, S8, S12 |
 | IC-19 | **Ablation and removal-sweep proposals are derived.** (A, proposed) They are never screened and their evolution head stays `draft`; `StageRunner` freezes their stage experiments directly through `EvaluationService` after checking that every manifest slot of the variant equals the parent candidate's or the parent baseline's slot (no new component content, so the parent's screen covered its protected-surface and leak checks); `Hold DERIVED_PROPOSAL` otherwise. A derived proposal is never approved for an offline experiment or canary; a removal candidate is re-proposed as an ordinary proposal (review, screen, holdout). (B) Derived proposals inherit the parent's `review_ref` and pass `screen` (changes the `screen` gate). The operator decides before S11. | `screen` holds `CODE_REVIEW_REQUIRED` for class B without a human review (`meta_harness/service.py:245-249`), which would stop the auto ablation stage and the nightly sweep; `EvaluationService.freeze` reads the proposal record but never the evolution head (`evaluation/service.py:118-181`). | S11, S13 |
-| IC-20 | **Focused stage when informative tasks are short.** Proposed default: `StageRunner.plan` holds `NO_INFORMATIVE_TASKS` when a cell has fewer informative validation tasks than `max(16, n_min)`. Operator option: fall back to `case_rule: all_v1` for focused; saturated and unsolved tasks are concordant pairs, which raise n and so make non-inferiority easier to pass without measuring a difference (the lower bound −z²/(n+z²) of a concordant sample rises with n, `evaluation/analysis.py:198-201`); the artifact then records the share of concordant-by-class tasks. | §10.2 arithmetic: own tasks alone give validation ≈ 0.3 × 42 ≈ 12 < 24; the TB2 count (§14 Q7) and the informative share (known only after calibration, S16) are 확인 필요. | S5, S11 |
+| IC-20 | **Focused stage when informative tasks are short.** **Decided 2026-10-14 (D-135): the corpus grows with TB2 and SWE-bench tasks until every cell has `max(16, n_min)` informative validation tasks; `all_v1` only on operator request** ("Operator Decisions Of 2026-10-14"). Proposed default: `StageRunner.plan` holds `NO_INFORMATIVE_TASKS` when a cell has fewer informative validation tasks than `max(16, n_min)`. Operator option: fall back to `case_rule: all_v1` for focused; saturated and unsolved tasks are concordant pairs, which raise n and so make non-inferiority easier to pass without measuring a difference (the lower bound −z²/(n+z²) of a concordant sample rises with n, `evaluation/analysis.py:198-201`); the artifact then records the share of concordant-by-class tasks. | §10.2 arithmetic: own tasks alone give validation ≈ 0.3 × 42 ≈ 12 < 24; the TB2 count (§14 Q7) and the informative share (known only after calibration, S16) are 확인 필요. | S5, S11 |
 | IC-21 | **Auxiliary-turn cap in production.** `limits` gains `aux_max_tokens` (v1 0). Node token budgets become `(root.max_tokens − aux_max_tokens) // (attempt_policy.max_attempts × nodes)`, so ledger reservations plus auxiliary turns stay within the contract root. `StrategyRunner` starts no read-only auxiliary turn (reviewer, investigators, L1 `replan_ask_first`, orchestrator lead, judges) once the goal's measured auxiliary tokens reach `aux_max_tokens` or after an auxiliary turn with unknown usage (`Hold AUX_BUDGET`). A read-only turn has no token ceiling of its own (§3.5), so the last turn may exceed the cap by its own usage; the plan record keeps `aux_overrun`. For real goals, L2/L3 treat strategies with auxiliary turns as ineligible when `aux_max_tokens` is 0. | The ledger enforces reservations only (`runtime/budgets/service.py:43-55`); read-only turns are not reserved (today only the planner turn, kept as `planner_usage`, `runtime/execution/product.py:586`); deciders may choose these strategies for real goals (§6.1 L2). | S3, S9, S10 |
 | IC-22 | **Approval re-checks a decided composition.** `plan` records an L3-decided composition with `record["composition"]["decision_ref"]` (the `harness-decision`). `approve` re-checks such a composition through the pin path (`pin=chosen["ref"]`, `pin_allowed`, eligibility filter unchanged) and checks that the decision record's `chosen` cell is that composition's cell; a composition without a decision keeps today's re-selection. | `approve` re-runs `select_composition` without a pin unless the plan was pinned and holds `COMPOSITION_CHANGED` when the result differs (`runtime/execution/product.py:1182-1195`); a pinned candidate still passes the eligibility filter (`product.py:463-481`). An L3 choice other than the router's first eligible cell would otherwise always hold at approval. | S10 |
 
@@ -2724,7 +2724,7 @@ Only true unknowns; each has a verification step. None of them may be implemente
 | Q4 | Codex usage semantics across resumed turns in one session (follow-ups, steering): is the last `turn.completed` usage cumulative for the thread (`agent_drivers/protocol.py:212-214` comment) or per turn | run a two-turn resume in the worker image and compare the usage of each `turn.completed` with the provider totals; S9 sums per turn only after this (today `continue_resumed` records the resumed receipt only, `worker.py:562`) |
 | Q5 | Field names of Claude `rate_limit_event` payloads and the shape of Codex usage-limit errors | keep the raw events of one limited run in a scratch journal (operator machine), list the keys; S4 allowlists only those keys |
 | Q6 | Subscription limit windows and sizes per driver | not observable by API; the pilot (§8.6) measures proxies; no window length is assumed |
-| Q7 | TB2: the test entry command and working directory per task, whether the driver layer runs on each task base image, and how many of 89 tasks pass admission under uid 65534, read-only root, network none and `/workspace` mapping | S7a tooling + an operator admission run on 3 tasks first, then all; record counts in `specs/033-harness-taxonomy/runs/` |
+| Q7 | TB2: the test entry command and working directory per task, whether the driver layer runs on each task base image, and how many of 89 tasks pass admission under uid 65534, read-only root, network none and `/workspace` mapping (test entry answered 2026-10-08; admission count and driver-layer architecture answered 2026-10-15, "Clarification: TB2 Oracle Admission Wave 1") | S7a tooling + an operator admission run on 3 tasks first, then all; record counts in `specs/033-harness-taxonomy/runs/` |
 | Q8 | Cost of per-image driver qualification (`container_qualify.py`) for TB2 images | measure on the first 3 admitted images before qualifying the rest |
 | Q9 | Jev access, API, price and data policy (`plan.md` §10.4) | operator confirms access; then write the mapping and qualify it like any judge |
 | Q10 | Trial concurrency the colima VM sustains (each container 2 GB memory, `deployment/local-container-app-amplai-foundry.json`) | S16 runs 1, 2 and 4 concurrent trials and records wall time, failures and memory pressure |
@@ -4514,3 +4514,70 @@ completed trials (https://github.com/harbor-framework/harbor/blob/main/src/harbo
   `test_rk4_*` (another corpus is a key mismatch), `test_settle_ended_skips_a_run_without_a_dispatch_*`
   (coded skip `dispatches:0`), and `test_d128_a_stopped_runs_summary_is_never_the_nightly_baseline`
   (`tests/v3/test_033_s12_nightly.py`).
+
+## Operator Decisions Of 2026-10-14: IC-20 And OD-15 Order
+
+- **IC-20 (D-135)**: the short-informative-task case is answered by a larger corpus, not by a looser stage. TB2 and
+  SWE-bench tasks are added until every cell has `max(16, n_min)` informative validation tasks. The focused stage
+  keeps holding `NO_INFORMATIVE_TASKS` below that count (`StageRunner.plan`, unchanged); `case_rule: all_v1` is used
+  only when the operator asks for it. Whether a cell reaches 16 is known only after the re-calibration on the new
+  corpus version (§11.1 evaluator change, as for 2.1.0).
+- **OD-15 order (D-136)**: (1) Terminal-Bench 2.0 (Apache-2.0); only tasks whose oracle (the reference `solution/`)
+  passes under V3 egress none are admitted (§10.5 step 4: network none, uid 65534, read-only root, writes only to
+  `/workspace`). (2) SWE-bench Multilingual (MIT), unsaturated tasks only. (3) SWE-Bench Pro V2 HARD-51. Each step
+  checks licenses first (OD-15, 2026-09-30).
+- Wave 1 (this change): TB2 admission ("Clarification: TB2 Oracle Admission Wave 1"), these records, and the SWE
+  adapter skeleton ("Clarification: SWE-bench Adapter Skeleton"); no SWE dataset runs.
+
+## Clarification: SWE-bench Adapter Skeleton (2026-10-15)
+
+`scripts/swe_adapter.py` (tests `tests/v3/test_033_swe_bench_skeleton.py`). It reads a local JSONL export of one
+dataset configuration and prints JSON; it downloads nothing, runs no container and writes nothing into the corpus.
+It lives in `scripts/` because no trial imports it and a new package file would change the D-128
+`trial_code_digest`; it moves into `meta_harness/` with the corpus contract change below.
+
+- Sources (checked 2026-10-15, Hugging Face datasets-server `info`, GitHub API):
+  `SWE-bench/SWE-bench_Multilingual` (card `license: mit`, 300 rows, test lists are lists, one image per instance,
+  harness `SWE-bench/SWE-bench` MIT); `ScaleAI/SWE-bench_Pro` configs `default` (V2, 642), `hard` (HARD-51, 51) and
+  `v1` (731), no card license, test lists are JSON strings, harness `scaleapi/SWE-bench_Pro-os` MIT,
+  `v2/hard51_ids.txt` (51 ids; rule in `v2/README.md`: failed by at least two of five model families, minus three
+  ambiguous tasks), images `ghcr.io/scaleapi/swe-bench_pro-v2:<instance_id>` (linux/amd64).
+- Functions: `parse_row`/`read_rows` (`SWE_SOURCE` on a malformed row, a non-40-hex `base_commit`, no
+  FAIL_TO_PASS test, duplicate ids); `license_gate`/`require_licenses` (`SWE_LICENSE`): the license of each upstream
+  repository at the task's base commit is an explicit operator input, never inferred; only `MIT`, `Apache-2.0`,
+  `BSD-2-Clause`, `BSD-3-Clause`, `ISC`, `Unlicense` pass. `resolution_counts` reads `SWE-bench/experiments`
+  `per_instance_details.json` objects; `select_unsaturated` keeps instances resolved by at most
+  `max_resolved_share` of the submissions (required argument, no default); `hard_subset` checks the id list against
+  the `hard` column.
+- **Open (operator decisions, not implemented)**:
+  - The corpus contract: `corpus_v2` has no SWE source kind, grading (FAIL_TO_PASS/PASS_TO_PASS with a per-repo log
+    parser for Multilingual, the task's own `run_script.sh`/`parser.py` for Pro V2) or per-instance base
+    (`SOURCE_KINDS`, `GRADINGS`, `LICENSES` = `Apache-2.0`, `LicenseRef-amplai-internal`). Pro V2 ships tasks in
+    Harbor format (`v2/tasks/<id>/` with `task.toml`, `instruction.md`, `solution/`, `tests/test.sh`), the TB2 shape;
+    whether it reuses the TB2 adapter is 확인 필요.
+  - SWE-Bench Pro licenses: the paper states the public set uses "repositories with GPL and other copyleft
+    licenses" (arXiv 2509.16941); every HARD-51 task therefore holds `SWE_LICENSE` until the operator decides
+    whether and how copyleft task content may be stored in the corpus.
+  - The saturation threshold and the minimum number of submissions for Multilingual.
+  - Running the per-instance images under V3 containment: both datasets publish x86_64 images only (Multilingual:
+    arm64 "experimental" in the harness README); the local colima VM is aarch64 and runs them emulated (TB2 wave 1).
+
+## Clarification: TB2 Oracle Admission Wave 1 (2026-10-15)
+
+Run record: `specs/033-harness-taxonomy/runs/tb2-oracle-wave1.md` (tool `scripts/tb2_oracle_wave.py`, tests
+`tests/v3/test_033_tb2_oracle_wave.py`), TB2 `2fd12b88aafdd04a52c298e3940bcb189f9766d6`, D-136 rule (egress none).
+
+- **§14 Q7, admission count: 0 of 89.** 85 pulled task images (`linux/amd64`, pinned by registry digest) were
+  screened by one run of each task's own entry under the trial containment; in none did the pytest session start
+  (77 `uvx: command not found` after the offline `curl` of `uv`, the rest failed `pip`/`uvx` downloads or a missing
+  `pytest-json-ctrf`). A reference run uses the same script, image and containment, so none can pass §10.5 step 4.
+  One control task (`chess-best-move`) went through the full admission and ended `solution_failed` with reference
+  reward 0. 4 images over 3 GB compressed were not pulled (their build history installs neither `uv` nor `pytest`;
+  the outcome for them is (추정)). Nothing was written into the corpus; it stays 2.1.0.
+- **§14 Q7, driver layer**: TB2 images are `linux/amd64`, the local worker images `linux/arm64`; `image_spec`'s
+  driver layer copied from this host's worker image cannot run natively in a TB2 image. An amd64 worker build is
+  needed before TB2 trials (open).
+- **Open**: `tb2.commit_base` refuses an empty working directory (seen for `cancel-async-tasks`,
+  `build-cython-ext`); how TB2 tasks can admit at all under egress none is an operator decision — options (A) bake
+  test dependencies into the image, (B) network for the grading container only, (C) skip TB2 and continue with
+  SWE-bench Multilingual (run record "What Would Admit TB2 Tasks"). IC-20 (D-135) gets no tasks from this wave.

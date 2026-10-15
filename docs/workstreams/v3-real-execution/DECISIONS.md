@@ -994,3 +994,37 @@
   merge 하면 digest 가 바뀌고 이전 trial 은 resume·import key 가 맞지 않는다. 제외 목록은 바꾸지 않았다.
 - Source: PR #97, `src/amplai_foundry/runtime/service_manager/`, `src/amplai_foundry/runtime/upgrade/plan.py`,
   `src/amplai_foundry/runtime/upgrade_cli.py`, `tests/v3/test_034_s3_service_manager.py`, `tests/v3/test_034_s3_upgrade_plan.py`
+
+## D-135 — Short Informative Tasks Are Answered By A Larger Corpus (IC-20)
+
+- Status: accepted (운영자 승인 2026-10-14)
+- Date: 2026-10-14
+- Decision: IC-20 은 corpus 확장으로 푼다. TB2 와 SWE-bench 계열 과제를 더해, 칸(cell)마다 informative validation
+  과제가 `max(16, n_min)` 개 이상이 되게 한다. focused 단계의 기본 동작은 그대로다(`StageRunner.plan` 이 그보다 적으면
+  `NO_INFORMATIVE_TASKS` 로 멈춘다). `case_rule: all_v1` fallback 은 운영자가 요청할 때만 쓴다.
+- Reason: calibration 9 의 칸별 informative 과제는 3~8개였다(`interfaces.md` "Append Split Rule And Corpus 2.1.0").
+  `all_v1` 은 포화·미해결 과제를 concordant pair 로 넣어 n 을 키우므로, 차이를 재지 않고도 non-inferiority 가 쉽게
+  통과한다(IC-20 행). 과제를 늘리는 편이 판정 근거를 유지한다.
+- Rejected: `all_v1` 을 기본 fallback 으로 쓴다. 16 을 낮춘다(margin 0.25·신뢰 0.95 의 최소치라 근거가 약해진다).
+- Consequence: 과제 추가는 evaluator change(§11.1)다. 새 corpus version 을 freeze 하고, `add_tasks` evaluator-change 를
+  따로 qualify·승인한 뒤 재calibration 해야 informative 여부를 안다. 칸별로 16개가 채워졌는지는 그 calibration 전까지
+  확인 필요다.
+- Source: `specs/033-harness-taxonomy/interfaces.md` IC-20, "Operator Decisions Of 2026-10-14: IC-20 And OD-15 Order"
+
+## D-136 — Public Benchmark Import Order: TB2, SWE-bench Multilingual, SWE-Bench Pro (OD-15)
+
+- Status: accepted (운영자 승인 2026-10-14)
+- Date: 2026-10-14
+- Decision: OD-15 의 공개 benchmark 과제는 이 순서로 들여온다. (1) Terminal-Bench 2.0(Apache-2.0): V3 의 egress
+  none 격리(network none, uid 65534, read-only root, 쓰기는 `/workspace` 만)에서 oracle(reference `solution/`)이
+  통과하는 과제만 admit 한다(§10.5 step 4). (2) SWE-bench Multilingual(MIT): 포화되지 않은 과제만. (3) SWE-Bench Pro
+  V2 HARD 51. 각 단계는 license 를 먼저 확인한다(OD-15 결정 2026-09-30 그대로).
+- Reason: TB2 는 adapter·grading 이 이미 있다(S7a, `meta_harness/tb2.py`, `tb2_grading.py`). SWE 계열은 새 adapter 가
+  필요하다.
+- Consequence: Wave 1 은 TB2 admission 과 SWE 계열 adapter skeleton 만 한다(dataset 실행 없음). TB2 admission 결과는
+  `specs/033-harness-taxonomy/runs/tb2-oracle-wave1.md` 다. "SWE-Bench Pro V2 HARD 51" 의 출처는 2026-10-15 에
+  확인했다: Hugging Face `ScaleAI/SWE-bench_Pro` config `hard`(51행), `scaleapi/SWE-bench_Pro-os` `v2/hard51_ids.txt`
+  (`scripts/swe_adapter.py` docstring). SWE-Bench Pro 의 upstream 저장소는 GPL·AGPL 등 copyleft 다(논문 arXiv
+  2509.16941). 그래서 adapter 의 license 확인(`SWE_LICENSE`)에서 멈추고, 저장 방식은 운영자 결정이 필요하다.
+- Source: `specs/033-harness-taxonomy/spec.md` OD-15, `specs/033-harness-taxonomy/interfaces.md` "Operator Decisions Of
+  2026-10-14: IC-20 And OD-15 Order"
