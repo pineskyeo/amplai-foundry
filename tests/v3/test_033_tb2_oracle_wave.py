@@ -201,7 +201,12 @@ def test_screen_record_is_reused_only_for_the_same_commit_image_and_digest() -> 
 
 
 def test_admit_record_belongs_to_the_current_screen() -> None:
-    record = {"task": "fake-task", "source_commit": COMMIT, "pinned": PINNED}
+    record = {
+        "task": "fake-task",
+        "source_commit": COMMIT,
+        "pinned": PINNED,
+        "screen_schema": wave.SCREEN_SCHEMA,
+    }
     assert wave.admit_current(record, _screen(), COMMIT)
     assert not wave.admit_current(record, _screen(pinned="x@sha256:" + "e" * 64), COMMIT)
     assert not wave.admit_current({**record, "source_commit": "f" * 40}, _screen(), COMMIT)
@@ -427,3 +432,10 @@ def test_admit_does_not_build_a_task_whose_runner_cannot_be_baked(
     assert (record["stage"], record["reason"]) == ("build", "test_deps_unsupported")
     assert record["admitted"] is False
     assert not any(argv[:2] == ["docker", "build"] for argv in calls)
+
+
+def test_admit_result_of_another_oracle_layout_is_not_reused() -> None:
+    screen = _screen()
+    record = {"task": "fake-task", "source_commit": COMMIT, "pinned": PINNED}
+    assert not wave.admit_current(record, screen, COMMIT)  # pre-v3: no screen_schema
+    assert wave.admit_current({**record, "screen_schema": wave.SCREEN_SCHEMA}, screen, COMMIT)

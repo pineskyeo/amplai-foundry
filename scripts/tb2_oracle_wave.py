@@ -177,7 +177,7 @@ def oracle_build_context(
 ) -> dict[str, str]:
     """The oracle image build context: the Dockerfile with the task's test runner baked in and
     the runner shims. ``tb2_test_deps.Unsupported`` when the task's ``test.sh`` runner cannot be
-    pinned (the task is then not admitted; D-135 is not relaxed for it)."""
+    pinned (the task is then not admitted; D-136 is not relaxed for it)."""
     assert task.source_dir is not None
     deps = tb2_test_deps.parse_test_entry((task.source_dir / "tests" / "test.sh").read_text())
     return {
@@ -270,8 +270,10 @@ def screen_current(record: dict[str, Any], task: tb2.Tb2Task, commit: str) -> bo
 
 
 def admit_settings(args: argparse.Namespace) -> dict[str, Any]:
-    """The admit options a result depends on: repeats, corpus destination and registry."""
+    """The admit options a result depends on: repeats, corpus destination, registry and the
+    oracle image layout (``SCREEN_SCHEMA``; v3 bakes the test runner)."""
     return {
+        "screen_schema": SCREEN_SCHEMA,
         "repeats": args.repeats,
         "dest": None if args.dest is None else str(args.dest),
         "registry": args.registry,
@@ -287,9 +289,11 @@ def admit_current(
     """Whether an ``*.admit.json`` belongs to the current screen (same commit and pinned image)
     and, given ``settings`` (``admit_settings``), was made with the same repeats, destination and
     registry. A one-repeat result or one made without ``--dest`` is not reused for a later run
-    that asks for more."""
+    that asks for more. A result made for another oracle layout (screen schema) is never reused:
+    a pre-v3 result was graded without the baked test runner."""
     return (
         record.get("task") == screen.get("task")
+        and record.get("screen_schema") == screen.get("schema")
         and record.get("source_commit") == commit
         and record.get("pinned") == screen.get("pinned")
         and (settings is None or all(record.get(k, ...) == v for k, v in settings.items()))

@@ -1,5 +1,5 @@
 """Work 033 TB2 option A: ``tb2_test_deps`` (the test runner baked into the oracle image at build
-time so that grading stays egress none, D-135) and its use in ``scripts/tb2_oracle_wave.py``.
+time so that grading stays egress none, D-136) and its use in ``scripts/tb2_oracle_wave.py``.
 The shim is run with ``sh`` against a fake venv; no docker (the image build is operator-run,
 ``runs/tb2-oracle-wave1.md``)."""
 
@@ -128,14 +128,30 @@ def test_bake_lines_pin_uv_by_digest_and_put_the_shim_first_on_path() -> None:
     assert "rm -rf /tmp/amplai-uv-cache" in text and "chmod -R a+rX" in text
 
 
-def test_bake_lines_for_pip_use_the_image_python_with_system_site_packages() -> None:
-    text = "\n".join(
-        deps_mod.bake_dockerfile_lines(deps_mod.parse_test_entry(PIP_SCRIPT), "linux/arm64")
+def test_bake_lines_for_pip_install_into_the_image_interpreter() -> None:
+    deps = deps_mod.parse_test_entry(PIP_SCRIPT)
+    text = "\n".join(deps_mod.bake_dockerfile_lines(deps, "linux/arm64"))
+    assert "uv pip install --system --break-system-packages" in text
+    assert "command -v python3 || command -v python" in text  # `python -m pytest` sees it too
+    assert "ENV PATH" not in text and deps_mod.shim_files(deps) == {}
+
+
+def test_python_m_pytest_entry_is_a_pip_runner() -> None:
+    script = (
+        "pip install pytest==8.4.1 pytest-json-ctrf==0.3.5 --break-system-packages\n"
+        "python -m pytest --ctrf /logs/verifier/ctrf.json /tests/test_outputs.py -rA\n"
     )
-    assert "--system-site-packages --python python3" in text
-    assert set(deps_mod.shim_files(deps_mod.parse_test_entry(PIP_SCRIPT))) == {
-        f"{deps_mod.SHIM_CONTEXT}/pytest"
-    }
+    assert deps_mod.parse_test_entry(script).kind == "pip"
+
+
+def test_heredoc_bodies_are_not_tokenized() -> None:
+    script = "cat > /tmp/x.py <<'EOF'\nprint(\"it's fine\")\nEOF\n" + UVX_SCRIPT
+    assert deps_mod.parse_test_entry(script).kind == "uvx"
+
+
+def test_an_untokenizable_runner_line_is_unsupported_not_a_crash() -> None:
+    with pytest.raises(Unsupported):
+        deps_mod.parse_test_entry("uvx -p 3.13 -w 'pytest==8.4.1 pytest t.py\n")
 
 
 def test_oracle_dockerfile_bakes_as_root_before_dropping_to_65534() -> None:
@@ -233,6 +249,8 @@ def test_uvx_shim_runs_the_baked_pytest_for_the_exact_request(tmp_path: Path) ->
             "pytest-json-ctrf==0.3.5",
         ),
         ("--from", "x", "-p", "3.13"),
+        # one -w value carrying two requirements must not match the baked set
+        ("-p", "3.13", "-w", "pytest==8.4.1\nnumpy==2.3.1", "-w", "pytest-json-ctrf==0.3.5"),
     ],
 )
 def test_uvx_shim_refuses_any_other_request(tmp_path: Path, args: tuple[str, ...]) -> None:
